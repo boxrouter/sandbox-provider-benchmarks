@@ -17,6 +17,7 @@ from sandbox_benchmark_verifier import lifecycle_profile
 from sandbox_benchmark_verifier.catalog import default_context
 from sandbox_benchmark_verifier.cli import main, validate
 from sandbox_benchmark_verifier.lifecycle_profile import profiles
+from sandbox_benchmark_verifier.lock import check as lock_errors
 from sandbox_benchmark_verifier.name_refs import source_name_errors
 from sandbox_benchmark_verifier.names import load_tables
 from sandbox_benchmark_verifier.scaffold import BenchmarkDraft, add, add_from_shape
@@ -374,6 +375,13 @@ def test_an_existing_id_or_file_is_refused(tree: Path) -> None:
     add_from_shape(tree, "fixture-snapshot", "03-sandbox-operations", shape, draft)
     with pytest.raises(ValueError, match="reuse an existing methodology: fixture-snapshot"):
         add_from_shape(tree, "fixture-snapshot", "03-sandbox-operations", shape, draft)
+
+
+def test_a_shape_benchmark_lands_with_its_lock_row(tree: Path) -> None:
+    shape, draft = shape_and_draft("snapshot")
+    add_from_shape(tree, "fixture-snapshot", "03-sandbox-operations", shape, draft)
+    assert "fixture-snapshot@1.0.0 " in (tree / "methodology/released.lock").read_text()
+    assert lock_errors(tree, require_complete=True) == []
 
 
 def test_cli_writes_a_shape_benchmark_and_prints_its_path(
