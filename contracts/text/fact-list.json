@@ -1,7 +1,6 @@
 {
   "details_units_reproduced": "{Unit}s Reproduced",
   "fact_unknown": "Unknown",
-  "fact_succeeded": "Succeeded",
   "fact_interval_of_median": "95% Interval of the Median",
   "fact_cost": "Cost",
   "fact_received": "Received",
