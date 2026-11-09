@@ -283,7 +283,7 @@ methods:
 
         Both coordinates of {name:index.time-vs-cost} update together when the statistic selector switches between {name:statistic.median}, {name:statistic.mean}, and {name:statistic.p95}; providers are plotted on the two-dimensional plane rather than given a single combined scalar rank.
       failure_policy: |-
-        A workload is included in a scope only if every provider offers the capabilities that workload requires; if any provider's result on a workload is marked {param:content.ranking_statuses.not_offered.label}, that workload is omitted from the composite scope for all providers. Providers with zero completed units across all workloads in the selected scope are not displayed.
+        A workload is included in a scope only if every provider offers the capabilities that workload requires; if any provider's result on a workload is marked {param:content.ranking_statuses.not_offered.label} or {param:content.ranking_statuses.account_limit.label}, that workload is omitted from the composite scope for all providers. Providers with zero completed units across all workloads in the selected scope are not displayed.
 
         A provider is omitted from {name:index.cost-index} and {name:index.time-vs-cost} and listed under {param:content.ranking_statuses.not_displayed.label} {param:reader.common.blocks.overview.omitted_when}
   cost-index:
@@ -644,10 +644,10 @@ methods:
       introduction: 'Times each burst from the first dispatched create request until every sandbox''s first command returns.'
       metric: '{name:test.burst-tti} is the duration of an N-sandbox wave from the first dispatched `create` request until every sandbox completes both `create` and its first `true` command, computed as max(end_i) - min(start_i) across the N sandboxes.'
       setup: |-
-        Each trial uses N parallel sandboxes created from BoxRouter's pinned standard image plus a unique per-trial image layer, so concurrent workers do not compound the burst size.
+        Each trial creates N sandboxes at once from BoxRouter's pinned standard image. A provider's bursts run one at a time, so only one burst's N sandboxes are in flight.
       trial_steps: '[[steps: build]]Push a unique trial image layer, prepare the image, and initialize N provider creation contexts (untimed); then [[steps: create]]send N asynchronous `create` calls at once ({name:stage.create}); then [[steps: ready]]as each `create` returns, send `true` and retry transient not-ready errors every 100 ms up to 40 times (First command); then [[steps: size_probe]]probe sizes (untimed) [[steps: destroy]]and destroy all N sandboxes together.'
       limitations:
-      - The N sandboxes in a burst contend with one another by design and are not comparable to sequential starts; burst sizes above a provider plan's concurrency limit are not run and show as {param:content.ranking_statuses.not_offered.label}.
+      - The N sandboxes in a burst contend with one another by design and are not comparable to sequential starts; burst sizes above the concurrency limit of BoxRouter's account with a provider are not run and show as {param:content.ranking_statuses.account_limit.label}.
       - '{param:reader.common.blocks.create.limit_layer}'
       - One burst yields one burst-time data point, not one TTI sample per sandbox, because its sandboxes share account rate limits, scheduler queues and host placement at the same instant.
       statistics_rules: |-
@@ -657,7 +657,7 @@ methods:
       failure_policy: |-
         {param:reader.common.blocks.common.failures_citation}
 
-        If a burst size exceeds the provider plan's documented concurrency limit, that variant is marked {param:content.ranking_statuses.not_offered.label} rather than failed. A trial succeeds only when all N sandboxes in the burst complete `create` and `true` within timeout and all N sandboxes are confirmed destroyed; if any single sandbox in the wave fails or times out, the entire burst trial fails.
+        If a burst size exceeds the concurrency limit of BoxRouter's account with the provider, that variant is marked {param:content.ranking_statuses.account_limit.label} rather than failed. A trial succeeds only when all N sandboxes in the burst complete `create` and `true` within timeout and all N sandboxes are confirmed destroyed; if any single sandbox in the wave fails or times out, the entire burst trial fails.
     stages:
       create:
         start: Create requests are sent together

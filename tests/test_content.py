@@ -481,6 +481,7 @@ def test_the_not_displayed_line_names_each_providers_own_status_in_lower_case() 
     statuses = criteria["ranking_statuses"]
     assert {name for name, item in statuses.items() if item.get("footer_group")} == {
         "not_offered",
+        "account_limit",
         "in_development",
         "not_measured",
     }

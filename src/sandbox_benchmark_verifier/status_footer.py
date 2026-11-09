@@ -271,3 +271,31 @@ def status_label_owner_errors(root: Path) -> list[str]:
             )
             errors.append(f"{relative}.{location}: types the status label {label!r}; {hint}")
     return errors
+
+
+_CAP = re.compile(r"(?i)\bconcurren\w*|\bat once\b|\baccount\b")
+_SENTENCE = re.compile(r"(?<=[.;])\s+")
+
+
+def concurrency_cap_status_errors(root: Path) -> list[str]:
+    """A sentence about a concurrency cap names the Account Limit status, never Not Offered.
+
+    Not Offered says no plan of the provider offers the option; a burst above the limit of
+    BoxRouter's own account with the provider is that account's limit (``account_limit``).
+    """
+    sources = [
+        *sorted((root / "reader").glob("*.yaml")),
+        *sorted((root / "contracts").rglob("*.json")),
+    ]
+    errors: list[str] = []
+    for source in sources:
+        raw = source.read_text(encoding="utf-8")
+        loaded: Any = json.loads(raw) if source.suffix == ".json" else list(load_yaml_all(raw))
+        for location, text in reader_strings(loaded):
+            for sentence in _SENTENCE.split(text):
+                if "ranking_statuses.not_offered." in sentence and _CAP.search(sentence):
+                    errors.append(
+                        f"{source.relative_to(root)}.{location}: a concurrency cap reads "
+                        "{param:content.ranking_statuses.account_limit.label}, not not_offered"
+                    )
+    return errors

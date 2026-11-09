@@ -65,7 +65,10 @@ from sandbox_benchmark_verifier.reader import (
 from sandbox_benchmark_verifier.rejected_labels import rejected_label_errors
 from sandbox_benchmark_verifier.scope_kinds import panel_scope_kind
 from sandbox_benchmark_verifier.stage_hovers import BOUNDARY, stage_hovers
-from sandbox_benchmark_verifier.status_footer import status_label_owner_errors
+from sandbox_benchmark_verifier.status_footer import (
+    concurrency_cap_status_errors,
+    status_label_owner_errors,
+)
 from sandbox_benchmark_verifier.text_ids import index_metric_id_warnings, raw_token_warnings
 from sandbox_benchmark_verifier.versions import version_key
 from sandbox_benchmark_verifier.vocabulary import retired_word_errors
@@ -969,5 +972,6 @@ def _text_warnings(root: Path) -> list[str]:
     )
     warnings.extend(content_warnings(root, rows, criteria=criteria))
     warnings.extend(source_name_errors(root) + status_label_owner_errors(root))
+    warnings.extend(concurrency_cap_status_errors(root))
     warnings.extend(published_name_errors(bundle, root))
     return warnings

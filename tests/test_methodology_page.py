@@ -15,7 +15,10 @@ from sandbox_benchmark_verifier.catalog import load_methodology
 from sandbox_benchmark_verifier.content import content_criteria, criteria_errors
 from sandbox_benchmark_verifier.methodology_page import reader_definition
 from sandbox_benchmark_verifier.names import label_case_errors, load_tables
-from sandbox_benchmark_verifier.status_footer import status_label_owner_errors
+from sandbox_benchmark_verifier.status_footer import (
+    concurrency_cap_status_errors,
+    status_label_owner_errors,
+)
 from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
@@ -475,3 +478,26 @@ def test_page_members_refuse_conflicting_effective_location_policy() -> None:
     with pytest.raises(ValueError, match="leaf region policy conflicts"):
         reader_definition(host, documents, content_criteria()["methodology_page"], "host", rows, {})
     assert documents == before
+
+
+def test_a_concurrency_cap_reads_the_account_limit_status(tmp_path: Path) -> None:
+    """A burst above BoxRouter's account limit is Account Limit; no plan offering it is Not
+    Offered. Text about a concurrency cap that names Not Offered fails, and the shipped text
+    has none."""
+    assert not concurrency_cap_status_errors(ROOT)
+    (tmp_path / "reader").mkdir()
+    (tmp_path / "reader/methods.yaml").write_text(
+        "methods:\n"
+        "  burst-tti:\n"
+        "    limitations:\n"
+        "    - Bursts above a plan's concurrency limit show as"
+        " {param:content.ranking_statuses.not_offered.label}.\n"
+        "    - A pause the provider lacks shows as"
+        " {param:content.ranking_statuses.not_offered.label}.\n"
+        "    - Bursts above the account's limit show as"
+        " {param:content.ranking_statuses.account_limit.label}.\n",
+        encoding="utf-8",
+    )
+    assert [error.split(":")[0] for error in concurrency_cap_status_errors(tmp_path)] == [
+        "reader/methods.yaml.[0].methods.burst-tti.limitations[0]"
+    ]

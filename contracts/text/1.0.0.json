@@ -304,6 +304,13 @@
       "footer_group": "not_displayed",
       "details": false
     },
+    "account_limit": {
+      "label": "Account Limit",
+      "definition": "Above the concurrency limit of BoxRouter's account with this provider.",
+      "footer": true,
+      "footer_group": "not_displayed",
+      "details": false
+    },
     "in_development": {
       "label": "Not Supported",
       "footer": true,
