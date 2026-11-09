@@ -34,5 +34,4 @@ methodology path and adds no names row; graduation adds it.
 Run `sandbox-benchmark-verify validate` and `sandbox-benchmark-verify text`, then `make check`.
 CI generates a temporary definition with the scaffold and checks the current schema,
 parameter digests, names and conventions. The generated samples are never added to the
-methodology collection. A released definition is immutable; changed science needs a new
-version and new evidence.
+methodology collection. A changed definition is edited in place and needs new evidence.

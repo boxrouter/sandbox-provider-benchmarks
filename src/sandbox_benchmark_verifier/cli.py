@@ -40,7 +40,6 @@ from sandbox_benchmark_verifier.machine_panels import panel_errors
 from sandbox_benchmark_verifier.names import name_errors
 from sandbox_benchmark_verifier.new_benchmark import new_benchmark_errors
 from sandbox_benchmark_verifier.parameters import document_errors, variant_errors
-from sandbox_benchmark_verifier.retained import retained_errors
 from sandbox_benchmark_verifier.safety import check_record
 from sandbox_benchmark_verifier.scaffold import BenchmarkDraft, add, add_from_shape
 from sandbox_benchmark_verifier.stats import bootstrap_ci, nearest_rank, numeric
@@ -289,7 +288,6 @@ def validate(root: Path = ROOT) -> list[str]:
     errors.extend(_method_errors(root, documents))
     errors.extend(independence_errors(root, documents))
     errors.extend(name_errors(root))
-    errors.extend(retained_errors(root))
     errors.extend(new_benchmark_errors(root))
     errors.extend(image_fact_errors(root))
     errors.extend(timing_errors(root))

@@ -32,9 +32,8 @@ traces/                     Normalized trace listings (none until a release)
 src/sandbox_benchmark_verifier/             methodology validation and aggregate reproduction CLI
 ```
 
-Each methodology document has a stable ID and version. Runs and observations cite the versions
-they used so published results remain interpretable. Methodology releases are immutable: revise a
-definition by adding a version, never by editing a released version. Run `sandbox-benchmark-verify validate` to
+Each methodology document has a stable ID and one current version, which changes in place; runs and
+observations record the versions they used. Run `sandbox-benchmark-verify validate` to
 check schemas and references and `sandbox-benchmark-verify reproduce` to recompute supported aggregates.
 
 Standalone machine reference tests are linked from their methodologies: [CPU](reference-tests/cpu/),
@@ -45,29 +44,12 @@ Standalone machine reference tests are linked from their methodologies: [CPU](re
 
 Every benchmark starts its sandboxes from one container image, unless a benchmark states another. It
 is pinned by digest in `sbs.common` (`environment.image.reference`), so a result always names the exact
-bytes it ran on. Results measured under `sbs.common` 1.0.10 and earlier ran on the public version 0.2.3:
-
-```text
-ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
-```
-
-Pull it, signed out, with:
-
-```sh
-docker pull ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
-```
-
-The [registry page](https://github.com/orgs/boxrouter/packages/container/package/standard-image) lists
-its tags. `sbs.common` 1.0.13 pins version 0.3.5, also public (1.0.12 pinned 0.3.3, which
-was never activated):
-
-```text
-ghcr.io/boxrouter/standard-image@sha256:1cb7f85ec988a9dcf66c47f953f8e7984d88c987fec964aa327afafb63cc9a0b
-```
+bytes it ran on. The image is public: pull that reference, signed out, with
+`docker pull <reference>`. The [registry page](https://github.com/orgs/boxrouter/packages/container/package/standard-image)
+lists its tags.
 
 A benchmark that modifies the image per trial says how in its `environment.image.modification`.
-The digest changes only in a new `sbs.common` version, because a new image means every provider
-prepares its image again.
+A new image means every provider prepares its image again.
 
 ## Reproduce a result
 

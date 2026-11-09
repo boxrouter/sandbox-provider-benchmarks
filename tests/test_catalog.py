@@ -30,7 +30,6 @@ from sandbox_benchmark_verifier.catalog import (
     region_request_errors,
 )
 from sandbox_benchmark_verifier.cli import close, reproduce
-from sandbox_benchmark_verifier.retained import retained_versions
 from sandbox_benchmark_verifier.yaml_load import load_yaml
 
 pytestmark = pytest.mark.unit
@@ -284,12 +283,7 @@ def test_no_region_context_refuses_legacy_leaf_override_and_merged_null_region()
 
 @pytest.fixture
 def country_documents() -> list[dict[str, Any]]:
-    kept = retained_versions(ROOT)  # old versions that served data cites predate the country rule
-    return [
-        row.document
-        for row in load_methodology(ROOT)
-        if (str(row.document["id"]), str(row.document["version"])) not in kept
-    ]
+    return [row.document for row in load_methodology(ROOT)]
 
 
 def country_leaf(version: str = "1.0.18") -> dict[str, Any]:
