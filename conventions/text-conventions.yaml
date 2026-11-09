@@ -3356,6 +3356,20 @@ presentation:
       - presentation.provider-page
     target: record
     severity: error
+  - id: no-count-facts
+    text: No drill-down fact or table column shows a count as n of m, such as trials that succeeded or
+      units reproduced; a fact true in only some trials says so in words.
+    predicate:
+      kind: forbidden_pattern
+      value:
+      - \b\d[\d,]* of \d[\d,]*\b
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.fact-list
+    target: record
+    severity: error
 panels:
   index:
     extends: benchmark

@@ -25,6 +25,5 @@
   "fact_image_uncompressed": "every_result",
   "fact_image_layers": "every_result",
   "fact_image_files": "every_result",
-  "details_units_reproduced": "every_result",
   "reason": "when_present"
 }
