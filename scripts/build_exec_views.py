@@ -18,7 +18,7 @@ import yaml
 from sandbox_benchmark_verifier.yaml_load import load_yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-# Both paths are relative to a repository root, so the successor command can run on a copy.
+# Both paths are relative to a repository root.
 SOURCE = Path("sources/exec-latency-views.yaml")
 OUTPUT = Path("methodology/03-sandbox-operations/exec-views.yaml")
 SCHEMA = "# yaml-language-server: $schema=../../schemas/methodology.schema.json"

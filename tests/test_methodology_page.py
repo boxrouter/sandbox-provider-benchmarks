@@ -451,10 +451,6 @@ def test_page_members_keep_the_measured_hosts_common_and_effective_date(
     other.update(version="9.0.0", inherits={"id": "sbs.common", "version": "1.0.999"})
     other["metrics"][0]["unit"] = "wrong-cohort"
     documents[("member-doc", "9.0.0")] = other
-    retro = deepcopy(documents[("member-doc", "1.0.1")])
-    retro.update(version="9.1.0", composition={"input_selection": "retrospective_exact"})
-    retro["metrics"][0]["unit"] = "retrospective"
-    documents[("member-doc", "9.1.0")] = retro
     result = reader_definition(
         host, documents, content_criteria()["methodology_page"], "host", rows, {}
     )

@@ -169,9 +169,7 @@ def test_profile_name_is_owned_once_and_reader_mentions_still_require_references
     ]
 
 
-def _profile_successor(
-    tree: Path, source: Path, version: str, common: dict[str, str], *, retrospective: bool = False
-) -> Path:
+def _profile_successor(tree: Path, source: Path, version: str, common: dict[str, str]) -> Path:
     document = yaml.safe_load(source.read_text())
     old = tree / document["parameters"]["path"]
     directory = tree / "parameters" / document["id"] / version
@@ -179,8 +177,6 @@ def _profile_successor(
     document["version"] = version
     document["inherits"] = common
     document["parameters"]["path"] = str(directory.relative_to(tree))
-    if retrospective:
-        document["composition"] = {"input_selection": "retrospective_exact"}
     target = source.with_name(f"{version}.yaml")
     target.write_text(yaml.safe_dump(document))
     return target
@@ -206,7 +202,6 @@ def test_lifecycle_discovery_binds_context_before_version_and_exact_profile_keep
     (tree / "methodology/00-common-1.0.999.yaml").write_text(yaml.safe_dump(future))
     other = {"id": "sbs.common", "version": "1.0.999"}
     _profile_successor(tree, source, "9.0.0", other)
-    _profile_successor(tree, source, "9.1.0", declared, retrospective=True)
     _profile_successor(tree, source, "1.0.1", declared)
     assert [p.method.document["version"] for p in profiles(tree)] == ["1.0.1"]
     assert [p.method.document["version"] for p in profiles(tree, common=other)] == ["9.0.0"]

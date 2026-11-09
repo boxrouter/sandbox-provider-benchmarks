@@ -157,15 +157,10 @@
       "required": ["inputs", "aggregation", "weighting", "inclusion"],
       "description": "For an index: the benchmarks it combines and how. An index has no trials of its own; its value is computed from the aggregates of the cited benchmarks.",
       "properties": {
-        "input_selection": {
-          "enum": ["latest_as_of_effective", "retrospective_exact"],
-          "default": "latest_as_of_effective",
-          "description": "How the exact immutable inputs below are selected. Omitted means the newest version in force on this index's effective date. retrospective_exact permits an older exact version only when it was already effective then and inherits the same sbs.common. This does not change the index's effective date, the input measurements, or compatibility."
-        },
         "inputs": {
           "type": "array",
           "minItems": 1,
-          "description": "The complete exact input vector, cited by canonical id and immutable version.",
+          "description": "The complete exact input vector: each input's canonical id and its version in force on this index's effective date.",
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -1546,18 +1541,6 @@
       "then": {
         "required": ["inherits", "metrics", "composition", "statistics", "cost"],
         "not": { "required": ["procedure"] }
-      }
-    },
-    {
-      "if": {
-        "required": ["composition"],
-        "properties": {
-          "composition": { "required": ["input_selection"] }
-        }
-      },
-      "then": {
-        "required": ["category"],
-        "properties": { "category": { "const": "index" } }
       }
     },
     {

@@ -16,9 +16,6 @@ from jsonschema import Draft202012Validator, ValidationError
 from sandbox_benchmark_verifier.versions import newest, version_key
 from sandbox_benchmark_verifier.yaml_load import load_yaml, load_yaml_all
 
-LATEST_AS_OF_EFFECTIVE = "latest_as_of_effective"
-RETROSPECTIVE_EXACT = "retrospective_exact"
-
 # Release builds stamp the source commit of their bundled assets.
 METHODOLOGY_COMMIT = "fe55f37c02a2552eac59929d0222cb85d7a1dbd0"
 _PACKAGED_ASSETS = Path(str(files("sandbox_benchmark_verifier").joinpath("_assets")))
@@ -152,12 +149,7 @@ def ordinary_documents(
 
 def ordinary_in_context(document: Mapping[str, Any], common: Mapping[str, str]) -> bool:
     """The shared ordinary candidate policy for selection and as-of input validation."""
-    if document.get("inherits") != common:
-        return False
-    mode = document.get("composition", {}).get("input_selection", LATEST_AS_OF_EFFECTIVE)
-    if not isinstance(mode, str) or mode not in {LATEST_AS_OF_EFFECTIVE, RETROSPECTIVE_EXACT}:
-        raise ValueError("unknown input selection")
-    return mode == LATEST_AS_OF_EFFECTIVE
+    return document.get("inherits") == common
 
 
 def common_document(

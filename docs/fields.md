@@ -45,8 +45,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `capability_source.use` | How the benchmark page uses declarations. |  |  |
 | `status` | `planned` marks a benchmark the page lists as Coming Soon: the document records its definition so far, publishes no number, and may omit the procedure, timing, environment and statistics sections. Absent means active. |  | `"planned"` |
 | `composition` | For an index: the benchmarks it combines and how. An index has no trials of its own; its value is computed from the aggregates of the cited benchmarks. |  |  |
-| `composition.input_selection` | How the exact immutable inputs below are selected. Omitted means the newest version in force on this index's effective date. retrospective_exact permits an older exact version only when it was already effective then and inherits the same sbs.common. This does not change the index's effective date, the input measurements, or compatibility. |  |  |
-| `composition.inputs[]` | The complete exact input vector, cited by canonical id and immutable version. |  |  |
+| `composition.inputs[]` | The complete exact input vector: each input's canonical id and its version in force on this index's effective date. |  |  |
 | `composition.inputs[].id` | Id of the input methodology. |  | `"workload.coding.deepswe"` |
 | `composition.inputs[].version` | Version of the input methodology. |  | `"1.0.0"` |
 | `composition.inputs[].quantity` | The value taken from that benchmark's result, in plain words. |  | `"Typical time per trace."` |

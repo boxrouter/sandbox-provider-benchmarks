@@ -27,9 +27,9 @@ def source() -> dict[str, Any]:
     return loaded
 
 
-def test_generated_file_is_current(methodology_root: Path) -> None:
-    current = yaml.safe_load((methodology_root / build.SOURCE).read_text(encoding="utf-8"))
-    assert (methodology_root / build.OUTPUT).read_text(encoding="utf-8") == build.render(current)
+def test_generated_file_is_current() -> None:
+    current = yaml.safe_load((ROOT / build.SOURCE).read_text(encoding="utf-8"))
+    assert (ROOT / build.OUTPUT).read_text(encoding="utf-8") == build.render(current)
 
 
 def test_parameters_directories_match_the_shared_one() -> None:

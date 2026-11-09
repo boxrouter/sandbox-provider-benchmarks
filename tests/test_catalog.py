@@ -184,17 +184,12 @@ def test_bound_context_precedes_version_order_and_preserves_exact_archive() -> N
         "inherits": leaf["inherits"],
         "composition": {},
     }
-    retro: dict[str, Any] = {
-        **index,
-        "version": "2.0.0",
-        "composition": {"input_selection": "retrospective_exact"},
-    }
-    docs = [us, other, leaf, higher, index, retro]
+    docs = [us, other, leaf, higher, index]
     selected = ordinary_documents(docs, common=leaf["inherits"])
     assert selected["example"] is leaf
     assert selected["example-index"] is index
     assert ordinary_documents(docs, common=higher["inherits"])["example"] is higher
-    assert len(docs) == 6  # The exact archive is not filtered or relabelled.
+    assert len(docs) == 5  # The exact archive is not filtered or relabelled.
     with pytest.raises(ValueError, match="missing or ambiguous"):
         ordinary_documents(docs, common={"id": "sbs.common", "version": "9.0.0"})
 

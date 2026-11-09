@@ -8,8 +8,6 @@ from datetime import date
 from typing import Any
 
 from sandbox_benchmark_verifier.catalog import (
-    LATEST_AS_OF_EFFECTIVE,
-    RETROSPECTIVE_EXACT,
     common_document,
     context_region_errors,
     ordinary_in_context,
@@ -17,14 +15,7 @@ from sandbox_benchmark_verifier.catalog import (
 from sandbox_benchmark_verifier.independence import COMMON_ID
 from sandbox_benchmark_verifier.versions import version_key
 
-__all__ = [
-    "LATEST_AS_OF_EFFECTIVE",
-    "RETROSPECTIVE_EXACT",
-    "composition_input_errors",
-    "select_composite_outputs",
-]
-
-INPUT_SELECTIONS = frozenset({LATEST_AS_OF_EFFECTIVE, RETROSPECTIVE_EXACT})
+__all__ = ["composition_input_errors", "select_composite_outputs"]
 
 
 def _effective_date(document: Mapping[str, Any]) -> date | None:
@@ -100,7 +91,6 @@ def _input_region_errors(
 def _input_errors(
     item: Any,
     index: Mapping[str, Any],
-    mode: str,
     by_ref: Mapping[tuple[str, str], list[Mapping[str, Any]]],
     documents: Sequence[Mapping[str, Any]],
 ) -> list[str]:
@@ -131,7 +121,7 @@ def _input_errors(
     if common_error is not None:
         errors.append(common_error)
     errors.extend(_input_region_errors(index, matches[0], by_ref))
-    if mode == LATEST_AS_OF_EFFECTIVE and index_date is not None:
+    if index_date is not None:
         latest = _latest_version(
             identifier, index_date, documents, dict(index.get("inherits") or {})
         )
@@ -186,11 +176,7 @@ def composition_input_errors(
     if not isinstance(composition, Mapping):
         return ["index has no composition"]
     if index.get("category") != "index":
-        return ["input selection requires category index"]
-
-    mode = composition.get("input_selection", LATEST_AS_OF_EFFECTIVE)
-    if not isinstance(mode, str) or mode not in INPUT_SELECTIONS:
-        return ["unknown input selection"]
+        return ["composition inputs require category index"]
 
     inputs = composition.get("inputs")
     if not isinstance(inputs, list) or not inputs:
@@ -212,7 +198,7 @@ def composition_input_errors(
             by_ref[(identifier, version)].append(document)
 
     for item in inputs:
-        errors.extend(_input_errors(item, index, mode, by_ref, documents))
+        errors.extend(_input_errors(item, index, by_ref, documents))
 
     errors.extend(_plot_axis_errors(composition.get("plots"), inputs))
 

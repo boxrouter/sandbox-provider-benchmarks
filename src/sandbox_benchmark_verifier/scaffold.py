@@ -138,7 +138,7 @@ def add(root: Path, request: BenchmarkDraft) -> Path:
     path = root / "methodology" / request.identifier / f"{request.version}.yaml"
     directory = root / "parameters" / request.identifier / request.version
     if path.exists() or directory.exists():
-        raise ValueError("scaffold destination exists; existing versions are immutable")
+        raise ValueError("scaffold destination exists; edit the existing document in place")
     schema = json.loads((root / "schemas/methodology.schema.json").read_text())
     if request.sweep is not None:
         Draft202012Validator(
@@ -466,7 +466,7 @@ def add_from_shape(  # pylint: disable=too-many-locals
     path = root / "methodology" / folder / f"{identifier}.yaml"
     directory = root / "parameters" / identifier / "1.0.0"
     if path.exists() or directory.exists():
-        raise ValueError("scaffold destination exists; existing versions are immutable")
+        raise ValueError("scaffold destination exists; edit the existing document in place")
     category = _category(root, folder)
     workloads = _workloads_from_draft(shape, draft)
     sandboxes = _sandboxes(shape, workloads)

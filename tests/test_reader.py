@@ -935,7 +935,7 @@ def test_package_registries_links_the_commit_it_checks_out(bundle: dict[str, Any
     assert f"checks out the pinned [commit]({url})." in workload
 
 
-def test_default_context_text_survives_higher_other_cohort_and_retrospective_versions(
+def test_default_context_text_survives_a_higher_other_cohort_version(
     monkeypatch: pytest.MonkeyPatch,
     build_text_bundle: Callable[[Path], dict[str, Any]],
 ) -> None:
@@ -950,12 +950,9 @@ def test_default_context_text_survives_higher_other_cohort_and_retrospective_ver
     future_leaf["version"] = "9.0.0"
     future_leaf["inherits"] = {"id": "sbs.common", "version": "1.0.999"}
     future_leaf["environment"].pop("region_policy", None)
-    retrospective = copy.deepcopy(dict(current["time-index"]))
-    retrospective["version"] = "9.0.0"
-    retrospective["composition"]["input_selection"] = "retrospective_exact"
     baseline = build_text_bundle(ROOT)
     monkeypatch.setattr(
-        text, "_methodologies", lambda _root: [*methods, future_common, future_leaf, retrospective]
+        text, "_methodologies", lambda _root: [*methods, future_common, future_leaf]
     )
     expanded = build_text_bundle(ROOT)
     assert expanded["default_context"] == context
@@ -1041,15 +1038,11 @@ def test_page_member_timers_and_parts_follow_each_measured_host(common_version: 
     other["procedure"]["steps"] = [
         {"id": "wrong", "timer": {"start_event": "wrong start", "stop_event": "wrong stop"}}
     ]
-    retro = copy.deepcopy(other)
-    retro.update(
-        version="9.1.0", inherits=common, composition={"input_selection": "retrospective_exact"}
-    )
     later = copy.deepcopy(other)
     later.update(version="1.0.1", inherits=common, effective="2026-11-01")
     parent = {**common, "effective": "2026-01-01"}
     documents: dict[tuple[str, str], dict[str, Any]] = {
-        (doc["id"], doc["version"]): doc for doc in [parent, host, member, other, retro, later]
+        (doc["id"], doc["version"]): doc for doc in [parent, host, member, other, later]
     }
     tests = {"member": {"page": "host"}}
     document_ids = {"member": "member"}

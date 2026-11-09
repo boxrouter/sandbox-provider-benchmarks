@@ -27,7 +27,6 @@ from sandbox_benchmark_verifier.compare import (
     render,
     summary_source,
 )
-from sandbox_benchmark_verifier.composites import RETROSPECTIVE_EXACT, composition_input_errors
 from sandbox_benchmark_verifier.content import (
     content_criteria,
     reader_literal_errors,
@@ -222,19 +221,6 @@ def parameter_errors(
     return errors
 
 
-def _composition_errors(method_documents: Sequence[dict[str, Any]]) -> list[str]:
-    """Validate explicit retrospective selections across methodology documents."""
-    errors: list[str] = []
-    for document in method_documents:
-        composition = document.get("composition")
-        if (
-            isinstance(composition, Mapping)
-            and composition.get("input_selection") == RETROSPECTIVE_EXACT
-        ):
-            errors.extend(composition_input_errors(document, method_documents))
-    return errors
-
-
 def _method_errors(root: Path, documents: Sequence[tuple[Path, Any]]) -> list[str]:
     """The checks that read every methodology document with an id."""
     method_documents = [
@@ -245,7 +231,6 @@ def _method_errors(root: Path, documents: Sequence[tuple[Path, Any]]) -> list[st
         and "id" in document
     ]
     return [
-        *_composition_errors(method_documents),
         *parameter_errors(root, documents, method_documents),
         *panel_errors(root, method_documents),
     ]
