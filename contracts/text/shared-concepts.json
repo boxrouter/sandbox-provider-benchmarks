@@ -1,0 +1,81 @@
+{
+  "schema": "boxrouter.bench.reader-concepts/1",
+  "concepts": {
+    "workload-value": {
+      "name": "Workload Value",
+      "source": "Calculated"
+    },
+    "median": {
+      "name": "{name:statistic.median}",
+      "source": "Calculated"
+    },
+    "interval": {
+      "name": "Interval",
+      "source": "Calculated"
+    },
+    "cost-per-success": {
+      "name": "Cost per 1,000 Successes",
+      "meaning": "The successful trials\u2019 cost is divided by their count, then scaled to the stated comparison unit.",
+      "example": {
+        "template": "A ${param:concept.example.values.cost} cost for {param:concept.example.values.successes} successes gives ${param:concept.example.values.result} per {param:concept.example.values.scale} successes.",
+        "values": {
+          "cost": "0.12",
+          "successes": 40,
+          "result": 3,
+          "scale": 1000
+        }
+      },
+      "source": "Calculated"
+    },
+    "trial-counts": {
+      "name": "Trial Counts",
+      "meaning": "Each benchmark runs until it has its intended number of successful trials, unless a serious blocker stops it.",
+      "example": {
+        "template": "The result uses {param:concept.example.values.successes} successful trials.",
+        "values": {
+          "successes": 10
+        }
+      },
+      "source": "Recorded"
+    },
+    "price-sheet": {
+      "name": "Price Sheet",
+      "meaning": "The price sheet records public list rates and the billing conditions that qualify them.",
+      "example": {
+        "template": "A listed ${param:concept.example.values.rate} hourly rate gives a ${param:concept.example.values.result} charge for {param:concept.example.values.hours} hours.",
+        "values": {
+          "rate": "0.10",
+          "result": "0.20",
+          "hours": 2
+        }
+      },
+      "source": "Published"
+    },
+    "elapsed-time": {
+      "name": "Elapsed Time",
+      "meaning": "Elapsed time records the duration between the benchmark\u2019s declared start and stop events.",
+      "example": {
+        "template": "A request sent at {param:concept.example.values.start} s and returned at {param:concept.example.values.stop} s took {param:concept.example.values.elapsed} s.",
+        "values": {
+          "start": 10,
+          "stop": 12,
+          "elapsed": 2
+        }
+      },
+      "source": "Measured"
+    },
+    "ranking-floor": {
+      "name": "Ranking Floor",
+      "meaning": "A benchmark can require a minimum number of successful trials before a result enters its ranking.",
+      "example": {
+        "template": "With a floor of {param:concept.example.values.floor}, {param:concept.example.values.successes} successes need {param:concept.example.values.more} more successful trial.",
+        "values": {
+          "floor": 20,
+          "successes": 19,
+          "more": 1
+        }
+      },
+      "source": "Calculated"
+    }
+  }
+}

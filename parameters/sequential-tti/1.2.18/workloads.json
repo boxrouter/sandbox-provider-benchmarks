@@ -1,0 +1,42 @@
+[
+  {
+    "data": {
+      "base_image": "ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b",
+      "command": "true",
+      "within_s": 120
+    },
+    "id": "true",
+    "label": "First command: true",
+    "version": "sha256:160d96cebaf23f7a"
+  },
+  {
+    "data": {
+      "base_image": "ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b",
+      "command": "python3 -c 'import json, sqlite3, ssl, asyncio, urllib.request, email.parser, xml.etree.ElementTree'",
+      "within_s": 120
+    },
+    "id": "python3",
+    "label": "First command: python3",
+    "version": "sha256:d784f86df6fe2bff"
+  },
+  {
+    "data": {
+      "base_image": "ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b",
+      "command": "node -e 'require(\"crypto\"); require(\"zlib\"); require(\"http\")'",
+      "within_s": 120
+    },
+    "id": "node",
+    "label": "First command: node",
+    "version": "sha256:2a79006188f3ca18"
+  },
+  {
+    "data": {
+      "base_image": "ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b",
+      "command": "git --version",
+      "within_s": 120
+    },
+    "id": "git",
+    "label": "First command: git",
+    "version": "sha256:a46eb2c995ea01b2"
+  }
+]

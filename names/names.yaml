@@ -1,0 +1,519 @@
+# Canonical page names and the metric vocabulary, each with one source-owned row.
+# Edit by adding rows; an id never changes after creation. Old ids live in aliases.yaml.
+schema: boxrouter.bench.names/2
+catalog_selection:
+  default_common: {id: sbs.common, version: 1.0.18}
+  region_country_policy:
+    source: {id: sbs.common, version: 1.0.18}
+    equivalents: [{id: sbs.common, version: 1.0.18}]
+    countries: [US]
+# The label of a workload's all-units variant: its unit plural in Title Case.
+all_variant_template: "All {Units}"
+metric_label_grammar:
+  tokens:
+    per_clause: ' per {per}'
+    unit_clause: ' ({unit})'
+    unitless_units: [points]
+    directions:
+      lower_is_better: lower is better
+      higher_is_better: higher is better
+  forms:
+    short:
+      template: '{quantity}'
+      comparison_template: '{left.quantity} vs {right.quantity}'
+      use: Metric-view controls only when the surrounding selected-test context is explicit; a comparison supplies both metric references.
+      omit: [phase, per, unit, direction, statistic]
+      case: title
+    long:
+      template: '{phase?} {quantity}{per_clause?}'
+      identity_override: When the target is a test, index, hero or pricing-panel identity, read that canonical name through the source binding instead of recomposing it.
+      use: Standalone metric labels, provider columns and cards, heroes, test rows and panel Titles.
+      omit: [statistic, direction]
+      case: title
+    axis:
+      template: '{phase_if_ambiguous?} {quantity}{unit_clause}'
+      use: Each numeric axis, including both axes of a comparison.
+      statistic: Omitted; the caption identifies aggregation.
+      case: title
+    caption:
+      template: 'The chart shows {statistic?} values{per_clause?}; {direction}.'
+      use: Chart captions and rank-card metric lines; Details reading text embeds the same resolved metric fragment rather than maintaining another label.
+      statistic: Required for aggregated measured values; absent for deterministic list rates or raw unaggregated values.
+      case: sentence
+  composition:
+    per_clause: Resolve the denominator word from its source; render a per clause only when it adds an actual work or pricing denominator.
+    unit_clause: Use the unit formatter's display unit; synchronize it with ticks and plotted scaling.
+    rate_denominators: A unit already containing a denominator does not gain another per-second or per-hour clause; per-trial sampling metadata is not an extra divisor.
+    comparison: Resolve both metric identities independently; use the same source quantity words in controls, axis labels and captions.
+    capitalization: Short, long and axis labels use Title Case; captions and embedded Details fragments use the slot contract's sentence case. Preserve canonical proper names, unit symbols, commands and acronyms verbatim.
+    no_runtime_titlecase: Consumers do not recase canonical test names or unit symbols; source generation applies casing to grammar tokens only.
+    typical: Use the composite aggregate only when the source declares it; never substitute it for another statistic identity.
+    median: Use the statistic name row resolved from the plotted statistic identity.
+    mean: Use the statistic name row resolved from the plotted statistic identity; rejected display labels are owned by that row.
+    other_statistics: Resolve source statistic identities through their name rows; Box Plot and Spread are presentations, not replacement statistic identities.
+  quantities:
+    time:
+      applies_to: Elapsed time only; boundary and phase qualifiers remain meaningful.
+      name_ref: {kind: view, id: time}
+    cost:
+      applies_to: A monetary amount for measured or specified work, never a price rate silently relabeled as an amount.
+      name_ref: {kind: view, id: cost}
+    rate:
+      applies_to: A genuine rate without a more specific source-owned noun, including public monetary rates; preserve its denominator and provenance.
+      name_ref: {kind: quantity, id: rate}
+    bandwidth:
+      applies_to: Data transferred per unit time, when the method defines bandwidth.
+      name_ref: {kind: quantity, id: bandwidth}
+    rating:
+      applies_to: An upstream tool's declared rating; do not reinterpret it as time or a generic composite score.
+      name_ref: {kind: quantity, id: rating}
+    operations:
+      applies_to: The source's operation-count noun; its unit distinguishes a count from a rate.
+      name_ref: {kind: quantity, id: operations}
+    links:
+      applies_to: The source's link-count noun; retain the declared rate unit where applicable.
+      name_ref: {kind: quantity, id: links}
+    time_score:
+      applies_to: A provider's score from 0 to 100 on elapsed time, relative to the best provider on each unit.
+      name_ref: {kind: quantity, id: time-score}
+    cost_score:
+      applies_to: A provider's score from 0 to 100 on cost, relative to the best provider on each unit.
+      name_ref: {kind: quantity, id: cost-score}
+    provider_score:
+      applies_to: A provider's score from 0 to 100, the mean of its four part scores.
+      name_ref: {kind: quantity, id: provider-score}
+    latency:
+      applies_to: The round-trip time of a near-zero-runtime command, from the call until its result returns.
+      name_ref: {kind: quantity, id: latency}
+  vocabulary_rules:
+    scope: Rejected synonyms are prohibited as alternative metric label words, not as scientific descriptions, upstream proper names, operation names or historical ids.
+    prices: Provider pricing and pricing-panel names remain source-owned identities. Rate wording never claims a published list rate is an observed charge.
+    legacy_rate: The index identity and formula need benchmark-owner confirmation; renaming cannot turn a rate into the time index.
+    startup: Startup concepts are not aliases for every time metric; resolve the actual sequential or burst time-to-interactive identity and selected configuration first.
+    no_fabrication: Missing phase, denominator or identity is an owner gap. Omit or reject a required label according to the slot contract; never guess metadata from spelling.
+  contexts:
+    metric-view-tab: {form: short, precondition: "A selected-test identity is already visible; a comparison supplies both metric references."}
+    group-tab: {form: canonical-group-name, rule: "Names the collection, never a substitute metric or selected-test title."}
+    selected-test-row-and-title: {form: long, target: test, rule: "Both slots consume one resolved label binding for the highlighted test; always render the test row beneath the group tab, including one-test groups."}
+    hero-or-standalone: {form: long, target: source-bound-identity-or-metric}
+    provider-column-or-card: {form: long, rule: "Reuse the same metric identity as the comparable benchmark; a sub-label supplies size, unit or denominator from that identity, never an alternate metric nickname."}
+    chart-axis: {form: axis, rule: "Include the phase when several phases are plotted without an unambiguous surrounding subject; resolve both comparison axes independently."}
+    chart-caption-or-rank-card-line: {form: caption}
+    details-reading: {form: caption, rule: "Embed the resolved statistic/metric fragment in owner-authored prose; measurement boundaries, provenance and limits remain authored method facts."}
+    pricing-panel: {form: long, target: pricing-panel, rule: "Preserve the pricing owner's panel identity; use axis and caption forms for its actual rate metadata, without adding a sample statistic."}
+names:
+  - {row: 1, kind: "section", id: "overview", name: "Overview", intro: "Sandboxes are evaluated on coding and CI workloads to determine a composite time and cost."}
+  - {row: 87, kind: "hero", id: "time-index", name: "{name:time-index}", document: "time-index", rejected_labels: [Execution Speed, Tasks per Hour]}
+  - {row: 88, kind: "hero", id: "cost-index", name: "{name:cost-index}", document: "cost-index"}
+  - {row: 141, kind: "hero", id: "time-score", name: "Time Score", document: "index.speed_score", common_section: "time-score", unit: "workload", unit_description: "One workload's value is weighted equally."}
+  - {row: 142, kind: "hero", id: "cost-score", name: "Cost Score", document: "index.cost_score", common_section: "cost-score", unit: "workload", unit_description: "One workload's value is weighted equally."}
+  - {row: 89, kind: "hero", id: "sequential-tti", name: "Cold Startup Time", document: "sequential-tti"}
+  - {row: 90, kind: "page", id: "benchmarks", name: "Sandbox Benchmarks", summary: "Methods and results for comparing sandbox performance across defined workloads."}
+  - {row: 156, kind: "page", id: "common", name: "Common Methodology", document: "sbs.common"}
+  - {row: 139, kind: "quantity", id: "time-score", name: "Time Score"}
+  - {row: 140, kind: "quantity", id: "cost-score", name: "Cost Score"}
+  - {row: 144, kind: "hero", id: "provider-score", name: "Provider Scores", document: "index.provider_score", common_section: "provider-scores"}
+  - {row: 145, kind: "quantity", id: "workload-time", name: "Workload Time Score"}
+  - {row: 146, kind: "quantity", id: "workload-cost", name: "Workload Cost Score"}
+  - {row: 147, kind: "quantity", id: "sandbox-operations-score", name: "Sandbox Operations Score"}
+  - {row: 148, kind: "quantity", id: "machine-performance-score", name: "Machine Performance Score"}
+  - {row: 149, kind: "quantity", id: "provider-score", name: "Provider Score"}
+  - {row: 91, kind: "quantity", id: "rate", name: "Rate"}
+  - {row: 92, kind: "quantity", id: "bandwidth", name: "Bandwidth"}
+  - {row: 93, kind: "quantity", id: "rating", name: "Rating"}
+  - {row: 94, kind: "quantity", id: "operations", name: "Operations"}
+  - {row: 95, kind: "quantity", id: "links", name: "Hard-Link Rate"}
+  - {row: 96, kind: "quantity", id: "count", name: "Count"}
+  - {row: 125, kind: "quantity", id: "latency", name: "Latency"}
+  - {row: 97, kind: "per-unit", id: "call", name: "call"}
+  - {row: 126, kind: "per-unit", id: "100-calls", name: "100 calls"}
+  - {row: 98, kind: "statistic", id: "median", name: "Median", sentence: "median"}
+  - {row: 99, kind: "statistic", id: "mean", name: "Mean", sentence: "mean", rejected_labels: [Average]}
+  - {row: 100, kind: "statistic", id: "p95", name: "p95", sentence: "p95"}
+  - {row: 101, kind: "statistic", id: "geometric_mean", name: "Geometric Mean"}
+  - {row: 138, kind: "statistic", id: "arithmetic_mean", name: "Arithmetic Mean", sentence: "arithmetic mean"}
+  - {row: 102, kind: "statistic", id: "success_rate", name: "Success Rate"}
+  - {row: 103, kind: "statistic", id: "typical", name: "Composite"}
+  - {row: 120, kind: "statistic", id: "p99", name: "P99"}
+  - {row: 121, kind: "statistic", id: "p5", name: "P5"}
+  - {row: 128, kind: "statistic", id: "max", name: "Max"}
+  - {row: 129, kind: "statistic", id: "min", name: "Min"}
+  - {row: 130, kind: "statistic", id: "p25", name: "P25"}
+  - {row: 131, kind: "statistic", id: "p75", name: "P75"}
+  - {row: 132, kind: "stage-line", id: "start", name: "Start"}
+  - {row: 133, kind: "stage-line", id: "end", name: "End"}
+  - {row: 134, kind: "stage-line", id: "source", name: "Source"}
+  - {row: 135, kind: "clock", id: "runner", name: "Job-host clock"}
+  - {row: 136, kind: "clock", id: "sandbox", name: "Sandbox clock"}
+  - {row: 137, kind: "readout-line", id: "trials", name: "Trials"}
+  - {row: 150, kind: "axis", id: "x", name: "Horizontal Axis"}
+  - {row: 151, kind: "axis", id: "y", name: "Vertical Axis"}
+  - {row: 152, kind: "scope", id: "execution", name: "Execution"}
+  - {row: 153, kind: "scope", id: "agent", name: "Agent"}
+  - {row: 154, kind: "scope", id: "coding", name: "Coding"}
+  - {row: 155, kind: "scope", id: "ci", name: "CI"}
+  - {row: 104, kind: "per-unit", id: "burst", name: "burst"}
+  - {row: 105, kind: "per-unit", id: "connection", name: "connection"}
+  - {row: 106, kind: "per-unit", id: "image", name: "image"}
+  - {row: 107, kind: "per-unit", id: "install", name: "install"}
+  - {row: 108, kind: "per-unit", id: "job", name: "job", plural: "jobs"}
+  - {row: 109, kind: "per-unit", id: "preview", name: "preview"}
+  - {row: 110, kind: "per-unit", id: "provider", name: "provider"}
+  - {row: 111, kind: "per-unit", id: "request", name: "request"}
+  - {row: 113, kind: "per-unit", id: "round", name: "round"}
+  - {row: 114, kind: "per-unit", id: "sandbox", name: "sandbox", numbered: "Sandbox {n}"}
+  - {row: 115, kind: "per-unit", id: "server-start", name: "server start"}
+  - {row: 112, kind: "per-unit", id: "rollout", name: "rollout", reads_as: "task"}
+  - {row: 116, kind: "per-unit", id: "session", name: "session", reads_as: "trace"}
+  - {row: 132, kind: "per-unit", id: "task", name: "task", plural: "tasks"}
+  - {row: 117, kind: "per-unit", id: "trace", name: "trace", plural: "traces"}
+  - {row: 118, kind: "per-unit", id: "trace-set", name: "trace set"}
+  - {row: 119, kind: "per-unit", id: "trial", name: "trial", plural: "trials"}
+  - {row: 143, kind: "per-unit", id: "workload", name: "workload", plural: "workloads"}
+  - {row: 2, kind: "section", id: "workloads", name: "Workloads", intro: "Replayed workloads compare coding agent, CI, and RL work."}
+  - {row: 3, kind: "subsection", id: "coding-workloads", name: "Coding Workloads", parent: "workloads", intro: "Coding agents' shell commands and file edits replay in each task's own image. No model is called in the replay."}
+  - {row: 4, kind: "subsection", id: "ci-workloads", name: "CI Workloads", parent: "workloads", intro: "Public repository jobs compare install, lint, test, and build steps."}
+  - {row: 5, kind: "subsection", id: "rl-workloads", name: "RL Workloads", parent: "workloads", intro: "Recorded reinforcement-learning rollouts compare environment setup, tool calls, and reward checks."}
+  - {row: 6, kind: "section", id: "sandbox-operations", name: "Sandbox Operations", shows_cost: false, intro: "Basic sandbox calls are measured under a variety of configurations."}
+  - {row: 7, kind: "section", id: "machine-performance", name: "Machine Performance", shows_cost: false, intro: "Machine specifications are benchmarked by standard tests."}
+  - {row: 8, kind: "section", id: "reliability", name: "Reliability", status: coming_soon, document: "reliability.provider_failures", intro: "Failure rates only count the provider-caused errors."}
+  - {row: 9, kind: "index", id: "time-index", name: "Composite Workload Time", parent: "overview", document: "time-index", unit: "workload", unit_description: "One workload's value is weighted equally.", selector: {mode: chooses, options: [median, mean, p95]}}
+  - {row: 10, kind: "index", id: "cost-index", name: "Composite Workload Cost", parent: "overview", document: "cost-index", page: "time-index", unit: "workload", unit_description: "One workload's value is weighted equally.", selector: {mode: chooses, options: [median, mean, p95]}}
+  - {row: 11, kind: "index", id: "time-vs-cost", name: "Composite Workload Time vs Cost", parent: "overview", document: "time-vs-cost", page: "time-index", unit: "workload", unit_description: "One workload's value is weighted equally.", selector: {mode: chooses, options: [median, mean, p95]}}
+  - {row: 12, kind: "view", id: "time", name: "Time", sentence: "time", parent: "overview"}
+  - {row: 13, kind: "view", id: "cost", name: "Cost", sentence: "cost", parent: "overview"}
+  - {row: 14, kind: "view", id: "time-vs-cost", name: "Time vs Cost", parent: "overview"}
+  - {row: 16, kind: "test", id: "deepswe", name: "DeepSWE", parent: "coding-workloads", document: "deepswe", unit: "trace", selector: {label: "Trace", mode: narrows}, presentation: {cost: {label: "Cost per Trace", divisor: 1000}, own_time_total: true}}
+  - {row: 17, kind: "variant", id: "all", name: "All Traces", parent: "deepswe", workload: "set"}
+  - {row: 17, kind: "variant", id: "claude-opus-5-high", name: "Claude Opus 5 high", parent: "deepswe", workload: "claude-opus-5-high"}
+  - {row: 17, kind: "variant", id: "claude-sonnet-5-high", name: "Claude Sonnet 5 high", parent: "deepswe", workload: "claude-sonnet-5-high"}
+  - {row: 17, kind: "variant", id: "deepseek-v4-flash-max", name: "DeepSeek V4 Flash max", parent: "deepswe", workload: "deepseek-v4-flash-max"}
+  - {row: 17, kind: "variant", id: "glm-5-3-flash-max", name: "GLM 5.3 Flash max", parent: "deepswe", workload: "glm-5-3-flash-max"}
+  - {row: 17, kind: "variant", id: "gpt-5-6-sol-low", name: "GPT-5.6 Sol low", parent: "deepswe", workload: "gpt-5-6-sol-low"}
+  - {row: 18, kind: "stage", id: "read", name: "Read", parent: "deepswe"}
+  - {row: 18, kind: "stage", id: "write", name: "Write", parent: "deepswe"}
+  - {row: 18, kind: "stage", id: "install", name: "Install", parent: "deepswe"}
+  - {row: 18, kind: "stage", id: "build", name: "Build", parent: "deepswe"}
+  - {row: 18, kind: "stage", id: "test", name: "Test", parent: "deepswe"}
+  - {row: 20, kind: "test", id: "terminal-bench-4-0", name: "Terminal-Bench 4.0", parent: "coding-workloads", document: "terminal-bench-4-0", unit: "trace", selector: {label: "Trace", mode: narrows}, presentation: {cost: {label: "Cost per Trace", divisor: 1000}, own_time_total: true}}
+  - {row: 21, kind: "variant", id: "all", name: "All Traces", parent: "terminal-bench-4-0", workload: "set"}
+  - {row: 21, kind: "variant", id: "claude-opus-5-high", name: "Claude Opus 5 high", parent: "terminal-bench-4-0", workload: "claude-opus-5-high"}
+  - {row: 21, kind: "variant", id: "claude-opus-5-5-max", name: "Claude Opus 5.5 max", parent: "terminal-bench-4-0", workload: "claude-opus-5-5-max"}
+  - {row: 21, kind: "variant", id: "claude-sonnet-5-max", name: "Claude Sonnet 5 max", parent: "terminal-bench-4-0", workload: "claude-sonnet-5-max"}
+  - {row: 21, kind: "variant", id: "glm-5-3-flash", name: "GLM 5.3 Flash", parent: "terminal-bench-4-0", workload: "glm-5-3-flash"}
+  - {row: 22, kind: "stage", id: "read", name: "Read", parent: "terminal-bench-4-0"}
+  - {row: 22, kind: "stage", id: "write", name: "Write", parent: "terminal-bench-4-0"}
+  - {row: 22, kind: "stage", id: "build", name: "Build", parent: "terminal-bench-4-0"}
+  - {row: 22, kind: "stage", id: "test", name: "Test", parent: "terminal-bench-4-0"}
+  - {row: 23, kind: "test", id: "r2e-gym", name: "R2E-Gym", parent: "rl-workloads", document: "r2e-gym", unit: "task", selector: {label: "Task", mode: narrows}, presentation: {cost: {label: "Cost per Trace", divisor: 1000}}}
+  - {row: 24, kind: "variant", id: "all", name: "All Tasks", parent: "r2e-gym", workload: "set"}
+  - {row: 24, kind: "variant", id: "numpy-0a476002600c", name: "numpy-masked-method-lookup", parent: "r2e-gym", workload: "numpy-0a476002600c"}
+  - {row: 24, kind: "variant", id: "numpy-dda20349d172", name: "numpy-issubdtype-abstract-types", parent: "r2e-gym", workload: "numpy-dda20349d172"}
+  - {row: 24, kind: "variant", id: "numpy-61640a849557", name: "numpy-apply-axis-empty", parent: "r2e-gym", workload: "numpy-61640a849557"}
+  - {row: 24, kind: "variant", id: "numpy-171a3e5811e4", name: "numpy-unstructured-single-field", parent: "r2e-gym", workload: "numpy-171a3e5811e4"}
+  - {row: 24, kind: "variant", id: "numpy-bb46a495ee52", name: "numpy-masked-median-scalar", parent: "r2e-gym", workload: "numpy-bb46a495ee52"}
+  - {row: 24, kind: "variant", id: "numpy-504b287bdf47", name: "numpy-indices-sparse-option", parent: "r2e-gym", workload: "numpy-504b287bdf47"}
+  - {row: 24, kind: "variant", id: "numpy-3c0b4db0b51e", name: "numpy-strided-custom-dtype", parent: "r2e-gym", workload: "numpy-3c0b4db0b51e"}
+  - {row: 24, kind: "variant", id: "coveragepy-89f44c12465b", name: "coveragepy-behavior-flag-rename", parent: "r2e-gym", workload: "coveragepy-89f44c12465b"}
+  - {row: 24, kind: "variant", id: "numpy-6b8d55e66e53", name: "numpy-masked-median-multiple", parent: "r2e-gym", workload: "numpy-6b8d55e66e53"}
+  - {row: 24, kind: "variant", id: "numpy-ad48eaa76403", name: "numpy-histogram-edge-rounding", parent: "r2e-gym", workload: "numpy-ad48eaa76403"}
+  - {row: 25, kind: "stage", id: "setup", name: "Setup", parent: "r2e-gym"}
+  - {row: 26, kind: "stage", id: "create-from-snapshot", name: "Create from Snapshot", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "tool-calls", name: "Tool Calls", parent: "r2e-gym"}
+  - {row: 28, kind: "stage", id: "reward", name: "Reward", parent: "r2e-gym"}
+  - {row: 29, kind: "stage", id: "destroy", name: "Destroy", parent: "r2e-gym"}
+  - {row: 30, kind: "test", id: "ci-jobs", name: "CI Actions", parent: "ci-workloads", document: "github-actions", unit: "job", selector: {label: "Job", mode: chooses}, presentation: {cost: {label: "Cost per Job", divisor: 1000}}}
+  - {row: 31, kind: "job", id: "all", name: "All Jobs", parent: "ci-jobs", workload: "all"}
+  - {row: 32, kind: "job", id: "zustand", name: "Node (zustand)", parent: "ci-jobs", workload: "zustand", short: "zustand"}
+  - {row: 33, kind: "job", id: "fastapi", name: "Python (fastapi)", parent: "ci-jobs", workload: "fastapi", short: "fastapi"}
+  - {row: 34, kind: "job", id: "gin", name: "Go (gin)", parent: "ci-jobs", workload: "gin", short: "gin"}
+  - {row: 35, kind: "job", id: "spotify-player", name: "Rust (spotify-player)", parent: "ci-jobs", workload: "spotify-player", short: "spotify-player"}
+  - {row: 36, kind: "job", id: "jq", name: "C (jq)", parent: "ci-jobs", workload: "jq", short: "jq"}
+  - {row: 37, kind: "job", id: "gson", name: "Java (gson)", parent: "ci-jobs", workload: "gson", short: "gson"}
+  - {row: 38, kind: "stage", id: "install", name: "Install", parent: "ci-jobs"}
+  - {row: 38, kind: "stage", id: "lint", name: "Lint", parent: "ci-jobs"}
+  - {row: 38, kind: "stage", id: "test", name: "Test", parent: "ci-jobs"}
+  - {row: 38, kind: "stage", id: "build", name: "Build", parent: "ci-jobs"}
+  - {row: 39, kind: "tab", id: "create", name: "Create", parent: "sandbox-operations"}
+  - {row: 40, kind: "test", id: "sequential-tti", name: "Sequential TTI", parent: "create", document: "sequential-tti", selector: {label: "First Command", mode: chooses}, rejected_labels: [Startup Time, Cold Startup Time, Cold Start], presentation: {panel: "sequential-start"}}
+  - {row: 41, kind: "variant", id: "true", name: "true", parent: "sequential-tti", workload: "true"}
+  - {row: 41, kind: "variant", id: "python3", name: "python3 -c import", parent: "sequential-tti", workload: "python3"}
+  - {row: 41, kind: "variant", id: "node", name: "node -e require", parent: "sequential-tti", workload: "node"}
+  - {row: 41, kind: "variant", id: "git", name: "git --version", parent: "sequential-tti", workload: "git"}
+  - {row: 42, kind: "test", id: "burst-tti", name: "Burst TTI", parent: "create", document: "burst-tti", selector: {label: "Parallel Sandboxes", mode: chooses}, rejected_labels: [Startup Time, Cold Startup Time, Cold Start], presentation: {panel: "burst-start"}}
+  - {row: 43, kind: "variant", id: "n5", name: "5 sandboxes", parent: "burst-tti", workload: "n5"}
+  - {row: 43, kind: "variant", id: "n10", name: "10 sandboxes", parent: "burst-tti", workload: "n10"}
+  - {row: 43, kind: "variant", id: "n20", name: "20 sandboxes", parent: "burst-tti", workload: "n20"}
+  - {row: 43, kind: "variant", id: "n50", name: "50 sandboxes", parent: "burst-tti", workload: "n50"}
+  - {row: 44, kind: "tab", id: "exec", name: "Exec", parent: "sandbox-operations"}
+  - {row: 127, kind: "test", id: "exec-latency-per-100-calls", name: "Latency per 100 Calls", parent: "exec", document: "exec-latency-per-100-calls", selector: {label: "View", mode: chooses, option: "Per 100 Calls"}}
+  - {row: 45, kind: "test", id: "exec-latency", name: "Latency per Call", parent: "exec", document: "exec-latency", page: "exec-latency-per-100-calls", selector: {label: "View", mode: chooses, option: "Per Call"}}
+  - {row: 46, kind: "tab", id: "files", name: "Files", parent: "sandbox-operations"}
+  - {row: 47, kind: "test", id: "list", name: "List", parent: "files", document: "list", page: "read-4kib"}
+  - {row: 48, kind: "test", id: "write-4kib", name: "Write 4 KiB", parent: "files", document: "write-4kib", page: "read-4kib"}
+  - {row: 49, kind: "test", id: "read-4kib", name: "Read 4 KiB", parent: "files", document: "read-4kib"}
+  - {row: 128, kind: "test", id: "exec-latency-2vcpu-8gib", name: "Latency per Call (2 vCPU / 8 GiB)", parent: "exec", document: "exec-latency-2vcpu-8gib", page: "exec-latency-per-100-calls"}
+  - {row: 129, kind: "test", id: "list-2vcpu-8gib", name: "List (2 vCPU / 8 GiB)", parent: "files", document: "list-2vcpu-8gib", page: "read-4kib"}
+  - {row: 130, kind: "test", id: "write-4kib-2vcpu-8gib", name: "Write 4 KiB (2 vCPU / 8 GiB)", parent: "files", document: "write-4kib-2vcpu-8gib", page: "read-4kib"}
+  - {row: 131, kind: "test", id: "read-4kib-2vcpu-8gib", name: "Read 4 KiB (2 vCPU / 8 GiB)", parent: "files", document: "read-4kib-2vcpu-8gib", page: "read-4kib"}
+  - {row: 49, kind: "view", id: "files-read-write", name: "Read and Write", parent: "sandbox-operations", subtitle: "Times repeated requests that read/write a fixed incompressible payload to a sandbox file."}
+  - {row: 50, kind: "tab", id: "pause-resume", name: "Pause and Resume", parent: "sandbox-operations"}
+  - {row: 50, kind: "test", id: "pause-resume", name: "Pause and Resume", parent: "pause-resume", document: "pause-resume", selector: {label: "Paused Disk Size (GiB)", mode: chooses}, presentation: {panel: "pause-resume", cost: {label: "Cost per 1,000 Successes", divisor: 1}}}
+  - {row: 51, kind: "variant", id: "empty", name: "Empty", parent: "pause-resume", workload: "empty", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "0"}}
+  - {row: 51, kind: "variant", id: "memory-1gib", name: "1 GiB in memory", parent: "pause-resume", workload: "memory-1gib"}
+  - {row: 51, kind: "variant", id: "storage-1gib", name: "1 GiB on disk", parent: "pause-resume", workload: "storage-1gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "1"}}
+  - {row: 51, kind: "variant", id: "storage-2gib", name: "2 GiB on disk", parent: "pause-resume", workload: "storage-2gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "2"}}
+  - {row: 51, kind: "variant", id: "storage-4gib", name: "4 GiB on disk", parent: "pause-resume", workload: "storage-4gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "4"}}
+  - {row: 52, kind: "stage", id: "pause", name: "Pause", parent: "pause-resume"}
+  - {row: 52, kind: "stage", id: "resume", name: "Resume", parent: "pause-resume"}
+  - {row: 52, kind: "stage", id: "read", name: "Read", parent: "pause-resume"}
+  - {row: 53, kind: "test", id: "delayed-resume", name: "Delayed Resume", parent: "pause-resume", document: "delayed-resume", selector: {label: "Delay Time", mode: chooses, description: "Time spent waiting after pause, or after the initial read where pause is unavailable."}, presentation: {cost: {label: "Cost per 1,000 Successes", divisor: 1}}}
+  - {row: 54, kind: "variant", id: "wait-0s", name: "Resumed at once", parent: "delayed-resume", workload: "wait-0s", selector: {label: "Delay Time", mode: chooses, option: "0 s"}}
+  - {row: 54, kind: "variant", id: "wait-60s", name: "Resumed after 60 s", parent: "delayed-resume", workload: "wait-60s", selector: {label: "Delay Time", mode: chooses, option: "60 s"}}
+  - {row: 54, kind: "variant", id: "wait-15min", name: "Resumed after 15 min", parent: "delayed-resume", workload: "wait-15min", selector: {label: "Delay Time", mode: chooses, option: "15 min"}}
+  - {row: 55, kind: "tab", id: "snapshots", name: "Snapshots", parent: "sandbox-operations"}
+  - {row: 56, kind: "test", id: "snapshot-and-restore", name: "Snapshot and Restore", parent: "snapshots", document: "snapshot-and-restore", presentation: {stage_labels: "names"}}
+  - {row: 57, kind: "test", id: "fork", name: "Fork", parent: "snapshots", document: "fork", selector: {label: "Fork #", mode: narrows}, presentation: {stage_labels: "names"}}
+  - {row: 58, kind: "stage", id: "snapshot", name: "Snapshot", parent: "snapshots"}
+  - {row: 58, kind: "stage", id: "create-from-snapshot", name: "Create from Snapshot", parent: "snapshots"}
+  - {row: 58, kind: "stage", id: "load-runtimes", name: "Load Runtimes", parent: "snapshots"}
+  - {row: 59, kind: "tab", id: "image-build", name: "Image Build", parent: "sandbox-operations", presentation: {panel: "image-build"}}
+  - {row: 60, kind: "test", id: "image-build-2vcpu-4gib", name: "Image Build (2 vCPU / 4 GiB)", parent: "image-build", document: "image-build-2vcpu-4gib", selector: {label: "Image", mode: chooses}}
+  - {row: 62, kind: "variant", id: "standard", name: "Standard", parent: "image-build-2vcpu-4gib", workload: "standard"}
+  - {row: 62, kind: "variant", id: "python", name: "Python", parent: "image-build-2vcpu-4gib", workload: "python"}
+  - {row: 62, kind: "variant", id: "node", name: "Node.js", parent: "image-build-2vcpu-4gib", workload: "node"}
+  - {row: 62, kind: "variant", id: "go", name: "Go", parent: "image-build-2vcpu-4gib", workload: "go"}
+  - {row: 62, kind: "variant", id: "rust", name: "Rust", parent: "image-build-2vcpu-4gib", workload: "rust"}
+  - {row: 62, kind: "variant", id: "java", name: "Java", parent: "image-build-2vcpu-4gib", workload: "java"}
+  - {row: 62, kind: "variant", id: "data-science", name: "Data Science", parent: "image-build-2vcpu-4gib", workload: "data-science"}
+  - {row: 62, kind: "variant", id: "igel", name: "igel (Python)", parent: "image-build-2vcpu-4gib", workload: "igel"}
+  - {row: 62, kind: "variant", id: "yjs", name: "Yjs (Node/TS)", parent: "image-build-2vcpu-4gib", workload: "yjs"}
+  - {row: 62, kind: "variant", id: "dasel", name: "dasel (Go)", parent: "image-build-2vcpu-4gib", workload: "dasel"}
+  - {row: 63, kind: "tab", id: "previews", name: "Previews", parent: "sandbox-operations"}
+  - {row: 63, kind: "test", id: "previews", name: "Previews", parent: "previews", document: "previews", presentation: {capability: "previews", stage_labels: "names"}}
+  - {row: 64, kind: "tab", id: "reconnect", name: "Reconnect", parent: "sandbox-operations"}
+  - {row: 64, kind: "test", id: "reconnect", name: "Reconnect", parent: "reconnect", document: "reconnect"}
+  - {row: 65, kind: "tab", id: "volumes", name: "Volumes", status: coming_soon, parent: "sandbox-operations", gap: "no methodology document yet (stub without an id; plan 6.3 row 65)"}
+  - {row: 66, kind: "tab", id: "cpu", name: "CPU", measure: "Speed", parent: "machine-performance", selector: {label: "7-Zip Test", mode: chooses}}
+  - {row: 67, kind: "test", id: "7-zip-1-thread", name: "7-Zip, 1 Thread", parent: "cpu", document: "7-zip-1-thread", selector: {label: "Threads", mode: chooses, option: "1"}}
+  - {row: 68, kind: "test", id: "7-zip-all-vcpus", name: "7-Zip, All vCPUs", parent: "cpu", document: "7-zip-all-vcpus", page: "7-zip-1-thread", selector: {label: "Threads", mode: chooses, option: "All"}}
+  - {row: 69, kind: "stage", id: "total", name: "Total", parent: "cpu"}
+  - {row: 69, kind: "stage", id: "decompression", name: "Decompression", parent: "cpu"}
+  - {row: 69, kind: "stage", id: "compression", name: "Compression", parent: "cpu"}
+  - {row: 70, kind: "tab", id: "memory", name: "Memory", measure: "Bandwidth", parent: "machine-performance"}
+  - {row: 71, kind: "test", id: "stream-triad", name: "STREAM Triad", parent: "memory", document: "stream-triad"}
+  - {row: 72, kind: "tab", id: "disk", name: "Disk", measure: "Speed", parent: "machine-performance"}
+  - {row: 73, kind: "test", id: "sequential-read", name: "Sequential Read", parent: "disk", document: "sequential-read", selector: {label: "fio Test", mode: chooses, option: "Sequential Read"}}
+  - {row: 73, kind: "variant", id: "fio-1g", name: "1 GiB file", parent: "sequential-read", workload: "fio-1g"}
+  - {row: 74, kind: "test", id: "sequential-write", name: "Sequential Write", parent: "disk", document: "sequential-write", page: "sequential-read", selector: {label: "fio Test", mode: chooses, option: "Sequential Write"}}
+  - {row: 74, kind: "variant", id: "fio-1g", name: "1 GiB file", parent: "sequential-write", workload: "fio-1g"}
+  - {row: 75, kind: "test", id: "random-read", name: "Random Read", parent: "disk", document: "random-read", page: "sequential-read", selector: {label: "fio Test", mode: chooses, option: "Random Read"}}
+  - {row: 75, kind: "variant", id: "fio-1g", name: "1 GiB file", parent: "random-read", workload: "fio-1g"}
+  - {row: 76, kind: "test", id: "random-write", name: "Random Write", parent: "disk", document: "random-write", page: "sequential-read", selector: {label: "fio Test", mode: chooses, option: "Random Write"}}
+  - {row: 76, kind: "variant", id: "fio-1g", name: "1 GiB file", parent: "random-write", workload: "fio-1g"}
+  - {row: 77, kind: "tab", id: "filesystem", name: "Filesystem", measure: "Hard-Link Speed", parent: "machine-performance"}
+  - {row: 78, kind: "test", id: "hard-links", name: "Hard Links", parent: "filesystem", document: "hard-links"}
+  - {row: 132, kind: "test", id: "hard-links-2vcpu-8gib", name: "Hard Links (2 vCPU / 8 GiB)", parent: "filesystem", document: "hard-links-2vcpu-8gib"}
+  - {row: 79, kind: "tab", id: "network", name: "Network", parent: "machine-performance"}
+  - {row: 80, kind: "test", id: "package-registries", name: "Package Registries", parent: "network", document: "package-registries", selector: {label: "Install", mode: chooses}}
+  - {row: 81, kind: "variant", id: "git-clone", name: "git clone", parent: "package-registries", workload: "git-clone"}
+  - {row: 81, kind: "variant", id: "npm-ci", name: "npm ci", parent: "package-registries", workload: "npm-ci"}
+  - {row: 81, kind: "variant", id: "pip-install", name: "pip install -r", parent: "package-registries", workload: "pip-install"}
+  - {row: 82, kind: "stage", id: "create", name: "Create"}
+  - {row: 82, kind: "stage", id: "destroy", name: "Destroy"}
+  - {row: 83, kind: "stage", id: "preview", name: "Preview", parent: "previews"}
+  - {row: 83, kind: "stage", id: "server", name: "Server", parent: "previews"}
+  - {row: 83, kind: "stage", id: "request", name: "Request", parent: "previews"}
+  - {row: 83, kind: "stage", id: "websocket", name: "WebSocket", parent: "previews"}
+  - {row: 83, kind: "stage", id: "between", name: "URL Reachable", parent: "previews"}
+  - {row: 83, kind: "stage", id: "server-listening", name: "Server Listening", parent: "previews"}
+  - {row: 86, kind: "capability", id: "fuse_mount", name: "FUSE Mount"}
+  - {row: 86, kind: "capability", id: "idle_shutdown", name: "Idle Shutdown"}
+  - {row: 86, kind: "capability", id: "pause_resume", name: "Pause and Resume"}
+  - {row: 86, kind: "capability", id: "previews", name: "Previews"}
+  - {row: 86, kind: "capability", id: "network_lockdown", name: "Network Lockdown"}
+  - {row: 86, kind: "capability", id: "hidden_secrets", name: "Hidden Secrets"}
+  - {row: 86, kind: "capability", id: "snapshots", name: "Snapshots"}
+  - {row: 86, kind: "capability", id: "volumes", name: "Volumes"}
+  - {row: 86, kind: "capability", id: "custom_images", name: "Custom Images"}
+  - {row: 86, kind: "capability", id: "user_selection", name: "User Selection"}
+  - {row: 86, kind: "capability", id: "processes", name: "Processes"}
+  - {row: 86, kind: "capability", id: "terminal", name: "Terminal"}
+  - {row: 86, kind: "capability", id: "docker", name: "Docker"}
+  - {row: 86, kind: "capability", id: "tcp_ports", name: "TCP Ports"}
+  - {row: 86, kind: "capability", id: "desktop", name: "Desktop"}
+  - {row: 86, kind: "capability", id: "file_links", name: "File Links"}
+
+  - {row: 124, kind: "statistic", id: "sum", name: "Total"}
+
+# Previous display names, recovered from registry and released document history.
+display_name_history:
+- kind: clock
+  id: runner
+  previous_names:
+  - AWS hosted clock
+  - Job host clock
+- kind: hero
+  id: provider-score
+  previous_names:
+  - Provider score
+- kind: hero
+  id: cost-index
+  previous_names:
+  - Cost Index
+- kind: hero
+  id: sequential-tti
+  previous_names:
+  - Sequential TTI
+  - Sequential time to interactive
+  - Startup Time
+- kind: hero
+  id: time-index
+  previous_names:
+  - Speed Index
+  - Time Index
+- kind: index
+  id: cost-index
+  previous_names:
+  - Cost Index
+  - Execution Cost Index
+  - Typical Workload Cost
+- kind: index
+  id: time-index
+  previous_names:
+  - Execution Time Index
+  - Time Index
+  - Typical Workload Time
+- kind: index
+  id: time-vs-cost
+  previous_names:
+  - Execution Time vs Cost
+  - Speed vs Cost
+  - Time vs Cost
+  - Typical Workload Time vs Cost
+- kind: section
+  id: overview
+  previous_names:
+  - Indexes
+- kind: section
+  id: reliability
+  previous_names:
+  - Reliability (Coming Soon)
+- kind: stage
+  id: between
+  previous_names:
+  - Start and routing
+  - start and routing
+- kind: stage
+  id: server-listening
+  previous_names:
+  - Server listening
+- kind: tab
+  id: disk
+  previous_names:
+  - Disk I/O with fio
+- kind: tab
+  id: pause-resume
+  previous_names:
+  - Pause and resume with data
+  - Pause & Resume
+- kind: test
+  id: pause-resume
+  previous_names:
+  - Pause & Resume
+- kind: capability
+  id: pause_resume
+  previous_names:
+  - Pause & Resume
+- kind: tab
+  id: previews
+  previous_names:
+  - Sandbox previews
+- kind: tab
+  id: reconnect
+  previous_names:
+  - Reconnect to an existing sandbox
+- kind: tab
+  id: volumes
+  previous_names:
+  - Volumes (Coming Soon)
+- kind: test
+  id: 7-zip-1-thread
+  previous_names:
+  - CPU speed, 7-Zip single thread
+- kind: test
+  id: burst-tti
+  previous_names:
+  - Burst time to interactive
+- kind: test
+  id: ci-jobs
+  previous_names:
+  - CI Jobs
+  - GitHub Actions job replay
+- kind: test
+  id: deepswe
+  previous_names:
+  - DeepSWE command replay
+- kind: test
+  id: delayed-resume
+  previous_names:
+  - Delayed resume
+- kind: test
+  id: exec-latency
+  previous_names:
+  - Exec latency
+  - Time per Call
+- kind: test
+  id: exec-latency-per-100-calls
+  previous_names:
+  - Time per 100 Calls
+- kind: test
+  id: fork
+  previous_names:
+  - Snapshot fork
+- kind: test
+  id: hard-links
+  previous_names:
+  - Hard-link creation rate
+- kind: test
+  id: image-build-2vcpu-4gib
+  previous_names:
+  - Image build at 2 vCPU / 4 GiB
+  - Image Build (2 vCPU, 4 GiB)
+- kind: test
+  id: list
+  previous_names:
+  - Directory listing
+- kind: test
+  id: package-registries
+  previous_names:
+  - Package registry installs
+- kind: test
+  id: r2e-gym
+  previous_names:
+  - Coding Rollouts
+  - R2E-Gym coding rollouts
+- kind: test
+  id: read-4kib
+  previous_names:
+  - Read a 4 KiB file
+- kind: test
+  id: snapshot-and-restore
+  previous_names:
+  - Snapshot and restore
+- kind: test
+  id: stream-triad
+  previous_names:
+  - STREAM Triad memory bandwidth
+- kind: test
+  id: terminal-bench-4-0
+  previous_names:
+  - Terminal-Bench 4.0 session replay
+- kind: test
+  id: write-4kib
+  previous_names:
+  - Write a 4 KiB file
+- kind: view
+  id: time-vs-cost
+  previous_names:
+  - Typical Workload Time vs Cost

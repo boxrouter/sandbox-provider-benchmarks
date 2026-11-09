@@ -1,0 +1,477 @@
+{
+  "schema": "boxrouter.bench.content-criteria/1",
+  "method_blocks": {
+    "what-it-measures": {
+      "heading": "What It Measures",
+      "source": "notes.what_this_measures"
+    },
+    "how-its-measured": {
+      "heading": "How It's Measured",
+      "source": "notes.how_it_is_measured"
+    },
+    "how-to-read-it": {
+      "heading": "How to Read It",
+      "source": "notes.how_to_read"
+    },
+    "limits": {
+      "heading": "Limits",
+      "source": "interpretation.limits"
+    },
+    "inputs": {
+      "heading": "Inputs",
+      "source": "composition.inputs"
+    },
+    "aggregation": {
+      "heading": "Aggregation",
+      "source": "composition"
+    },
+    "workload": {
+      "heading": "Workload",
+      "source": "source"
+    },
+    "environment": {
+      "heading": "Environment",
+      "source": "environment"
+    },
+    "procedure": {
+      "heading": "Procedure",
+      "source": "procedure"
+    },
+    "metrics": {
+      "heading": "Metrics",
+      "source": "metrics"
+    },
+    "statistics": {
+      "heading": "Statistics",
+      "source": "statistics"
+    },
+    "validity": {
+      "heading": "Validity",
+      "source": "validity_checks"
+    },
+    "capability": {
+      "heading": "Capability",
+      "source": "capability"
+    },
+    "evidence": {
+      "heading": "Evidence",
+      "source": "evidence"
+    },
+    "sources": {
+      "heading": "Sources",
+      "source": "id"
+    }
+  },
+  "placeholders": {
+    "kinds": [
+      "name",
+      "param",
+      "unit",
+      "direction"
+    ],
+    "numbers": "param",
+    "canonical_names": "name",
+    "metric_units": "unit",
+    "metric_directions": "direction",
+    "parameter_values": "param",
+    "exclude_literals_in": [
+      "code",
+      "canonical-name-definition",
+      "source-url"
+    ],
+    "check_fields": [
+      "notes.introduction",
+      "notes.setup",
+      "notes.trial_steps",
+      "notes.how_to_read",
+      "notes.cost_summary",
+      "notes.cost_how_to_read",
+      "notes.limitations",
+      "notes.opening"
+    ]
+  },
+  "naming": {
+    "source": "names/names.yaml",
+    "form": "title",
+    "preserve": [
+      "proper names",
+      "acronyms",
+      "commands",
+      "unit symbols"
+    ],
+    "small_words": [
+      "a",
+      "an",
+      "and",
+      "as",
+      "at",
+      "by",
+      "for",
+      "from",
+      "in",
+      "of",
+      "on",
+      "or",
+      "per",
+      "the",
+      "to",
+      "vs",
+      "with"
+    ]
+  },
+  "uniqueness": {
+    "scope": "selected-panel",
+    "slots": [
+      "title",
+      "description",
+      "caption",
+      "details.setup",
+      "details.trial-steps",
+      "details.limitations",
+      "details.latest-result",
+      "details.sources"
+    ],
+    "comparison": "casefold-collapse-whitespace",
+    "quantity_owner": "axis-title",
+    "similarity_threshold": 0.8,
+    "compare_details_with": [
+      "description",
+      "caption"
+    ]
+  },
+  "hover_slots": {
+    "capability": {
+      "owner": "provider-spec",
+      "source": "capabilities[].description",
+      "template": "{description}",
+      "rule": "Render the capability owner description verbatim.",
+      "criteria_slot": "tooltip"
+    },
+    "provider-info": {
+      "owner": "methodology",
+      "source": "publication.notes",
+      "template": "{description}",
+      "criteria_slot": "tooltip"
+    },
+    "row-info": {
+      "owner": "methodology",
+      "source": "publication.notes",
+      "template": "{description}",
+      "criteria_slot": "tooltip"
+    },
+    "column-header": {
+      "owner": "methodology",
+      "source": "metric_label_grammar or provider-spec catalog description",
+      "template": "{description}",
+      "criteria_slot": "tooltip"
+    },
+    "chart-bar": {
+      "owner": "methodology",
+      "template": "{provider}: {statistic} {value} {unit}.",
+      "required_runtime_fields": [
+        "provider",
+        "statistic",
+        "value",
+        "unit"
+      ],
+      "criteria_slot": "tooltip"
+    },
+    "not-displayed-reason": {
+      "owner": "methodology",
+      "source": "publication.reason",
+      "template": "{reason}",
+      "criteria_slot": "tooltip"
+    },
+    "stage": {
+      "owner": "methodology",
+      "source": "reader/methods.yaml methods.<id>.stages",
+      "template": "{label} {value}",
+      "required_runtime_fields": [
+        "label",
+        "value"
+      ],
+      "form": "fragment",
+      "role": "row",
+      "criteria_slot": "tooltip"
+    },
+    "option": {
+      "owner": "methodology",
+      "source": "procedure.variants[].description",
+      "template": "{description}",
+      "criteria_slot": "tooltip"
+    },
+    "selector": {
+      "owner": "methodology",
+      "source": "names.yaml selector.description, dots_selector.description",
+      "template": "{description}",
+      "criteria_slot": "tooltip"
+    },
+    "statistic": {
+      "owner": "methodology",
+      "source": "notes.statistics",
+      "template": "{description}",
+      "criteria_slot": "tooltip"
+    },
+    "aria-label": {
+      "owner": "methodology",
+      "template": "{action} {subject}",
+      "form": "action-label",
+      "criteria_slot": "tooltip"
+    },
+    "price-info": {
+      "owner": "pricing",
+      "source": "price-sheet.content_criteria.hover_slots",
+      "template": "{description}",
+      "criteria_slot": "tooltip"
+    },
+    "ranking-status-reason": {
+      "owner": "methodology",
+      "source": "publication.reason",
+      "template": "{reason}",
+      "criteria_slot": "tooltip",
+      "placement": "chart-footer"
+    }
+  },
+  "templates": {
+    "latest-result": {
+      "template": "{provider} leads with {formatted_value}.",
+      "runtime_fields": [
+        "provider",
+        "formatted_value"
+      ],
+      "scope": "panel"
+    },
+    "empty-state": {
+      "template": "No provider meets the ranking requirements for this selection.",
+      "scope": "panel"
+    },
+    "sample": {
+      "template": "The result uses {statistic} across {successful_trials} successful trials.",
+      "runtime_fields": [
+        "statistic",
+        "successful_trials"
+      ],
+      "omit_when_header_has": [
+        "header_trial_count"
+      ]
+    }
+  },
+  "coverage": {
+    "details.setup": {
+      "index": [
+        "\\b(?:results|index|composite|plots?)\\b",
+        "\\b(?:mean|inputs|costed units|workload)\\b"
+      ],
+      "workload": [
+        "\\b(?:recorded|pinned|public|trajector)\\w*\\b",
+        "\\bclock\\b"
+      ],
+      "sandbox_operation": [
+        "\\bclock\\b",
+        "\\b(?:dispatch|request|call|start|resume|attach)\\w*\\b"
+      ],
+      "machine_performance": [
+        "\\b(?:clock|rating)\\b",
+        "\\b(?:tool|workload|benchmark|command)\\b"
+      ]
+    },
+    "method-reading": {
+      "required_placeholders": [
+        "direction"
+      ],
+      "required_fact_paths": [
+        "statistics.primary"
+      ],
+      "unit_reference": "axis-title"
+    }
+  },
+  "ranking_statuses": {
+    "ranked": {
+      "label": "Ranked",
+      "footer": false
+    },
+    "shown_only": {
+      "alias_of": "too_few_runs"
+    },
+    "too_few_runs": {
+      "label": "Not Ranked",
+      "footer": true,
+      "reason": false
+    },
+    "not_offered": {
+      "label": "Not Offered",
+      "footer": true,
+      "footer_group": "not_displayed",
+      "details": false
+    },
+    "in_development": {
+      "label": "Not Supported",
+      "footer": true,
+      "footer_group": "not_displayed",
+      "details": false
+    },
+    "not_measured": {
+      "label": "Not Measured",
+      "footer": true,
+      "footer_group": "not_displayed"
+    },
+    "not_displayed": {
+      "label": "Not Displayed",
+      "footer": true
+    },
+    "filled": {
+      "label": "Provider Failures",
+      "footer": true
+    },
+    "filled_units": {
+      "label": "Provider Failures",
+      "footer": true
+    }
+  },
+  "reader_prose": {
+    "forbidden_patterns": [
+      "(?i)\\b(?:the|this) (?:page(?! cache)|UI|interface)\\b",
+      "(?i)\\b(?:greyed|grayed)\\b",
+      "(?i)\\bplanned definition\\b",
+      "(?i)\\bnot a shipped\\b",
+      "(?i)\\bcoming soon tag\\b"
+    ],
+    "status_is_metadata": true
+  },
+  "reader_entries": {
+    "required_fields": [
+      "name",
+      "source"
+    ],
+    "max_length": 280,
+    "max_semicolons": 1,
+    "source_badges": [
+      "Measured",
+      "Calculated",
+      "Published",
+      "Recorded"
+    ]
+  },
+  "literal_templates": {},
+  "provider_capabilities": {
+    "title": "{provider}'s Provider Capabilities",
+    "count": "{on} of {total} supported",
+    "supported": "Supported",
+    "not_supported": "Not Supported"
+  },
+  "ranking_status_footer": {
+    "hidden_label": "Hidden",
+    "template": "{label}: {providers}{open_hint}",
+    "provider_template": "{provider}{reason_clause}",
+    "reason_template": " ({reason})",
+    "separator": ", ",
+    "reason_source": "publication.reason",
+    "unit_source": "publication.ranking_unit",
+    "placement": "chart-footer",
+    "bar_row_slot": "chart.bar-row",
+    "footer_slot": "chart.status-footer",
+    "retired_labels": [
+      "Too Few Runs Yet",
+      "Too few runs",
+      "Incomplete workloads",
+      "Incomplete {unit}s",
+      "Workload issues",
+      "{Unit} issues",
+      "Trace issues",
+      "Workload Failures",
+      "{Unit} Failures",
+      "Trial Failures",
+      "Trial Issues",
+      "Incomplete Trials"
+    ],
+    "explanation_template": "{reason}",
+    "reason_templates": {
+      "filled": {
+        "field": "names_reason_template",
+        "runtime_fields": [
+          "names"
+        ]
+      },
+      "filled_units": {
+        "field": "names_reason_template",
+        "runtime_fields": [
+          "names"
+        ]
+      }
+    },
+    "reason_rules": {
+      "max_length": 200,
+      "provider_name": "omit",
+      "terminal_punctuation": "omit",
+      "forbidden_generic_reasons": [
+        "Not included"
+      ],
+      "forbidden_unit_words": [
+        "run",
+        "runs"
+      ],
+      "missing_reason": "omit_parenthetical"
+    },
+    "class_qualifier": "only_when_provider_has_multiple_classes",
+    "status_order": [
+      "too_few_runs",
+      "not_displayed",
+      "filled",
+      "filled_units"
+    ],
+    "names_reason_template": "{names}",
+    "list_style": "conjunction",
+    "incomplete_statuses": [
+      "filled",
+      "filled_units"
+    ],
+    "incomplete_marker": "†",
+    "substituted_marker": "‡",
+    "worst_trial_marker": "§",
+    "incomplete_footer_template": "{marker} {label}: {providers}{open_hint}",
+    "open_hint": ". Click provider to see details.",
+    "group_clause": "own_label_lowercase",
+    "group_clause_max_length": 40,
+    "names_template": "{providers}{open_hint}",
+    "provider_notes_slot": "chart.provider-notes"
+  },
+  "exclusion_reason_rules": {
+    "generic_reasons": {
+      "provider_failure": "Provider failure",
+      "test_in_development": "Test in development"
+    }
+  },
+  "statistics_selector": {
+    "label": "Statistics",
+    "template": "{label}: {value}",
+    "p95_unavailable": "Fewer than {param:sbs.common.statistics.tail.min_successes} trials"
+  },
+  "dots_selector": {
+    "label": "Dots for",
+    "description": "Choose whether each dot shows a trial's total or one step."
+  },
+  "counted_unit": {
+    "default": "trial"
+  },
+  "sandbox_selector": {
+    "one": "TTI for Sandbox: [{sandbox}]",
+    "many": "TTI for Sandboxes: [{sandbox}]",
+    "all": "All",
+    "none": "None",
+    "count": "{n}",
+    "separator": ", ",
+    "most_named": 3,
+    "starts": [
+      {
+        "sandbox": 1,
+        "label": "Cold Start",
+        "short": "Cold"
+      },
+      {
+        "sandbox": 10,
+        "label": "Warm Start",
+        "short": "Warm"
+      }
+    ]
+  }
+}

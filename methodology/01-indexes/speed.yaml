@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+id: time-index
+version: 1.1.29
+effective: '2026-11-08'
+name: '{name:time-index}'
+category: index
+headline: Composite time
+notes:
+  summary: '{param:content.index_copy.descriptions.time}'
+  what_this_measures: '{param:content.index_copy.details.time.what_this_measures}'
+  how_it_is_measured: '{param:content.index_copy.details.time.how_it_is_measured}'
+  how_to_read: '{param:content.index_copy.details.time.how_to_read}'
+  cost_summary: '{param:content.index_copy.description}'
+  cost_how_to_read: '{param:content.index_copy.details.time.cost_how_to_read}'
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: typical_time
+  unit: ms
+  direction: lower_is_better
+  description: Geometric mean over the combined workloads of each workload's time for the provider.
+  quantity: time
+  per: provider
+composition:
+  inputs:
+  - id: deepswe
+    version: 1.1.22
+    quantity: Time per trace
+  - id: terminal-bench-4-0
+    version: 1.1.19
+    quantity: Time per trace
+  - id: github-actions
+    version: 1.1.16
+    quantity: Time per job
+  per_input_value: >-
+    A provider's value for a workload is the geometric mean, over that workload's units (traces or
+    jobs), of each unit's time on the unit statistic (the median unless the reader chooses the mean
+    or the 95th percentile) over its successful trials. If a unit has a failed attempt with an
+    explicitly recorded owner other than the provider, omit that unit for every provider unless a
+    later successful rerun replaces the failure. Treat an unknown owner as provider-owned. For each
+    remaining unit a provider did not complete, use the slowest time on the same statistic any
+    provider had on it. The page uses each workload's first listed variant as its overall result, not
+    a single model configuration or job.
+  aggregation: geometric_mean
+  weighting: Equal weight per workload; nothing is made relative to the best provider and there is no
+    0-100 score.
+  inclusion: >-
+    Omit a workload from this scope for every provider if any provider's workload result is
+    marked Not offered for its required capability. Keep that workload on its own leaderboard, with
+    its Not offered status and reason. Among the remaining workloads, include only providers that
+    have a result of their own in at least one workload. A provider with no result for a remaining
+    workload takes its slowest complete value. The composite applies no ranking floor or
+    failing-often rule of its own.
+  not_displayed:
+  - condition: The provider has no result of its own in any workload of the scope, for example because
+      it was not measured there.
+    reason: The page lists the provider under "Not displayed" without a stated reason on this view; if
+      no provider qualifies it says that no provider has a result in any of the benchmarks in the composite.
+  - condition: No unit of a workload was completed by any measured provider.
+    reason: The workload has no time for any provider, so no provider has a composite value.
+  scopes:
+  - id: execution
+    label: Execution (all three workloads)
+    inputs:
+    - deepswe
+    - terminal-bench-4-0
+    - github-actions
+  - id: coding
+    label: Coding ({name:test.deepswe}, {name:test.terminal-bench-4-0})
+    inputs:
+    - deepswe
+    - terminal-bench-4-0
+  - id: ci
+    label: '{name:test.ci-jobs}'
+    inputs:
+    - github-actions
+statistics:
+  primary: geometric_mean
+  percentile_method: The 95th percentile is the nearest rank over a unit's successful trials; the composite
+    is a single derived value per provider.
+  ranking:
+    ranked: true
+    failing_often: Not applied at the composite; each workload applies it to its own result.
+    requires_all_successful: false
+  unit_statistic:
+    default: median
+    options:
+    - median
+    - mean
+    - p95
+cost:
+  method: not_applicable
+  notes:
+  - '{name:time-index} carries no cost; {name:cost-index} and {name:time-vs-cost} show it.'
+interpretation:
+  limits:
+  - The composite applies no extra ranking rule.
+  - A workload marked Not offered for a provider remains on its own leaderboard with its reason and is omitted from every composite in the scope.
+  - The comparison retains the measurement boundaries of its workload inputs.

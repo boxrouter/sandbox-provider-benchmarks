@@ -1,0 +1,58 @@
+{
+  "registry_view": {
+    "source": "public_sources",
+    "entry_key": "id",
+    "title": "Public Upstream Sources",
+    "fields": [
+      {
+        "path": "id",
+        "label": "Source ID",
+        "format": "code"
+      },
+      {
+        "path": "project",
+        "label": "Project",
+        "format": "text"
+      },
+      {
+        "path": "url",
+        "label": "Source",
+        "format": "link"
+      },
+      {
+        "path": "version",
+        "label": "Version or Tag",
+        "format": "code"
+      },
+      {
+        "path": "licence.status",
+        "label": "Licence Status",
+        "format": "text",
+        "values": {
+          "verified": "Verified",
+          "not-stated": "Not Stated"
+        }
+      },
+      {
+        "path": "licence.spdx",
+        "label": "Licence",
+        "format": "code",
+        "omit_if_null": true
+      },
+      {
+        "path": "licence.evidence_url",
+        "label": "Licence Evidence",
+        "format": "link"
+      },
+      {
+        "path": "licence.reference_only",
+        "label": "Use",
+        "format": "text",
+        "values": {
+          "true": "Reference Only"
+        },
+        "omit_if_false": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,1468 @@
+{
+  "index_lead": "Read what each benchmark measures, how it is calculated, and how to interpret its results.",
+  "navigation": {
+    "all_methods": "All Methods",
+    "methodology": "Methodology",
+    "benchmarks": "Benchmarks",
+    "breadcrumb": "Breadcrumb",
+    "pages": "Methodology Pages",
+    "sections": "Methodology Sections",
+    "shared": "Shared Methodology",
+    "statistics": "Statistics",
+    "how": "How We Measure",
+    "other": "Other Methods",
+    "all_providers": "All Providers"
+  },
+  "byline": {
+    "builds_on": "Builds on {document}",
+    "from": "From {document}"
+  },
+  "actions": {
+    "results": "View {name} Results",
+    "raw_data": "Download Raw Data",
+    "source": "View Source",
+    "defined_in": "Defined in {document}",
+    "procedure": "View the Procedure",
+    "parameters": "View the Parameters",
+    "procedures": "View the Procedures ({count} Scripts)"
+  },
+  "sections": {
+    "metrics": {
+      "name": "Metrics",
+      "order": 0,
+      "sources": [
+        "metrics",
+        "notes.how_to_read",
+        "notes.timed_parts",
+        "notes.stage_classes",
+        "composition",
+        "notes.calculation"
+      ]
+    },
+    "measurement": {
+      "name": "Measurement",
+      "order": 1,
+      "sources": [
+        "notes.setup",
+        "notes.step_items",
+        "notes.workload",
+        "notes.variant_commands",
+        "notes.jobs",
+        "notes.tasks",
+        "notes.procedure"
+      ]
+    },
+    "statistics": {
+      "name": "Statistics",
+      "order": 4,
+      "sources": [
+        "inherits",
+        "notes.statistics_rules"
+      ]
+    },
+    "cost": {
+      "name": "Cost",
+      "order": 5,
+      "sources": [
+        "notes.cost_summary",
+        "notes.cost_how_to_read"
+      ]
+    },
+    "scope": {
+      "name": "Scope Limits and Caveats",
+      "order": 2,
+      "sources": [
+        "notes.limitations"
+      ]
+    },
+    "failures": {
+      "name": "Failures and Exclusions",
+      "order": 3,
+      "sources": [
+        "notes.failure_policy",
+        "notes.time_limits",
+        "notes.outcomes"
+      ]
+    },
+    "sandbox": {
+      "name": "Sandbox and Trials",
+      "order": 6,
+      "requires": [
+        "procedure.trials"
+      ],
+      "sources": [
+        "environment",
+        "procedure"
+      ]
+    },
+    "requirements": {
+      "name": "Provider Requirements",
+      "order": 8,
+      "sources": [
+        "capabilities",
+        "capability_source"
+      ]
+    },
+    "trial-lifecycle": {
+      "name": "Trial Lifecycle",
+      "order": 9,
+      "sources": []
+    },
+    "independence": {
+      "name": "Independence",
+      "order": 10,
+      "sources": []
+    }
+  },
+  "common_sections": {
+    "metrics": {
+      "sources": []
+    },
+    "trial-lifecycle": {
+      "order": 0,
+      "sources": [
+        "notes.ready_check"
+      ]
+    },
+    "measurement": {
+      "order": 1,
+      "sources": [
+        "notes.clocks",
+        "formula:common-latency",
+        "formula:common-clock-gate",
+        "concept:elapsed-time"
+      ]
+    },
+    "failures": {
+      "order": 2,
+      "sources": [
+        "notes.failure_policy",
+        "concept:trial-counts"
+      ]
+    },
+    "statistics": {
+      "order": 3,
+      "sources": [
+        "notes.statistics_rules",
+        "concept:median",
+        "notes.median_rule",
+        "formula:common-percentile",
+        "notes.percentile_rule",
+        "formula:common-mean",
+        "concept:interval",
+        "notes.interval_rule",
+        "concept:ranking-floor",
+        "concept:workload-value",
+        "notes.workload_value",
+        "formula:common-workload-value",
+        "notes.stage_rule"
+      ]
+    },
+    "time-score": {
+      "name": "{name:hero.time-score}",
+      "order": 4,
+      "sources": [
+        "notes.what_this_measures",
+        "notes.how_it_is_measured",
+        "composition",
+        "notes.how_to_read"
+      ],
+      "hide": [
+        "composition.scopes"
+      ]
+    },
+    "cost-score": {
+      "name": "{name:hero.cost-score}",
+      "order": 5,
+      "sources": [
+        "notes.what_this_measures",
+        "notes.how_it_is_measured",
+        "composition",
+        "notes.how_to_read"
+      ],
+      "hide": [
+        "composition.scopes"
+      ]
+    },
+    "provider-scores": {
+      "name": "{name:hero.provider-score}",
+      "order": 6,
+      "sources": [
+        "notes.what_this_measures",
+        "notes.how_it_is_measured",
+        "composition",
+        "notes.how_to_read"
+      ]
+    },
+    "independence": {
+      "order": 7,
+      "sources": [
+        "notes.independence"
+      ]
+    },
+    "cost": {
+      "order": 8,
+      "sources": [
+        "notes.cost",
+        "formula:common-trial-cost",
+        "formula:common-stage-cost",
+        "concept:cost-per-success",
+        "concept:price-sheet",
+        "cost-method"
+      ]
+    },
+    "sandbox": {
+      "name": "Default Sandbox",
+      "order": 9,
+      "requires": [],
+      "sources": [
+        "notes.environment",
+        "environment.size",
+        "environment.image"
+      ]
+    },
+    "requirements": {
+      "order": 10
+    }
+  },
+  "calculation_template": {
+    "when": "composition.inputs",
+    "not_inherited": [
+      "environment",
+      "ready_check",
+      "execution",
+      "clocks"
+    ],
+    "hidden_sections": [
+      "measurement",
+      "statistics",
+      "cost"
+    ],
+    "sections": {
+      "metrics": {
+        "sources": [
+          "metrics",
+          "composition",
+          "notes.calculation",
+          "notes.procedure"
+        ],
+        "hide": [
+          "composition.aggregation"
+        ]
+      }
+    },
+    "at_a_glance": {
+      "groups": [
+        [
+          "headline",
+          "metrics",
+          "statistics.primary",
+          "composition.scopes"
+        ]
+      ]
+    }
+  },
+  "field_labels": {
+    "access": "Access",
+    "action": "Action",
+    "aggregation": "Aggregation",
+    "applies_to": "Applies To",
+    "attach": "Attach",
+    "attempt_timeout_seconds": "Attempt Timeout",
+    "base_image": "Base Image",
+    "benchmark_errors": "Benchmark Errors",
+    "billed_span": "Billed Period",
+    "build": "{name:stage.build}",
+    "bytes": "Bytes",
+    "cadence": "Cadence",
+    "calls": "Calls",
+    "capabilities": "Capabilities",
+    "capability_settings": "Capability Settings",
+    "capability_source": "Capability Source",
+    "category": "Category",
+    "caveats": "Caveats",
+    "check": "Check",
+    "cluster": "Cluster",
+    "clocks": "Clocks",
+    "cold": "Cold Start",
+    "combines": "Combines",
+    "command": "Command",
+    "command_runtime": "Command Runtime",
+    "commands": "Commands",
+    "commit": "Commit",
+    "composition": "Composition",
+    "composition.inputs.id": "Workload",
+    "concurrency": "Concurrency",
+    "condition": "Condition",
+    "confidence": "Confidence",
+    "config": "Configuration",
+    "connection_idle_seconds": "Idle Connection Time",
+    "control": "Control",
+    "cost": "Cost",
+    "cost_how_to_read": "How to Read Cost",
+    "cost_summary": "Cost Summary",
+    "counted_sandboxes": "Sandboxes Counted",
+    "create": "{name:stage.create}",
+    "data_back": "Data Read",
+    "dataset_version": "Dataset Version",
+    "datasets": "Datasets",
+    "declaration_path": "Declaration File",
+    "delete_snapshot": "Delete Snapshot",
+    "description": "Description",
+    "destroy": "{name:stage.destroy}",
+    "destroy_source": "{name:stage.destroy} Source",
+    "direction": "Direction",
+    "document": "Document",
+    "ends": "Ends",
+    "environment": "Environment",
+    "environment.size": "Machine Size",
+    "exclusions": "Exclusions",
+    "execution": "Execution",
+    "expected_body": "Expected Response",
+    "failure_policy": "Failure Policy",
+    "file_count": "File Count",
+    "first_command_from_create_start": "First Command From Creation",
+    "first_commands": "First Commands",
+    "formula": "Formula",
+    "four_fio_rows": "Four Disk Workloads",
+    "from": "From",
+    "function": "Function",
+    "hardlink_stressor": "Hard Link Stressor",
+    "headline": "Short Name",
+    "how_it_is_measured": "How It Is Measured",
+    "how_to_read": "How to Read It",
+    "image": "Image",
+    "in_development": "{param:content.ranking_statuses.in_development.label}",
+    "in_sandboxes": "Inside the Sandboxes",
+    "inclusion": "Inclusion",
+    "inference": "Inference",
+    "informs": "Informs",
+    "inherits": "Based On",
+    "inputs": "Inputs",
+    "install": "{name:stage.install}",
+    "interpretation": "Interpretation",
+    "interval": "Interval",
+    "interval_ms": "Interval (ms)",
+    "job": "Job",
+    "job_steps": "Job Steps",
+    "label": "Label",
+    "licence": "License",
+    "lifetime_seconds": "Lifetime",
+    "limitations": "Limitations",
+    "limits": "Limits",
+    "list": "{name:test.list}",
+    "load": "Load",
+    "local_poll_gap_seconds": "Local Polling Gap",
+    "matches": "Matches",
+    "max_attempts": "Maximum Attempts",
+    "mean": "{name:statistic.mean}",
+    "median": "{name:statistic.median}",
+    "memory_gib": "Memory (GiB)",
+    "method": "Method",
+    "metric": "Metric",
+    "metrics": "Metrics",
+    "min_successes": "Ranking Floor",
+    "mode": "Mode",
+    "modification": "Modification",
+    "name": "Name",
+    "network": "{name:tab.network}",
+    "network_lockdown": "Network Restrictions",
+    "not_displayed": "{param:content.ranking_statuses.not_displayed.label}",
+    "not_measured": "{param:content.ranking_statuses.not_measured.label}",
+    "not_offered": "{param:content.ranking_statuses.not_offered.label}",
+    "not_ranked": "{param:content.ranking_statuses.too_few_runs.label}",
+    "note": "Reported When Fired",
+    "notes": "Notes",
+    "notes.stage_rule": "Stage Segments",
+    "open_preview": "Open {name:stage.preview}",
+    "operation": "Operation",
+    "optional": "Optional",
+    "outcome": "Outcome",
+    "p95": "95th Percentile",
+    "panel": "Panel",
+    "parameters": "Parameters",
+    "part": "Timed Part",
+    "path": "Path",
+    "pause": "{name:stage.pause}",
+    "pause_resume": "{name:stage.pause} and {name:stage.resume}",
+    "per": "Per",
+    "per_input_value": "Per Input Value",
+    "per_success": "Per Success",
+    "percentile_method": "Percentile Method",
+    "plots": "Plots",
+    "policy": "Policy",
+    "poll_gap_seconds": "Polling Gap",
+    "port": "Port",
+    "ports": "Ports",
+    "previews": "{name:test.previews}",
+    "price_sheet_version": "Price Sheet Version",
+    "pricing_reference": "Pricing Reference",
+    "primary": "Primary",
+    "procedure": "Procedure",
+    "provider_errors": "Provider Errors",
+    "published": "Published",
+    "quantities": "Quantities",
+    "quantity": "Quantity",
+    "ranked": "{param:content.ranking_statuses.ranked.label}",
+    "ranking": "Ranking",
+    "read": "{name:stage.read}",
+    "ready_attempt": "Readiness Attempt",
+    "ready_check": "Readiness Check",
+    "reason": "Reason",
+    "record_steps": "Recorded Steps",
+    "reference": "Reference",
+    "region_policy": "Region Policy",
+    "release": "Release",
+    "repeats": "Repeats",
+    "repetitions": "Repetitions",
+    "repository": "Repository",
+    "request": "{name:stage.request}",
+    "requests": "Requests",
+    "required": "Required",
+    "requires_all_successful": "Requires Every Attempt to Succeed",
+    "resamples": "Resamples",
+    "reset": "Reset",
+    "restore": "Restore",
+    "restores": "Restores",
+    "resume": "{name:stage.resume}",
+    "retries": "Retries",
+    "retry_on": "Retry Conditions",
+    "reward": "{name:stage.reward}",
+    "rounds": "Rounds",
+    "sandboxes": "Sandboxes",
+    "sandboxes_at_once": "Concurrent Sandboxes",
+    "sandboxes_per_trial": "Sandboxes per Trial",
+    "scopes": "Scopes",
+    "sample": "Sample",
+    "sampling": "Sampling",
+    "scatter": "Scatter",
+    "secondary": "Secondary",
+    "seed": "Seed",
+    "sent": "Sent",
+    "server_listening": "{name:stage.server} Listening",
+    "setup": "{name:stage.setup}",
+    "sevenzip_one_thread": "7-Zip With One Thread",
+    "sha256": "SHA-256",
+    "shared_trial": "Shared Trial",
+    "size": "Size",
+    "skipped_by_benchmarks": "Skipped by Benchmarks",
+    "snapshot": "{name:stage.snapshot}",
+    "snapshot_deletable": "Snapshot Can Be Deleted",
+    "source": "Source",
+    "stage": "Stage",
+    "stage_medians": "Stage Medians",
+    "stages": "Stages",
+    "start": "Timer Starts",
+    "start_event": "Start Event",
+    "start_server": "Start {name:stage.server}",
+    "starts": "Starts",
+    "statistics": "Statistics",
+    "status": "Status",
+    "step": "Step",
+    "steps": "Steps",
+    "stop": "Timer Stops",
+    "stop_event": "Stop Event",
+    "stream_triad": "{name:test.stream-triad}",
+    "success": "Success",
+    "summary": "Summary",
+    "tail": "Tail",
+    "tail_fallback": "Tail Fallback",
+    "task": "Task",
+    "threat": "Threat",
+    "time_between_stages": "Time Between Stages",
+    "time_limit": "Time Limit",
+    "timeout_seconds": "Timeout",
+    "timer": "Timer",
+    "timing_boundaries": "Timing Boundaries",
+    "too_few_runs": "{param:content.ranking_statuses.too_few_runs.label}",
+    "tool_calls": "{name:stage.tool-calls}",
+    "toolchain": "Toolchain",
+    "trials": "Trials",
+    "trials_in_parallel": "Parallel Trials",
+    "true": "True Command",
+    "type": "Type",
+    "typical": "Workload Value",
+    "unit": "Unit",
+    "until": "Until",
+    "upload": "Upload",
+    "url_poll": "URL Polling",
+    "use": "Use",
+    "validity_checks": "Validity Checks",
+    "variant": "Variant",
+    "variants": "Variants",
+    "vcpu": "CPU Cores",
+    "venue_terms": "Venue Terms",
+    "versions": "Versions",
+    "verify_destroy": "Verify Destruction",
+    "verify_marker": "Verify Marker",
+    "wait": "Wait",
+    "wait_seconds": "Wait",
+    "warm": "Warm Start",
+    "warm_cold_policy": "Warm or Cold",
+    "websocket": "{name:stage.websocket}",
+    "websocket_subprotocol": "{name:stage.websocket} Subprotocol",
+    "weighting": "Weighting",
+    "what_this_measures": "What This Measures",
+    "what_to_do": "What to Do",
+    "when": "When",
+    "with": "Configuration",
+    "workflow": "Workflow",
+    "worse_side_percentile": "Worse-Side Percentile",
+    "write": "{name:stage.write}",
+    "write_marker": "Write Marker",
+    "x": "{name:axis.x}",
+    "y": "{name:axis.y}",
+    "7-zip-1-thread": "7-Zip With One Thread",
+    "7-zip-all-vcpus": "7-Zip With All CPU Cores",
+    "hard-links": "{name:test.hard-links}",
+    "random-read": "{name:test.random-read}",
+    "random-write": "{name:test.random-write}",
+    "sequential-read": "{name:test.sequential-read}",
+    "sequential-write": "{name:test.sequential-write}",
+    "stream-triad": "{name:test.stream-triad}",
+    "ids": "Methods",
+    "default": "Default",
+    "options": "Options",
+    "unit_statistic": "Unit Statistic",
+    "missing_unit_penalty": "Missing Unit Penalty",
+    "blockers": "Blockers",
+    "levels": "Levels",
+    "leaves": "Leaves",
+    "section": "Section",
+    "measure": "Measure",
+    "first_test_only": "First Test Only",
+    "summed": "Added Tests",
+    "tests": "Tests",
+    "display_levels": "Display Levels",
+    "mean_of": "Mean Of",
+    "rank": "Rank",
+    "across": "Across",
+    "caches": "Caches",
+    "checks": "Checks",
+    "correction": "Correction",
+    "empty_account": "Empty Account",
+    "equal_concurrency": "Equal Concurrency",
+    "fresh_sandbox": "Fresh Sandbox",
+    "independence": "Independence",
+    "independence_answers": "Independence",
+    "job_host": "Job Host",
+    "network_path": "Network Path",
+    "measures": "Measures",
+    "placement_facts": "Placement Facts",
+    "principle": "Principle",
+    "q": "False Discovery Rate",
+    "rule": "Rule",
+    "rules": "Rules",
+    "run_check": "Run Check",
+    "scope": "Scope",
+    "shared_provider_hosts": "Shared Provider Hosts",
+    "shuffled_order": "Shuffled Order",
+    "significance": "Significance",
+    "test": "Statistical Test",
+    "text": "Answer",
+    "verdict": "Verdict",
+    "min_trials": "Smallest Trial Count",
+    "min_effect_pct": "Smallest Effect (%)",
+    "min_each": "Smallest Group",
+    "min_abs_rho": "Smallest Rank Correlation",
+    "min_spread_pct": "Smallest Spread (%)",
+    "solo_max": "Solo Trials At Most",
+    "shared_min": "Shared Trials At Least",
+    "cpu_share": "Saturated CPU Share",
+    "min_base": "Smallest Base Group",
+    "min_ashman_d": "Smallest Ashman D",
+    "min_minority": "Smallest Minority",
+    "note_ratio": "Reported From Ratio",
+    "fail_ratio": "Fails From Ratio",
+    "fail_min_minority": "Fails From Minority",
+    "cluster_p": "Clustering Level",
+    "robust_z": "Robust Sigmas",
+    "min_ratio": "Smallest Ratio",
+    "max_share": "Largest Isolated Share",
+    "fail": "Fails When Fired",
+    "min_share": "Smallest Share",
+    "min_group": "Smallest Group Size",
+    "outliers": "Outliers",
+    "material_effect": "Material Effect",
+    "iqr_floor_fraction": "Interquartile Range Floor",
+    "iqr_multiple": "Interquartile Range Multiple",
+    "physical_limits": "Physical Limits",
+    "min_rank_correlation": "Smallest Rank Correlation",
+    "saturated_cpu_fraction": "Saturated CPU Fraction",
+    "min_group_ratio": "Smallest Group Ratio",
+    "min_group_share": "Smallest Group Share",
+    "min_ashman_d_by_n": "Smallest Ashman D By Group Size",
+    "mem_pressure_some_avg10": "Memory Pressure (%)",
+    "mem_available_min_kib": "Smallest Available Memory (KiB)",
+    "fail_share": "Fails From Share",
+    "fails": "Can Fail",
+    "warm_pool_steps": "Warm Pool Steps",
+    "tie_facts": "Tie Facts",
+    "explained_by_flags": "Explained By Flags",
+    "state": "Stated When Fired",
+    "workload": "Workload",
+    "calculation": "Calculation",
+    "clocks.headline": "Clock",
+    "version": "Version",
+    "statistics.primary": "Statistic"
+  },
+  "enum_labels": {
+    "true": "Yes",
+    "false": "No",
+    "null": "Not Specified",
+    "geometric_mean": "{name:statistic.geometric_mean}",
+    "median": "{name:statistic.median}",
+    "bootstrap_percentile": "Bootstrap Percentile Interval",
+    "cluster_bootstrap_percentile": "Bootstrap Percentile, Resampling Whole Trials",
+    "pooled_calls": "Every Call of Every Trial, Pooled",
+    "one_random_call_per_trial": "One Random Call From Each Trial",
+    "every_trial": "Every Trial",
+    "trace_replay": "Recorded Trace Replay",
+    "provider_reported_or_priced": "The cost is reported by the provider or calculated from published prices.",
+    "not_applicable": "Not Applicable",
+    "deny_all": "All network access is blocked.",
+    "lower_is_better": "Lower Is Better",
+    "higher_is_better": "Higher Is Better",
+    "planned": "Coming Soon",
+    "not_published": "Not Published",
+    "unknown": "Unknown",
+    "public": "Public",
+    "concurrent": "Concurrent",
+    "sequential": "Sequential",
+    "single": "Single",
+    "wilson_score": "Wilson Score Interval",
+    "ms": "Milliseconds (ms)",
+    "ratio": "Ratio",
+    "count": "Count",
+    "time": "Time",
+    "time_score": "{name:quantity.time-score}",
+    "cost": "Cost",
+    "cost_score": "{name:quantity.cost-score}",
+    "provider": "Provider",
+    "provider_score": "{name:quantity.provider-score}",
+    "sandbox": "Sandbox",
+    "trial": "Trial",
+    "trace": "Trace",
+    "task": "Task",
+    "job": "Job",
+    "rollout": "Rollout",
+    "round": "Round",
+    "session": "Session",
+    "request": "{name:stage.request}",
+    "call": "Call",
+    "reward": "{name:stage.reward}",
+    "mean": "{name:statistic.mean}",
+    "p95": "95th Percentile",
+    "p99": "99th Percentile",
+    "success_rate": "{name:statistic.success_rate}",
+    "cost_per_success": "Cost per Success",
+    "attach": "Attach",
+    "bandwidth": "Bandwidth",
+    "build": "{name:stage.build}",
+    "burst": "Burst",
+    "cmd": "Command",
+    "connection": "Connection",
+    "control": "Control",
+    "create": "{name:stage.create}",
+    "create-from-snapshot": "{name:stage.create} From {name:stage.snapshot}",
+    "data-back": "Data Read",
+    "data_back": "Data Read",
+    "destroy": "{name:stage.destroy}",
+    "exec": "Execute",
+    "image": "Image",
+    "image-build-2vcpu-4gib": "Two CPU Cores and Four GiB of Memory",
+    "index": "Composite",
+    "install": "{name:stage.install}",
+    "links": "Links",
+    "list": "{name:test.list}",
+    "machine_performance": "{name:section.machine-performance}",
+    "ok": "Successful",
+    "operations": "{name:section.sandbox-operations}",
+    "quantity.operations": "Operations",
+    "pause": "{name:stage.pause}",
+    "pause_resume": "{name:stage.pause} and {name:stage.resume}",
+    "preview": "{name:stage.preview}",
+    "previews": "{name:test.previews}",
+    "rating": "Rating",
+    "ready": "Ready",
+    "reliability": "{name:section.reliability}",
+    "reset": "Reset",
+    "restore": "Restore",
+    "resume": "{name:stage.resume}",
+    "sandbox_operation": "Sandbox Operation",
+    "script": "Script",
+    "sequential-read": "{name:test.sequential-read}",
+    "server-listening": "{name:stage.server} Listening",
+    "snapshot": "{name:stage.snapshot}",
+    "snapshots": "{name:tab.snapshots}",
+    "start-server": "Start {name:stage.server}",
+    "stream-triad": "{name:test.stream-triad}",
+    "test": "{name:stage.test}",
+    "url-poll": "URL Polling",
+    "variant": "Variant",
+    "websocket": "{name:stage.websocket}",
+    "workload": "Workload",
+    "hardlink": "{name:test.hard-links}",
+    "not_offered": "{param:content.ranking_statuses.not_offered.label}",
+    "in_development": "Coming Soon",
+    "GB/s": "Gigabytes per Second (GB/s)",
+    "MiB/s": "Mebibytes per Second (MiB/s)",
+    "IOPS": "Input/Output Operations per Second (IOPS)",
+    "MIPS": "Million Instructions per Second (MIPS)",
+    "USD": "US Dollars (USD)",
+    "links/s": "{name:quantity.links} (links/s)",
+    "meets": "Meets the Rule",
+    "exception": "Exception",
+    "benjamini_hochberg": "Benjamini-Hochberg"
+  },
+  "omit": [
+    "version",
+    "effective",
+    "id",
+    "category",
+    "notes.summary",
+    "variants",
+    "stages",
+    "description",
+    "metrics.description",
+    "metrics.formula",
+    "metrics.primary.formula",
+    "metrics.secondary.formula",
+    "composition.inclusion",
+    "composition.not_displayed",
+    "composition.per_input_value",
+    "composition.plots.note",
+    "composition.weighting",
+    "timing_boundaries",
+    "procedure.steps",
+    "procedure.stages",
+    "procedure.warm_cold_policy",
+    "procedure.cadence",
+    "procedure.shared_trial",
+    "procedure.variants.description",
+    "procedure.variants.notes",
+    "environment.image.modification",
+    "environment.job_host",
+    "environment.network",
+    "environment.network_path",
+    "environment.region_policy",
+    "parameters.pinned_file",
+    "capability_source.use",
+    "interpretation",
+    "cost.method",
+    "failure_policy",
+    "validity_checks",
+    "statistics.percentile_method",
+    "statistics.ranking.failing_often",
+    "notes.not_ranked",
+    "independence",
+    "independence_answers",
+    "reader_sources",
+    "composition.formulas",
+    "composition.display_levels.id",
+    "composition.levels.id",
+    "composition.leaves.summed.id",
+    "composition.plots.x.id",
+    "composition.plots.x.version",
+    "composition.plots.y.id",
+    "composition.plots.y.version",
+    "composition.inputs.id",
+    "composition.inputs.version",
+    "procedure.shared_trial.version",
+    "procedure.variants.id"
+  ],
+  "common_name": "{name:page.common}",
+  "statistic_links": {
+    "median": [
+      "median",
+      "medians"
+    ],
+    "nearest-rank-percentile": [
+      "percentile",
+      "percentiles",
+      "p95",
+      "tail"
+    ],
+    "mean": [
+      "mean"
+    ],
+    "interval": [
+      "confidence interval",
+      "confidence intervals"
+    ],
+    "ranking-floor": [
+      "ranked"
+    ],
+    "workload-value": [
+      "geometric mean",
+      "geometric means"
+    ]
+  },
+  "cost_method": {
+    "formula": "Formula",
+    "columns": {
+      "provider": "Provider",
+      "cost": "Cost",
+      "cpu": "{name:tab.cpu}",
+      "cpu_per": "per vCPU-hour",
+      "memory": "{name:tab.memory}",
+      "memory_per": "per GiB-hour",
+      "disk": "{name:tab.disk}",
+      "disk_per": "per GiB-hour",
+      "also_charged": "Also Charged"
+    },
+    "tags": {
+      "per_core": "billed per core ({size} vCPUs)",
+      "per_gb": "per GB",
+      "basis": {
+        "active": "on active use",
+        "larger_of_request_and_use": "on request or use, whichever is larger"
+      },
+      "increment": {
+        "60": "in whole minutes"
+      }
+    },
+    "charged": {
+      "creation": "Creations",
+      "egress": "Egress",
+      "snapshot_storage": "{name:tab.snapshots}",
+      "image_storage": "Images",
+      "volume_storage": "{name:tab.volumes}"
+    },
+    "charged_rate": "{name} {usd} per {unit}",
+    "units": {
+      "gib": "GiB",
+      "gb": "GB",
+      "gib-month": "GiB-month",
+      "gb-month": "GB-month",
+      "million-creations": "million"
+    },
+    "missing_note": "A dash means the price version has no rate for that meter. Each row opens to the provider's formula, billing rules and what is left out.",
+    "checked": "Rates checked {date}",
+    "sources_href": "https://github.com/boxrouter/sandbox-provider-pricing/blob/v{release}/providers/{provider}/README.md",
+    "sources_one": "{provider}'s sources, measurements and {count} open question",
+    "sources_other": "{provider}'s sources, measurements and {count} open questions",
+    "not_recorded": "This publication did not record the versions that priced its costs. The method of the pinned pricing release is shown."
+  },
+  "common_api": {
+    "before_link": "All providers are benchmarked through BoxRouter's unified sandbox API, which standardizes operation behavior across providers. See ",
+    "link": "Provider support",
+    "after_link": " for the guarantees.",
+    "href": "/docs/provider-support"
+  },
+  "parameters_link": {
+    "href": "https://github.com/boxrouter/sandbox-provider-benchmarks/blob/v{version}/{path}workloads.json"
+  },
+  "availability": {
+    "live": "Live",
+    "coming_soon": "Coming Soon"
+  },
+  "steps": {
+    "timed": "Timed"
+  },
+  "formulas": {
+    "disk-bandwidth": {
+      "tests": [
+        "sequential-read",
+        "sequential-write"
+      ],
+      "aria_label": "The bandwidth in MiB per second is the bytes per second fio reports divided by 1,048,576.",
+      "tex": "\\mathrm{BW}_{\\mathrm{MiB/s},\\,i} = \\dfrac{B_i}{1{,}048{,}576}",
+      "variables": [
+        {
+          "symbol": "\\mathrm{BW}_{\\mathrm{MiB/s},\\,i}",
+          "definition": "Binary megabytes per second in trial i (1 MiB = 2^20 bytes = 1,048,576 bytes)."
+        },
+        {
+          "symbol": "B_i",
+          "definition": "The bytes per second fio reports over the 60 s measured interval in trial i."
+        }
+      ]
+    },
+    "hard-links": {
+      "aria_label": "The hard-link rate is the hard links created divided by the elapsed time of the stress-ng run.",
+      "tex": "R_{\\mathrm{links},\\,i} = \\dfrac{L_{\\mathrm{created},\\,i}}{T_{\\mathrm{stressor},\\,i}}",
+      "variables": [
+        {
+          "symbol": "R_{\\mathrm{links},\\,i}",
+          "definition": "Hard links per second in trial i."
+        },
+        {
+          "symbol": "L_{\\mathrm{created},\\,i}",
+          "definition": "Total number of hard links successfully created across all rounds in trial i."
+        },
+        {
+          "symbol": "T_{\\mathrm{stressor},\\,i}",
+          "definition": "stress-ng's internal elapsed wall-clock time in seconds in trial i (approximately 30 s), which spans both creating the hard links and unlinking them at the end of each round."
+        }
+      ]
+    },
+    "time-index": {
+      "aria_label": "Composite time is the geometric mean of workload times.",
+      "tex": "T = \\left( \\prod_{k=1}^{n} t_k \\right)^{1/n}",
+      "variables": [
+        {
+          "symbol": "T",
+          "definition": "Composite workload time."
+        },
+        {
+          "symbol": "t_k",
+          "definition": "Time for workload k, with the missing-result policy applied."
+        },
+        {
+          "symbol": "n",
+          "definition": "Number of workloads in the selected scope."
+        }
+      ]
+    },
+    "cost-index": {
+      "aria_label": "Composite cost is the geometric mean of workload costs.",
+      "tex": "C = \\left( \\prod_{k=1}^{n} c_k \\right)^{1/n}",
+      "variables": [
+        {
+          "symbol": "C",
+          "definition": "Composite workload cost."
+        },
+        {
+          "symbol": "c_k",
+          "definition": "Cost for workload k, with the missing-result policy applied."
+        },
+        {
+          "symbol": "n",
+          "definition": "Number of workloads in the selected scope."
+        }
+      ]
+    },
+    "r2e-gym": {
+      "aria_label": "Group time is the sum of every timed span across the group's five sandboxes.",
+      "tex": "T = c + r + s + \\sum_{k=1}^{4} \\left( p_k + u_k + w_k \\right) + \\sum_{j=1}^{5} d_j",
+      "variables": [
+        {
+          "symbol": "T",
+          "definition": "Group time: the sum of every timed span across all five sandboxes of a trial."
+        },
+        {
+          "symbol": "c",
+          "definition": "Create time of sandbox 1, on the job host's clock."
+        },
+        {
+          "symbol": "r",
+          "definition": "Reset time of sandbox 1, the in-sandbox runtime of the environment reset."
+        },
+        {
+          "symbol": "s",
+          "definition": "Snapshot time of sandbox 1, on the job host's clock."
+        },
+        {
+          "symbol": "p_k",
+          "definition": "Create-from-snapshot time of rollout k, on the job host's clock."
+        },
+        {
+          "symbol": "u_k",
+          "definition": "Tool-call time of rollout k, the in-sandbox runtime of its recorded tool calls."
+        },
+        {
+          "symbol": "w_k",
+          "definition": "Reward time of rollout k, the in-sandbox runtime of the task's test suite."
+        },
+        {
+          "symbol": "d_j",
+          "definition": "Destroy time of sandbox j, on the job host's clock. The job host's times include network transport; the in-sandbox runtimes are measured by each sandbox's own clock and validated against `/proc/uptime`."
+        }
+      ]
+    },
+    "burst-tti": {
+      "aria_label": "Burst time is the time from the first create request to the last sandbox's first successful command.",
+      "tex": "T_i = \\max_{j} \\left( e_{i,j} \\right) - \\min_{j} \\left( s_{i,j} \\right)",
+      "variables": [
+        {
+          "symbol": "T_i",
+          "definition": "Burst time of trial i, defined when all N sandboxes succeed."
+        },
+        {
+          "symbol": "s_{i,j}",
+          "definition": "Job-host timestamp when sandbox j's create call is sent."
+        },
+        {
+          "symbol": "e_{i,j}",
+          "definition": "Job-host timestamp when sandbox j's first successful true attempt returns exit code 0."
+        }
+      ]
+    },
+    "exec-latency-per-100-calls": {
+      "aria_label": "Time per 100 calls is the sum of the job-host round-trip times of the 100 calls in a trial.",
+      "tex": "T_i = \\sum_{c=1}^{100} t_{i,c}",
+      "variables": [
+        {
+          "symbol": "T_i",
+          "definition": "Time of the 100 calls in trial i."
+        },
+        {
+          "symbol": "t_{i,c}",
+          "definition": "Job-host round-trip time of call c in trial i, from the start of the request until the exit code and guest clock readings return."
+        }
+      ]
+    },
+    "exec-latency": {
+      "tests": [
+        "exec-latency-per-100-calls"
+      ],
+      "aria_label": "Time per call is the median job-host round-trip time over every call of every successful trial.",
+      "tex": "\\tilde{t} = \\operatorname{median}_{i,c} \\left( t_{i,c} \\right), \\quad L_{i,c} = t_{i,c} - r_{i,c}",
+      "variables": [
+        {
+          "symbol": "\\tilde{t}",
+          "definition": "Median round-trip time of one call, taken over all calls of all successful trials."
+        },
+        {
+          "symbol": "t_{i,c}",
+          "definition": "Job-host round-trip time of call c in trial i, from the start of the request until the exit code and guest clock readings return."
+        },
+        {
+          "symbol": "r_{i,c}",
+          "definition": "Runtime of call c in trial i: the in-sandbox duration between the two `$EPOCHREALTIME` readings around `true`, close to zero because `true` is a shell builtin."
+        },
+        {
+          "symbol": "L_{i,c}",
+          "definition": "Latency is the total time minus the runtime of a call, capturing network transit, the provider's exec API, and the provider's process that starts the command inside the sandbox."
+        }
+      ]
+    },
+    "files": {
+      "tests": [
+        "list",
+        "write-4kib",
+        "read-4kib"
+      ],
+      "aria_label": "A trial's value is the median job-host duration over its repetitions of the operation.",
+      "tex": "M_{\\mathrm{op},\\,i} = \\operatorname{median}_{r} \\left( t_{\\mathrm{op},\\,i,\\,r} \\right)",
+      "variables": [
+        {
+          "symbol": "M_{\\mathrm{op},\\,i}",
+          "definition": "Summary value of operation op in trial i, the nearest-rank median across its repetitions."
+        },
+        {
+          "symbol": "t_{\\mathrm{op},\\,i,\\,r}",
+          "definition": "Job-host duration of repetition r of operation op in trial i."
+        }
+      ]
+    },
+    "7-zip-total-rating": {
+      "tests": [
+        "7-zip-1-thread",
+        "7-zip-all-vcpus"
+      ],
+      "aria_label": "The total rating is the mean of the compression and decompression ratings.",
+      "tex": "R_{\\mathrm{total},\\,i} = \\dfrac{R_{\\mathrm{compress},\\,i} + R_{\\mathrm{decompress},\\,i}}{2}",
+      "variables": [
+        {
+          "symbol": "R_{\\mathrm{total},\\,i}",
+          "definition": "Total rating in MIPS of trial i: the mean of its compression and decompression ratings."
+        },
+        {
+          "symbol": "R_{\\mathrm{compress},\\,i}",
+          "definition": "Compression rating in MIPS of trial i."
+        },
+        {
+          "symbol": "R_{\\mathrm{decompress},\\,i}",
+          "definition": "Decompression rating in MIPS of trial i."
+        }
+      ]
+    },
+    "reconnect": {
+      "aria_label": "Reconnect time is the median attach time plus the median first-command time over a trial's rounds.",
+      "tex": "T_i = \\operatorname{median}_{r} \\left( a_{i,r} \\right) + \\operatorname{median}_{r} \\left( c_{i,r} \\right), \\quad L_{i,r} = c_{i,r} - q_{i,r}",
+      "variables": [
+        {
+          "symbol": "T_i",
+          "definition": "Reconnect time of trial i: the sum of its median attach time and its median first-command time across its rounds."
+        },
+        {
+          "symbol": "a_{i,r}",
+          "definition": "Job-host duration of the attach lookup in round r of trial i."
+        },
+        {
+          "symbol": "c_{i,r}",
+          "definition": "Job-host duration of the first `true` command in round r of trial i."
+        },
+        {
+          "symbol": "q_{i,r}",
+          "definition": "Runtime of the first `true` command in round r of trial i, on the sandbox's guest clock; the median over the rounds is recorded per trial."
+        },
+        {
+          "symbol": "L_{i,r}",
+          "definition": "Latency is the median over a trial's rounds of the first command's total time minus its runtime."
+        }
+      ]
+    },
+    "stream-triad": {
+      "aria_label": "The best Triad rate in gigabytes per second is the bytes moved by one pass divided by the shortest pass time.",
+      "tex": "B_{\\mathrm{Triad},\\,i} = \\dfrac{B_{\\mathrm{Triad,MB/s},\\,i}}{1000} = \\dfrac{3 \\times 8 \\times N_{\\mathrm{elem}}}{\\min_{p \\in \\{2,\\,\\dots,\\,20\\}} t_{i,p} \\times 10^{9}}",
+      "variables": [
+        {
+          "symbol": "B_{\\mathrm{Triad},\\,i}",
+          "definition": "Best Triad rate of trial i in decimal gigabytes per second (10^9 bytes/s), rounded to three decimal places."
+        },
+        {
+          "symbol": "B_{\\mathrm{Triad,MB/s},\\,i}",
+          "definition": "Best Triad rate of trial i as STREAM prints it, in 10^6 bytes/s."
+        },
+        {
+          "symbol": "N_{\\mathrm{elem}}",
+          "definition": "Number of 8-byte double elements per array, 80,000,000."
+        },
+        {
+          "symbol": "t_{i,p}",
+          "definition": "Elapsed time in seconds of pass p in trial i on STREAM's internal clock, for passes 2 to 20."
+        }
+      ]
+    },
+    "tool-time": {
+      "tests": [
+        "ci-jobs",
+        "deepswe",
+        "terminal-bench-4-0"
+      ],
+      "aria_label": "Tool time or job time is the sum of the command or step runtimes on the sandbox's clock.",
+      "tex": "T = \\sum_{k=1}^{K} \\left( e_k - s_k \\right)",
+      "variables": [
+        {
+          "symbol": "T",
+          "definition": "Tool time of a replay, or job time of a CI job: the sum of its command or step runtimes on the sandbox's clock."
+        },
+        {
+          "symbol": "K",
+          "definition": "Number of commands or steps in the trace, session or job."
+        },
+        {
+          "symbol": "s_k",
+          "definition": "The script's `$EPOCHREALTIME` reading immediately before command or step k."
+        },
+        {
+          "symbol": "e_k",
+          "definition": "The script's `$EPOCHREALTIME` reading immediately after command or step k."
+        }
+      ]
+    },
+    "common-latency": {
+      "tests": [
+        "sbs.common"
+      ],
+      "name": "Latency",
+      "aria_label": "Latency is the total time minus the runtime.",
+      "tex": "t_{\\mathrm{latency}} = t_{\\mathrm{total}} - t_{\\mathrm{runtime}}",
+      "variables": [
+        {
+          "symbol": "t_{\\mathrm{latency}}",
+          "definition": "Latency: the difference of the total time and the runtime of a timed span."
+        },
+        {
+          "symbol": "t_{\\mathrm{total}}",
+          "definition": "Total time: the operation duration of a timed span, measured on the job host."
+        },
+        {
+          "symbol": "t_{\\mathrm{runtime}}",
+          "definition": "Runtime: the command duration of a timed span, measured on the sandbox's own clock."
+        }
+      ]
+    },
+    "common-clock-gate": {
+      "tests": [
+        "sbs.common"
+      ],
+      "name": "Clock Gate",
+      "aria_label": "A guest runtime is accepted when the wall-clock and uptime spans are not negative and differ by at most 20 milliseconds.",
+      "tex": "\\Delta t_{\\mathrm{wall}} \\ge 0, \\quad \\Delta t_{\\mathrm{up}} \\ge 0, \\quad \\text{and} \\quad \\left| \\Delta t_{\\mathrm{wall}} - \\Delta t_{\\mathrm{up}} \\right| \\le 20\\ \\text{ms}",
+      "variables": [
+        {
+          "symbol": "\\Delta t_{\\mathrm{wall}}",
+          "definition": "Elapsed time of the timed span from the start s and end e $EPOCHREALTIME readings: e - s."
+        },
+        {
+          "symbol": "\\Delta t_{\\mathrm{up}}",
+          "definition": "Elapsed /proc/uptime duration over the same span."
+        }
+      ]
+    },
+    "common-percentile": {
+      "tests": [
+        "sbs.common"
+      ],
+      "name": "Nearest-Rank Percentile",
+      "aria_label": "The nearest-rank percentile is the value at rank r, the larger of 1 and the ceiling of p over 100 times n.",
+      "tex": "Q_p = x_{(r)}, \\quad r = \\max\\left( 1,\\ \\left\\lceil \\dfrac{p}{100} \\times n \\right\\rceil \\right)",
+      "variables": [
+        {
+          "symbol": "Q_p",
+          "definition": "The nearest-rank percentile p of a unit's successful trials."
+        },
+        {
+          "symbol": "x_{(r)}",
+          "definition": "The value at rank r of the unit's n successful trials sorted in ascending order."
+        },
+        {
+          "symbol": "r",
+          "definition": "The rank."
+        },
+        {
+          "symbol": "p",
+          "definition": "The percentile, from 0 to 100."
+        },
+        {
+          "symbol": "n",
+          "definition": "The number of successful trials of the unit."
+        }
+      ]
+    },
+    "common-mean": {
+      "tests": [
+        "sbs.common"
+      ],
+      "name": "Mean",
+      "aria_label": "The mean is the sum of the n successful trial values divided by n.",
+      "tex": "x_{\\mathrm{mean}} = \\dfrac{x_1 + \\cdots + x_n}{n}",
+      "variables": [
+        {
+          "symbol": "x_{\\mathrm{mean}}",
+          "definition": "The arithmetic mean of a unit's successful trial values."
+        },
+        {
+          "symbol": "x_1",
+          "definition": "The first successful trial's value."
+        },
+        {
+          "symbol": "x_n",
+          "definition": "The last successful trial's value."
+        },
+        {
+          "symbol": "n",
+          "definition": "The number of successful trials of the unit."
+        }
+      ]
+    },
+    "common-workload-value": {
+      "tests": [
+        "sbs.common"
+      ],
+      "aria_label": "A workload value is the geometric mean of a provider's per-unit medians.",
+      "tex": "T_p = \\left( \\prod_{u \\in U} m_{p,u} \\right)^{1/|U|}",
+      "variables": [
+        {
+          "symbol": "T_p",
+          "definition": "Workload value of provider p: the geometric mean of its per-unit medians."
+        },
+        {
+          "symbol": "m_{p,u}",
+          "definition": "Provider p's median on unit u."
+        },
+        {
+          "symbol": "U",
+          "definition": "The set of units completed by at least one provider; |U| is the number of units in it."
+        }
+      ]
+    },
+    "common-trial-cost": {
+      "tests": [
+        "sbs.common"
+      ],
+      "name": "Trial Cost",
+      "aria_label": "The cost of a trial is the sum of the costs of the sandboxes it created.",
+      "tex": "c_i = \\sum_{s} c_{i,s}",
+      "variables": [
+        {
+          "symbol": "c_i",
+          "definition": "Provider-sourced cost of successful trial i: the sum of the costs of the sandboxes created during trial i."
+        },
+        {
+          "symbol": "c_{i,s}",
+          "definition": "Provider-sourced cost of sandbox s in trial i."
+        }
+      ]
+    },
+    "common-stage-cost": {
+      "tests": [
+        "sbs.common"
+      ],
+      "name": "Stage Cost",
+      "aria_label": "A stage's cost is the unit's displayed cost times the stage's share of the time.",
+      "tex": "c_s = C \\times \\dfrac{t_s}{t}",
+      "variables": [
+        {
+          "symbol": "c_s",
+          "definition": "The cost of stage s."
+        },
+        {
+          "symbol": "C",
+          "definition": "The unit's displayed cost."
+        },
+        {
+          "symbol": "t_s",
+          "definition": "Stage s's time."
+        },
+        {
+          "symbol": "t",
+          "definition": "The total time across stages."
+        }
+      ]
+    }
+  },
+  "document_names": {
+    "sbs.common": "{name:page.common}"
+  },
+  "metric_names": {
+    "reliability": "{name:section.reliability}",
+    "total_mips": "{name:stage.total} Rating",
+    "compress_mips": "{name:stage.compression} Rating",
+    "decompress_mips": "{name:stage.decompression} Rating",
+    "total_time": "Total Time",
+    "runtime": "Command Runtime",
+    "latency": "Command Round-Trip Time",
+    "create_from_snapshot": "{name:stage.create} From {name:stage.snapshot} Time",
+    "first_command_time": "First Command Time",
+    "typical_cost": "Composite Cost",
+    "typical_time_over_cost_set": "Time Over the Costed Units",
+    "sequential_read_mib_per_second": "{name:test.sequential-read} Bandwidth",
+    "sequential_write_mib_per_second": "{name:test.sequential-write} Bandwidth",
+    "random_read_iops": "{name:test.random-read} Operations",
+    "random_write_iops": "{name:test.random-write} Operations",
+    "resume_to_data_back": "{name:stage.resume} to Data Read",
+    "resume_to_first_answer": "{name:stage.resume} to First Answer",
+    "pause_to_data_back": "{name:stage.pause} to Data Read",
+    "url_ready": "{name:stage.preview} Ready Time",
+    "server_listening": "{name:stage.server} Listening Time",
+    "url_reachable": "{name:stage.between} Time",
+    "request_ttfb": "{name:stage.request} Time to First Byte",
+    "websocket_success": "{name:stage.websocket} Connection Success",
+    "tool_time": "Tool Time",
+    "reward_time": "{name:stage.reward} Time",
+    "reconnect_time": "{name:test.reconnect} Time",
+    "attach_time": "Attach Time",
+    "command_total": "Total Command Time",
+    "command_runtime": "Command Runtime",
+    "command_latency": "Command Round-Trip Time",
+    "snapshot_time": "{name:stage.snapshot} Time",
+    "restore_time": "Restore Time"
+  },
+  "inherited_fields": [
+    "statistics",
+    "environment",
+    "procedure",
+    "failure_policy",
+    "ready_check",
+    "execution",
+    "clocks",
+    "validity_checks",
+    "cost"
+  ],
+  "pages": {
+    "not_ranked": "{param:content.ranking_statuses.too_few_runs.label}",
+    "none": "None",
+    "leaders": "Benchmark Leaders",
+    "fastest": "Fastest",
+    "highest": "Highest",
+    "cheapest": "Cheapest",
+    "benchmark": "Benchmark",
+    "back": "Back to Benchmarks",
+    "exact_cost": "A provider is ranked once its cost for this benchmark is exact.",
+    "source": "Source",
+    "checked": ", checked ",
+    "size_note": "Size Note",
+    "hardware_note": "Hardware Note",
+    "billing_note": "Billing Note",
+    "provider_notes": "Provider Notes",
+    "price_speed": "price and speed",
+    "providers": "Providers",
+    "provider_columns": "Providers and the columns picked from the sandbox provider spec",
+    "missing_methodology": "No Such Methodology",
+    "workload_title": "Test Your Workload",
+    "coming_soon": "Coming Soon",
+    "benchmarks_label": "{name} Benchmarks",
+    "measure": "Measure",
+    "highlights": "Benchmark Highlights",
+    "sections": "Sections",
+    "rank": "#{rank} of {total}",
+    "provider_price_speed": "{name} price and speed",
+    "per_trace": "Per Trace",
+    "per_thousand_successes": "Per 1,000 Successes"
+  },
+  "field_formats": {
+    "command": "code",
+    "commands": "code",
+    "first_commands": "code",
+    "expected_body": "code",
+    "function": "code",
+    "path": "code",
+    "sha256": "code",
+    "commit": "code",
+    "websocket_subprotocol": "code",
+    "attempt_timeout_seconds": "duration_seconds",
+    "connection_idle_seconds": "duration_seconds",
+    "lifetime_seconds": "duration_seconds",
+    "local_poll_gap_seconds": "duration_seconds",
+    "poll_gap_seconds": "duration_seconds",
+    "timeout_seconds": "duration_seconds",
+    "wait_seconds": "duration_seconds",
+    "source.ids": "code",
+    "environment.size": "machine_size",
+    "ports": "plain_number"
+  },
+  "machine_size": "{vcpu} vCPU / {memory_gib} GiB",
+  "standard_image": {
+    "reference_path": "environment.image.reference",
+    "registry_page": "https://github.com/orgs/boxrouter/packages/container/package/standard-image",
+    "versions": {
+      "sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b": "0.3.11"
+    },
+    "labels": {
+      "digest": "Image Digest",
+      "version": "Image Version",
+      "registry": "Image Registry Page",
+      "pull": "Pull the Image"
+    },
+    "registry_link": "View on the Registry",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "hash_link": {
+    "kind": "SHA-256",
+    "copy": "Click to copy",
+    "copied": "Copied",
+    "commit_urls": {
+      "github": "https://github.com/{repository}/commit/{commit}",
+      "huggingface": "https://huggingface.co/datasets/{repository}/commit/{commit}"
+    }
+  },
+  "private_evidence_paths": [
+    "source",
+    "statistics.ranking.failing_often",
+    "notes.not_ranked.failing_often"
+  ],
+  "retired_reader_paths": [
+    "notes.statistics.typical"
+  ],
+  "fact_layout": {
+    "id": "method-facts-by-shape",
+    "reason": "One renderer draws every structured field, so a list of 31 documents drew 31 rows with the same label and a list of 4 objects drew 11 glued labels; the shape of the data decides the layout instead.",
+    "list_of_values": "One fact whose items flow in columns.",
+    "list_of_objects": "One table: a row per item, a column per key every item has, headers from field_labels; a key only some items have is a note on that item.",
+    "nested_object": "Each field has its own label from field_labels; labels are never joined from the path.",
+    "composite_procedures": "A composite folds its inputs' procedure links into one disclosure (actions.procedures); each input's page links its own."
+  },
+  "at_a_glance": {
+    "groups": [
+      [
+        "headline",
+        "metrics",
+        "statistics.primary",
+        "clocks.headline"
+      ],
+      [
+        "version",
+        "environment.size",
+        "procedure.trials",
+        "procedure.variants"
+      ]
+    ],
+    "title": "At a Glance"
+  }
+}

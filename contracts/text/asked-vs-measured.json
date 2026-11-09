@@ -1,0 +1,7 @@
+{
+  "asked_vs_measured_asked": {
+    "label": "Asked",
+    "template": "The benchmark requested this CPU and memory size through BoxRouter.",
+    "runtime_fields": []
+  }
+}

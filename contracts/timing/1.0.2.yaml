@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+extends: 1.0.1
+schema: sandbox-benchmarks.timing/1
+version: 1.0.2
+trial:
+  excluded_owners: [binding, account, script, external, trace]

@@ -1,0 +1,15 @@
+{
+  "schema": "sandbox-benchmarks.shape/1",
+  "block": "snapshot",
+  "launch": "sequential",
+  "reads": ["command", "marker", "restores", "snapshots"],
+  "steps": [
+    {"id": "create", "operation": "create", "sandbox": "first", "timed": true, "ready_check": true},
+    {"id": "marker", "operation": "commands.run", "sandbox": "first", "timed": false, "owner": "provider"},
+    {"id": "snapshot", "operation": "snapshots.create", "sandbox": "first", "timed": true},
+    {"id": "create-from-snapshot", "operation": "restore", "sandbox": "rest", "timed": true, "ready_check": false},
+    {"id": "exec", "operation": "commands.run", "sandbox": "rest", "timed": true, "clock_reads": true},
+    {"id": "marker-check", "operation": "commands.run", "sandbox": "rest", "timed": false, "owner": "provider"},
+    {"id": "destroy", "operation": "destroy", "sandbox": "every", "timed": true}
+  ]
+}

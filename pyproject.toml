@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sandbox-benchmark-verifier"
+version = "0.4.342"
+description = "Public benchmark methodology and dataset verifier"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "LICENSE-CC-BY-4.0", "LICENSES/MIT.txt", "LICENSES/LicenseRef-PolyForm-Shield-1.0.0.txt", "NOTICE"]
+requires-python = ">=3.11,<3.15"
+dependencies = ["jsonschema>=4.26,<5", "pyyaml>=6.0.3,<7"]
+
+[project.urls]
+Repository = "https://github.com/boxrouter/sandbox-provider-benchmarks"
+Issues = "https://github.com/boxrouter/sandbox-provider-benchmarks/issues"
+
+[project.scripts]
+sandbox-benchmark-verify = "sandbox_benchmark_verifier.cli:main"
+
+[dependency-groups]
+dev = [
+    "uv==0.13.4",
+    "mypy==2.3.1",
+    "pyright==1.1.414",
+    "pylint==4.0.8",
+    "ruff==0.16.7",
+    "pytest==9.1.1",
+    "pytest-xdist==3.8.0",
+    "pytest-mock==3.15.1",
+    "pre-commit==4.6.2",
+    "types-pyyaml>=6.0.12,<7",
+    "types-jsonschema>=4.26,<5",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sandbox_benchmark_verifier"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"methodology" = "sandbox_benchmark_verifier/_assets/methodology"
+"schemas" = "sandbox_benchmark_verifier/_assets/schemas"
+"names" = "sandbox_benchmark_verifier/_assets/names"
+"parameters" = "sandbox_benchmark_verifier/_assets/parameters"
+"contracts" = "sandbox_benchmark_verifier/_assets/contracts"
+"conventions" = "sandbox_benchmark_verifier/_assets/conventions"
+"reader" = "sandbox_benchmark_verifier/_assets/reader"
+"procedures" = "sandbox_benchmark_verifier/_assets/procedures"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = ["unit: offline behavior tests"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/sandbox_benchmark_verifier", "tests", "scripts"]
+
+[tool.pyright]
+include = ["src/sandbox_benchmark_verifier", "tests", "scripts", "reference-tests"]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+
+[tool.pylint.main]
+py-version = "3.11"
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-class-docstring", "missing-function-docstring", "missing-module-docstring",
+    "too-few-public-methods", "wrong-import-order", "line-too-long",
+]

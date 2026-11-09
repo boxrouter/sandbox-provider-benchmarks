@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+name: Fixture Suspend Cycle
+notes:
+  summary: A sandbox pauses, resumes and runs a first command.
+  what_this_measures: The result records the pause, the resume and the first command after the resume.
+  how_it_is_measured: A job-host monotonic clock times each pause, resume and command call from dispatch until it
+    returns.
+  how_to_read: The median is shown in milliseconds; lower is better.
+  cost_summary: The cost is the provider-sourced cost of the sandbox, divided by successful units.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+metrics:
+- name: resume_time
+  unit: ms
+  direction: lower_is_better
+  description: Time from resume request dispatch until the resume call returns.
+  quantity: time
+  per: sandbox
+interpretation:
+  informs: How long a sandbox takes to pause and to come back.
+  what_to_do: Compare how quickly an agent can park a sandbox and pick it up again.
+validity_checks:
+- id: command_after_resume
+  threat: A resume that returns before the sandbox answers would look fast.
+  check: The first command after the resume must exit 0, and its runtime is read by the sandbox's clock.
+source:
+  name: standard runtime command
+  version: '1'
+  licence: Apache-2.0
+failure_policy:
+  success: The pause and resume succeed and the first command exits 0.
+  provider_errors:
+  - A pause, resume or command API failure.
+  benchmark_errors:
+  - A malformed timing record or benchmark-side workload failure.
+workloads:
+- id: true-command
+  label: A standard sandbox
+  data:
+    command: 'true'

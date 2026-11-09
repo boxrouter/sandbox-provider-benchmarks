@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/sbs/0.1/aggregate.schema.json",
+  "title": "SBS aggregate",
+  "description": "One derived number, recomputable from the raw measurements it references.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["methodology", "run_id", "provider", "statistic", "value", "unit", "interval", "n", "excluded_n", "inputs", "precision"],
+  "properties": {
+    "methodology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "description": "Methodology the number was computed under.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+|[a-z0-9][a-z0-9-]*)$",
+          "description": "Methodology id.",
+          "examples": ["sandbox.create.sequential_tti"]
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
+          "description": "Methodology version.",
+          "examples": ["1.0.0"]
+        }
+      }
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "description": "Run the number comes from.",
+      "examples": ["2026-11-01-a"]
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "description": "Provider slug.",
+      "examples": ["e2b"]
+    },
+    "variant": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Variant id, where the methodology has variants.",
+      "examples": ["true"]
+    },
+    "sandbox_index": {
+      "type": "integer",
+      "minimum": 1,
+      "x-unit": "sandbox number",
+      "description": "Position of the sandbox within its trial, where the number is per position.",
+      "examples": [1]
+    },
+    "measurement": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Metric the number summarizes.",
+      "examples": ["time_to_interactive"]
+    },
+    "statistic": {
+      "enum": ["median", "mean", "p95", "p5", "slowest", "lowest", "cost_per_success", "sum"],
+      "description": "How the inputs were summarized.",
+      "examples": ["median"]
+    },
+    "value": {
+      "type": ["number", "null"],
+      "x-unit": "see `unit`",
+      "description": "The number, or null when it is unknown (a cost with no provider evidence is null, never zero).",
+      "examples": [412.7]
+    },
+    "unit": {
+      "enum": ["ms", "s", "MIPS", "GB/s", "MB/s", "MiB/s", "links/s", "IOPS", "USD", "count", "percent", "ratio"],
+      "description": "Unit of the value and of the interval.",
+      "examples": ["ms"]
+    },
+    "interval": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["low", "high", "confidence"],
+          "properties": {
+            "low": {
+              "type": "number",
+              "x-unit": "see `unit`",
+              "description": "Lower bound, in the value's unit.",
+              "examples": [398.1]
+            },
+            "high": {
+              "type": "number",
+              "x-unit": "see `unit`",
+              "description": "Upper bound, in the value's unit.",
+              "examples": [431.0]
+            },
+            "confidence": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1,
+              "x-unit": "fraction (0 to 1)",
+              "description": "Confidence level of the interval.",
+              "examples": [0.95]
+            }
+          }
+        }
+      ],
+      "description": "Confidence interval, or null when the methodology publishes none for this statistic or the sample is too small."
+    },
+    "n": {
+      "type": "integer",
+      "minimum": 0,
+      "x-unit": "observations",
+      "description": "Observations the number is computed from.",
+      "examples": [40]
+    },
+    "excluded_n": {
+      "type": "integer",
+      "minimum": 0,
+      "x-unit": "observations",
+      "description": "Observations left out for an allowlisted exclusion reason.",
+      "examples": [0]
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "dependentRequired": {"group_by": ["group_statistic"], "group_statistic": ["group_by"]},
+      "description": "Reference to the raw measurements the number is computed from.",
+      "properties": {
+        "relative_to": {"enum": ["repository", "run"], "description": "`inputs.relative_to: run` makes `inputs.path` relative to `data/<run_id>/` (for example `raw/true-0000.jsonl`). The default is the repository root. This keeps the exact run identity in its typed field without duplicating it in a free-text path. Reproduction indexes raw files once and selects the referenced file or directory before filtering observations."},
+        "path": {
+          "type": "string",
+          "description": "Repository-relative path of the raw measurement file or directory.",
+          "examples": ["data/2026-11-01-a/raw/"]
+        },
+        "group_by": {"enum": ["workload"], "description": "`inputs.group_by: workload` with `group_statistic: median` or `first` selects one value per workload before the aggregate's statistic. `n` counts those selected workload values. `statistic: sum` supports trace-set totals; a grouped mean supports averages of job medians. Raw attempts remain available. `not_in_comparison_set` excludes observations outside the methodology's common workload set without discarding them."},
+        "group_statistic": {"enum": ["median", "first"], "description": "One value per workload: nearest-rank median or first included observation in file order."},
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "x-unit": "hex digest",
+          "description": "SHA-256 of the referenced raw data, so a change is detectable.",
+          "examples": ["0000000000000000000000000000000000000000000000000000000000000000"]
+        },
+        "filter": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "integer"] },
+          "description": "Measurement fields that select the inputs from the referenced data, as name/value pairs.",
+          "examples": [{ "provider": "e2b", "variant": "true" }]
+        }
+      }
+    },
+    "precision": {
+      "description": "Comparison precision for the value and interval bounds, in the declared unit. Choose decimal rounding (half a last decimal unit) or an absolute tolerance. No implicit relative tolerance.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decimal_places"
+          ],
+          "properties": {
+            "decimal_places": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 15
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "absolute_tolerance"
+          ],
+          "properties": {
+            "absolute_tolerance": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "test_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Page test identity when several tests share one methodology."
+    }
+  }
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "data": {
+      "command": "python3 -c 'import json, sqlite3, ssl, asyncio, urllib.request, email.parser, xml.etree.ElementTree' && node -e 'require(\"crypto\"); require(\"zlib\"); require(\"http\")' && git --version",
+      "marker": {
+        "read": "cat /workspace/snapshot/marker",
+        "text": "boxrouter-snapshot-marker/v1",
+        "timeout_s": 30,
+        "write": "mkdir -p /workspace/snapshot && printf %s boxrouter-snapshot-marker/v1 > /workspace/snapshot/marker"
+      },
+      "snapshots": {
+        "deletable": true,
+        "original_after": "any"
+      }
+    },
+    "id": "marker",
+    "label": "A standard sandbox with a marker file",
+    "version": "sha256:0a4b0df635ec48f1"
+  }
+]

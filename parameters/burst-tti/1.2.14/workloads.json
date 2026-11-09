@@ -1,0 +1,42 @@
+[
+  {
+    "data": {
+      "base_image": "ghcr.io/boxrouter/standard-image@sha256:1cb7f85ec988a9dcf66c47f953f8e7984d88c987fec964aa327afafb63cc9a0b",
+      "command": "true",
+      "sandboxes": 5
+    },
+    "id": "n5",
+    "label": "5 sandboxes at once from a new image",
+    "version": "sha256:25774d2701cff1f8"
+  },
+  {
+    "data": {
+      "base_image": "ghcr.io/boxrouter/standard-image@sha256:1cb7f85ec988a9dcf66c47f953f8e7984d88c987fec964aa327afafb63cc9a0b",
+      "command": "true",
+      "sandboxes": 10
+    },
+    "id": "n10",
+    "label": "10 sandboxes at once from a new image",
+    "version": "sha256:ae4c9f73ab7757ee"
+  },
+  {
+    "data": {
+      "base_image": "ghcr.io/boxrouter/standard-image@sha256:1cb7f85ec988a9dcf66c47f953f8e7984d88c987fec964aa327afafb63cc9a0b",
+      "command": "true",
+      "sandboxes": 20
+    },
+    "id": "n20",
+    "label": "20 sandboxes at once from a new image",
+    "version": "sha256:85bc109f552532d7"
+  },
+  {
+    "data": {
+      "base_image": "ghcr.io/boxrouter/standard-image@sha256:1cb7f85ec988a9dcf66c47f953f8e7984d88c987fec964aa327afafb63cc9a0b",
+      "command": "true",
+      "sandboxes": 50
+    },
+    "id": "n50",
+    "label": "50 sandboxes at once from a new image",
+    "version": "sha256:bfeb0f5d6e18e0c1"
+  }
+]

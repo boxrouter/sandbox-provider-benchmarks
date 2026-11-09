@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/sbs/0.2/run.schema.json",
+  "title": "SBS run manifest",
+  "description": "When, where and against which providers one run executed the cited methodology versions. Methodology says what a benchmark is; the run says what was done.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "methodologies", "region", "machine_configs", "providers", "price_sheet_version", "started_at", "finished_at", "account_warmth", "publication"],
+  "$defs": {
+    "requested_region": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "source"],
+          "properties": {
+            "value": {"type": "string", "minLength": 1},
+            "source": {"const": "recorded"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "source", "reason"],
+          "properties": {
+            "value": {"type": "null"},
+            "source": {"const": "unknown"},
+            "reason": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    }
+  },
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "description": "Identifier of the run. Measurements and aggregates cite it.",
+      "examples": ["2026-11-01-a"]
+    },
+    "methodologies": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+|[a-z0-9][a-z0-9-]*)$" },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+      },
+      "description": "Methodology versions the run used, as methodology id to semantic version.",
+      "examples": [{ "sandbox.create.sequential_tti": "1.0.0" }]
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested"],
+      "description": "Region the run requested. An unavailable request is Unknown with its reason; observed placement is recorded on each provider measurement.",
+      "properties": {
+        "requested": {"$ref": "#/$defs/requested_region"}
+      },
+      "examples": [{"requested": {"value": "us", "source": "recorded"}}]
+    },
+    "machine_configs": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Machine sizes the run requested.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "vcpu", "memory_gib"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_x.-]*$",
+            "description": "Machine config id used in measurements.",
+            "examples": ["2x4"]
+          },
+          "vcpu": {
+            "type": "integer",
+            "minimum": 1,
+            "x-unit": "vCPU",
+            "description": "Requested virtual CPUs.",
+            "examples": [2]
+          },
+          "memory_gib": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "x-unit": "GiB",
+            "description": "Requested memory.",
+            "examples": [4]
+          }
+        }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Providers the run measured, with the versions and settings in effect.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "sdk_version", "api_version", "settings"],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*$",
+            "description": "Provider slug. Measurements and aggregates use the same slug.",
+            "examples": ["e2b"]
+          },
+          "sdk_version": {
+            "type": "string",
+            "description": "Version of the provider SDK the integration used, or `unknown`.",
+            "examples": ["unknown"]
+          },
+          "api_version": {
+            "type": "string",
+            "description": "Version of the provider API in effect, or `unknown`.",
+            "examples": ["unknown"]
+          },
+          "settings": {
+            "type": "object",
+            "description": "Provider settings that could change a number, as name/value pairs: plan, observed region, concurrency, connection idle time.",
+            "examples": [{ "connection_idle_seconds": 300 }]
+          },
+          "price_version": {
+            "type": "string",
+            "description": "Version of this provider's rates inside the price sheet.",
+            "examples": ["2026-10-01"]
+          }
+        }
+      }
+    },
+    "price_sheet_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Version of the price sheet (sandbox-provider-pricing) every cost in the run was computed with.",
+      "examples": ["0.4.0"]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "x-unit": "UTC",
+      "description": "UTC time the run started.",
+      "examples": ["2026-11-01T09:00:00Z"]
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "x-unit": "UTC",
+      "description": "UTC time the run finished.",
+      "examples": ["2026-11-01T11:30:00Z"]
+    },
+    "account_warmth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "description": "How recently the benchmark account used the provider before the run.",
+      "properties": {
+        "state": {
+          "enum": ["fresh", "warmed", "unknown"],
+          "description": "Whether the account was new to the provider, recently active, or unknown.",
+          "examples": ["unknown"]
+        },
+        "note": {
+          "type": "string",
+          "description": "What was done before the run, if anything.",
+          "examples": ["No warm-up trials were run."]
+        }
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accounts",
+        "visibility",
+        "summary_sha256",
+        "methodology_commit"
+      ],
+      "properties": {
+        "accounts": {
+          "const": "dedicated"
+        },
+        "visibility": {
+          "const": "public"
+        },
+        "summary_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "methodology_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      },
+      "description": "Source publication state and immutable input identities. The exporter rejects private or personal-account inputs."
+    },
+    "corrections": {
+      "type": "array",
+      "description": "Observations left out of or replaced in this run's aggregates, each with its cause (X20).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trial",
+          "owner",
+          "cause"
+        ],
+        "properties": {
+          "trial": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based trial number the correction applies to."
+          },
+          "owner": {
+            "enum": [
+              "provider",
+              "benchmark",
+              "external"
+            ],
+            "description": "Who owned the failure."
+          },
+          "cause": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What went wrong, in plain words."
+          },
+          "replaced_by": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Trial number that replaced it, or null."
+          },
+          "source_batch": {
+            "type": "string",
+            "description": "Batch the corrected observation came from."
+          }
+        }
+      }
+    },
+    "workload_sources": {
+      "type": "array",
+      "description": "Generated exact identity allowlist, reviewed with the dataset. These are identifiers only, each cited to its pinned task source.",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "repository", "commit", "path"],
+        "properties": {
+          "id": {"type": "string"},
+          "repository": {"type": "string"},
+          "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "path": {"type": "string"}
+        }
+      }
+    }
+  }
+}

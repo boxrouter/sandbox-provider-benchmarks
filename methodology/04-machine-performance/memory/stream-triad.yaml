@@ -1,0 +1,909 @@
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+id: stream-triad
+version: 1.1.4
+effective: '2026-10-29'
+name: '{name:test.stream-triad}'
+category: machine_performance
+panel:
+  command: OMP_NUM_THREADS={param:stream-triad.1.1.4.environment.size.vcpu} stream
+  quantities: Triad memory bandwidth
+notes:
+  what_this_measures: The result is sustained memory bandwidth over arrays larger than cache. It does
+    not measure CPU compute speed.
+  how_it_is_measured: The bandwidth tool runs repeated passes over arrays larger than cache with as
+    many threads as requested vCPUs; its own clock supplies the best Triad rate.
+  how_to_read: The {param:stream-triad.1.1.2.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:triad_gigabytes_per_second}.
+  cost_summary: The cost covers the measured billing span per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: triad_gigabytes_per_second
+  unit: GB/s
+  direction: higher_is_better
+  description: Best {name:test.stream-triad} pass rate in decimal gigabytes per second.
+  quantity: bandwidth
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: stream-triad
+    name: '{name:test.stream-triad}'
+    action: Run STREAM 5.10 for 20 passes over three arrays of 80,000,000 doubles with OMP_NUM_THREADS
+      equal to the requested vCPU count (not `nproc`), as a background script that the harness polls;
+      the output must say the solution validates. The row runs in an order shuffled per trial with the
+      other two rows of the trial. Copy, Scale and Add are recorded too.
+    timer:
+      start_event: STREAM begins its benchmark.
+      stop_event: STREAM exits after 20 passes; its rate is the best Triad pass by its own clock, in
+        10^9 bytes/s.
+    timeout_seconds: 120
+    record_steps:
+    - stream-triad
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+  shared_trial:
+    with: 7-zip-1-thread
+    version: 1.1.0
+timing_boundaries:
+  start: STREAM begins in the sandbox after untimed CPU facts and verified tool installation.
+  stop: STREAM exits after 20 passes; use its best Triad rate in decimal GB/s.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of successful attempts divided by their number; failed attempts' cost is not included.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    stream-triad: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: STREAM
+  version: '5.10'
+  ids:
+  - stream-5.10-80m-linux-x86_64-static
+  - sha256:26b6dd2daf8a6f61eaeaebd9bc0c5cece91ec2d425069327034b7be1dbfc35d3
+  - 'workload: standard; row: stream-triad'
+  licence: Permissive use and redistribution; label the method as based on a variant of the STREAM benchmark
+    code.
+execution:
+  mode: script
+  inference: false
+interpretation:
+  informs: 'How fast a sandbox moves data in memory: agents that crunch data wait on memory bandwidth,
+    and two providers that sell the same 2 vCPU / 4 GiB can differ in it.'
+  limits:
+  - STREAM measures sustained memory bandwidth with arrays far larger than the caches; it does not measure
+    CPU compute speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`; the threads
+    used are still the requested count.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - The result is the tool's own figure by its own clock; the job host times nothing.
+validity_checks:
+- id: solution-validates
+  threat: STREAM output that does not validate would publish a wrong bandwidth.
+  check: STREAM's output must say the solution validates; output that does not is the provider's failure.
+- id: stream-array-small
+  threat: Arrays small enough to sit in the caches would measure cache speed, not memory.
+  check: A trial in which one array is under four times the L3 cache the sandbox reports is recorded
+    as `stream_array_small`.
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is
+    recorded as `threads_differ` and the result is kept.
+---
+id: stream-triad
+version: 1.1.2
+effective: '2026-10-26'
+name: STREAM Triad
+category: machine_performance
+notes:
+  summary: Sustained memory bandwidth measured by STREAM Triad over arrays larger than cache.
+  what_this_measures: Sustained memory bandwidth with STREAM Triad, using arrays larger than cache. It
+    does not measure CPU compute speed.
+  how_it_is_measured: STREAM Triad runs 20 passes over three arrays of 610.4 MiB each with as many threads
+    as requested vCPUs; its best Triad rate uses its own clock.
+  how_to_read: Each provider's median is shown in GB/s. Higher is better. The tail is the 95th percentile
+    once at least 20 trials have succeeded; below that the lowest trial is shown instead.
+  cost_summary: Cost over the measured billing span per successful trial.
+  cost_how_to_read: Cost of successful attempts divided by their number; failed attempts' cost is not
+    included. Lower is better.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: triad_gigabytes_per_second
+  unit: GB/s
+  direction: higher_is_better
+  description: Best STREAM Triad pass rate in decimal gigabytes per second.
+  quantity: bandwidth
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: Create
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: stream-triad
+    name: STREAM Triad
+    action: Run STREAM 5.10 for 20 passes over three arrays of 80,000,000 doubles with OMP_NUM_THREADS
+      equal to the requested vCPU count (not `nproc`), as a background script that the harness polls;
+      the output must say the solution validates. The row runs in an order shuffled per trial with the
+      other two rows of the trial. Copy, Scale and Add are recorded too.
+    timer:
+      start_event: STREAM begins its benchmark.
+      stop_event: STREAM exits after 20 passes; its rate is the best Triad pass by its own clock, in 10^9
+        bytes/s.
+    timeout_seconds: 120
+    record_steps:
+    - stream-triad
+  - id: destroy
+    name: Destroy
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+  shared_trial:
+    with: 7-zip-1-thread
+    version: 1.1.0
+timing_boundaries:
+  start: STREAM begins in the sandbox after untimed CPU facts and verified tool installation.
+  stop: STREAM exits after 20 passes; use its best Triad rate in decimal GB/s.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of successful attempts divided by their number; failed attempts' cost is not included.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    stream-triad: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: STREAM
+  version: '5.10'
+  ids:
+  - stream-5.10-80m-linux-x86_64-static
+  - sha256:26b6dd2daf8a6f61eaeaebd9bc0c5cece91ec2d425069327034b7be1dbfc35d3
+  - 'workload: standard; row: stream-triad'
+  licence: Permissive use and redistribution; label the method as based on a variant of the STREAM benchmark
+    code.
+execution:
+  mode: script
+  inference: false
+interpretation:
+  informs: 'How fast a sandbox moves data in memory: agents that crunch data wait on memory bandwidth,
+    and two providers that sell the same 2 vCPU / 4 GiB can differ in it.'
+  limits:
+  - STREAM measures sustained memory bandwidth with arrays far larger than the caches; it does not measure
+    CPU compute speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`; the threads
+    used are still the requested count.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - The result is the tool's own figure by its own clock; the job host times nothing.
+validity_checks:
+- id: solution-validates
+  threat: STREAM output that does not validate would publish a wrong bandwidth.
+  check: STREAM's output must say the solution validates; output that does not is the provider's failure.
+- id: stream-array-small
+  threat: Arrays small enough to sit in the caches would measure cache speed, not memory.
+  check: A trial in which one array is under four times the L3 cache the sandbox reports is recorded as
+    `stream_array_small`.
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
+    as `threads_differ` and the result is kept.
+---
+id: stream-triad
+version: 1.1.11
+effective: '2026-11-01'
+name: '{name:test.stream-triad}'
+category: machine_performance
+panel:
+  command: OMP_NUM_THREADS={param:stream-triad.1.1.4.environment.size.vcpu} stream
+  quantities: sustainable memory bandwidth
+notes:
+  what_this_measures: The result is sustained memory bandwidth over arrays larger than cache. It does
+    not measure CPU compute speed.
+  how_it_is_measured: The bandwidth tool runs repeated passes over arrays larger than cache with as many
+    threads as requested vCPUs; its own clock supplies the best Triad rate.
+  how_to_read: The {param:stream-triad.1.1.2.statistics.primary} summarizes successful trials in the axis
+    unit; {direction:triad_gigabytes_per_second}.
+  cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.10
+metrics:
+- name: triad_gigabytes_per_second
+  unit: GB/s
+  direction: higher_is_better
+  description: Best {name:test.stream-triad} pass rate in decimal gigabytes per second.
+  quantity: bandwidth
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 40
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: stream-triad
+    name: '{name:test.stream-triad}'
+    action: Run STREAM 5.10 for 20 passes over three arrays of 80,000,000 doubles with OMP_NUM_THREADS
+      equal to the requested vCPU count (not `nproc`), as a background script that the harness polls;
+      the output must say the solution validates. The row runs in an order shuffled per trial with the
+      other two rows of the trial. Copy, Scale and Add are recorded too.
+    timer:
+      start_event: STREAM begins its benchmark.
+      stop_event: STREAM exits after 20 passes; its rate is the best Triad pass by its own clock, in 10^9
+        bytes/s.
+    timeout_seconds: 120
+    record_steps:
+    - stream-triad
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+  shared_trial:
+    with: 7-zip-1-thread
+    version: 1.1.8
+timing_boundaries:
+  start: STREAM begins in the sandbox after untimed CPU facts and verified tool installation.
+  stop: STREAM exits after 20 passes; use its best Triad rate in decimal GB/s.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+failure_policy:
+  timeout_seconds:
+    create: 300
+    stream-triad: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: STREAM
+  version: '5.10'
+  ids:
+  - stream-5.10-80m-linux-x86_64-static
+  - sha256:26b6dd2daf8a6f61eaeaebd9bc0c5cece91ec2d425069327034b7be1dbfc35d3
+  - 'workload: standard; row: stream-triad'
+  licence: Permissive use and redistribution; label the method as based on a variant of the STREAM benchmark
+    code.
+execution:
+  mode: script
+  inference: false
+interpretation:
+  informs: 'How fast a sandbox moves data in memory: agents that crunch data wait on memory bandwidth,
+    and two providers that sell the same 2 vCPU / 4 GiB can differ in it.'
+  limits:
+  - STREAM measures sustained memory bandwidth with arrays far larger than the caches; it does not measure
+    CPU compute speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch; the threads
+    used are still the requested count.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - The result is the tool's own figure by its own clock; the job host times nothing.
+validity_checks:
+- id: solution-validates
+  threat: STREAM output that does not validate would publish a wrong bandwidth.
+  check: STREAM's output must say the solution validates; output that does not is the provider's failure.
+- id: stream-array-small
+  threat: Arrays small enough to sit in the caches would measure cache speed, not memory.
+  check: A trial in which one array is under four times the L3 cache the sandbox reports is recorded as
+    `stream_array_small`.
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
+    as a CPU count mismatch and the result is kept.
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Nothing is warmed up and the work runs from memory and CPU, so page and package caches do not
+      enter the result. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+---
+id: stream-triad
+version: 1.1.5
+effective: '2026-10-29'
+name: '{name:test.stream-triad}'
+category: machine_performance
+panel:
+  command: OMP_NUM_THREADS={param:stream-triad.1.1.4.environment.size.vcpu} stream
+  quantities: sustainable memory bandwidth
+notes:
+  what_this_measures: The result is sustained memory bandwidth over arrays larger than cache. It does
+    not measure CPU compute speed.
+  how_it_is_measured: The bandwidth tool runs repeated passes over arrays larger than cache with as
+    many threads as requested vCPUs; its own clock supplies the best Triad rate.
+  how_to_read: The {param:stream-triad.1.1.2.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:triad_gigabytes_per_second}.
+  cost_summary: The cost covers the measured billing span per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: triad_gigabytes_per_second
+  unit: GB/s
+  direction: higher_is_better
+  description: Best {name:test.stream-triad} pass rate in decimal gigabytes per second.
+  quantity: bandwidth
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: stream-triad
+    name: '{name:test.stream-triad}'
+    action: Run STREAM 5.10 for 20 passes over three arrays of 80,000,000 doubles with OMP_NUM_THREADS
+      equal to the requested vCPU count (not `nproc`), as a background script that the harness polls;
+      the output must say the solution validates. The row runs in an order shuffled per trial with the
+      other two rows of the trial. Copy, Scale and Add are recorded too.
+    timer:
+      start_event: STREAM begins its benchmark.
+      stop_event: STREAM exits after 20 passes; its rate is the best Triad pass by its own clock, in
+        10^9 bytes/s.
+    timeout_seconds: 120
+    record_steps:
+    - stream-triad
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+  shared_trial:
+    with: 7-zip-1-thread
+    version: 1.1.0
+timing_boundaries:
+  start: STREAM begins in the sandbox after untimed CPU facts and verified tool installation.
+  stop: STREAM exits after 20 passes; use its best Triad rate in decimal GB/s.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of successful attempts divided by their number; failed attempts' cost is not included.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    stream-triad: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: STREAM
+  version: '5.10'
+  ids:
+  - stream-5.10-80m-linux-x86_64-static
+  - sha256:26b6dd2daf8a6f61eaeaebd9bc0c5cece91ec2d425069327034b7be1dbfc35d3
+  - 'workload: standard; row: stream-triad'
+  licence: Permissive use and redistribution; label the method as based on a variant of the STREAM benchmark
+    code.
+execution:
+  mode: script
+  inference: false
+interpretation:
+  informs: 'How fast a sandbox moves data in memory: agents that crunch data wait on memory bandwidth,
+    and two providers that sell the same 2 vCPU / 4 GiB can differ in it.'
+  limits:
+  - STREAM measures sustained memory bandwidth with arrays far larger than the caches; it does not measure
+    CPU compute speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`; the threads
+    used are still the requested count.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - The result is the tool's own figure by its own clock; the job host times nothing.
+validity_checks:
+- id: solution-validates
+  threat: STREAM output that does not validate would publish a wrong bandwidth.
+  check: STREAM's output must say the solution validates; output that does not is the provider's failure.
+- id: stream-array-small
+  threat: Arrays small enough to sit in the caches would measure cache speed, not memory.
+  check: A trial in which one array is under four times the L3 cache the sandbox reports is recorded
+    as `stream_array_small`.
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is
+    recorded as `threads_differ` and the result is kept.
+
+---
+id: stream-triad
+version: 1.1.18
+effective: '2026-11-08'
+name: '{name:test.stream-triad}'
+category: machine_performance
+panel:
+  command: OMP_NUM_THREADS={param:stream-triad.1.1.18.environment.size.vcpu} stream
+  quantities: sustainable memory bandwidth
+notes:
+  what_this_measures: The result is sustained memory bandwidth over arrays larger than cache. It does
+    not measure CPU compute speed.
+  how_it_is_measured: The bandwidth tool runs repeated passes over arrays larger than cache with as many
+    threads as requested vCPUs; its own clock supplies the best Triad rate.
+  how_to_read: The {param:stream-triad.1.1.18.statistics.primary} summarizes successful trials in the axis
+    unit; {direction:triad_gigabytes_per_second}.
+  cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: triad_gigabytes_per_second
+  unit: GB/s
+  direction: higher_is_better
+  description: Best {name:test.stream-triad} pass rate in decimal gigabytes per second.
+  quantity: bandwidth
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 40
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: stream-triad
+    name: '{name:test.stream-triad}'
+    action: Run STREAM 5.10 for 20 passes over three arrays of 80,000,000 doubles with OMP_NUM_THREADS
+      equal to the requested vCPU count (not `nproc`), as a background script that the harness polls;
+      the output must say the solution validates. The row runs in an order shuffled per trial with the
+      other two rows of the trial. Copy, Scale and Add are recorded too.
+    timer:
+      start_event: STREAM begins its benchmark.
+      stop_event: STREAM exits after 20 passes; its rate is the best Triad pass by its own clock, in 10^9
+        bytes/s.
+    timeout_seconds: 120
+    record_steps:
+    - stream-triad
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+  shared_trial:
+    with: 7-zip-1-thread
+    version: 1.1.18
+timing_boundaries:
+  start: STREAM begins in the sandbox after untimed CPU facts and verified tool installation.
+  stop: STREAM exits after 20 passes; use its best Triad rate in decimal GB/s.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+failure_policy:
+  timeout_seconds:
+    create: 300
+    stream-triad: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: STREAM
+  version: '5.10'
+  ids:
+  - stream-5.10-80m-linux-x86_64-static
+  - sha256:26b6dd2daf8a6f61eaeaebd9bc0c5cece91ec2d425069327034b7be1dbfc35d3
+  - 'workload: standard; row: stream-triad'
+  licence: Permissive use and redistribution; label the method as based on a variant of the STREAM benchmark
+    code.
+execution:
+  mode: script
+  inference: false
+interpretation:
+  informs: 'How fast a sandbox moves data in memory: agents that crunch data wait on memory bandwidth,
+    and two providers that sell the same 2 vCPU / 4 GiB can differ in it.'
+  limits:
+  - STREAM measures sustained memory bandwidth with arrays far larger than the caches; it does not measure
+    CPU compute speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch; the threads
+    used are still the requested count.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - The result is the tool's own figure by its own clock; the job host times nothing.
+validity_checks:
+- id: solution-validates
+  threat: STREAM output that does not validate would publish a wrong bandwidth.
+  check: STREAM's output must say the solution validates; output that does not is the provider's failure.
+- id: stream-array-small
+  threat: Arrays small enough to sit in the caches would measure cache speed, not memory.
+  check: A trial in which one array is under four times the L3 cache the sandbox reports is recorded as
+    `stream_array_small`.
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
+    as a CPU count mismatch and the result is kept.
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Nothing is warmed up and the work runs from memory and CPU, so page and package caches do not
+      enter the result. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: exception
+    text: >-
+      Guest CPU model/count, kernel and working-directory device/filesystem are probed outside
+      timing on a best-effort basis; unavailable readings remain unknown. Native host/zone
+      identifiers are not collected. Missing facts leave the affected independence checks
+      unassessed.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

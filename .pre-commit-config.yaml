@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: python-checks
+        name: Python static checks (tests run in CI)
+        entry: make lint
+        language: system
+        pass_filenames: false
+        always_run: true

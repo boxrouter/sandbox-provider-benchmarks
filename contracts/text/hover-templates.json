@@ -1,0 +1,511 @@
+{
+  "schema": "boxrouter.bench.hover-templates/1",
+  "templates": {
+    "hover_total_sum_of_tests": {
+      "owner": "methodology",
+      "template": "{name:stage.test} values are measured separately and then summed using {statistic}.",
+      "runtime_fields": [
+        "statistic"
+      ],
+      "form": "sentence",
+      "role": "body"
+    },
+    "trace_task_not_ranked": {
+      "owner": "methodology",
+      "template": "The recorded workload does not meet the ranking rule.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "commands_minute_circled_i_nobody_ranked": {
+      "owner": "methodology",
+      "template": "No provider meets the ranking rule.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "commands_minute_circled_i_reading": {
+      "owner": "methodology",
+      "template": "{provider} leads with {value}.",
+      "runtime_fields": [
+        "provider",
+        "value"
+      ],
+      "form": "sentence",
+      "role": "body"
+    },
+    "commands_minute_circled_i_what_measures": {
+      "owner": "methodology",
+      "template": "The rate compares completed traces with their measured tool time.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "commands_minute_circled_i_method": {
+      "owner": "methodology",
+      "template": "Recorded traces supply tool durations.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "legend_info_7zip_compression": {
+      "owner": "methodology",
+      "template": "Performance also depends on memory access times and caches.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "legend_info_7zip_decompression": {
+      "owner": "methodology",
+      "template": "Performance mostly reflects CPU integer speed.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "legend_info_7zip_total": {
+      "owner": "methodology",
+      "template": "7-Zip returns an average of the compression and decompression tests.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "legend_info_deep_swe_build": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "{param:deepswe.1.1.22.procedure.stages.3.description}"
+    },
+    "legend_info_deep_swe_install": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "{param:deepswe.1.1.22.procedure.stages.2.description}"
+    },
+    "legend_info_deep_swe_read": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "Includes every command that no other stage's patterns match."
+    },
+    "legend_info_deep_swe_test": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "{param:deepswe.1.1.22.procedure.stages.4.description}"
+    },
+    "legend_info_deep_swe_write": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "{param:deepswe.1.1.22.procedure.stages.1.description}"
+    },
+    "legend_info_terminal_bench_build": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "{param:terminal-bench-4-0.1.1.19.procedure.stages.2.description}"
+    },
+    "legend_info_terminal_bench_install": {
+      "template_ref": "legend_info_deep_swe_build"
+    },
+    "legend_info_terminal_bench_read": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "Includes every step that no other stage's patterns match."
+    },
+    "legend_info_terminal_bench_test": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "{param:terminal-bench-4-0.1.1.19.procedure.stages.3.description}"
+    },
+    "legend_info_terminal_bench_write": {
+      "owner": "methodology",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body",
+      "template": "{param:terminal-bench-4-0.1.1.19.procedure.stages.1.description}"
+    },
+    "chart_statistic_value": {
+      "owner": "methodology",
+      "template": "{label} {value}",
+      "runtime_fields": [
+        "label",
+        "value"
+      ],
+      "form": "fragment",
+      "role": "measure"
+    },
+    "chart_trial_count": {
+      "template_ref": "chart_statistic_value"
+    },
+    "chart_interval": {
+      "owner": "methodology",
+      "template": "{label} {value}",
+      "runtime_fields": [
+        "label",
+        "value"
+      ],
+      "form": "fragment",
+      "role": "subrow"
+    },
+    "chart_ci_label": {
+      "owner": "methodology",
+      "template": "{confidence} CI",
+      "runtime_fields": [
+        "confidence"
+      ],
+      "form": "fragment",
+      "role": "value"
+    },
+    "chart_header": {
+      "owner": "methodology",
+      "template": "{label}",
+      "runtime_fields": [
+        "label"
+      ],
+      "form": "fragment",
+      "role": "header"
+    },
+    "chart_header_variant_stage": {
+      "owner": "methodology",
+      "template": "{variant} · {stage}",
+      "runtime_fields": [
+        "variant",
+        "stage"
+      ],
+      "form": "fragment",
+      "role": "header"
+    },
+    "chart_value": {
+      "owner": "methodology",
+      "template": "{value}",
+      "runtime_fields": [
+        "value"
+      ],
+      "form": "fragment",
+      "role": "value"
+    },
+    "chart_units_more": {
+      "owner": "methodology",
+      "template": "and {n} more {units}",
+      "runtime_fields": [
+        "n",
+        "units"
+      ],
+      "form": "fragment",
+      "role": "more"
+    },
+    "chart_more": {
+      "owner": "methodology",
+      "template": "and {n} more",
+      "runtime_fields": [
+        "n"
+      ],
+      "form": "fragment",
+      "role": "more"
+    },
+    "chart_trial_of": {
+      "owner": "methodology",
+      "template": "Trial {k} of {n}",
+      "runtime_fields": [
+        "k",
+        "n"
+      ],
+      "form": "fragment",
+      "role": "value"
+    },
+    "chart_statistic_heading": {
+      "owner": "methodology",
+      "template": "{label}",
+      "runtime_fields": [
+        "label"
+      ],
+      "form": "fragment",
+      "role": "heading"
+    },
+    "chart_unit_value": {
+      "owner": "methodology",
+      "template": "{label} {value}",
+      "runtime_fields": [
+        "label",
+        "value"
+      ],
+      "form": "fragment",
+      "role": "unit"
+    },
+    "chart_command": {
+      "owner": "methodology",
+      "template": "{count}× {program}",
+      "runtime_fields": [
+        "count",
+        "program"
+      ],
+      "form": "fragment",
+      "role": "command"
+    },
+    "info_about": {
+      "owner": "methodology",
+      "template": "About {subject}",
+      "runtime_fields": [
+        "subject"
+      ],
+      "form": "action-label",
+      "role": "body"
+    },
+    "index_filled_warning": {
+      "owner": "methodology",
+      "template": "{n} measurements are unavailable for {provider}.",
+      "runtime_fields": [
+        "n",
+        "provider"
+      ],
+      "form": "sentence",
+      "role": "body"
+    },
+    "index_filled_warning_one": {
+      "owner": "methodology",
+      "template": "{n} measurement is unavailable for {provider}.",
+      "runtime_fields": [
+        "n",
+        "provider"
+      ],
+      "form": "sentence",
+      "role": "body"
+    },
+    "how-we-score": {
+      "owner": "methodology",
+      "template": "Scores are relative to the best performer for each metric.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "provider-section-average": {
+      "owner": "methodology",
+      "template": "The section score is the mean of {counted} included scores.",
+      "runtime_fields": [
+        "counted"
+      ],
+      "form": "sentence",
+      "role": "body"
+    },
+    "provider-section-average-exclusions": {
+      "owner": "methodology",
+      "template": "The calculation excludes {left}.",
+      "runtime_fields": [
+        "left"
+      ],
+      "form": "sentence",
+      "role": "body"
+    },
+    "provider-section-average-unavailable": {
+      "owner": "methodology",
+      "template": "No score is included in this section.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "body"
+    },
+    "chart_failures": {
+      "owner": "methodology",
+      "template": "{failed} of {counted} trials failed ({causes}).",
+      "runtime_fields": [
+        "failed",
+        "counted",
+        "causes"
+      ],
+      "form": "sentence",
+      "role": "note"
+    },
+    "affected_one": {
+      "owner": "methodology",
+      "template": "{n} affected {unit}",
+      "runtime_fields": [
+        "n",
+        "unit"
+      ],
+      "form": "fragment",
+      "role": "value"
+    },
+    "affected_other": {
+      "owner": "methodology",
+      "template": "{n} affected {units}",
+      "runtime_fields": [
+        "n",
+        "units"
+      ],
+      "form": "fragment",
+      "role": "value"
+    },
+    "hash_link_kind": {
+      "owner": "methodology",
+      "template": "{param:content.methodology_page.hash_link.kind}",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "header",
+      "slot": "tooltip.hash_link_kind"
+    },
+    "hash_link_hash": {
+      "owner": "methodology",
+      "template": "{hash}",
+      "runtime_fields": [
+        "hash"
+      ],
+      "form": "fragment",
+      "role": "body",
+      "slot": "tooltip.hash_link_hash"
+    },
+    "hash_link_copy": {
+      "owner": "methodology",
+      "template": "{param:content.methodology_page.hash_link.copy}",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "note",
+      "slot": "tooltip.hash_link_copy"
+    },
+    "hash_link_copied": {
+      "owner": "methodology",
+      "template": "{param:content.methodology_page.hash_link.copied}",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "note",
+      "slot": "tooltip.hash_link_copied"
+    }
+  },
+  "reasons": {
+    "failure_cause_sandbox_restarted": {
+      "owner": "methodology",
+      "template": "the sandbox restarted",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "note"
+    },
+    "failure_cause_memory_holder_replaced": {
+      "owner": "methodology",
+      "template": "the memory holding process was replaced",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "note"
+    },
+    "failure_cause_memory_not_kept": {
+      "owner": "methodology",
+      "template": "memory was not kept through the pause",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "note"
+    },
+    "failure_cause_memory_holder_gone": {
+      "owner": "methodology",
+      "template": "the process holding memory was gone after the check",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "note"
+    },
+    "failure_cause_exit_code_differed": {
+      "owner": "methodology",
+      "template": "an exit code differed",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "note"
+    },
+    "failure_cause_patch_differed": {
+      "owner": "methodology",
+      "template": "the patch differed",
+      "runtime_fields": [],
+      "form": "fragment",
+      "role": "note"
+    },
+    "failure_cause_step_timed_out": {
+      "owner": "methodology",
+      "template": "{step} timed out",
+      "runtime_fields": [
+        "step"
+      ],
+      "form": "fragment",
+      "role": "note"
+    },
+    "failure_cause_step_failed": {
+      "owner": "methodology",
+      "template": "{step} failed",
+      "runtime_fields": [
+        "step"
+      ],
+      "form": "fragment",
+      "role": "note"
+    },
+    "burst_failure_k_of_n": {
+      "owner": "methodology",
+      "template": "{k} of {n} sandboxes ready",
+      "runtime_fields": [
+        "k",
+        "n"
+      ],
+      "form": "fragment",
+      "role": "note"
+    },
+    "excluded_trace_command_timed_out": {
+      "owner": "methodology",
+      "template": "A timeout excludes the {unit} ({affected}).",
+      "runtime_fields": [
+        "unit",
+        "affected"
+      ],
+      "form": "sentence",
+      "role": "note"
+    },
+    "excluded_trace_exit_code_differs": {
+      "owner": "methodology",
+      "template": "An unexpected command result excludes the {unit} ({affected}).",
+      "runtime_fields": [
+        "unit",
+        "affected"
+      ],
+      "form": "sentence",
+      "role": "note"
+    },
+    "excluded_trace_patch_differs": {
+      "owner": "methodology",
+      "template": "A difference from the recorded patch excludes the {unit} ({affected}).",
+      "runtime_fields": [
+        "unit",
+        "affected"
+      ],
+      "form": "sentence",
+      "role": "note"
+    },
+    "excluded_failure_replaced_by_batch": {
+      "owner": "methodology"
+    },
+    "excluded_this_run_owner_reason": {
+      "owner": "methodology",
+      "template": "The record assigns this failure to '{owner}', not the provider ({affected}).",
+      "runtime_fields": [
+        "owner",
+        "affected"
+      ],
+      "form": "sentence",
+      "role": "note"
+    },
+    "cost_reason_trial_cost_without_total": {
+      "owner": "methodology",
+      "template": "The trial has no total cost recorded.",
+      "runtime_fields": [],
+      "form": "sentence",
+      "role": "note"
+    },
+    "excluded_top_up_unused": {
+      "owner": "methodology"
+    },
+    "excluded_burst_launch_spread": {
+      "owner": "methodology"
+    }
+  }
+}

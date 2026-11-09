@@ -1,0 +1,14 @@
+[global]
+filename=data.bin
+size=1g
+ioengine=libaio
+iodepth=64
+direct=1
+time_based
+ramp_time=5
+runtime=60
+group_reporting
+
+[disk]
+rw=${RW}
+bs=${BS}

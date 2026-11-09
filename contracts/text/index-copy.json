@@ -1,0 +1,52 @@
+{
+  "description": "Each provider’s composite value combines one value from every workload, with workloads weighted equally.",
+  "definition": "A composite combines one value per workload, with each workload counting equally.",
+  "details": {
+    "time": {
+      "what_this_measures": "Measures each provider’s execution times across coding and CI workloads combined into one composite time.",
+      "how_it_is_measured": "Published per-unit times from {workloads:time-index}, evaluated on the selected unit metric (median by default, mean, or p95).",
+      "how_to_read": "A geometric mean is only comparable over the same set of workloads, so a workload a provider failed entirely takes the worst workload value. Every provider stays in the composite, so a provider can't rank higher by failing the traces it is slow on.",
+      "legacy_how_to_read": "A unit missing for any provider is excluded for every provider.",
+      "what_this_measures_concise": "The composite time per provider is the geometric mean of each workload's median times across {workloads:time-index}, each weighted equally.",
+      "cost_how_to_read": "The time and cost views use the same workload boundaries.",
+      "cost_summary": "Cost follows the successful workload results included in each provider value.",
+      "calculation": "For each workload, compute the geometric mean of its unit times (substituting the slowest provider’s time on any uncompleted unit), then take the equal-weighted geometric mean across the workloads in the selected scope."
+    },
+    "cost": {
+      "what_this_measures": "Measures each provider’s sandbox costs across coding and CI workloads combined into one composite cost.",
+      "how_it_is_measured": "Published per-unit provider-sourced costs from {workloads:cost-index} over successful trials on the selected unit metric (median by default, mean, or p95).",
+      "how_to_read": "The method includes exact costs from successful trials only. A workload a provider failed entirely takes the highest workload cost, and every provider stays in the composite, so none ranks higher by failing the traces it is slow on.",
+      "what_this_measures_concise": "The composite cost per provider is the geometric mean of each workload's median costs across {workloads:cost-index}, each weighted equally.",
+      "calculation": "For each workload, compute the geometric mean of its unit costs (substituting the highest provider cost on any uncompleted unit), then take the equal-weighted geometric mean across the workloads in the selected scope."
+    },
+    "time_score": {
+      "what_this_measures": "Averages each provider's workload time scores, from 0 to 100, where 100 is the fastest provider on every unit.",
+      "how_it_is_measured": "A unit scores 100 times the best provider's time divided by this provider's time; a workload scores the mean over its whole unit set, and the composite is the mean of the workload scores. A unit without a result adds no points.",
+      "how_to_read": "Higher is better. A provider that fails a unit or a workload loses points; nothing is substituted for it."
+    },
+    "cost_score": {
+      "what_this_measures": "Averages each provider's workload cost scores, from 0 to 100, where 100 is the cheapest provider on every unit.",
+      "how_it_is_measured": "A unit scores 100 times the best provider's cost divided by this provider's cost; a workload scores the mean over its whole unit set, and the composite is the mean of the workload scores. A unit without a result adds no points.",
+      "how_to_read": "Higher is better. A provider that fails a unit or a workload loses points; nothing is substituted for it."
+    },
+    "time_vs_cost": {
+      "what_this_measures": "Displays each provider’s {name:index.time-index} and {name:index.cost-index} on a frontier graph.",
+      "how_it_is_measured": "The provider’s Execution-scope {name:index.cost-index} and its {name:index.time-index} computed over the same costed units on the selected unit metric (median by default, mean, or p95).",
+      "how_to_read": "Lower elapsed time and lower cost appear toward the lower left.",
+      "calculation": "Pairs each qualifying provider’s two composite geometric means as a single (x, y) point with no additional timing or cost calculation."
+    },
+    "provider_score": {
+      "what_this_measures": "Averages four scores for each provider, each from 0 to 100: workload time, workload cost, sandbox operations and machine performance.",
+      "how_it_is_measured": "A unit's score is averaged up to its suite, then its subsection, then workload time and cost; an operation's or machine test's score compares providers in its default configuration. A child without results adds 0.",
+      "how_to_read": "Higher is better. A provider without a result on a child loses its points; nothing is substituted for it.",
+      "what_this_measures_four_scores": "Averages four scores for each provider, each from 0 to 100: workload time, workload cost, sandbox operations and machine performance."
+    }
+  },
+  "caption_statistic": "composite",
+  "descriptions": {
+    "time": "A {quantity:typical_time} statistic is aggregated from each workload's {units:time-index}.",
+    "cost": "A {quantity:typical_cost} statistic is aggregated from each workload's {units:cost-index}.",
+    "time_vs_cost": "{name:statistic.typical} time vs {name:statistic.typical} cost",
+    "provider_score": "A provider score is averaged from its workload time, workload cost, sandbox operations and machine performance scores."
+  }
+}

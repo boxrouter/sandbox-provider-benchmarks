@@ -1,0 +1,980 @@
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+id: hard-links-2vcpu-8gib
+version: 1.0.3
+effective: '2026-11-08'
+name: '{name:test.hard-links-2vcpu-8gib}'
+category: machine_performance
+panel:
+  command: stress-ng --link 1
+  quantities: hard-link creation and removal rate
+notes:
+  what_this_measures: The result counts the successful hard links created per second in /workspace/hardlink
+    inside a 2 vCPU and 8 GiB sandbox, including the time required to remove those links; single-core
+    CPU speed also affects this system-call loop.
+  how_it_is_measured: The pinned stress-ng 0.19.02 binary runs one link worker for 30 seconds in /workspace/hardlink;
+    its reported rate divides the total successful hard links by the stressor's own elapsed clock time,
+    which includes link removal.
+  how_to_read: The {param:hard-links.1.1.17.statistics.primary} summarizes successful trials in the axis
+    unit; {direction:links_per_second}.
+  cost_summary: The cost is the sum of the provider-sourced sandbox costs for successful trials, divided
+    by the number of successful trials.
+  cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
+    required for a cost to be shown.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: links_per_second
+  unit: links/s
+  direction: higher_is_better
+  description: stress-ng successful hard links per second, including time to remove them.
+  quantity: links
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 8
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
+  network: unknown
+  lifetime_seconds: 600
+procedure:
+  mode: single
+  trials: 75
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: mount-facts
+    name: Mount facts
+    timer: null
+    action: Untimed, read the filesystem, mount and free space of /workspace/hardlink; under 100 MiB free,
+      the trial is missed. Then write a 256 MiB file there with `dd`, read the sandbox's shared memory
+      before and after, and delete the file.
+  - id: install-stress-ng
+    name: Install stress-ng
+    timer: null
+    action: Untimed, write in the pinned static stress-ng V0.19.02 (xz-compressed), unpack it and check
+      its SHA-256 in the sandbox. Another digest is the benchmark script's failure.
+  - id: hard-links
+    name: '{name:test.hard-links}'
+    action: Run stress-ng's link stressor, one worker for 30 s, as `--link 1 --metrics --no-rand-seed
+      -t 30`, with its links and its YAML in /workspace/hardlink. In each round the worker links one file
+      up to 8,192 times, then removes every link. Afterwards, untimed, read the YAML back.
+    timer:
+      start_event: stress-ng's link stressor begins, after the untimed mount facts and the check of the
+        pinned tool; nothing is sent between the check and this command.
+      stop_event: stress-ng has run one worker for 30 s, removed its last links and exited; its rate is
+        its own count over its own clock.
+    timeout_seconds: 120
+    record_steps:
+    - hardlink
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: The stressor runs after untimed mount facts, memory probe and verified tool installation.
+  stop: stress-ng exits after one worker runs for 30 seconds and removes its links; use the stressor rate.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 20
+cost:
+  method: provider_reported_or_priced
+failure_policy:
+  timeout_seconds:
+    create: 300
+    hard-links: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  - stress-ng exiting non-zero, or a YAML with no links rate.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  - A YAML that cannot be read after stress-ng exited 0.
+  - A stress-ng binary whose SHA-256 differs from the pinned one.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: stress-ng
+  version: 0.19.02
+  ids:
+  - 'workload: link-30s'
+  - stress-ng-0.19.02-linux-x86_64-static.xz sha256:63589b42f7de2ca7bcc8591b5ca59180e77be362c829801c326d912b78106082
+  licence: GPL-2.0-only; commands and results may be published; reference-only for the binary.
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/hard-links-2vcpu-8gib/1.0.3/
+  sha256: 86a4f3d1f5c94fcda31b8df55e104d673184b7c3ac7bb4783a63154771bfb8d8
+interpretation:
+  informs: The result shows how fast a 2 vCPU and 8 GiB sandbox executes the hard-link creation and removal
+    loop that package managers such as pnpm use when linking files from a content-addressable store; a
+    provider with half the rate takes about twice as long on that metadata work.
+  what_to_do: Use the rate to compare providers within the 2 vCPU and 8 GiB cell on guest filesystem metadata
+    speed. For a provider, a lower rate points to per-syscall overhead in the guest kernel's filesystem
+    locking, an overlay filesystem, or a system-call interception layer rather than block-device throughput,
+    because stress-ng does not call sync and the directory changes remain in memory.
+  limits:
+  - The stressor records each completed round of up to 8,192 links as one bogo operation, so bogo-operations-per-second
+    counts rounds and is recorded only as diagnostic data, never published as the headline rate.
+  - Individual link calls that fail with EDQUOT, ENOMEM, EMLINK, EINTR, or ENOSPC are retried silently
+    by stress-ng and excluded from the successful-link count; the untimed 100 MiB free-space check makes
+    ENOSPC unlikely.
+  - Results belong to the 2 vCPU and 8 GiB declared-fit cell and are not equivalent to 2 vCPU and 4 GiB
+    or 4 vCPU and 8 GiB results.
+  caveats:
+  - Because one worker runs a tight system-call loop on a single vCPU, a slower or throttled CPU reduces
+    the link rate just as much as a slower filesystem implementation; user and system CPU seconds are
+    recorded alongside the rate.
+  - The published metric is stress-ng's own links-per-second figure over its 30-second run, which includes
+    the unlink pass at the end of each round.
+  - Each counted link also performs an lstat call and an intentional cross-mount link attempt that fails
+    by design, and because every round reuses the same 8,192 file names, path lookups benefit from the
+    guest kernel's directory entry cache.
+validity_checks:
+- id: free-space
+  threat: A full /workspace would make links fail for want of space rather than for filesystem cost.
+  check: Under 100 MiB free in /workspace/hardlink, the trial is missed.
+- id: files-in-memory
+  threat: A /workspace held in memory measures a memory filesystem, with no device behind it.
+  check: When /workspace is a tmpfs or an overlay on one, or the 256 MiB probe raised shared memory by
+    at least 80% of its size, the result is ranked with a note that no device is behind the filesystem.
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Nothing is warmed up; the stressor works on a fresh file system in a fresh sandbox. The provider's
+      image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: exception
+    text: Guest CPU model/count, kernel and working-directory device/filesystem are probed outside timing
+      on a best-effort basis; unavailable readings remain unknown. Native host/zone identifiers are not
+      collected. Missing facts leave the affected independence checks unassessed.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+---
+id: hard-links
+version: 1.1.2
+effective: '2026-10-26'
+name: Hard Links
+category: machine_performance
+notes:
+  summary: Hard links created per second in /workspace, including time to remove them.
+  what_this_measures: Successful hard links created per second in /workspace, including removal time.
+    The loop is also affected by CPU speed.
+  how_it_is_measured: The `stress-ng` workload runs one link worker for 30 s in /workspace; its successful-link
+    count includes removal time and uses the tool's own clock.
+  how_to_read: Each provider's median is shown in links per second. Higher is better. The tail is the
+    95th percentile once at least 20 trials have succeeded; below that the lowest trial is shown instead.
+  cost_summary: Cost over the measured billing span per successful trial.
+  cost_how_to_read: Cost of successful attempts divided by their number; failed attempts' cost is not
+    included. Lower is better.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: links_per_second
+  unit: links/s
+  direction: higher_is_better
+  description: stress-ng successful hard links per second, including time to remove them.
+  quantity: links
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 600
+procedure:
+  mode: single
+  trials: 40
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: Create
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: mount-facts
+    name: Mount facts
+    timer: null
+    action: Untimed, read the filesystem, mount and free space of /workspace/hardlink; under 100 MiB free,
+      the trial is missed. Then write a 256 MiB file there with `dd`, read the sandbox's shared memory
+      before and after, and delete the file.
+  - id: install-stress-ng
+    name: Install stress-ng
+    timer: null
+    action: Untimed, write in the pinned static stress-ng V0.19.02 (xz-compressed), unpack it and check
+      its SHA-256 in the sandbox. Another digest is the benchmark script's failure.
+  - id: hard-links
+    name: Hard Links
+    action: Run stress-ng's link stressor, one worker for 30 s, as `--link 1 --metrics --no-rand-seed
+      -t 30`, with its links and its YAML in /workspace/hardlink. In each round the worker links one file
+      up to 8,192 times, then removes every link. Afterwards, untimed, read the YAML back.
+    timer:
+      start_event: stress-ng's link stressor begins, after the untimed mount facts and the check of the
+        pinned tool; nothing is sent between the check and this command.
+      stop_event: stress-ng has run one worker for 30 s, removed its last links and exited; its rate is
+        its own count over its own clock.
+    timeout_seconds: 120
+    record_steps:
+    - hardlink
+  - id: destroy
+    name: Destroy
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: The stressor runs after untimed mount facts, memory probe and verified tool installation.
+  stop: stress-ng exits after one worker runs for 30 seconds and removes its links; use the stressor rate
+    by its own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 20
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of successful attempts divided by their number; failed attempts' cost is not included.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    hard-links: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  - stress-ng exiting non-zero, or a YAML with no links rate.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  - A YAML that cannot be read after stress-ng exited 0.
+  - A stress-ng binary whose SHA-256 differs from the pinned one.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: stress-ng
+  version: 0.19.02
+  ids:
+  - 'workload: link-30s'
+  - stress-ng-0.19.02-linux-x86_64-static.xz sha256:63589b42f7de2ca7bcc8591b5ca59180e77be362c829801c326d912b78106082
+  licence: GPL-2.0-only; commands and results may be published; reference-only for the binary.
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/hard-links/1.1.2/
+  sha256: 65983637d11f1ee91525b472cef4438a94002b2d4f092d8c6486c069a3aff968
+interpretation:
+  informs: 'How long the hard-link part of a package install takes: a provider with half the rate takes
+    about twice as long on it.'
+  what_to_do: 'For a provider, the rate points at the cost of one metadata system call in the sandbox:
+    the guest kernel''s filesystem and its locking, an overlay filesystem, and any layer that intercepts
+    system calls. It does not point at the device: stress-ng never syncs, so the changes stay in memory.'
+  limits:
+  - One bogo op is a whole round of up to 8,192 links, so bogo ops per second are recorded as a count
+    of rounds only, never published.
+  - A link that fails with EDQUOT, ENOMEM, EMLINK, EINTR or ENOSPC is retried silently and not counted;
+    the free-space check makes ENOSPC unlikely.
+  - Each counted link also carries an `lstat` and a cross-mount link that fails by design. The same 8,192
+    names are reused in every round, so their lookups hit the kernel's directory cache.
+  caveats:
+  - 'The loop is a system call loop on one vCPU: a slow or shared CPU lowers it as much as a slow filesystem.
+    User and system CPU seconds are recorded.'
+  - 'The published value is stress-ng''s own metric: successful links created per second, removal time
+    included, by the stressor''s clock in the sandbox.'
+validity_checks:
+- id: free-space
+  threat: A full /workspace would make links fail for want of space rather than for filesystem cost.
+  check: Under 100 MiB free in /workspace/hardlink, the trial is missed.
+- id: files-in-memory
+  threat: A /workspace held in memory measures a memory filesystem, with no device behind it.
+  check: When /workspace is a tmpfs or an overlay on one, or the 256 MiB probe raised shared memory by
+    at least 80% of its size, the result is ranked with a note that no device is behind the filesystem.
+
+---
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+id: hard-links
+version: 1.1.9
+effective: '2026-10-31'
+name: '{name:test.hard-links}'
+category: machine_performance
+panel:
+  command: stress-ng --link 1
+  quantities: hard-link creation and removal rate
+notes:
+  what_this_measures: The result counts successful hard links per second, including removal time; CPU
+    speed also affects the loop.
+  how_it_is_measured: The filesystem tool runs a fixed link workload in the workspace; its successful-link
+    count includes removal time and uses the tool’s own clock.
+  how_to_read: The {param:hard-links.1.1.2.statistics.primary} summarizes successful trials in the axis
+    unit; {direction:links_per_second}.
+  cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.10
+metrics:
+- name: links_per_second
+  unit: links/s
+  direction: higher_is_better
+  description: stress-ng successful hard links per second, including time to remove them.
+  quantity: links
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 600
+procedure:
+  mode: single
+  trials: 75
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: mount-facts
+    name: Mount facts
+    timer: null
+    action: Untimed, read the filesystem, mount and free space of /workspace/hardlink; under 100 MiB free,
+      the trial is missed. Then write a 256 MiB file there with `dd`, read the sandbox's shared memory
+      before and after, and delete the file.
+  - id: install-stress-ng
+    name: Install stress-ng
+    timer: null
+    action: Untimed, write in the pinned static stress-ng V0.19.02 (xz-compressed), unpack it and check
+      its SHA-256 in the sandbox. Another digest is the benchmark script's failure.
+  - id: hard-links
+    name: '{name:test.hard-links}'
+    action: Run stress-ng's link stressor, one worker for 30 s, as `--link 1 --metrics --no-rand-seed
+      -t 30`, with its links and its YAML in /workspace/hardlink. In each round the worker links one file
+      up to 8,192 times, then removes every link. Afterwards, untimed, read the YAML back.
+    timer:
+      start_event: stress-ng's link stressor begins, after the untimed mount facts and the check of the
+        pinned tool; nothing is sent between the check and this command.
+      stop_event: stress-ng has run one worker for 30 s, removed its last links and exited; its rate is
+        its own count over its own clock.
+    timeout_seconds: 120
+    record_steps:
+    - hardlink
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: The stressor runs after untimed mount facts, memory probe and verified tool installation.
+  stop: stress-ng exits after one worker runs for 30 seconds and removes its links; use the stressor rate
+    by its own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 20
+cost:
+  method: provider_reported_or_priced
+failure_policy:
+  timeout_seconds:
+    create: 300
+    hard-links: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  - stress-ng exiting non-zero, or a YAML with no links rate.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  - A YAML that cannot be read after stress-ng exited 0.
+  - A stress-ng binary whose SHA-256 differs from the pinned one.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: stress-ng
+  version: 0.19.02
+  ids:
+  - 'workload: link-30s'
+  - stress-ng-0.19.02-linux-x86_64-static.xz sha256:63589b42f7de2ca7bcc8591b5ca59180e77be362c829801c326d912b78106082
+  licence: GPL-2.0-only; commands and results may be published; reference-only for the binary.
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/hard-links/1.1.9/
+  sha256: 65983637d11f1ee91525b472cef4438a94002b2d4f092d8c6486c069a3aff968
+interpretation:
+  informs: 'How long the hard-link part of a package install takes: a provider with half the rate takes
+    about twice as long on it.'
+  what_to_do: 'For a provider, the rate points at the cost of one metadata system call in the sandbox:
+    the guest kernel''s filesystem and its locking, an overlay filesystem, and any layer that intercepts
+    system calls. It does not point at the device: stress-ng never syncs, so the changes stay in memory.'
+  limits:
+  - The tool records whole rounds as bogo operations; the chart publishes successful links rather than
+    round counts.
+  - A link that fails with EDQUOT, ENOMEM, EMLINK, EINTR or ENOSPC is retried silently and not counted;
+    the free-space check makes ENOSPC unlikely.
+  - Each counted link includes an `lstat` and a cross-mount link that fails by design; reused names can
+    benefit from the directory cache.
+  caveats:
+  - 'The loop is a system call loop on one vCPU: a slow or shared CPU lowers it as much as a slow filesystem.
+    User and system CPU seconds are recorded.'
+  - 'The published value is stress-ng''s own metric: successful links created per second, removal time
+    included, by the stressor''s clock in the sandbox.'
+  - One bogo op is a whole round of up to 8,192 links, so bogo ops per second are recorded as a count
+    of rounds only, never published.
+  - Each counted link also carries an `lstat` and a cross-mount link that fails by design. The same 8,192
+    names are reused in every round, so their lookups hit the kernel's directory cache.
+validity_checks:
+- id: free-space
+  threat: A full /workspace would make links fail for want of space rather than for filesystem cost.
+  check: Under 100 MiB free in /workspace/hardlink, the trial is missed.
+- id: files-in-memory
+  threat: A /workspace held in memory measures a memory filesystem, with no device behind it.
+  check: When /workspace is a tmpfs or an overlay on one, or the 256 MiB probe raised shared memory by
+    at least 80% of its size, the result is ranked with a note that no device is behind the filesystem.
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Nothing is warmed up; the stressor works on a fresh file system in a fresh sandbox. The provider's
+      image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+
+---
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+id: hard-links
+version: 1.1.4
+effective: '2026-10-29'
+name: '{name:test.hard-links}'
+category: machine_performance
+panel:
+  command: stress-ng --link 1
+  quantities: hard-link creation and removal rate
+notes:
+  what_this_measures: The result counts successful hard links per second, including removal time; CPU
+    speed also affects the loop.
+  how_it_is_measured: "The filesystem tool runs a fixed link workload in the workspace; its successful-link\
+    \ count includes removal time and uses the tool\u2019s own clock."
+  how_to_read: The {param:hard-links.1.1.2.statistics.primary} summarizes successful trials in the axis
+    unit; {direction:links_per_second}.
+  cost_summary: The cost covers the measured billing span per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: links_per_second
+  unit: links/s
+  direction: higher_is_better
+  description: stress-ng successful hard links per second, including time to remove them.
+  quantity: links
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 600
+procedure:
+  mode: single
+  trials: 40
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: mount-facts
+    name: Mount facts
+    timer: null
+    action: Untimed, read the filesystem, mount and free space of /workspace/hardlink; under 100 MiB
+      free, the trial is missed. Then write a 256 MiB file there with `dd`, read the sandbox's shared
+      memory before and after, and delete the file.
+  - id: install-stress-ng
+    name: Install stress-ng
+    timer: null
+    action: Untimed, write in the pinned static stress-ng V0.19.02 (xz-compressed), unpack it and check
+      its SHA-256 in the sandbox. Another digest is the benchmark script's failure.
+  - id: hard-links
+    name: '{name:test.hard-links}'
+    action: Run stress-ng's link stressor, one worker for 30 s, as `--link 1 --metrics --no-rand-seed
+      -t 30`, with its links and its YAML in /workspace/hardlink. In each round the worker links one
+      file up to 8,192 times, then removes every link. Afterwards, untimed, read the YAML back.
+    timer:
+      start_event: stress-ng's link stressor begins, after the untimed mount facts and the check of
+        the pinned tool; nothing is sent between the check and this command.
+      stop_event: stress-ng has run one worker for 30 s, removed its last links and exited; its rate
+        is its own count over its own clock.
+    timeout_seconds: 120
+    record_steps:
+    - hardlink
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: The stressor runs after untimed mount facts, memory probe and verified tool installation.
+  stop: stress-ng exits after one worker runs for 30 seconds and removes its links; use the stressor
+    rate by its own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 20
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of successful attempts divided by their number; failed attempts' cost is not included.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    hard-links: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  - stress-ng exiting non-zero, or a YAML with no links rate.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  - A YAML that cannot be read after stress-ng exited 0.
+  - A stress-ng binary whose SHA-256 differs from the pinned one.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: stress-ng
+  version: 0.19.02
+  ids:
+  - 'workload: link-30s'
+  - stress-ng-0.19.02-linux-x86_64-static.xz sha256:63589b42f7de2ca7bcc8591b5ca59180e77be362c829801c326d912b78106082
+  licence: GPL-2.0-only; commands and results may be published; reference-only for the binary.
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/hard-links/1.1.2/
+  sha256: 65983637d11f1ee91525b472cef4438a94002b2d4f092d8c6486c069a3aff968
+interpretation:
+  informs: 'How long the hard-link part of a package install takes: a provider with half the rate takes
+    about twice as long on it.'
+  what_to_do: 'For a provider, the rate points at the cost of one metadata system call in the sandbox:
+    the guest kernel''s filesystem and its locking, an overlay filesystem, and any layer that intercepts
+    system calls. It does not point at the device: stress-ng never syncs, so the changes stay in memory.'
+  limits:
+  - The tool records whole rounds as bogo operations; the chart publishes successful links rather than
+    round counts.
+  - A link that fails with EDQUOT, ENOMEM, EMLINK, EINTR or ENOSPC is retried silently and not counted;
+    the free-space check makes ENOSPC unlikely.
+  - Each counted link includes an `lstat` and a cross-mount link that fails by design; reused names
+    can benefit from the directory cache.
+  caveats:
+  - 'The loop is a system call loop on one vCPU: a slow or shared CPU lowers it as much as a slow filesystem.
+    User and system CPU seconds are recorded.'
+  - 'The published value is stress-ng''s own metric: successful links created per second, removal time
+    included, by the stressor''s clock in the sandbox.'
+  - One bogo op is a whole round of up to 8,192 links, so bogo ops per second are recorded as a count
+    of rounds only, never published.
+  - Each counted link also carries an `lstat` and a cross-mount link that fails by design. The same
+    8,192 names are reused in every round, so their lookups hit the kernel's directory cache.
+validity_checks:
+- id: free-space
+  threat: A full /workspace would make links fail for want of space rather than for filesystem cost.
+  check: Under 100 MiB free in /workspace/hardlink, the trial is missed.
+- id: files-in-memory
+  threat: A /workspace held in memory measures a memory filesystem, with no device behind it.
+  check: When /workspace is a tmpfs or an overlay on one, or the 256 MiB probe raised shared memory
+    by at least 80% of its size, the result is ranked with a note that no device is behind the filesystem.
+
+
+---
+id: hard-links
+version: 1.1.17
+effective: '2026-11-08'
+name: '{name:test.hard-links}'
+category: machine_performance
+panel:
+  command: stress-ng --link 1
+  quantities: hard-link creation and removal rate
+notes:
+  what_this_measures: The result counts successful hard links per second, including removal time; CPU
+    speed also affects the loop.
+  how_it_is_measured: The filesystem tool runs a fixed link workload in the workspace; its successful-link
+    count includes removal time and uses the tool’s own clock.
+  how_to_read: The {param:hard-links.1.1.17.statistics.primary} summarizes successful trials in the axis
+    unit; {direction:links_per_second}.
+  cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: links_per_second
+  unit: links/s
+  direction: higher_is_better
+  description: stress-ng successful hard links per second, including time to remove them.
+  quantity: links
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
+  network: unknown
+  lifetime_seconds: 600
+procedure:
+  mode: single
+  trials: 75
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where
+      stated.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: mount-facts
+    name: Mount facts
+    timer: null
+    action: Untimed, read the filesystem, mount and free space of /workspace/hardlink; under 100 MiB free,
+      the trial is missed. Then write a 256 MiB file there with `dd`, read the sandbox's shared memory
+      before and after, and delete the file.
+  - id: install-stress-ng
+    name: Install stress-ng
+    timer: null
+    action: Untimed, write in the pinned static stress-ng V0.19.02 (xz-compressed), unpack it and check
+      its SHA-256 in the sandbox. Another digest is the benchmark script's failure.
+  - id: hard-links
+    name: '{name:test.hard-links}'
+    action: Run stress-ng's link stressor, one worker for 30 s, as `--link 1 --metrics --no-rand-seed
+      -t 30`, with its links and its YAML in /workspace/hardlink. In each round the worker links one file
+      up to 8,192 times, then removes every link. Afterwards, untimed, read the YAML back.
+    timer:
+      start_event: stress-ng's link stressor begins, after the untimed mount facts and the check of the
+        pinned tool; nothing is sent between the check and this command.
+      stop_event: stress-ng has run one worker for 30 s, removed its last links and exited; its rate is
+        its own count over its own clock.
+    timeout_seconds: 120
+    record_steps:
+    - hardlink
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: The stressor runs after untimed mount facts, memory probe and verified tool installation.
+  stop: stress-ng exits after one worker runs for 30 seconds and removes its links; use the stressor rate.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 20
+cost:
+  method: provider_reported_or_priced
+failure_policy:
+  timeout_seconds:
+    create: 300
+    hard-links: 120
+    destroy: 300
+  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create or transport error, sandbox stops answering, or an uncertain failure owner.
+  - stress-ng exiting non-zero, or a YAML with no links rate.
+  benchmark_errors:
+  - Output that cannot be parsed after the benchmark tool exits successfully.
+  - A YAML that cannot be read after stress-ng exited 0.
+  - A stress-ng binary whose SHA-256 differs from the pinned one.
+  exclusions:
+  - An error shown not to be the provider's; retain the trial and reason in the data.
+source:
+  name: stress-ng
+  version: 0.19.02
+  ids:
+  - 'workload: link-30s'
+  - stress-ng-0.19.02-linux-x86_64-static.xz sha256:63589b42f7de2ca7bcc8591b5ca59180e77be362c829801c326d912b78106082
+  licence: GPL-2.0-only; commands and results may be published; reference-only for the binary.
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/hard-links/1.1.17/
+  sha256: 86a4f3d1f5c94fcda31b8df55e104d673184b7c3ac7bb4783a63154771bfb8d8
+interpretation:
+  informs: 'How long the hard-link part of a package install takes: a provider with half the rate takes
+    about twice as long on it.'
+  what_to_do: 'For a provider, the rate points at the cost of one metadata system call in the sandbox:
+    the guest kernel''s filesystem and its locking, an overlay filesystem, and any layer that intercepts
+    system calls. It does not point at the device: stress-ng never syncs, so the changes stay in memory.'
+  limits:
+  - The tool records whole rounds as bogo operations; the chart publishes successful links rather than
+    round counts.
+  - A link that fails with EDQUOT, ENOMEM, EMLINK, EINTR or ENOSPC is retried silently and not counted;
+    the free-space check makes ENOSPC unlikely.
+  - Each counted link includes an `lstat` and a cross-mount link that fails by design; reused names can
+    benefit from the directory cache.
+  caveats:
+  - 'The loop is a system call loop on one vCPU: a slow or shared CPU lowers it as much as a slow filesystem.
+    User and system CPU seconds are recorded.'
+  - 'The published value is stress-ng''s own metric: successful links created per second, removal time
+    included, by the stressor''s clock in the sandbox.'
+  - One bogo op is a whole round of up to 8,192 links, so bogo ops per second are recorded as a count
+    of rounds only, never published.
+  - Each counted link also carries an `lstat` and a cross-mount link that fails by design. The same 8,192
+    names are reused in every round, so their lookups hit the kernel's directory cache.
+validity_checks:
+- id: free-space
+  threat: A full /workspace would make links fail for want of space rather than for filesystem cost.
+  check: Under 100 MiB free in /workspace/hardlink, the trial is missed.
+- id: files-in-memory
+  threat: A /workspace held in memory measures a memory filesystem, with no device behind it.
+  check: When /workspace is a tmpfs or an overlay on one, or the 256 MiB probe raised shared memory by
+    at least 80% of its size, the result is ranked with a note that no device is behind the filesystem.
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Nothing is warmed up; the stressor works on a fresh file system in a fresh sandbox. The provider's
+      image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: exception
+    text: >-
+      Guest CPU model/count, kernel and working-directory device/filesystem are probed outside
+      timing on a best-effort basis; unavailable readings remain unknown. Native host/zone
+      identifiers are not collected. Missing facts leave the affected independence checks
+      unassessed.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

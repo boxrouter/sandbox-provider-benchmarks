@@ -1,0 +1,1207 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=../schemas/reader.schema.json
+# The current reader copy of every test and index, keyed by its canonical name id. Wording lives here,
+# not in the versioned scientific documents: an edit changes no measured record and needs no re-run.
+# A statement of fact reads the measured definition of the result it describes:
+# {param:measured.<path>}.
+schema: boxrouter.bench.reader/1
+common:
+  blocks:
+    coding-workloads:
+      replay: Replaying removes the model, whose inference time would otherwise dominate the measurement, and a live model takes a different path on every attempt.
+      limit_guest_runtime: Tool time measures in-sandbox execution (`runtime(cmd)`), which agents running inside the sandbox pay directly, while external harnesses that send one API request per command also pay per-call transport time.
+      limit_cpu_counts: Where a provider's container reports the host's CPU count instead of the requested vCPUs (as Daytona does), tools that size worker pools from the visible count start more threads, and the result counts that as the provider's behavior.
+    common:
+      statistic_reading: The {param:measured.statistics.primary} summarizes successful trials in the axis unit;
+      cost_reading: Only successful trials contribute to the cost value.
+      statistics_citation: Per-unit percentiles, bootstrap confidence intervals, and tail rules follow {name:page.common}.
+      typical_citation: The All view aggregates each unit's selected statistic across the workload using the unweighted geometric mean and missing-unit substitution penalty defined in {name:page.common}.
+      all_view_aggregation: On the All view, we aggregate each unit's selected statistic using the geometric mean, the workload value.
+      failures_citation: Outcome classifications, top-up rounds, and outlier rules follow {name:page.common}; the first failed step ends the trial without in-trial retries.
+      ranking_floor: A provider is ranked once it has at least {param:measured.statistics.ranking.min_successes} successful trials.
+      sandbox: 'Each trial uses a sandbox created from BoxRouter''s pinned standard image'
+    machine-performance:
+      trial_start: Create sandbox and run readiness check (untimed).
+      shared_cpu_mem_procedure: |-
+        The hardware probe records visible CPU count (`nproc`), processor model name, instruction flags (`SHA-NI`, `AVX2`, `AVX-512`), L3 cache capacity, cgroup CPU quota (`cpu.max`), and available memory.
+    create:
+      opening: |-
+        Every interactive coding session, evaluation task, and reinforcement learning rollout begins by waiting for a sandbox to boot and accept its first shell command.
+
+        The {name:tab.create} tab measures that startup wait, Time to Interactive (TTI), under two launch patterns: starting sandboxes one after another in a single loop ({name:test.sequential-tti}) and launching a parallel wave of sandboxes at the same moment ({name:test.burst-tti}).
+      limit_layer: Each trial adds one unique image layer; provider base-image caches and warm pools stay enabled, so later sandboxes may reuse provider state.
+    files:
+      opening: |-
+        Coding agents and build tools constantly inspect directory trees and read or write small source files through a sandbox provider's file API.
+
+        The {name:tab.files} tab measures the per-call round-trip time of those three primitive operations through BoxRouter: listing a directory of {param:measured.parameters.workload.file-list.count} empty files ({name:test.list}), writing an incompressible {param:measured.parameters.workload.payloads.file-4kib.bytes}-byte file ({name:test.write-4kib}), and reading that {param:measured.parameters.workload.payloads.file-4kib.bytes}-byte file back with SHA-256 verification ({name:test.read-4kib}).
+
+        All three benchmarks execute sequentially inside one shared sandbox per trial ({name:test.list}, then {name:test.write-4kib}, then {name:test.read-4kib}), repeating each operation {param:measured.procedure.variants.0.parameters.repetitions} times back to back.
+      limit_warm: The sandbox has already passed the readiness check and the directory setup command, so the calls measure warm steady-state file operations, not cold first-touch ones.
+      limit_provider_work: On some providers BoxRouter does extra work per file call (on Vercel it re-checks its process tool on every listing), and that work is part of the provider's path and of the timed call.
+    exec:
+      opening: |-
+        When an AI agent or test harness outside the sandbox dispatches commands over the provider's API, every step pays the round-trip overhead of the provider's execution endpoint and the container's internal daemon. The {name:tab.exec} tab isolates that round-trip floor by sending the shell builtin `true`, a command with nearly zero in-sandbox runtime, {param:measured.procedure.variants.0.parameters.calls} times in a row inside each sandbox.
+
+        The view selector presents the same benchmark runs two ways: {name:test.exec-latency} pools all {product:measured.procedure.trials*measured.procedure.variants.0.parameters.calls} individual calls across {param:measured.procedure.trials} sandboxes to expose per-call time and tail spikes, and {name:test.exec-latency-per-100-calls} sums the {param:measured.procedure.variants.0.parameters.calls} calls per sandbox to show session-level execution time.
+      limit_network: Every call pays the network round-trip time between the job host and the provider's default US region.
+      limit_warm: Calls run back to back over a connection kept open for up to the idle timeout set in {name:page.common} while idle, measuring steady-state dispatch on a warm connection rather than a cold one.
+      limit_wrapper: Each call sends the nine-line Bash clock-reading wrapper and receives the `__SANDBOX_CLOCK` trailer line on stderr, which adds a few hundred bytes to the request and response.
+      shared_workload: The shell builtin `true` exits immediately with status 0 without disk or network I/O, so each call's duration isolates API serialization, network transit, provider routing, and container daemon dispatch.
+    cpu:
+      opening: |-
+        Agents that compile code, run test suites, compress build artifacts, or process data spend much of their runtime bound on integer CPU execution. Two providers selling a {machine:measured.environment.size} sandbox can deliver very different compute speeds depending on the underlying host processor generation, clock frequency, cache hierarchy, and hypervisor scheduling.
+
+        The {name:tab.cpu} tab measures integer compute speed using 7-Zip's built-in LZMA benchmark in two configurations: {name:test.7-zip-1-thread} (single-core speed) and {name:test.7-zip-all-vcpus} (multi-core scaling across the requested vCPUs).
+      setup: 'running Igor Pavlov''s official static Linux x86_64 build of 7-Zip {param:measured.source.version} (`7zzs`, verified by {hash:SHA-256|measured.parameters.workload.tools.0.sha256}).'
+      limit_models: Sandboxes on one provider can land on different CPU models, and each trial records the processor model, so a bimodal spread or a low-end tail can be traced to the models across the {param:measured.procedure.trials} trials.
+    pause-resume:
+      opening: |-
+        Interactive coding agents, chat workspaces, and notebook sessions sit idle between user turns. Pausing a sandbox between turns stops compute billing while preserving the user's workspace, but only if the sandbox can pause and wake back up with its files intact.
+
+        Furthermore, a provider can return from a `resume` API call before the sandbox's data has been paged back in, shifting the real wait onto the first command that touches the data.
+
+        The {name:tab.pause-resume} tab measures both sides of that lifecycle: {name:test.pause-resume} tests immediate pause, resume, and data read-back across memory and disk loads, while {name:test.delayed-resume} tests wake and read time after a sandbox has been paused or left idle across selected wait durations.
+      limit_architecture: Vercel implements stop and resume by snapshotting the filesystem on stop and booting a new VM from that snapshot on resume.
+    snapshots:
+      opening: |-
+        Agent harnesses and reinforcement learning loops use snapshots to save a configured sandbox once and boot clean copies from that state without repeating installation or repository setup.
+
+        The {name:tab.snapshots} tab measures two patterns built on that primitive:
+
+        - {name:test.snapshot-and-restore} times saving a snapshot of a configured sandbox, creating one new sandbox from that snapshot after the source sandbox is destroyed, and loading the Python, Node.js, and git runtimes inside it.
+        - {name:test.fork} takes one snapshot and creates four sandboxes from it one after another to measure restore speed and whether later restores accelerate as the provider caches the snapshot.
+      limit_modal_delete: Modal's API has no lookup to confirm that a snapshot is gone after deletion, so the benchmark script sends the delete call and records the confirmation as not checkable.
+      snapshot_stage_start: Snapshot request is sent
+      snapshot_stage_end: Snapshot operation completes and the call returns
+    reconnect:
+      opening: |-
+        Stateless serverless workers, webhook handlers, and agents recovering from a process restart or deploy cannot reuse an in-memory sandbox object; they must attach to an already-running sandbox by its ID from a brand-new client process and issue their first command.
+
+        The {name:tab.reconnect} benchmark measures that cold-client attach path ({name:test.reconnect}): in each trial, a parent process creates a sandbox, and {param:measured.procedure.variants.0.parameters.rounds} sequential child processes, each spawned fresh on the job host with its own BoxRouter client and zero shared connection state, attach to the sandbox by ID and run `true`.
+    previews:
+      opening: |-
+        App-building agents and interactive web IDEs start a development server inside a sandbox and hand the user a public preview URL to view the live app and receive Hot Module Replacement (HMR) updates over a WebSocket.
+
+        The {name:tab.previews} benchmark launches a pinned {param:measured.procedure.variants.0.label} and measures how long the sandbox's public preview URL takes to return its first valid HTTP 200 response (URL ready), splitting that wait into the server's in-sandbox startup time ({name:stage.server-listening}) and the remaining process-launch and routing time ({name:stage.between}).
+
+        Once the preview URL is live, the benchmark measures the Time to First Byte (TTFB) of {param:measured.procedure.variants.0.parameters.requests} sequential HTTP GET requests over a kept-alive connection and tests whether a WebSocket upgrade (vite-hmr) succeeds through the preview proxy.
+    image-build:
+      opening: |-
+        Before a team can boot sandboxes with custom system packages, language SDKs, or pre-cloned repositories, the provider must ingest the container image and build a runnable template or snapshot from it.
+
+        The {name:tab.image-build} tab measures how long a provider takes to prepare a new image, constructed by appending one unique trial layer onto a pinned base image, across {count:measured.procedure.variants} base images, including the pinned standard image and the Jupyter data-science image ({imagesize:measured.parameters.variants.data-science.facts.uncompressed_bytes} unpacked).
+
+    disk:
+      opening: |-
+        When a coding agent or CI pipeline unpacks a multi-gigabyte container layer, compiles a large Rust or C++ workspace, queries a local SQLite or vector index, or writes build artifacts in `/workspace`, performance depends on the sandbox's underlying storage once the working set exceeds or bypasses the guest page cache.
+
+        The {name:tab.disk} tab measures uncached storage performance in `/workspace/fio` using `fio` with direct I/O (`O_DIRECT`) across four access patterns: {name:test.sequential-read} and {name:test.sequential-write} (1m blocks, reported in `MiB/s` for large streaming transfers), and {name:test.random-read} and {name:test.random-write} (4k blocks, reported in `IOPS` for small scattered operations).
+      setup_read: 'running a static Linux x86_64 build of `fio` {param:measured.source.version} (verified by SHA-256) with `ioengine=libaio`, `direct=1`, `iodepth={param:measured.parameters.workload.queue_depth}`, and `numjobs=1`.'
+      prepare: Record `/workspace/fio` mount facts, verify `O_DIRECT` support and required free space, and pre-write the {size:measured.parameters.workload.file_bytes} `data.bin` file (untimed).
+      finish: run post-trial cache/compression checks and destroy sandbox (untimed).
+      rejects_direct_io: providers whose `/workspace` rejects `O_DIRECT` are not measured
+      limit_checks: Every trial records diagnostic checks, and a check that fires attaches a note to the provider's result stating how many trials triggered it, without removing any result.
+      limit_cached_files: These tests measure sustained, high-queue-depth `O_DIRECT` throughput and IOPS on a {size:measured.parameters.workload.file_bytes} file, while everyday operations on small cached files are measured in {name:tab.files} and {name:tab.filesystem}.
+      limit_batch_load: '[[when measured.procedure.concurrency.trials_in_parallel > 1: Trials run concurrently per provider, up to {param:measured.procedure.concurrency.trials_in_parallel} at once, so sandboxes in the batch can share host storage bandwidth when the provider places them on the same backing host.]]'
+      shared_procedure: |-
+        The setup step checks for at least {size:measured.parameters.workload.free_bytes} of free space in `/workspace/fio`, probes `O_DIRECT` with `dd`, and records memory usage before and after writing `data.bin`. The post-trial check runs a {size:measured.parameters.workload.cache_probe_bytes} cached-versus-direct read probe and verifies that the first 64 MiB of `data.bin` has distinct 4 KiB blocks that zlib shrinks by at most 1% (minimum ratio {param:measured.parameters.workload.min_zlib_ratio}).
+      shared_failures: |-
+        Outcome classifications, top-up rounds, and outlier rules follow {name:page.common}; the first failed step ends the trial without in-trial retries.
+
+        A sandbox whose `/workspace` rejects `O_DIRECT` reads or writes or has fewer than {size:measured.parameters.workload.free_bytes} free is recorded as not supported rather than failed.
+
+        A trial fails as a provider error if `fio` exits non-zero or runs for less than {duration:measured.parameters.workload.min_interval_seconds} of its {duration:measured.parameters.workload.runtime_seconds} measured window, and as a benchmark error if the `fio` binary digest mismatches or if `data.bin` contains duplicate four-kilobyte blocks or compresses below {param:measured.parameters.workload.min_zlib_ratio}.
+
+        Diagnostic checks record informational notes on the provider's result without excluding trials:
+
+        - when `/workspace` sits on tmpfs or consumes at least 0.8 GiB of sandbox memory during initial file creation
+        - when direct reads run at memory speed (within half of cached read speed or under ten microseconds median)
+        - when throughput drops by more than 30% between the first ten seconds and last ten seconds of the window
+        - when fewer than 90% of requests keep 64 I/Os in flight or `fio` saturates more than 90% of a vCPU
+    overview:
+      limit_guest_clock: All three input workloads measure in-sandbox step execution on the guest clock, while sandbox creation, image preparation and per-call API time are measured separately in {name:section.sandbox-operations}.
+      omitted_when: if any of its counted trials in the scope lacks a provider-sourced cost, if any unit's cost on the selected statistic is zero (so the geometric mean is undefined), or if the provider completed no units in the scope.
+    workloads:
+      ranking: '[[when measured.statistics.ranking.min_successes != unknown: A provider is ranked once it has at least 90% of the successes requested before any top-up: {param:measured.statistics.ranking.min_successes} across all units.]] It also needs a provider-sourced cost.'
+methods:
+  common:
+    notes:
+      introduction: Sets the shared timing, trial-success, statistics, cost, and failure rules that apply to every benchmark.
+      opening: BoxRouter benchmarks measure the end-to-end speed and billed cost of cloud sandboxes across coding agents, reinforcement learning rollouts, continuous integration pipelines, and low-level machine primitives. Every benchmark runs against ordinary self-serve accounts in each provider's default US region.
+      environment: |-
+        Benchmarks request a {machine:measured.environment.size} sandbox unless a workload states otherwise, and record the CPU count and memory the sandbox reports. Benchmarks use the BoxRouter standard image pinned by digest for this measured definition ({hash:sha256|measured.environment.image.reference}); a changed image digest starts a separate results series.
+
+        Workloads requiring custom toolchains use task-specific images. All images are prepared in each provider account before runs.
+
+        Every provider is timed from its own dedicated cloud job host in AWS region us-west-2, and before each provider's chain starts, the harness records the median TCP connection time across ten attempts to each provider API endpoint. BoxRouter Core and each provider's adapter run at pinned versions, and results from any other host are not combined with these.
+
+        Idle connections stay open for up to {duration:measured.environment.connection_idle_seconds} where the provider's SDK allows it, so sequential requests reuse a warm TLS connection. Daytona's SDK has no setting; its commands keep their connection open, and file transfers reconnect after five seconds idle.
+      clocks: |-
+        Start and end timestamps for any timed span are measured on the same machine. Every timed span belongs to one of two clocks, keeping caller wait (total time), in-sandbox execution (runtime), and transport overhead ("latency", total time minus runtime) separate.
+
+        A timed span contains only the steps its benchmark names, with no warm-up request, probe, or keep-alive inside it. Lifecycle and control-plane operations (`create`, `snapshots.create`, `restore`, file transfers, and `destroy`) have no guest shell around them.
+
+        Core times each operation on the job host's monotonic clock from adapter entry (after payload preparation) until the call returns or raises, excluding post-create readiness checks, output archive downloads, and cleanup verification.
+
+        Commands that execute inside a sandbox are timed by the guest's own clock so network round trips do not inflate CPU and disk measurements. Bash's `$EPOCHREALTIME` builtin provides microsecond wall-clock readings without spawning a subprocess, but wall clocks inside virtualized guests or restored snapshots can step when synchronized by the host.
+
+        We guard against clock jumps by reading `/proc/uptime` (a monotonic kernel counter at ten-millisecond resolution) into a shell variable via the `read -r -N 64` builtin before and after the timed span. Whole-file reads are required because virtualized procfs implementations such as Sysbox can fail on subsequent line reads.
+
+        A guest runtime is accepted only when the monotonic uptime span passes the clock gate in the formulas. If the two clocks disagree by more than twenty milliseconds, the runtime is discarded as stepped rather than estimated.
+      ready_check: |-
+        Every trial follows a four-step lifecycle.
+
+        1. Create a fresh sandbox for the trial, with the machine and image in the test environment unless the test's page names others; the create has a time limit.
+        2. Then run an untimed ready check. Some providers return from a `create` call before the container's internal daemon can accept commands, returning HTTP 502, 503 or 504 or resetting connections on immediate requests. Unless a benchmark directly measures cold-start time to first command ({name:test.sequential-tti} and {name:test.burst-tti}) or restores from a snapshot, the benchmark script runs an untimed readiness check immediately after `create` returns. It sends `true` through BoxRouter with a {duration:measured.ready_check.attempt_timeout_seconds} timeout and no guest clock wrappers; if the call fails with HTTP 502, 503, 504, connection refused, or connection reset, it waits {param:measured.ready_check.interval_ms} ms after the error returns and retries, up to {param:measured.ready_check.max_attempts} attempts. It records every attempt and the time to interactive in private evidence; if all {param:measured.ready_check.max_attempts} attempts fail or any non-transient error occurs, the trial aborts as a provider failure.
+        3. Then run the benchmark's timed procedure; the first failed step ends the trial without in-trial retries.
+        4. Last, delete every sandbox, snapshot, and image for the trial and confirm it gone, with a time limit per destroy; destroy time is recorded but not charted, and each sandbox carries a label with its batch and a lifetime that the provider enforces to confirm crashed trials aren't left running.
+
+        Each step's time limit sits above the slowest normal time seen on any provider, with a margin, so a slow provider is measured rather than cut off and a hung call cannot stall the batch.
+
+        A command that can run for tens of seconds or more (a data load, a fio row, an install, a replay script) is started in the background, and the benchmark script reads its status every ten seconds until it exits, because a call that waits more than about 120 s can be cut by a provider's gateway.
+
+        The command's start and end come from the sandbox's clock, so the polling adds nothing to the measured time.
+      failure_policy: |-
+        Public speed and cost results include successful trials only. Failure counts are not published beside speed results; they belong to a separate {name:section.reliability} benchmark (coming soon).
+
+        Every trial ends in one of four classifications.
+
+        - A success passes every step and post-run integrity check, holds the guest clock gate, and has every sandbox, snapshot, and temporary image created by the trial confirmed deleted.
+        - A provider failure is any create, snapshot, restore, destroy, or transport error; a readiness check that exhausts {param:measured.ready_check.max_attempts} attempts; a replay script that terminates early without logging a command mismatch; or a failure with uncertain ownership.
+        - A benchmark script error is a failure of our own benchmark script (such as output it cannot parse after a command exited 0); we fix the script and re-run the trial without charging the failure to the provider.
+        - An excluded trial ("does not replay here") is one where a deterministic trace diverges on a provider: a command returns an unexpected exit code, a final git patch hash mismatches, or a step hits its timeout (exit 124) while the sandbox still answers a post-timeout check; the trial is excluded rather than counted against the provider, because a live agent would have reacted to the output and taken another path.
+
+        A top-up run refills every missed, excluded or failed slot, whoever owned the failure, until every provider reaches the scheduled number of successful trials N; each failed trial stays in the data with its owner and cause.
+
+        A full run stops refilling when a round leaves the same shortfall with identical failures, when a failure cannot be replaced (the account's spend limit, an uncertain trial, cleanup that could not be verified, a batch that stopped early), or when the run budget is exhausted. A blocked result is shown as {param:content.ranking_statuses.too_few_runs.label}.
+      statistics_rules: Every test reports these statistics for each unit unless its page names an exception. We compute every statistic per provider and per unit over untrimmed successful trials.
+      median_rule: The median is the smallest value with at least half of the successful trials at or below it; with {param:measured.statistics.tail.min_successes} successful trials, the median is the tenth fastest trial.
+      percentile_rule: |-
+        The p95 is the tail on the worse side (the {param:measured.statistics.tail.worse_side_percentile}th percentile where lower is better, the fifth percentile where higher is better); with {param:measured.statistics.tail.min_successes} successful trials, the p95 is the second slowest successful trial.
+
+        A tail requires at least {param:measured.statistics.tail.min_successes} successful trials for the unit; below {param:measured.statistics.tail.min_successes} successes, we report the single worst successful trial instead, labeled Slowest or Lowest.
+      interval_rule: |-
+        The bootstrap confidence interval ({param:measured.statistics.interval.confidence} confidence level) is a percentile-bootstrap interval for the median: we draw n values with replacement from the successful trials {param:measured.statistics.interval.resamples} times (with the random seed fixed at {param:measured.statistics.interval.seed}) and take the lower and upper tails of the resampled medians.
+
+        Where a benchmark pools multiple calls from each sandbox ({name:test.exec-latency}), we resample whole trials rather than individual calls because calls inside a single sandbox are not independent.
+      workload_value: |-
+        Workloads such as {name:test.deepswe}, {name:test.terminal-bench-4-0}, {name:test.r2e-gym}, and {name:test.ci-jobs} comprise multiple distinct units whose durations span an order of magnitude (for example, a five-second operations script against a 199 s ML evaluation). Summing or taking an arithmetic mean across units would let the longest task dominate the ranking.
+
+        {param:reader.common.blocks.common.all_view_aggregation} Using the geometric mean gives equal proportional weight to every unit: making a ten-minute trace ten percent faster improves the workload value by the same percentage as making a half-minute trace ten percent faster.
+
+        A geometric mean requires values greater than zero across the same set of units for all compared providers; omitting a unit where a provider failed would change the metric's denominator and allow a provider to improve its time by failing its slowest task.
+
+        When a provider completes at least one unit in a workload but has no successful trials on unit u, we substitute the slowest median time (and highest cost) observed among the providers that completed unit u, analogous to a Worst-Case Execution Time (WCET) or PAR-1 penalty, and flag the provider with a substitution note.
+      stage_rule: |-
+        When a benchmark breaks total time into stages (such as {name:stage.read}, {name:stage.write}, {name:stage.install}, {name:stage.build}, and {name:stage.test}), each stage's segment is computed from its own per-stage median across trials.
+
+        On the chart, segment widths are proportionally scaled by the total median divided by the sum of the stage medians so the visual segments add up to the total median bar, while each segment's printed label displays its unscaled stage median.
+      cost: |-
+        Every sandbox's cost comes from the provider: either reported directly by the provider's billing API for that sandbox ID or calculated from provider-reported usage and lifecycle records priced at public list rates using the provider's rules in `cost-method.json` (sandbox-provider-pricing). Each published result records the price-sheet version it used.
+
+        Our own timers and requested machine sizes never produce a cost. Cost is computed per unit in two steps.
+
+        The trial cost of a successful trial is the sum of the provider-sourced costs of the sandboxes it created, each from its create (or restore) request to its confirmed deletion, as given in the formulas, where the set of sandboxes has one member for single-sandbox benchmarks such as {name:test.deepswe}, five for {name:test.r2e-gym}, and N for {name:test.burst-tti}.
+
+        The cost per unit is shown as the unit's trial costs summarized by the statistic menu's choice (the median by default, or the mean or p95), per 1,000 successes. All views report the geometric mean of the per-unit costs.
+
+        Where a chart splits a time bar into stages, each stage's cost is proportional to that stage's share of the time bar under the same statistic. If any sandbox in a unit has no provider-sourced cost, the unit's cost is Unknown and that provider is excluded from cost rankings for that test. {name:section.sandbox-operations} shows no cost, and the benchmarks page shows no cost for {name:section.machine-performance}.
+      independence: |-
+        No trial's result may depend on another trial: not on what ran before it, what ran beside it, what an earlier trial left behind, how busy the job host was, or how much of the account's limits other trials used.
+
+        Every trial runs in its own fresh sandbox unless a multi-sandbox benchmark states otherwise, and every provider runs the same number of trials at once, up to ten in flight, spaced outside timed steps whenever a provider documents a creation rate limit.
+
+        A provider's benchmark order is shuffled once per run, and each benchmark's trials are interleaved across {param:measured.independence.rounds} rounds from an empty account so samples come from separate moments rather than one contiguous block.
+
+        Placement evidence is versioned; follow the measured method's recorded answer. For Ubuntu standard successors, guest CPU model/count, kernel and working-directory device/filesystem probes are best-effort and may be missing; native host/zone identifiers are not collected. If that answer declares an exception, missing facts leave affected independence checks unassessed.
+
+        Provider-wide features that every customer receives (base-image caches, host placement and warm pools) stay in the result.
+
+        Before publication, every provider-benchmark pair with at least {param:measured.independence.run_check.min_trials} successful trials is audited by two-sided rank-based statistical run checks with Benjamini-Hochberg false-discovery-rate control at q = {param:measured.independence.run_check.significance.q}.
+
+        The check family tests for:
+
+        - order drift across trials (at least {param:measured.independence.run_check.checks.0.min_effect_pct}% of the median)
+        - first-round cold effects (at least {param:measured.independence.run_check.checks.1.min_effect_pct}%)
+        - round-start warm-pool steps (at least {param:measured.independence.run_check.checks.2.min_effect_pct}%)
+        - lag-one autocorrelation (rank correlation at least {param:measured.independence.run_check.checks.3.min_abs_rho} with {param:measured.independence.run_check.checks.3.min_effect_pct}% effect)
+        - concurrent-batch overlap slowdown (at least {param:measured.independence.run_check.checks.4.min_effect_pct}%)
+        - job-host CPU saturation above {param:measured.independence.run_check.checks.5.cpu_share} (at least {param:measured.independence.run_check.checks.5.min_effect_pct}%)
+        - bimodal hardware tier clustering (ratio at least {param:measured.independence.run_check.checks.7.fail_ratio} across at least {param:measured.independence.run_check.checks.7.fail_min_minority} trials)
+        - exposed host or CPU model differences
+
+        A pair fails only when a check exceeds both its minimum effect size and the corrected significance threshold, and isolated values are excluded as implausible only when they violate a physical invariant or sit beyond {param:measured.independence.run_check.checks.8.robust_z} robust sigmas and {param:measured.independence.run_check.checks.8.min_ratio} times away from the median.
+  time-index:
+    headline: Composite time
+    notes:
+      introduction: '{param:content.index_copy.details.time.what_this_measures}'
+      page_headline: Composite time and cost
+      page_introduction: Measures each provider’s execution times and sandbox costs across coding and CI workloads, combined into one composite time and one composite cost.
+      metric: "{name:index.time-index} is the unweighted geometric mean of a provider's workload times across the workloads in the selected scope. Because the composite is reported as a concrete time rather than normalized to a 0–100 score or indexed to a reference provider, adding or removing another provider does not alter any provider's composite time when all units are completed."
+      calculation: |-
+        Aggregation proceeds in two geometric-mean levels so neither long-running units nor multi-unit workloads dominate the index:
+
+        - First, within each workload, the provider's workload time is the geometric mean across all units completed by at least one provider, using the selected statistic (median by default, or mean or p95); if a provider completed at least one unit in the workload but has no successful trials on a unit, that unit's value is replaced by the slowest value observed for that unit across all providers that completed it.
+        - Second, the provider's {name:index.time-index} is the unweighted geometric mean of its workload times across the workloads in the selected scope, giving each workload equal proportional weight; if a provider has no completed units in an entire workload, its workload time is replaced by the slowest workload time observed across providers that completed that workload.
+
+        Like {name:index.time-index}, {name:index.cost-index} aggregates in two geometric-mean steps:
+
+        - Within each workload, a provider's workload cost is the geometric mean of its per-unit costs across all units completed by at least one provider, substituting the highest observed unit cost when a provider failed a unit.
+        - Across workloads in the selected scope, {name:index.cost-index} is the unweighted geometric mean of those workload costs, substituting the highest observed workload cost if a provider failed an entire workload.
+
+        In {name:index.time-vs-cost}, each provider is plotted by two coordinates: Time Over the Costed Units ({axis:time-index}, lower is better) and Composite Cost ({axis:cost-index}, in USD, lower is better). Providers down and to the left deliver both faster execution and lower billed cost, forming the Pareto frontier.
+
+        For every provider with a valid {name:index.cost-index}, the {axis:cost-index} coordinate is its {name:index.cost-index} value and the {axis:time-index} coordinate is the geometric mean of its workload times restricted to the costed units, using the same equal workload weights and missing-unit substitution rules as {name:index.time-index} and {name:index.cost-index}.
+
+        To keep both axes directly comparable when a provider has cost data for only a subset of units, {name:index.time-vs-cost} computes each workload's time over the same set of costed units that enter that provider's {name:index.cost-index} calculation.
+      setup: '{param:content.index_copy.details.time.how_it_is_measured}'
+      workload: |-
+        The {name:section.overview} tab combines BoxRouter's real-world software engineering and continuous integration workloads into three top-level views: {name:index.time-index}, {name:index.cost-index}, and {name:index.time-vs-cost}.
+
+        The scope selector offers two scopes: Execution (the default), which combines {name:test.deepswe}, {name:test.terminal-bench-4-0}, and {name:test.ci-jobs}, and Coding, which combines the two agentic coding workloads ({name:test.deepswe} and {name:test.terminal-bench-4-0}).
+
+        {name:test.r2e-gym} is excluded from the Overview composite and ranked on its own leaderboard because its group-of-five snapshot-and-fork trial structure measures reinforcement learning rollouts rather than single-sandbox execution.
+
+        Every trial cost comes from the provider's billing API or published list rates in `cost-method.json` (sandbox-provider-pricing) over the full sandbox lifetime from creation to confirmed deletion.
+
+        {name:index.time-vs-cost} plots each provider in the Execution scope ({name:test.deepswe}, {name:test.terminal-bench-4-0}, and {name:test.ci-jobs}). The view selector also offers per-workload scatter plots for each individual workload.
+      trial_steps: '{param:content.index_copy.details.time.calculation}'
+      procedure: |-
+        {name:index.time-index} runs no separate trials of its own; it aggregates the completed trial records of the constituent workloads in the selected scope. Every underlying trial follows the sandbox sizing, image pinning, guest-clock timing, and post-run verification rules defined on the {name:test.deepswe}, {name:test.terminal-bench-4-0}, and {name:test.ci-jobs} methodology pages.
+
+        {name:index.cost-index} uses the same underlying trials as {name:index.time-index}. For each successful trial, the harness sums the provider-sourced cost of the sandbox from `create` to `destroy` and scales per-unit costs to cost per 1,000 successes where displayed on individual workload pages.
+      how_to_read: '{param:content.index_copy.details.time.how_to_read}'
+      cost_summary: '{param:content.index_copy.description}'
+      cost_how_to_read: '{param:content.index_copy.details.time.cost_how_to_read}'
+      limitations:
+      - Applies no extra ranking floor beyond the underlying workloads, and substitutes the slowest observed unit or workload time when a provider has partial results so failing a slow task cannot improve a provider’s composite.
+      - '{param:reader.common.blocks.overview.limit_guest_clock}'
+      statistics_rules: |-
+        Switching the statistic selector between {name:statistic.median}, {name:statistic.mean}, and {name:statistic.p95} recomputes each unit's summary statistic first, then takes the geometric mean across units in each workload, and finally takes the geometric mean across workloads in the scope.
+
+        Both coordinates of {name:index.time-vs-cost} update together when the statistic selector switches between {name:statistic.median}, {name:statistic.mean}, and {name:statistic.p95}; providers are plotted on the two-dimensional plane rather than given a single combined scalar rank.
+      failure_policy: |-
+        A workload is included in a scope only if every provider offers the capabilities that workload requires; if any provider's result on a workload is marked {param:content.ranking_statuses.not_offered.label}, that workload is omitted from the composite scope for all providers. Providers with zero completed units across all workloads in the selected scope are not displayed.
+
+        A provider is omitted from {name:index.cost-index} and {name:index.time-vs-cost} and listed under {param:content.ranking_statuses.not_displayed.label} {param:reader.common.blocks.overview.omitted_when}
+  cost-index:
+    headline: Composite cost
+    notes:
+      introduction: '{param:content.index_copy.details.cost.what_this_measures}'
+      metric: "{name:index.cost-index} is the unweighted geometric mean of a provider's workload costs across the workloads in the selected scope."
+      setup: '{param:content.index_copy.details.cost.how_it_is_measured}'
+      trial_steps: '{param:content.index_copy.details.cost.calculation}'
+      how_to_read: '{param:content.index_copy.details.cost.how_to_read}'
+      cost_summary: '{param:content.index_copy.description}'
+      cost_how_to_read: The bar shows the geometric mean of a provider's workload costs in USD across the selected scope; lower is better.
+      limitations:
+      - Requires a provider-reported or list-rate-calculated cost for every counted trial; if any counted trial lacks a provider-sourced cost or has a zero unit cost, the provider has no composite cost.
+  time-vs-cost:
+    notes:
+      introduction: '{param:content.index_copy.details.time_vs_cost.what_this_measures}'
+      metric: "{name:index.time-vs-cost} is the point plotted for each provider, with Time Over the Costed Units on the {axis:time-index} and Composite Cost on the {axis:cost-index}."
+      setup: '{param:content.index_copy.details.time_vs_cost.how_it_is_measured}'
+      trial_steps: '{param:content.index_copy.details.time_vs_cost.calculation}'
+      how_to_read: '{param:content.index_copy.details.time_vs_cost.how_to_read}'
+      cost_summary: '{param:content.index_copy.description}'
+      cost_how_to_read: Both axes use the same costed units.
+      limitations:
+      - Displays only providers that have both a valid {name:index.cost-index} and a {name:index.time-index} over the costed unit set; unpriced providers are listed under {param:content.ranking_statuses.not_displayed.label}.
+  deepswe:
+    headline_steps: [commands]
+    step_notes:
+      proxy_start: "Before replay begins, an untimed setup step launches a local Python HTTP proxy on localhost and sets `HTTP_PROXY`, `HTTPS_PROXY`, `http_proxy`, `https_proxy`, and `PIP_INDEX_URL` so any accidental external network request fails immediately with HTTP 403, matching upstream {name:test.deepswe}'s offline evaluation posture."
+      commands: "Each command is wrapped in Bash `$EPOCHREALTIME` and `/proc/uptime` readings and guarded by `timeout --kill-after=5s`, with a per-command limit of at least three minutes or three times the original recorded step duration."
+    tables:
+      stage_classes:
+      - stage: '{name:stage.test}'
+        matches: Test runners (`pytest`, `tox`, `unittest`, `nosetests`, `cargo test`, `go test`, `npm test`, `jest`, `vitest`, `ctest`) and inline verification commands when they are not combined with file-mutation operators
+      - stage: '{name:stage.install}'
+        matches: Package managers (`pip`, `conda`, `poetry`, `uv`, `npm`, `yarn`, `pnpm`, `cargo install`, `apt-get`, `apk`)
+      - stage: '{name:stage.build}'
+        matches: Compilers, build tools, linters (`ruff`, `flake8`, `black`, `isort`, `mypy`, `pylint`, `eslint`, `tsc`), and `git commit`/`merge`/`rebase`/`cherry-pick`
+      - stage: '{name:stage.write}'
+        matches: File-creation and mutation commands (`apply_patch`, `sed -i`, `patch`, `git apply`/`checkout`/`reset`/`restore`/`clean`, `mkdir`, `mv`, `cp`, `rm`, `chmod`, `touch`, heredocs, redirects, and inline `python -c` scripts that open files for writing or call `os.remove`/`os.rename`/`shutil`)
+      - stage: '{name:stage.read}'
+        matches: The default fallback for repository navigation, search (`grep`, `rg`, `find`, `cat`, `head`, `tail`, `git status`/`diff`/`log`/`show`), and read-only inspection
+      outcomes:
+      - outcome: Excluded (does not replay here)
+        when: A command exits with a different status code, times out (exit 124) while the sandbox remains responsive, or produces a mismatched final git patch hash
+      - outcome: Provider error
+        when: The runner script terminates early without writing a mismatch record or the sandbox stops answering
+    clock: [sandbox]
+    notes:
+      opening: |-
+        {name:test.deepswe} measures how long each sandbox provider takes to execute the shell commands of a realistic software engineering session. We take ten sessions [[when measured.procedure.variants# == 1: recorded by Claude Opus 5 (high reasoning)]] on real repository tasks in DeepSWE v1.1 and replay their shell commands in order, without the model.
+
+        It shows which providers offer the fastest tool use for a continuously running agent. {param:reader.common.blocks.coding-workloads.replay} Every provider runs the same commands.
+      introduction: 'Times the sum of each command''s runtime in a replayed {name:test.deepswe} trace, on the sandbox''s clock, leaving out model speed and agent quality.'
+      metric: '{name:test.deepswe} is the sum of command runtimes across a replayed trace. Each command is assigned by a deterministic command-string parser in priority order to one of five mutually exclusive stages: {name:stage.test} -> {name:stage.install} -> {name:stage.build} -> {name:stage.write} -> {name:stage.read}.'
+      setup: |-
+        Each trial uses a sandbox created from the task's pinned {name:test.deepswe} Docker image (`public.ecr.aws/d3j8x8q7/swe-bench-202605:<tag>-v1.1`, pinned by SHA-256 digest) with outbound network traffic blocked.
+      workload: |-
+        The workload replays 10 single-agent traces from `datacurve-ai/deep-swe`, spanning 25 to 112 sequential `bash` tool calls per trace (599 commands total) and 8 s to 199 s of tool time.
+
+        Candidate traces exclude tasks requiring GPUs or custom kernel modules, tasks exceeding 4 GiB peak RAM, tasks whose upstream evaluation failed or hit step limits, and tasks with non-deterministic test suites (network calls, wall-clock sleeps, or unseeded random tests).
+
+        The remaining pool is stratified across heavy C/C++/Rust compilation, large Python test suites, and rapid file-editing and navigation loops into 10 traces: abs-stepped-slices, actionlint-action-pinning-lint, adaptix-name-mapping-aliases, aiomonitor-webui-asyncio-console, alembic-autogenerate-Variant-types, anyio-CancelScope-lifecycle-bug, arviz-plot-lm-dims, astroid-six-moves-brain, atrx-vep-crispr, and authlib-flask-oauth-client.
+      trial_steps: '[[steps: create]]Create sandbox [[steps: ready_check]]and run readiness check (untimed); then [[steps: proxy_start]]start loopback deny proxy (untimed); then [[steps: commands]]replay all trace commands in `/app` as one background script ({name:stage.read}, {name:stage.write}, {name:stage.install}, {name:stage.build}, {name:stage.test}); then [[steps: patch_check]]verify final git patch SHA-256 (untimed); then [[steps: destroy]]destroy sandbox.'
+      cost_how_to_read: '{param:reader.common.blocks.common.cost_reading} {param:content.fact_list.fact_cost_split_rule}'
+      limitations:
+      - Commands run back to back without LLM thinking pauses (keeping the OS page cache warm and preventing idle auto-pause), and tool time measures in-sandbox execution rather than per-command API round-trip time.
+      - '{param:reader.common.blocks.coding-workloads.limit_cpu_counts}'
+      - Blaxel offers no provider-level network lockdown, so only the in-sandbox loopback proxy blocks outbound traffic there, and tools that ignore `HTTP_PROXY` (such as Node's built-in `fetch`) can still reach the internet.
+      - Providers that lazily fetch container image blocks on first read run their first repository commands slower, which tool time captures because users see the same delay.
+      - 'All ten traces[[when measured.procedure.variants# == 1:  come from Claude Opus 5 (high),]] exclude sessions that walk `/` with `find`, background jobs and 30 s timeouts, and include no Rust repository.'
+      - Running on {param:measured.environment.size.vcpu} vCPUs rather than DeepSWE's 2 CPUs speeds up multi-threaded builds and starts more parallel test workers than during the original recording.
+      - Replaying each trace {param:measured.procedure.trials}× within one batch measures run-to-run spread within that batch, not day-to-day provider drift.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.typical_citation} {param:reader.common.blocks.workloads.ranking}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when all commands return their expected exit codes, every command's guest clock reading agrees with `/proc/uptime` within twenty milliseconds, the final `git diff HEAD` and `git status --porcelain` SHA-256 digest matches the trace's expected patch hash, and the sandbox is confirmed destroyed.
+    stages:
+      read:
+        start: Exec each read command
+        end: Command completes
+        clock: sandbox
+      write:
+        start: Exec each write command
+        end: Command completes
+        clock: sandbox
+      install:
+        start: Exec each install command
+        end: Command completes
+        clock: sandbox
+      build:
+        start: Exec each build command
+        end: Command completes
+        clock: sandbox
+      test:
+        start: Exec each test command
+        end: Command completes
+        clock: sandbox
+  terminal-bench-4-0:
+    hash_marks:
+      environment.image.reference: sha256
+    step_notes:
+      steps: "The harness uploads the trace's step payloads and launches a single background replay script (polled every ten seconds) that executes every recorded `Bash` command and file edit in sequence inside the task's working directory, timing each step on the sandbox's own clock via `$EPOCHREALTIME` and `/proc/uptime` readings."
+      destroy: "After the last replayed step completes, the harness runs the task's upstream verification script (`tests/test.sh`) untimed and checks that `/logs/verifier/reward.txt` contains 1 (pass)."
+    headline_steps: [steps]
+    clock: [sandbox]
+    notes:
+      opening: |-
+        {name:test.terminal-bench-4-0} evaluates agentic terminal work across software engineering, scientific computing, machine learning, hardware CAD, formal theorem proving, and operations. We take ten Claude Code sessions recorded by Claude Opus 5.5 (max reasoning) from its public leaderboard and replay their shell commands and file edits in order, without the model.
+
+        It shows which providers execute terminal tool calls and file edits fastest across scientific and systems workloads. {param:reader.common.blocks.coding-workloads.replay}
+      introduction: 'Times the total guest-clock runtime required to execute recorded Claude Code shell commands and file edits across ten terminal tasks, with model inference excluded.'
+      metric: '{name:test.terminal-bench-4-0} is the sum of step runtimes across a replayed session of Claude Code tool calls and `Bash` commands. Each step is assigned to one of four stages: `{name:stage.write}` for `Write` and `Edit` calls (replayed via `base64` and `perl`), `{name:stage.read}` for `Read`, `Glob`, and `Grep` calls, and `{name:stage.test}` -> `{name:stage.build}` -> `{name:stage.write}` -> `{name:stage.read}` in priority order for `Bash` commands.'
+      setup: |-
+        Each trial uses a sandbox created from the task's pinned {name:test.terminal-bench-4-0} image plus Harbor's system dependencies, running as root with default open networking.
+      workload: |-
+        The workload replays 10 Harbor sessions (6 to 71 steps per session, 268 steps total) across parser translation, C-to-Rust migration, compiler builds, binary debugging, Git recovery, image processing, and Awk/regex scripting: bnf-to-ebnf, c-to-rust-stats, compile-compcert, cron-cheater, debug-long-program, git-repo-recovery, image-stitching, linux-kernel-module, log-summary-awk, and regex-golf.
+
+        Each task image builds on the upstream `environment/` directory of `harbor-framework/terminal-bench` at the pinned {commit:commit|harbor-framework/terminal-bench|452bf305c6daa62fc59061d22133a7cbc7c1572e}, pre-installing `curl` and procps where missing, pre-populating Harbor's test-dir dependencies, and stripping `/root/.local/bin` and `/root/.nvm` so commands resolve the task image's own language runtimes rather than Harbor's Node and Python wrappers.
+      trial_steps: '[[steps: create]]Create sandbox [[steps: ready_check]]and run readiness check (untimed); then [[steps: steps]]replay all recorded `Bash`, `Edit` (`perl`), and `Write` (`base64`) steps ({name:stage.read}, {name:stage.write}, {name:stage.build}, {name:stage.test}); then [[steps: destroy]]destroy sandbox.'
+      cost_how_to_read: '{param:reader.common.blocks.common.cost_reading} {param:content.fact_list.fact_cost_split_rule}'
+      limitations:
+      - Steps run back to back without LLM pauses, file edits spawn a subprocess (`perl` or `base64`) rather than writing in-process from Node.js, and selection filters out sessions with network installs or background jobs.
+      - '{param:reader.common.blocks.coding-workloads.limit_guest_runtime}'
+      - Filtering out background jobs, {duration:measured.failure_policy.timeout_seconds.steps} timeouts, subagents and network installs selects shorter, cleaner trajectories than average.
+      - Claude Code edits files from its own Node process, while the replay starts a `perl` or `base64` process for each of the 66 `Edit` and `Write` steps.
+      - The task images were built after the leaderboard runs, and several upstream Dockerfiles install unpinned `apt` or `micromamba` packages, so minor tool versions can differ from the original recording.
+      - '{param:reader.common.blocks.coding-workloads.limit_cpu_counts}'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.typical_citation} {param:reader.common.blocks.workloads.ranking}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when every replayed step exits with its expected code, every step's guest clock reading passes the twenty-millisecond `/proc/uptime` gate, the upstream verifier (`tests/test.sh`) writes reward 1, and the sandbox is confirmed destroyed.
+
+        Trials where a deterministic trace command diverges on a provider or where the verifier does not write 1 after clean command execution are classified as excluded (does not replay here), whereas transport errors, unresponsive sandboxes, or early script termination are classified as provider errors.
+    stages:
+      read:
+        start: Exec each read step
+        end: Step completes
+        clock: sandbox
+      write:
+        start: Exec each write step
+        end: Step completes
+        clock: sandbox
+      build:
+        start: Exec each build step
+        end: Step completes
+        clock: sandbox
+      test:
+        start: Exec each test step
+        end: Step completes
+        clock: sandbox
+  r2e-gym:
+    variant_commits:
+      field: task
+      table: tasks
+      repositories:
+        namanjain12/numpy_final: numpy/numpy
+        namanjain12/coveragepy_final: nedbat/coveragepy
+    step_notes:
+      create: "The harness starts the loopback HTTP deny proxy."
+      restore: "The harness starts the loopback deny proxy if the snapshot did not preserve running processes."
+      tool_calls: "The harness replays the rollout's recorded tool calls in `/testbed` as one background script."
+      reward: "The harness runs the task's reward evaluation script, checking that the parsed reward (0 or 1) matches the rollout's recorded outcome."
+    headline_steps: [create, reset, snapshot, restore, tool_calls, reward, destroy]
+    clock: [runner, sandbox]
+    boundary_clock: sandbox
+    notes:
+      opening: |-
+        Reinforcement learning trains a coding agent by running the same repository task repeatedly. A training loop sets up the repository once in a base sandbox, snapshots it, starts a group of rollout sandboxes from the snapshot, lets the policy execute tool calls in each one, and grades each rollout by running the task's test suite.
+
+        Because RL rollouts are short, sandbox lifecycle operations (`create`, `snapshot`, `restore`, and `destroy`) account for a large share of total training time and billed cost.
+
+        {name:test.r2e-gym} measures that complete multi-sandbox cycle across ten tasks. In each trial, one sandbox is set up and snapshotted, and four recorded rollouts run one after another in their own sandboxes restored from that snapshot.
+      introduction: 'Times the total time required to execute one complete RL training group: environment setup, snapshotting, four sequential rollout restores, tool execution, test grading, and sandbox cleanup.'
+      metric: '{name:test.r2e-gym} is the sum of every timed span across a trial''s {param:measured.procedure.sandboxes_per_trial} sandboxes: one base sandbox and four rollout sandboxes.'
+      setup: |-
+        Each trial uses {param:measured.procedure.sandboxes_per_trial} sandboxes created from the task's pinned {name:test.r2e-gym} Docker image (`namanjain12/numpy_final:<commit>` or `namanjain12/coveragepy_final:<commit>`, with the {name:test.r2e-gym} Python package and tools pre-installed) on providers that support snapshot restore through BoxRouter Core.
+      workload: |-
+        The workload replays {count:measured.procedure.variants} tasks from `R2E-Gym/R2E-Gym`, each paired with 4 recorded rollout trajectories (run1 through run4, 40 rollouts total). Trajectories span 7 to 44 tool calls per rollout (828 tool calls total) and include both passing (`reward = 1`) and failing (`reward = 0`) runs, mirroring a GRPO training batch where candidate rollouts vary in length and outcome.
+      trial_steps: '[[steps: create]]Create sandbox 1, [[steps: reset]]run R2E-Gym''s 17-command reset, [[steps: snapshot]]snapshot and destroy sandbox 1 ({name:stage.setup}); then [[steps: restore]]for each of four rollouts, restore a sandbox from the snapshot ({name:stage.create-from-snapshot}), [[steps: tool_calls]]replay recorded tool calls ({name:stage.tool-calls}), [[untimed]]verify the git patch (untimed), [[steps: reward]]run the test suite ({name:stage.reward}), [[steps: destroy]]and destroy the sandbox ({name:stage.destroy}); then [[untimed]]delete the snapshot (untimed).'
+      cost_how_to_read: '{param:reader.common.blocks.common.cost_reading} {param:content.fact_list.fact_cost_split_rule}'
+      limitations:
+      - The four rollouts in a group run sequentially rather than in a parallel burst, and tool calls run back to back without policy inference pauses.
+      - A production RL training loop restores all sandboxes of a group at once, while a trial restores the four one after another, so four simultaneous restores may run slower or faster than four in sequence.
+      - Because rollouts spend little time inside tool calls, group time is dominated by sandbox lifecycle overhead and test-suite execution (reward), which is the bottleneck for RL training.
+      - Some providers snapshot full VM memory and running processes while others snapshot only the filesystem, and with no background process running at the snapshot the two kinds produce identical state here.
+      - Nine of the ten qualifying tasks come from NumPy and one comes from coverage.py.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.typical_citation} {param:reader.common.blocks.workloads.ranking} One task on its own needs 90% of its {param:measured.procedure.trials} trials.
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when all {param:measured.procedure.sandboxes_per_trial} sandboxes complete their steps within timeout, every guest-clock span passes the twenty-millisecond `/proc/uptime` gate, all four rollouts produce their expected reward value (0 or 1), and all {param:measured.procedure.sandboxes_per_trial} sandboxes and the snapshot are confirmed deleted.
+
+        If a rollout's tool call exits with an unexpected status or its reward output disagrees with the recorded trajectory after clean execution, the trial is excluded (does not replay here); if any `create`, `snapshot`, `restore`, or `destroy` call fails, the trial is a provider error.
+    stages:
+      setup:
+        start: Create request is sent
+        end: Snapshot call returns
+        clock: runner
+      create-from-snapshot:
+        start: Restore request is sent
+        start_after: Previous sandbox is confirmed gone and the restore request is sent
+        end: Restore call returns
+        clock: runner
+      tool-calls:
+        start: Exec each tool call
+        end: Call exits
+        clock: sandbox
+      reward:
+        start: Reward command is sent
+        start_after: Rollout's patch is read (untimed) and the reward command is sent
+        end: Reward command returns
+        clock: sandbox
+      destroy:
+        start: Destroy request is sent
+        end: Destroy call returns
+        clock: runner
+  ci-jobs:
+    headline_steps: [job_steps]
+    step_notes:
+      job_steps: "The job's steps are executed sequentially inside a single background script (polled every ten seconds) under `bash` as the non-root box user, with each step's start and stop timestamps recorded via `$EPOCHREALTIME` and validated against `/proc/uptime`."
+    tables:
+      jobs:
+      - job: '{name:job.zustand}'
+        repository: '`{param:measured.procedure.variants.1.parameters.repository}`'
+        commit: '{commit:measured.procedure.variants.1.parameters.repository|measured.procedure.variants.1.parameters.commit}'
+        steps: '{param:measured.procedure.variants.1.parameters.steps}'
+        toolchain: Node.js, `pnpm`, TypeScript typecheck, Vitest, and build
+      - job: '{name:job.fastapi}'
+        repository: '`{param:measured.procedure.variants.2.parameters.repository}`'
+        commit: '{commit:measured.procedure.variants.2.parameters.repository|measured.procedure.variants.2.parameters.commit}'
+        steps: '{param:measured.procedure.variants.2.parameters.steps}'
+        toolchain: Python 3.13, `uv`, and `pytest` with coverage
+      - job: '{name:job.gin}'
+        repository: '`{param:measured.procedure.variants.3.parameters.repository}`'
+        commit: '{commit:measured.procedure.variants.3.parameters.repository|measured.procedure.variants.3.parameters.commit}'
+        steps: '{param:measured.procedure.variants.3.parameters.steps}'
+        toolchain: Go 1.27 module download, vet, and race-detector test suite
+      - job: '{name:job.spotify-player}'
+        repository: '`{param:measured.procedure.variants.4.parameters.repository}`'
+        commit: '{commit:measured.procedure.variants.4.parameters.repository|measured.procedure.variants.4.parameters.commit}'
+        steps: '{param:measured.procedure.variants.4.parameters.steps}'
+        toolchain: system audio headers, Rust `cargo clippy`, `cargo fmt`, and `cargo build`/test
+      - job: '{name:job.jq}'
+        repository: '`{param:measured.procedure.variants.5.parameters.repository}`'
+        commit: '{commit:measured.procedure.variants.5.parameters.repository|measured.procedure.variants.5.parameters.commit}'
+        steps: '{param:measured.procedure.variants.5.parameters.steps}'
+        toolchain: '`autoreconf`, `./configure`, `make`, and `make check`'
+      - job: '{name:job.gson}'
+        repository: '`{param:measured.procedure.variants.6.parameters.repository}`'
+        commit: '{commit:measured.procedure.variants.6.parameters.repository|measured.procedure.variants.6.parameters.commit}'
+        steps: '{param:measured.procedure.variants.6.parameters.steps}'
+        toolchain: JDK 21 and `mvn test --batch-mode`
+    clock: [sandbox]
+    notes:
+      opening: |-
+        {name:test.ci-jobs} measures how fast a sandbox executes an end-to-end continuous integration pipeline from a cold start, the batch workload engineering teams offload from hosted CI runners and the verification sequence coding agents run after modifying a repository. We replay six real GitHub Actions jobs from open-source repositories, one per language across Node.js, Python, Go, Rust, C, and Java.
+
+        Every trial downloads its repository checkout, compiler toolchain, system packages, and language dependencies from scratch over the provider's network, so the result captures both the provider's network path to public package registries and its CPU and disk speed during linting, compilation, and testing.
+      introduction: 'Times each job as the sum of its step runtimes on the sandbox''s clock; {name:job.all} is the geometric mean of the selected jobs.'
+      metric: '{name:test.ci-jobs} is the sum of step runtimes across a job. Each step is assigned by the parameter file to one of four stages: `{name:stage.install}` (`git clone`, `git checkout`, `apt-get`, toolchains, and `pnpm install`, `uv sync`, `go mod download`, `cargo fetch`, `autoreconf`/`./configure`, or Maven) and `{name:stage.lint}`, `{name:stage.test}`, or `{name:stage.build}` (`pnpm test`, `pytest`, `go test`, `cargo test`, `make check`, or `mvn test`).'
+      setup: |-
+        Each trial uses a sandbox created from BoxRouter's pinned standard image (box user with passwordless `sudo`, matching GitHub's ubuntu-latest runner conventions) with open networking and no cached toolchains, packages, builds, or Git state.
+      workload: |-
+        The workload translates 6 `.github/workflows` jobs from public open-source repositories into self-contained `bash` step sequences pinned to a repository commit. GitHub Actions workflow expressions, matrix variables, `actions/checkout`, and `actions/setup-*` steps become explicit shell commands with caches disabled so each trial clones from GitHub and fetches dependencies from live upstream registries.
+      trial_steps: '[[steps: create]]Create sandbox [[steps: ready_check]]and run readiness check (untimed); then [[steps: job_steps]]execute all workflow steps across four stages ({name:stage.install}, {name:stage.lint}, {name:stage.test}, {name:stage.build}); then [[steps: destroy]]destroy sandbox.'
+      cost_how_to_read: '{param:reader.common.blocks.common.cost_reading} {param:content.fact_list.fact_cost_split_rule}'
+      limitations:
+      - Every trial starts cold without dependency caches or pre-baked SDK images, and live downloads from GitHub, npm, PyPI, crates.io, and Maven Central include upstream registry variance.
+      - Teams that keep warm dependency caches on network volumes, snapshots or prebuilt custom images wait much less on Install than the cold-start times measured here.
+      - Downloading Go, rustup, uv, Temurin JDK, Maven and `apt` build packages that GitHub's hosted ubuntu-latest image pre-installs makes Install longer here than on a hosted GitHub runner.
+      - The suite covers one representative workflow per language on Linux x86-64 (`linux/amd64`) only.
+      - The gin test suite binds port 8080, which collides with the port Blaxel reserves for its internal sandbox API.
+      - Blaxel stores the sandbox filesystem entirely in RAM, and BoxRouter does not yet mount external volumes on Blaxel, which limits disk-heavy Rust builds such as spotify-player.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.typical_citation} {param:reader.common.blocks.workloads.ranking} One job on its own needs 90% of its {param:measured.procedure.trials} trials.
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        Every step in the job must exit 0 and pass the twenty-millisecond `/proc/uptime` clock gate.
+
+        Because steps fetch from live external registries (`github.com`, `registry.npmjs.org`, `pypi.org`, `proxy.golang.org`, `crates.io`, `repo.maven.apache.org`) and run without a pre-recorded trace, a step that exits non-zero or times out is classified as excluded (does not replay here) when caused by an upstream registry outage or deterministic environment incompatibility, and as a provider error when the sandbox fails to create, loses network connectivity, or stops answering.
+    stages:
+      install:
+        start: Exec each install step
+        end: Step exits
+        clock: sandbox
+      lint:
+        start: Exec each lint step
+        end: Step exits
+        clock: sandbox
+      test:
+        start: Exec each test step
+        end: Step exits
+        clock: sandbox
+      build:
+        start: Exec each build step
+        end: Step exits
+        clock: sandbox
+  sequential-tti:
+    clock: [runner]
+    headline: Create to first command
+    headline_steps: [create, first_command]
+    step_notes:
+      first_command: Retrying transient not-ready errors (502, 503, 504, connection refused, or connection reset) every 100 ms up to a {duration:measured.failure_policy.timeout_seconds.first_command_from_create_start} total window from the start of `create`.
+    notes:
+      opening: '{param:reader.common.blocks.create.opening}'
+      introduction: 'Times each sandbox from its create request until its first command returns.'
+      metric: '{name:test.sequential-tti} is the duration from the start of `create` until the first command inside the sandbox returns its expected output, computed as the sum of Create and First command.'
+      setup: |-
+        Each trial uses {param:measured.procedure.sandboxes_per_trial} sequential sandboxes created from BoxRouter's pinned standard image plus a unique per-trial image layer ({product:measured.procedure.trials*measured.procedure.sandboxes_per_trial} sandboxes per variant per provider).
+      trial_steps: '[[steps: build]]Push a unique trial image layer and prepare it with the provider (untimed); then [[steps: create]]for each of {param:measured.procedure.sandboxes_per_trial} sequential sandboxes, run `create` ({name:stage.create}) [[steps: first_command]]and immediately run the selected first command (First command); then [[steps: uptime]]read `/proc/uptime` and probe size (untimed); then [[steps: destroy]]destroy the sandbox and confirm deletion before starting the next.'
+      procedure: |-
+        The {countword:measured.procedure.variants} first-command variants compare bare container readiness (`true`) against the dynamic-linking and filesystem page-in time of loading a language runtime on first touch.
+      limitations:
+      - The trial image layer is unique, but provider base-image caches and warm pools stay enabled; cold hosts and base layers are not guaranteed.
+      - '{param:reader.common.blocks.create.limit_layer}'
+      - '[[when measured.procedure.concurrency.trials_in_parallel > 1: Trials run in parallel per provider, up to {param:measured.procedure.concurrency.trials_in_parallel} at once, so other sandboxes from the same batch can be in flight on the provider''s infrastructure, and the in-flight count is recorded with each trial.]]'
+      - Providers that lazily stream container filesystem blocks pay only for the blocks that `/bin/bash`, `python3`, `node` and `git` touch, not for the full pinned image.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        Across {param:measured.procedure.trials} trials of {param:measured.procedure.sandboxes_per_trial} sequential sandboxes, each variant pools up to {product:measured.procedure.trials*measured.procedure.sandboxes_per_trial} individual sandbox TTI observations, with confidence intervals resampled at the whole-trial level because sequential sandboxes inside one trial share the prepared trial image. A provider is ranked on {name:test.sequential-tti} once it has at least {param:measured.statistics.ranking.min_successes} successful trial.
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when `image.prepare` completes, all {param:measured.procedure.sandboxes_per_trial} sequential sandboxes complete `create` and their first command within {duration:measured.failure_policy.timeout_seconds.first_command_from_create_start} with exit code 0, and every sandbox and the trial image are confirmed deleted.
+    stages:
+      create:
+        start: Create request is sent
+        end: Create call returns
+        clock: runner
+      first-command:
+        start: '`{command}` request is sent'
+        start_after: Create returns and the `{command}` request is sent
+        end: '`{command}` returns its exit code'
+        clock: runner
+  burst-tti:
+    step_notes:
+      ready: "As each individual `create` call returns, its coroutine immediately sends `true` ({duration:measured.failure_policy.timeout_seconds.ready_attempt} per-attempt timeout)."
+    headline_steps: [create, ready]
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.create.opening}'
+      introduction: 'Times each burst from the first dispatched create request until every sandbox''s first command returns.'
+      metric: '{name:test.burst-tti} is the duration of an N-sandbox wave from the first dispatched `create` request until every sandbox completes both `create` and its first `true` command, computed as max(end_i) - min(start_i) across the N sandboxes.'
+      setup: |-
+        Each trial uses N parallel sandboxes created from BoxRouter's pinned standard image plus a unique per-trial image layer, so concurrent workers do not compound the burst size.
+      trial_steps: '[[steps: build]]Push a unique trial image layer, prepare the image, and initialize N provider creation contexts (untimed); then [[steps: create]]send N asynchronous `create` calls at once ({name:stage.create}); then [[steps: ready]]as each `create` returns, send `true` and retry transient not-ready errors every 100 ms up to 40 times (First command); then [[steps: size_probe]]probe sizes (untimed) [[steps: destroy]]and destroy all N sandboxes together.'
+      limitations:
+      - The N sandboxes in a burst contend with one another by design and are not comparable to sequential starts; burst sizes above a provider plan's concurrency limit are not run and show as {param:content.ranking_statuses.not_offered.label}.
+      - '{param:reader.common.blocks.create.limit_layer}'
+      - One burst yields one burst-time data point, not one TTI sample per sandbox, because its sandboxes share account rate limits, scheduler queues and host placement at the same instant.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        Each N-sandbox wave produces a single burst-time observation (up to {param:measured.procedure.trials} observations per burst-size variant). A provider is ranked on a burst size only when all {param:measured.procedure.trials} scheduled trials succeed (at least {param:measured.statistics.ranking.min_successes} successes with zero failed bursts) and the provider reports a cost.
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        If a burst size exceeds the provider plan's documented concurrency limit, that variant is marked {param:content.ranking_statuses.not_offered.label} rather than failed. A trial succeeds only when all N sandboxes in the burst complete `create` and `true` within timeout and all N sandboxes are confirmed destroyed; if any single sandbox in the wave fails or times out, the entire burst trial fails.
+    stages:
+      create:
+        start: Create requests are sent together
+        end: Create call returns
+        clock: runner
+      first-command:
+        start: '`true` requests are attempted'
+        start_after: Create returns and the `true` requests are attempted
+        end: First successful `true` return; retried if sandbox isn't ready
+        clock: runner
+  exec-latency-per-100-calls:
+    headline_steps: ["true"]
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.exec.opening}'
+      introduction: 'Times {param:measured.procedure.variants.0.parameters.calls} calls in a row to a command with almost no runtime and adds up their times.'
+      metric: '{name:test.exec-latency-per-100-calls} is the sum of the {param:measured.procedure.variants.0.parameters.calls} sequential `true` call durations inside a single sandbox trial, measuring the cumulative command-dispatch overhead a chatty external agent pays over a {param:measured.procedure.variants.0.parameters.calls}-step session.'
+      setup: '{param:reader.common.blocks.common.sandbox}.'
+      workload: '{param:reader.common.blocks.exec.shared_workload}'
+      trial_steps: '[[steps: create]]Create sandbox and run the untimed readiness check; then [[steps: true]]send {param:measured.procedure.variants.0.parameters.calls} sequential `true` commands wrapped in `$EPOCHREALTIME` and `/proc/uptime` reads, timing each call on the job host from request start until the exit code and guest clock readings return; then [[steps: destroy]]destroy sandbox (untimed).'
+      limitations:
+      - Summing {param:measured.procedure.variants.0.parameters.calls} calls per sandbox smooths out single-call time spikes that do not persist across the whole sandbox session; use {name:test.exec-latency} to inspect per-call {name:statistic.p95} tail spikes.
+      - '{param:reader.common.blocks.exec.limit_network}'
+      - '{param:reader.common.blocks.exec.limit_warm}'
+      - '{param:reader.common.blocks.exec.limit_wrapper}'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        For {name:test.exec-latency}, the headline statistic (median, mean, or {name:statistic.p95}) is computed over all {product:measured.procedure.trials*measured.procedure.variants.0.parameters.calls} pooled calls across the {param:measured.procedure.trials} trials, while bootstrap confidence intervals resample whole trials ({param:measured.procedure.variants.0.parameters.calls}-call blocks) with replacement so intra-sandbox correlation does not artificially narrow the interval.
+
+        For {name:test.exec-latency-per-100-calls}, each sandbox trial yields one summed {param:measured.procedure.variants.0.parameters.calls}-call duration (up to {param:measured.procedure.trials} trial values per provider). {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when all {param:measured.procedure.variants.0.parameters.calls} sequential `true` calls exit 0, every call passes the twenty-millisecond `/proc/uptime` clock gate, and the sandbox is confirmed destroyed.
+  exec-latency:
+    headline_steps: ["true"]
+    clock: [runner]
+    notes:
+      introduction: 'Times one call to a command with almost no runtime, from the request until its result returns.'
+      metric: '{name:test.exec-latency} is the round-trip duration of a single `true` call (a command with almost no runtime) on a warm sandbox, pooled across all {product:measured.procedure.trials*measured.procedure.variants.0.parameters.calls} calls from {param:measured.procedure.trials} sandboxes.'
+  list:
+    headline_steps: [list]
+    clock: [runner]
+    notes:
+      introduction: 'Times the job-host round trip for BoxRouter to list a directory containing {param:measured.procedure.variants.0.parameters.file_count} empty files and return their sorted names.'
+      metric: '{name:test.list} is the round-trip duration of a single `files.list` call on `/workspace/prim/list` returning the sorted names of {param:measured.procedure.variants.0.parameters.file_count} empty files, pooled across {param:measured.procedure.variants.0.parameters.repetitions} calls per trial and {param:measured.procedure.trials} trials ({product:measured.procedure.trials*measured.procedure.variants.0.parameters.repetitions} calls total).'
+  read-4kib:
+    headline_steps: [read]
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.files.opening}'
+      introduction: 'Times the job-host round trip for BoxRouter to read a {size:measured.procedure.variants.0.parameters.bytes} incompressible file from the sandbox and return its contents.'
+      metric: '{name:test.read-4kib} is the round-trip duration of a single `files.read` call reading the {size:measured.procedure.variants.0.parameters.bytes} incompressible file `/workspace/prim/file-4kib.bin`, pooled across {param:measured.procedure.variants.0.parameters.repetitions} sequential reads per trial and {param:measured.procedure.trials} trials ({product:measured.procedure.trials*measured.procedure.variants.0.parameters.repetitions} reads total).'
+      setup: |-
+        Each trial uses one shared sandbox created from BoxRouter's pinned standard image across all three file benchmarks.
+      workload: |-
+        The {param:measured.parameters.workload.file-list.count} empty files in `/workspace/prim/list` are named f000 through f199, and the {param:measured.parameters.workload.payloads.file-4kib.bytes}-byte payload is generated in memory from `SHAKE256` (`boxrouter-primitives/file-4kib/v1`) and verified by {hash:SHA-256|measured.parameters.workload.payloads.file-4kib.sha256} digest on every read.
+      trial_steps: '[[steps: create]]Create sandbox, run readiness check and create {param:measured.parameters.workload.file-list.count} empty files (untimed); [[steps: list]]call `files.list` {param:measured.procedure.variants.0.parameters.repetitions} times back to back and verify the names ({name:test.list}); [[untimed]]generate and verify the {size:measured.procedure.variants.0.parameters.bytes} payload (untimed); [[steps: write]]call `files.write` {param:measured.procedure.variants.0.parameters.repetitions} times ({name:test.write-4kib}); [[steps: read]]call `files.read` {param:measured.procedure.variants.0.parameters.repetitions} times and verify each payload ({name:test.read-4kib}); then [[steps: destroy]]destroy sandbox (untimed).'
+      limitations:
+      - Calls to `files.list` publish job-host total time only, because `files.list` wraps no user command with guest clock reads.
+      - Each `files.write` call includes BoxRouter's staging step (writing the bytes to a private path and copying them into place in the same call), and writes two through {param:measured.procedure.variants.0.parameters.repetitions} overwrite the existing file.
+      - Because of the staging step a write takes several provider requests and is slower than a read, which is the path a BoxRouter user takes.
+      - Because the file was just written in the same sandbox, the sandbox's page cache may serve the reads, so they measure the file API's per-call overhead rather than disk speed.
+      - '{param:reader.common.blocks.files.limit_warm}'
+      - '{param:reader.common.blocks.files.limit_provider_work}'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        For each of {name:test.list}, {name:test.write-4kib} and {name:test.read-4kib}, all {product:measured.procedure.trials*measured.procedure.variants.0.parameters.repetitions} individual call durations across the {param:measured.procedure.trials} trials are pooled for the headline median, mean, and {name:statistic.p95}, with bootstrap confidence intervals resampled by whole trial. {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when the directory setup completes, all {param:measured.procedure.variants.0.parameters.repetitions} `files.list` calls return the expected sorted set of {param:measured.parameters.workload.file-list.count} filenames, all {param:measured.procedure.variants.0.parameters.repetitions} `files.write` calls complete without error, all {param:measured.procedure.variants.0.parameters.repetitions} `files.read` calls return a buffer whose SHA-256 matches the pinned {hash:SHA-256|measured.parameters.workload.payloads.file-4kib.sha256}, and the shared trial sandbox is confirmed destroyed.
+  write-4kib:
+    headline_steps: [write]
+    clock: [runner]
+    notes:
+      introduction: 'Times the job-host round trip for BoxRouter to stage and write a {size:measured.procedure.variants.0.parameters.bytes} incompressible payload to a sandbox file.'
+      metric: '{name:test.write-4kib} is the round-trip duration of a single `files.write` call transferring a {size:measured.procedure.variants.0.parameters.bytes} incompressible payload to `/workspace/prim/file-4kib.bin`, pooled across {param:measured.procedure.variants.0.parameters.repetitions} sequential writes per trial and {param:measured.procedure.trials} trials ({product:measured.procedure.trials*measured.procedure.variants.0.parameters.repetitions} writes total).'
+  pause-resume:
+    headline_steps: [resume, data_back]
+    step_notes:
+      data_back: "The data read-back command reads the entire payload with `dd` (`iflag=direct` where supported) and verifies its SHA-256 digest."
+      load: "An untimed load step generates the selected payload, records its SHA-256 digest and initial kernel boot ID."
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.pause-resume.opening}'
+      introduction: 'Times a sandbox''s pause, its resume and a file read afterwards, under different disk loads.'
+      metric: '{name:test.pause-resume} is the sum of two timed post-pause stages: {name:stage.resume} (the `resume` API call) and {name:stage.read} (the command that reads the full seeded payload and verifies its byte count and SHA-256 digest), charted alongside {name:stage.pause} (the `pause` API call).'
+      setup: '{param:reader.common.blocks.common.sandbox}.'
+      workload: |-
+        The {count:measured.procedure.variants} data-load variants are {name:variant.empty} ({param:measured.procedure.variants.0.parameters.bytes}-byte marker file), {name:variant.memory-1gib} (pinned in a live process), and {size:measured.procedure.variants.2.parameters.bytes}, {size:measured.procedure.variants.3.parameters.bytes}, or {size:measured.procedure.variants.4.parameters.bytes} on disk ({size:measured.procedure.variants.4.parameters.bytes} is the default headline variant). Every payload is filled from a seeded `SHAKE256` stream (`seed = {param:measured.procedure.variants.0.parameters.seed}`) so storage deduplication or zero-page compression cannot short-circuit the state transfer.
+      trial_steps: '[[steps: create, load]]Create sandbox, run readiness check, generate the selected payload, drop the page cache on disk variants where permitted, and wait 60 s for disk writeback to settle (untimed); then [[steps: pause]]call `pause` ({name:stage.pause}); then [[steps: resume]]immediately call `resume` ({name:stage.resume}); then [[steps: data_back]]read the file with `dd` ({name:stage.read}); then [[steps: destroy]]record the kernel boot ID and destroy sandbox (untimed).'
+      limitations:
+      - Evaluates resume time on a single sandbox, sent immediately after the previous pause returns.
+      - Only providers with an explicit `pause` command or equivalent are tested.
+      - This test does not capture providers' ability to scale down or auto-idle/auto-pause.
+      - A completed `pause()` call means the provider reported the sandbox paused, not that all state has reached durable storage, so background uploads after the pause can overlap with `resume`.
+      - On the disk variants the load script tries to drop the page cache and reads with `dd iflag=direct` where supported, and the trial records whether the page cache was dropped and whether reads were direct, as far as the container allowed.
+      - '{param:reader.common.blocks.pause-resume.limit_architecture}'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        A provider is ranked on a variant of {name:test.pause-resume} once it has at least {param:measured.statistics.ranking.min_successes} successful trials.
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        Providers without `pause` and `resume` support in BoxRouter are shown as {param:content.ranking_statuses.in_development.label}. A trial succeeds only when `pause`, `resume`, and {name:stage.read} complete within timeout, the post-resume SHA-256 digest and byte count match the pre-pause payload, and the sandbox is confirmed destroyed.
+    stages:
+      pause:
+        start: Pause request is sent
+        end: Provider reports the sandbox paused and the pause call returns
+        clock: runner
+      resume:
+        start: Resume request is sent
+        start_after: Pause call returns and the resume request is sent
+        end: Resume call returns
+        clock: runner
+      read:
+        start: Read command is sent
+        start_after: Resume call returns and the read command is sent
+        end: Read result and sandbox clock readings return
+        clock: runner
+  delayed-resume:
+    step_notes:
+      wait: "For auto-idle providers, the sandbox is left untouched for that wait so it can enter standby on its own."
+      destroy: "The harness compares guest wall-clock time against `/proc/uptime` to verify whether the kernel was frozen during standby."
+    headline_steps: [resume, data_back]
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.pause-resume.opening}'
+      introduction: 'Times reading data from a sandbox that was paused or idle for {duration:measured.procedure.variants.0.parameters.wait_seconds}, {duration:measured.procedure.variants.1.parameters.wait_seconds} or {duration:measured.procedure.variants.2.parameters.wait_seconds}.'
+      metric: '{name:test.delayed-resume} is the sum after the wait of two timed stages: {name:stage.resume} (`resume` for explicit-pause providers, or 0 for auto-idle providers that wake on command) and {name:stage.read} (reading back the {param:measured.procedure.variants.0.parameters.bytes}-byte marker file with `dd`).'
+      setup: '{param:reader.common.blocks.common.sandbox}.'
+      workload: |-
+        The {param:measured.procedure.variants.0.parameters.bytes}-byte marker file is generated from `SHAKE256` (`seed = {param:measured.procedure.variants.0.parameters.seed}`), and {duration:measured.procedure.variants.2.parameters.wait_seconds} is the default headline view. The three wait durations ({duration:measured.procedure.variants.0.parameters.wait_seconds}, {duration:measured.procedure.variants.1.parameters.wait_seconds}, and {duration:measured.procedure.variants.2.parameters.wait_seconds}) test whether a paused or idle sandbox is evicted from local host memory to colder network storage as idle time grows.
+      trial_steps: '[[steps: create, control, pause, wait]]Create sandbox, write {param:measured.procedure.variants.0.parameters.bytes}-byte marker, read it once (control), call `pause` if supported, and wait {duration:measured.procedure.variants.0.parameters.wait_seconds}, {duration:measured.procedure.variants.1.parameters.wait_seconds}, or {duration:measured.procedure.variants.2.parameters.wait_seconds} (untimed); then [[steps: resume]]call `resume` where supported ({name:stage.resume}); then [[steps: data_back]]read the {param:measured.procedure.variants.0.parameters.bytes}-byte marker file again with `dd` ({name:stage.read}); then [[steps: destroy]]verify standby duration and destroy sandbox (untimed).'
+      limitations:
+      - Waits longer than {name:page.common}'s idle timeout (the {duration:measured.procedure.variants.2.parameters.wait_seconds} variant) may include a new TCP and TLS handshake in the post-wait call, and auto-idle providers that fail to enter standby during a positive wait have their metric withheld.
+      - '{param:reader.common.blocks.pause-resume.limit_architecture}'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        A provider is ranked on a wait variant once it has at least {param:measured.statistics.ranking.min_successes} successful trials.
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when all steps complete within timeout, the post-wait marker read matches the pre-wait SHA-256 digest, and the sandbox is confirmed destroyed. On positive wait variants ({duration:measured.procedure.variants.1.parameters.wait_seconds} and {duration:measured.procedure.variants.2.parameters.wait_seconds}), an auto-idle provider whose guest `/proc/uptime` kept advancing throughout the wait (never entering standby) has its metric withheld.
+    stages:
+      resume:
+        start: Resume request is sent after the selected wait
+        end: Resume call returns
+        clock: runner
+      read:
+        start: Read command is sent
+        start_after: Resume call returns and the read command is sent
+        end: Read result and sandbox clock readings return
+        clock: runner
+  snapshot-and-restore:
+    step_notes:
+      write_marker: "Each trial writes {param:measured.parameters.workload.marker.text} to `/workspace/snapshot/marker`."
+      snapshot: "The harness times `snapshots.create`."
+      destroy_source: "The harness destroys the source sandbox untimed so the restore cannot depend on the live parent container."
+    headline_steps: [snapshot, restore, first_commands]
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.snapshots.opening}'
+      introduction: 'Times how long a provider takes to save a sandbox snapshot, create a new sandbox from it, and run the first Python, Node.js, and git command.'
+      metric: '{name:test.snapshot-and-restore} is the sum of three timed stages: {name:stage.snapshot} (saving the configured source sandbox), {name:stage.create-from-snapshot} (booting a new sandbox after the source sandbox is destroyed), and {name:stage.load-runtimes} (running the first chained `python3`, `node`, and `git` command inside the restored sandbox).'
+      setup: |-
+        Each trial uses {param:measured.procedure.sandboxes_per_trial} sequential sandboxes created from BoxRouter's pinned standard image on providers that support the snapshots capability through BoxRouter.
+      workload: |-
+        The {name:stage.load-runtimes} step runs without a prior readiness check, importing standard-library modules in `python3` (json, `sqlite3`, ssl, asyncio, `urllib.request`, `email.parser`, `xml.etree.ElementTree`) and `node` (crypto, zlib, http) and running `git --version` to fault in binary and library pages from the snapshot.
+      trial_steps: '[[steps: create, write_marker]]Create source sandbox, run readiness check, and write a marker file (untimed); [[steps: snapshot]]take a snapshot ({name:stage.snapshot}); [[steps: destroy_source]]destroy source sandbox and confirm deletion (untimed). [[steps: restore]]Restore a new sandbox from the snapshot ({name:stage.create-from-snapshot}) [[steps: first_commands]]and run the chained Python, Node.js, and git command ({name:stage.load-runtimes}). [[steps: verify_marker, destroy]]Verify the marker file, destroy the restored sandbox, and delete the snapshot (untimed).'
+      limitations:
+      - Providers differ in whether snapshots capture filesystem state alone or both filesystem and memory.
+      - E2B snapshots capture the VM memory as well as the filesystem, while Modal, Vercel and Daytona capture the filesystem only; a snapshot that keeps memory takes longer to save and may start faster.
+      - Providers handle the source sandbox differently during `snapshots.create` (Vercel stops it, E2B pauses it briefly, Modal and Daytona keep it running), and the procedure destroys it before every restore.
+      - '{param:reader.common.blocks.snapshots.limit_modal_delete}'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when {name:stage.snapshot}, {name:stage.create-from-snapshot}, and {name:stage.load-runtimes} complete within timeout, the restored sandbox contains the expected `/workspace/snapshot/marker` content, and both sandboxes and the snapshot are confirmed deleted.
+    stages:
+      snapshot:
+        start: '{param:reader.common.blocks.snapshots.snapshot_stage_start}'
+        end: '{param:reader.common.blocks.snapshots.snapshot_stage_end}'
+        clock: runner
+      create-from-snapshot:
+        start: Restore request is sent
+        start_after: Source sandbox is confirmed gone and the restore request is sent
+        end: Restore call returns with the new sandbox
+        clock: runner
+      load-runtimes:
+        start: Runtime command is sent
+        start_after: Restore returns and the runtime command is sent
+        end: Command returns its result
+        clock: runner
+  fork:
+    headline_steps: [restore, first_commands]
+    step_notes:
+      create: "Those setup steps are recorded in the trial data ({name:test.snapshot-and-restore} times them directly) and excluded from the {name:test.fork} bar."
+      delete_snapshot: "After Fork {param:measured.procedure.variants.0.parameters.restores} is destroyed, the snapshot is deleted."
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.snapshots.opening}'
+      introduction: 'Times how long a provider takes to create {param:measured.procedure.variants.0.parameters.restores} sequential sandboxes from a single snapshot and run the first Python, Node.js, and git command in each fork.'
+      metric: '{name:test.fork} is the sum across all {param:measured.procedure.variants.0.parameters.restores} sequential forks of two timed stages: {name:stage.create-from-snapshot} (creating each sandbox from the shared trial snapshot) and {name:stage.load-runtimes} (running the chained Python, Node.js, and git command inside each fork).'
+      setup: |-
+        Each trial uses {param:measured.procedure.sandboxes_per_trial} sequential sandboxes (1 source sandbox and {param:measured.procedure.variants.0.parameters.restores} sequential forks) created from BoxRouter's pinned standard image on providers that support the snapshots capability through BoxRouter.
+      workload: |-
+        The marker file `/workspace/snapshot/marker` contains {param:measured.parameters.workload.marker.text}. In each fork, {name:stage.load-runtimes} runs without a prior readiness check, importing `python3` (json, `sqlite3`, ssl, asyncio, `urllib.request`, `email.parser`, `xml.etree.ElementTree`) and `node` (crypto, zlib, http) modules and running `git --version` to fault in pages from the snapshot.
+      trial_steps: '[[steps: create, snapshot, destroy_source]]Create source sandbox, write marker file, take one snapshot, and destroy source sandbox (untimed on the {name:test.fork} chart); then [[steps: restore]]for each of {param:measured.procedure.variants.0.parameters.restores} sequential forks, restore a sandbox from the snapshot ({name:stage.create-from-snapshot}) [[steps: first_commands]]and immediately run the Python, Node.js, and git command ({name:stage.load-runtimes}), then [[steps: verify_destroy]]verify the marker and destroy the fork before creating the next; then [[steps: delete_snapshot]]delete the snapshot (untimed).'
+      limitations:
+      - Forks are created one after another rather than in parallel, so the test isolates sequential snapshot caching (the first fork cold versus later forks warm) rather than concurrent fork contention.
+      - '{param:reader.common.blocks.snapshots.limit_modal_delete}'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when all {param:measured.procedure.variants.0.parameters.restores} sequential restores and their runtime-load commands succeed within timeout, every fork verifies `/workspace/snapshot/marker`, and all {param:measured.procedure.sandboxes_per_trial} sandboxes and the snapshot are confirmed deleted.
+    stages:
+      snapshot:
+        start: '{param:reader.common.blocks.snapshots.snapshot_stage_start}'
+        end: '{param:reader.common.blocks.snapshots.snapshot_stage_end}'
+        clock: runner
+      create-from-snapshot:
+        start: Restore request is sent
+        end: Restore call returns with the fork
+        clock: runner
+      load-runtimes:
+        start: Runtime command is sent
+        start_after: Restore returns and the runtime command is sent
+        end: Command returns its result
+        clock: runner
+  image-build-2vcpu-4gib:
+    headline_steps: [build]
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.image-build.opening}'
+      introduction: Times how long a provider takes to prepare a new image layer on top of the selected base image.
+      metric: 'Image Build is the duration of `image.prepare` ({name:stage.build}), from submitting the new trial image tag until the provider returns a prepared image handle ready to create {machine:measured.environment.size} sandboxes.'
+      setup: |-
+        Each trial prepares one of {count:measured.procedure.variants} pinned base images with a unique per-trial top layer, without starting a sandbox.
+      workload: |-
+        The {count:measured.procedure.variants} pinned base images span four groups:
+
+        - standard ({hash:sha256|measured.procedure.variants.0.parameters.base_image})
+        - python, `node`, go, rust, and java (Eclipse Temurin)
+        - data-science (`jupyter/datascience-notebook`, {imagesize:measured.parameters.variants.data-science.facts.uncompressed_bytes} unpacked)
+        - igel, yjs, and dasel (three SWE-bench task images)
+
+        The unique trial-ID layer is a single uncompressed tar archive containing `/etc/boxrouter-trial-id` with a fresh UUID, forcing the provider to ingest a new manifest and top layer while keeping its cache of the base layers.
+      trial_steps: '[[untimed]]Append a unique trial-ID layer to the selected base image and push it to the public GHCR trial-image registry (untimed); then [[steps: build]]call `image.prepare` at {machine:measured.environment.size} and wait until the provider returns the prepared image handle ({name:stage.build}); then [[untimed]]delete the provider''s prepared copy and the registry tag (untimed).'
+      limitations:
+      - Each trial adds one small layer to a pinned base image (so provider base-layer caching remains active, matching incremental user builds), and timings include BoxRouter's build-status polling interval.
+      - Vercel starts sandboxes only from its own registry, so the job host copies each missing image layer from GHCR into it, and Vercel's time includes that copy.
+      - An image with too few successful trials for a {name:statistic.p95} shows a median and its Slowest trial instead.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.typical_citation} A provider is ranked on a base image of {name:test.image-build-2vcpu-4gib} once it has at least {param:measured.statistics.ranking.min_successes} successful trials.
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when `image.prepare` completes and the provider's prepared image artifact and temporary registry tag are deleted.
+  previews:
+    step_notes:
+      url_poll: "The job host starts polling the public preview URL every {duration:measured.procedure.variants.0.parameters.poll_gap_seconds} while simultaneously launching `node node_modules/vite/bin/vite.js` inside the sandbox and polling `127.0.0.1:{param:measured.procedure.variants.0.parameters.port}{param:measured.procedure.variants.0.parameters.path}` inside the guest every {duration:measured.procedure.variants.0.parameters.local_poll_gap_seconds}."
+      websocket: "The harness times a WebSocket upgrade with subprotocol `{param:measured.procedure.variants.0.parameters.websocket_subprotocol}` and verifies its connected message."
+    headline_steps: [start_server, server_listening, url_poll]
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.previews.opening}'
+      introduction: 'Times from launching a Vite development server inside a sandbox until its public preview URL returns the HTTP 200 response to the job host, split into {name:stage.server} and {name:stage.between}.'
+      metric: '{name:test.previews} is the duration from launching the Vite development server inside the sandbox until its public HTTPS preview URL returns its first valid 200 OK response ({param:measured.procedure.variants.0.parameters.expected_body}) on `{param:measured.procedure.variants.0.parameters.path}`.'
+      setup: |-
+        Each trial uses a sandbox created from BoxRouter's pinned standard image with port {param:measured.procedure.variants.0.parameters.port} exposed as a public preview URL, running a pre-bundled Vite {version:measured.source.ids.2} archive (`previews-app.tar`, verified by {hash:SHA-256|measured.parameters.workload.app.sha256}).
+      trial_steps: '[[steps: create]]Create sandbox with a port {param:measured.procedure.variants.0.parameters.port} preview, [[steps: upload]]upload and verify Vite archive, [[steps: open_preview]]and open the preview URL (timed, not charted); [[steps: url_poll, start_server, server_listening]]poll the preview URL while launching Vite (start-server) and polling `127.0.0.1:{param:measured.procedure.variants.0.parameters.port}` (server-listening); [[steps: request]]send {param:measured.procedure.variants.0.parameters.requests} sequential `GET /ping.txt` requests on a kept-alive connection (request); [[steps: websocket]]test a vite-hmr WebSocket upgrade (websocket) [[steps: destroy]]and destroy the sandbox.'
+      limitations:
+      - Only providers that expose the previews capability through BoxRouter are measured (others show {param:content.ranking_statuses.in_development.label}); {name:stage.between} includes both `process.start` dispatch and the provider's edge routing proxy.
+      - Both url-poll and server-listening sleep {duration:measured.procedure.variants.0.parameters.poll_gap_seconds} between attempts, so both readiness durations carry up to that much polling quantization plus any request in flight when Vite begins listening.
+      - The request GET calls reuse the connection from url-poll, so DNS lookup, TCP connect and TLS handshake time is excluded from request TTFB while distance to the provider's preview ingress is included.
+      - 'Vite runs with `allowedHosts: true` and `skipWebSocketTokenCheck: true` so the benchmark script can test HTTP and WebSocket routing directly without a headless browser.'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        Providers that do not support public preview URLs through BoxRouter are shown as {param:content.ranking_statuses.in_development.label}. A trial succeeds only when Vite binds locally, the public preview URL returns HTTP 200 with body `{param:measured.procedure.variants.0.parameters.expected_body}`, all {param:measured.procedure.variants.0.parameters.requests} `GET` requests succeed, and the sandbox is confirmed destroyed.
+    stages:
+      server-listening:
+        start: Server launch is requested in the sandbox
+        end: Localhost in the sandbox first answers HTTP 200 with body ok
+        clock: sandbox
+      between:
+        start: Server answers on localhost in the sandbox
+        end: Preview URL first answers HTTP 200 with body ok
+        clock: runner
+  reconnect:
+    headline_steps: [attach, "true"]
+    clock: [runner]
+    notes:
+      opening: '{param:reader.common.blocks.reconnect.opening}'
+      introduction: 'Times a fresh client process attaching to an existing sandbox by its ID and executing its first `true` command.'
+      metric: '{name:test.reconnect} is the sum of two timed calls: `attach` (looking up and binding to an already-running sandbox by its ID from a brand-new OS process and BoxRouter client) and `true` (executing the first `true` command on that handle), pooled across {param:measured.procedure.variants.0.parameters.rounds} sequential rounds per trial and {param:measured.procedure.trials} trials ({product:measured.procedure.trials*measured.procedure.variants.0.parameters.rounds} reconnect rounds total).'
+      setup: '{param:reader.common.blocks.common.sandbox}.'
+      workload: |-
+        Each child Python process starts with a clean address space and zero pooled sockets, so every round measures a cold SDK attach.
+      trial_steps: '[[steps: create]]Create a sandbox in the parent process and run the untimed readiness check; then [[steps: attach]]for each of {param:measured.procedure.variants.0.parameters.rounds} rounds, spawn a fresh child OS process on the job host, initialize a new BoxRouter client (untimed), time the `attach` lookup by sandbox ID, [[steps: true]]and immediately time the first `true` command with guest clock reads; then [[steps: destroy]]destroy the sandbox from the parent process (untimed).'
+      limitations:
+      - Provider SDKs differ in how much work happens during `attach` versus the first command (no provider's `attach` pre-opens the command execution socket), so the chart compares the combined `attach + first command` time together.
+      - Starting each child process, loading BoxRouter and building its client happen before the `attach` timer starts.
+      - Both `attach` and `true` include the network round trip between the job host and the provider's US region.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        All {product:measured.procedure.trials*measured.procedure.variants.0.parameters.rounds} rounds across the {param:measured.procedure.trials} trials are pooled for the headline median, mean, and {name:statistic.p95}, with bootstrap confidence intervals resampled at the whole-trial level. {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when all {param:measured.procedure.variants.0.parameters.rounds} child-process attach rounds complete `attach` and `true` with exit code 0, pass the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
+  7-zip-1-thread:
+    clock: [sandbox]
+    panel:
+      command: 7zzs b -mmt{param:measured.parameters.workload.rows.cpu-7zip-1t.threads}
+    headline_steps: [7-zip-1-thread]
+    notes:
+      opening: '{param:reader.common.blocks.cpu.opening}'
+      introduction: 'Measures single-core integer compute speed with 7-Zip''s built-in compression and decompression benchmark on one thread.'
+      metric: '7-Zip is the combined compression and decompression Tot rating of single-core integer compute speed on 7-Zip''s internal LZMA benchmark scale, reported on the Avr summary line of `./7zzs b -mmt{param:measured.parameters.workload.rows.cpu-7zip-1t.threads}`.'
+      calculation: '7-Zip runs its built-in LZMA dictionary compression and decompression passes in memory and prints Avr: ratings for compression (CompMIPS), decompression (DecompMIPS), and their combined total (Tot:), which we record directly as the total rating. With `-mmt{param:measured.parameters.workload.rows.cpu-7zip-1t.threads}` it runs on a single thread; with `-mmt{param:measured.environment.size.vcpu}` it spawns {param:measured.environment.size.vcpu} worker threads, sized to the requested vCPU count rather than `nproc`.'
+      setup: '{param:reader.common.blocks.common.sandbox}, {param:reader.common.blocks.cpu.setup}'
+      workload: |-
+        The built-in `7zzs b` benchmark compresses and decompresses synthetic data in memory with LZMA, exercising integer arithmetic, branching, lookup tables, and cache speed without disk or network I/O. Flag `-mmt{param:measured.parameters.workload.rows.cpu-7zip-1t.threads}` isolates single-vCPU throughput in {name:test.7-zip-1-thread}, while `-mmt{param:measured.environment.size.vcpu}` drives both requested vCPUs in {name:test.7-zip-all-vcpus} to measure multi-core scaling, CPU quota throttling, and hyperthread contention.
+      trial_steps: '[[steps: create]]{param:reader.common.blocks.machine-performance.trial_start} [[steps: cpu-facts, install-tools]]Record CPU model, flags, cache size, and cgroup limits, then upload and verify static `7zzs` and `stream` binaries (untimed). [[steps: 7-zip-1-thread]]Run `./7zzs b -mmt{param:measured.parameters.workload.rows.cpu-7zip-1t.threads}` and `./7zzs b -mmt{param:measured.environment.size.vcpu}` (sized to the requested vCPUs, never `nproc`) as polled background scripts in shuffled order alongside the memory test, then [[steps: destroy]]destroy sandbox (untimed).'
+      procedure: '{param:reader.common.blocks.machine-performance.shared_cpu_mem_procedure}'
+      limitations:
+      - Evaluates integer compression, branching, and cache lookup operations rather than floating-point or SIMD vector math; sandboxes on a single provider can land on different host CPU models across trials.
+      - The workload exercises no floating-point or wide SIMD instructions, though every trial records whether the sha_ni, avx2 and avx512f flags are present.
+      - '{param:reader.common.blocks.cpu.limit_models}'
+      - When a provider exposes a higher host core count through `nproc`, the CPU-count check raises an informational note while the multi-thread test still runs {param:measured.environment.size.vcpu} threads.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when the `7zzs` binary SHA-256 matches the pinned {hash:SHA-256|measured.parameters.workload.tools.0.sha256}, both `7zzs b` runs exit 0 with a positive Avr: MIPS rating, the guest clock passes the twenty-millisecond `/proc/uptime` gate, and the shared sandbox is confirmed destroyed.
+  7-zip-all-vcpus:
+    clock: [sandbox]
+    panel:
+      command: 7zzs b -mmt{param:measured.environment.size.vcpu}
+    headline_steps: [7-zip-all-vcpus]
+    notes:
+      introduction: 'Measures multi-core integer compute speed using 7-Zip''s built-in benchmark with one thread per requested vCPU (`-mmt{param:measured.environment.size.vcpu}` on a {param:measured.environment.size.vcpu} vCPU sandbox).'
+  stream-triad:
+    clock: [sandbox]
+    panel:
+      command: OMP_NUM_THREADS={param:measured.environment.size.vcpu} stream
+    headline_steps: [stream-triad]
+    notes:
+      opening: |-
+        Data-science workloads, in-memory analytics, and large language or compiler toolchains frequently bottleneck on how fast the system can stream data between main memory (DRAM) and the CPU rather than on raw clock speed. Two providers that sell the same {machine:measured.environment.size} can differ in memory bandwidth, for example by the CPU model a sandbox lands on.
+
+        The Memory tab measures sustainable memory bandwidth using John McCalpin's {name:test.stream-triad} benchmark across arrays sized to bypass CPU caches.
+      introduction: 'Measures sustained main-memory bandwidth across three 610.4 MiB arrays using one OpenMP thread per requested vCPU.'
+      metric: '{name:test.stream-triad} is the sustained main-memory bandwidth of the STREAM Triad kernel (`a[i] = b[i] + scalar * c[i]`) across {param:measured.environment.size.vcpu} OpenMP threads, reported in GB/s of 10^9 bytes/s.'
+      calculation: |-
+        Each Triad pass streams two double arrays of {size:measured.parameters.workload.stream_array_bytes} each (b and c, eighty million elements each) and writes one double array of {size:measured.parameters.workload.stream_array_bytes} (a), transferring 3 * 640,000,000 = 1,920,000,000 bytes (1.92 GB decimal / 1.83 GiB binary) per pass.
+
+        Across {param:measured.parameters.workload.stream_passes} passes, STREAM discards pass 0, takes the minimum time across the remaining passes, reports Best Rate MB/s (10^6 bytes/s), and we divide by 1,000 to publish `GB/s` (10^9 bytes/s).
+      setup: |-
+        {param:reader.common.blocks.common.sandbox}, running a static Linux x86_64 build of John D. McCalpin's STREAM {param:measured.source.version} (`stream`, verified by {hash:SHA-256|measured.parameters.workload.tools.1.sha256}).
+      workload: The `stream` binary is compiled with 80,000,000 double elements per array ({size:measured.parameters.workload.stream_array_bytes} / 610.4 MiB each, 1.83 GiB total across a, b, and c) and `NTIMES = {param:measured.parameters.workload.stream_passes}`.
+      trial_steps: '[[steps: create]]{param:reader.common.blocks.machine-performance.trial_start} [[steps: cpu-facts, install-tools]]Record CPU model, L3 cache size, and memory facts, then upload and verify the static `stream` binary (untimed). [[steps: stream-triad]]Run `OMP_NUM_THREADS={param:measured.environment.size.vcpu} ./stream` for {param:measured.parameters.workload.stream_passes} passes as a polled background script in shuffled order alongside the 7-Zip tests and verify "Solution Validates", then [[steps: destroy]]destroy sandbox (untimed).'
+      procedure: '{param:reader.common.blocks.machine-performance.shared_cpu_mem_procedure}'
+      limitations:
+      - Measures sequential vector streaming from DRAM rather than random pointer-chasing access time or CPU compute speed; always uses {param:measured.environment.size.vcpu} OpenMP threads for the {param:measured.environment.size.vcpu} requested vCPUs.
+      - Where the sandbox reports more than 160 MB of L3 cache, one array is under four times the cache, which breaks STREAM's run rule, and the array-size check records a note on those trials.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when the `stream` binary SHA-256 matches the pinned {hash:SHA-256|measured.parameters.workload.tools.1.sha256}, `stream` exits 0, stdout includes Solution Validates and a positive Triad: rate, the guest clock passes the twenty-millisecond `/proc/uptime` gate, and the shared sandbox is confirmed destroyed.
+  sequential-read:
+    clock: [sandbox]
+    panel:
+      command: fio --rw={param:measured.parameters.workload.rows.disk-seq-read-1m.rw} --bs={param:measured.parameters.workload.rows.disk-seq-read-1m.bs}
+    headline_steps: [sequential-read]
+    notes:
+      opening: '{param:reader.common.blocks.disk.opening}'
+      introduction: 'Measures uncached 1 MiB sequential read throughput from a {size:measured.parameters.workload.file_bytes} file in `/workspace/fio` using direct I/O (`O_DIRECT`) over a {duration:measured.parameters.workload.runtime_seconds} measured window.'
+      metric: '{name:test.sequential-read} is the sustained uncached 1 MiB sequential read throughput across the {size:measured.parameters.workload.file_bytes} file `/workspace/fio/data.bin` using direct I/O (`O_DIRECT`), reported by `fio` (`rw={param:measured.parameters.workload.rows.disk-seq-read-1m.rw}`, `bs={param:measured.parameters.workload.rows.disk-seq-read-1m.bs}`) in binary mebibytes per second (2^20 = 1,048,576 bytes/s).'
+      calculation: After the {duration:measured.parameters.workload.ramp_seconds} ramp-up finishes, `fio` sums the bytes read or written across the {duration:measured.parameters.workload.runtime_seconds} measured window and reports bytes per second in its JSON output, which we divide by 1,048,576 (2^20) to report `MiB/s` for the sequential tests. For the random tests, `fio` counts completed {size:measured.parameters.workload.rows.disk-rand-read-4k.bs} read or write operations across the same window and reports iops directly.
+      setup: '{param:reader.common.blocks.common.sandbox}, {param:reader.common.blocks.disk.setup_read}'
+      workload: |-
+        Every buffer is filled with incompressible pseudo-random bytes so storage compression or deduplication cannot inflate throughput, with `refill_buffers=1` and `fsync=0` on write rows and uniformly distributed offsets on random rows.
+      trial_steps: '[[steps: create]]{param:reader.common.blocks.machine-performance.trial_start} [[steps: setup]]{param:reader.common.blocks.disk.prepare} [[steps: sequential-read]]Run the four `fio` rows as polled background scripts in shuffled order, with fresh random buffers on every write, then [[steps: cache-checks, destroy]]{param:reader.common.blocks.disk.finish}'
+      procedure: '{param:reader.common.blocks.disk.shared_procedure}'
+      limitations:
+      - Bypasses the guest OS page cache via `O_DIRECT` to measure the storage path (so it does not reflect small cached file access); {param:reader.common.blocks.disk.rejects_direct_io}, such as Blaxel's default RAM filesystem.
+      - The write rows rewrite an existing {size:measured.parameters.workload.file_bytes} file with `O_DIRECT` and `fsync=0` (comparing rewrite speed against the initial file creation in a diagnostic check).
+      - The random rows use a queue depth of 64 asynchronous requests (libaio) to measure storage IOPS ceilings rather than single-threaded synchronous time.
+      - '{param:reader.common.blocks.disk.limit_checks}'
+      - '{param:reader.common.blocks.disk.limit_cached_files}'
+      - '{param:reader.common.blocks.disk.limit_batch_load}'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: '{param:reader.common.blocks.disk.shared_failures}'
+  sequential-write:
+    clock: [sandbox]
+    panel:
+      command: fio --rw={param:measured.parameters.workload.rows.disk-seq-write-1m.rw} --bs={param:measured.parameters.workload.rows.disk-seq-write-1m.bs}
+    headline_steps: [sequential-write]
+    notes:
+      introduction: 'Measures uncached 1 MiB sequential write throughput to a {size:measured.parameters.workload.file_bytes} file in `/workspace/fio` using direct I/O (`O_DIRECT`) over a {duration:measured.parameters.workload.runtime_seconds} measured window.'
+      metric: '{name:test.sequential-write} is the sustained uncached 1 MiB sequential write throughput to the {size:measured.parameters.workload.file_bytes} file `/workspace/fio/data.bin` using direct I/O (`O_DIRECT`), reported by `fio` (`rw={param:measured.parameters.workload.rows.disk-seq-write-1m.rw}`, `bs={param:measured.parameters.workload.rows.disk-seq-write-1m.bs}`).'
+  random-read:
+    clock: [sandbox]
+    panel:
+      command: fio --rw={param:measured.parameters.workload.rows.disk-rand-read-4k.rw} --bs={param:measured.parameters.workload.rows.disk-rand-read-4k.bs}
+    headline_steps: [random-read]
+    notes:
+      introduction: 'Measures uncached 4 KiB random read operations per second across a {size:measured.parameters.workload.file_bytes} file in `/workspace/fio` using direct I/O (`O_DIRECT`) over a {duration:measured.parameters.workload.runtime_seconds} measured window.'
+      metric: '{name:test.random-read} is the sustained uncached 4 KiB random read rate across the {size:measured.parameters.workload.file_bytes} file `/workspace/fio/data.bin` using direct I/O (`O_DIRECT`), reported by `fio` (`rw={param:measured.parameters.workload.rows.disk-rand-read-4k.rw}`, `bs={param:measured.parameters.workload.rows.disk-rand-read-4k.bs}`).'
+  random-write:
+    clock: [sandbox]
+    panel:
+      command: fio --rw={param:measured.parameters.workload.rows.disk-rand-write-4k.rw} --bs={param:measured.parameters.workload.rows.disk-rand-write-4k.bs}
+    headline_steps: [random-write]
+    notes:
+      introduction: 'Measures uncached 4 KiB random write operations per second across a {size:measured.parameters.workload.file_bytes} file in `/workspace/fio` using direct I/O (`O_DIRECT`) over a {duration:measured.parameters.workload.runtime_seconds} measured window.'
+      metric: '{name:test.random-write} is the sustained uncached 4 KiB random write rate across the {size:measured.parameters.workload.file_bytes} file `/workspace/fio/data.bin` using direct I/O (`O_DIRECT`), reported by `fio` (`rw={param:measured.parameters.workload.rows.disk-rand-write-4k.rw}`, `bs={param:measured.parameters.workload.rows.disk-rand-write-4k.bs}`).'
+  hard-links:
+    clock: [sandbox]
+    panel:
+      command: stress-ng --link {param:measured.parameters.workload.options.link}
+    headline_steps: [hard-links]
+    step_notes:
+      hard-links: "The trial runs `./stress-ng --link {param:measured.parameters.workload.options.link} --metrics --no-rand-seed -t 30 --temp-path /workspace/hardlink --yaml /workspace/hardlink/out.yaml` as a polled background script (guest clock)."
+      destroy: "The trial parses links-createdremoved-per-sec and bogo-ops-per-second-real-time from `/workspace/hardlink/out.yaml`."
+      mount-facts: "An untimed setup step runs a {size:measured.parameters.workload.probe_bytes} shared-memory probe to detect whether `/workspace/hardlink` is backed by RAM (tmpfs/ramfs)."
+    notes:
+      opening: |-
+        Package managers such as `pnpm` install packages by creating thousands of hard links from a global store into the project (`node_modules`).
+
+        Because creating and removing hard links never transfers file data blocks, its speed is governed by the metadata system-call path inside the sandbox: the guest kernel's filesystem and its locking, any overlay filesystem, any layer that intercepts system calls, and single-core CPU speed.
+
+        The Filesystem tab measures that metadata rate in `/workspace/hardlink` using `stress-ng`'s {name:test.hard-links} stressor.
+      introduction: 'Measures the rate of hard links created per second in `/workspace/hardlink` over a 30-second `stress-ng` run, with link removal time included.'
+      metric: '{name:test.hard-links} is the rate of hard links created per second in `/workspace/hardlink` over an elapsed denominator of both `link()` creation and `unlink()` removal time, reported by `stress-ng`''s `link` stressor (links-createdremoved-per-sec in `out.yaml`).'
+      calculation: In each round, a single `stress-ng` worker creates up to 8,192 hard links to a seed inode in `/workspace/hardlink` and then unlinks all of them; at the end of the 30 s run, `stress-ng` divides the total count of successfully created hard links across all rounds by the total elapsed run time (creation plus removal) to report links-createdremoved-per-sec.
+      setup: |-
+        {param:reader.common.blocks.common.sandbox}, running a static Linux x86_64 build of `stress-ng` V{param:measured.source.version} (verified by {hash:SHA-256|measured.parameters.workload.tool.sha256}).
+      trial_steps: '[[steps: create]]{param:reader.common.blocks.machine-performance.trial_start} [[steps: mount-facts, install-stress-ng]]Record the backing filesystem and mount options of `/workspace/hardlink`, verify at least {size:measured.parameters.workload.free_bytes} free space, and upload and verify static `stress-ng` (untimed). [[steps: hard-links]]Run `./stress-ng` ({name:test.hard-links}), then [[steps: destroy]]parse `out.yaml` and destroy sandbox (untimed).'
+      limitations:
+      - Runs a single-worker system-call loop without calling `fsync`, so the rate reflects both VFS/syscall overhead and single-core CPU speed in memory rather than physical disk write time.
+      - The published metric is individual hard links per second (links-createdremoved-per-sec), not bogo ops/s, because one bogo op is a whole round of up to 8,192 links plus their removal.
+      - Each round creates and unlinks the same 8,192 filenames in `/workspace/hardlink`, so path lookups benefit from the kernel's directory entry cache after round 1.
+      - The link stressor silently retries a `link()` call that fails with `EDQUOT`, `ENOMEM`, `EMLINK`, `EINTR` or `ENOSPC` without counting it, and the check for at least {size:measured.parameters.workload.free_bytes} of free space prevents `ENOSPC` in normal operation.
+      - When `/workspace/hardlink` is backed by tmpfs or ramfs, or the {size:measured.parameters.workload.probe_bytes} probe raises shared memory by at least 80% of {size:measured.parameters.workload.probe_bytes}, the in-memory check attaches a note that no block device sits behind the filesystem.
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.ranking_floor}
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A sandbox with fewer than {size:measured.parameters.workload.free_bytes} free in `/workspace/hardlink` is recorded as not supported. A trial succeeds only when `stress-ng` exits 0, runs for at least 29 s of its 30 s window, writes a positive links-createdremoved-per-sec value to `out.yaml`, passes the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
+  package-registries:
+    step_notes:
+      create: "Each trial uploads the pinned lockfiles (`axios-package.json`, `axios-package-lock.json`, or `fastapi-requirements.txt`) to `/tmp`."
+      install: "A background script runs the variant's install command timed by `$EPOCHREALTIME` and `/proc/uptime` ({name:stage.install}, polled every ten seconds) and verifies the checkout commit or installed package exit code."
+    headline_steps: [install]
+    clock: [sandbox]
+    notes:
+      opening: |-
+        Whenever a developer or coding agent initializes a fresh sandbox without a pre-baked project image, the workflow waits on the sandbox's outbound network connection and disk to clone the repository and install dependencies from public package registries.
+
+        The Network tab ({name:test.package-registries}) measures the guest-clock runtime of {count:measured.procedure.variants} everyday cold-cache installation commands, `git clone` from GitHub, `npm ci` from the npm registry, and `pip install -r` from PyPI.
+      introduction: 'Times the in-sandbox command runtime to clone a pinned GitHub repository or install pinned npm or PyPI dependencies from a cold cache, by the sandbox''s own clock.'
+      metric: '{name:test.package-registries} is the in-sandbox runtime of the selected cold-cache installation command ({name:stage.install}), measured with `$EPOCHREALTIME`.'
+      setup: |-
+        {param:reader.common.blocks.common.sandbox} with outbound network access to `github.com`, `registry.npmjs.org`, `pypi.org`, and `files.pythonhosted.org`.
+      workload: |-
+        Every repository and lockfile is pinned by commit and SHA-256 hash across {countword:measured.procedure.variants} cold-cache installation variants:
+
+        - `git clone` performs a full clone of `fastapi/fastapi` and checks out the pinned {commit:commit|fastapi/fastapi|69ddc2badf9da1123bba4d360225ae6b085985f6}.
+        - `npm ci` installs 687 locked packages from the pinned `package.json` and `package-lock.json` of `axios/axios`.
+        - `pip install -r` installs into a new virtualenv from a hash-pinned requirements file exported with `uv export --frozen --no-dev --group tests --extra all --no-emit-project` from `fastapi/fastapi`'s `uv.lock`.
+      trial_steps: '[[steps: create]]Create sandbox, run readiness check, and upload pinned lockfiles (untimed). [[steps: setup, install]]Run a background script as non-root user box that clears `~/.npm` and `~/.cache/pip` and prepares `/workspace` (setup, timed, not charted), records `/proc/net/dev` received bytes, runs the selected install command ({name:stage.install}), and records received bytes again. [[steps: destroy]]Destroy sandbox (untimed).'
+      limitations:
+      - End-to-end install time combines network download speed from public registry CDNs with in-sandbox decompression and filesystem writes; shared registry slowdowns outside a provider's network can affect all providers.
+      - Comparing the received bytes, recorded on every trial, with the {name:tab.disk} and {name:tab.filesystem} tabs helps tell a download-bound time from a CPU-bound one.
+      - Both `npm ci` and `pip install` make a brief registry check for a newer version of their own CLI at the end of a run, as a developer sees with default flags.
+      - '[[when measured.procedure.concurrency.trials_in_parallel > 1: Trials run in parallel per provider, up to {param:measured.procedure.concurrency.trials_in_parallel} at once, so up to that many sandboxes on one provider can download from the registry at once.]]'
+      statistics_rules: |-
+        {param:reader.common.blocks.common.statistics_citation}
+
+        {param:reader.common.blocks.common.typical_citation} A provider is ranked on a variant of {name:test.package-registries} once it has at least {param:measured.statistics.ranking.min_successes} successful trials.
+      failure_policy: |-
+        {param:reader.common.blocks.common.failures_citation}
+
+        A trial succeeds only when cache clearing and the install command exit 0, the guest clock passes the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
+  exec-latency-2vcpu-8gib:
+    headline_steps: ["true"]
+    clock: [runner]
+    notes:
+      introduction: "Times each `true` command call on the job host from dispatch until the exit code and the sandbox clock readings return."
+  list-2vcpu-8gib:
+    headline_steps: [list]
+    clock: [runner]
+    notes:
+      introduction: "Times each directory-list request on the job host from dispatch until the sorted file names of the prepared directory return."
+  write-4kib-2vcpu-8gib:
+    headline_steps: [write]
+    clock: [runner]
+    notes:
+      introduction: "Times each file-write request on the job host from dispatch until the write call returns after staging and copying the payload into place."
+  read-4kib-2vcpu-8gib:
+    headline_steps: [read]
+    clock: [runner]
+    notes:
+      introduction: "Times each file-read request on the job host from dispatch until the complete file payload returns."
+  hard-links-2vcpu-8gib:
+    headline_steps: [hard-links]
+    clock: [sandbox]
+    notes:
+      introduction: "Measures the rate at which one `stress-ng` worker creates and removes hard links in `/workspace/hardlink` on the stressor's own clock."
+      setup: "{param:measured.notes.how_it_is_measured}"

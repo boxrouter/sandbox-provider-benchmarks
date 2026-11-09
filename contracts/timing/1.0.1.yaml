@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+extends: 1.0.0
+schema: sandbox-benchmarks.timing/1
+version: 1.0.1
+replay:
+  status_dispatch_deadline:
+    base: /replay/status_dispatch_timeout_seconds
+    grace: /readiness/deadline_grace_seconds
+    effective: base + grace
+    scope: each-status-call
+    observation: /replay/status_observation_timeout_ms
+    terminal_result: accepted-before-overall-poll-timeout-evaluation
+    running_result: evaluate-overall-poll-timeout-before-sleep

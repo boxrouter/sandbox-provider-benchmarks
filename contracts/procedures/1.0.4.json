@@ -1,0 +1,171 @@
+{
+  "procedures": {
+    "7-zip-1-thread": {
+      "path": "src/sandbox_benchmarks/procedures/cpu.py",
+      "sha256": "aaf7af4b40d84d7ee48ea7e587eace881c3339eb53006f405bf74873e3bbd1e8",
+      "symbol": "procedure"
+    },
+    "7-zip-all-vcpus": {
+      "path": "src/sandbox_benchmarks/procedures/cpu.py",
+      "sha256": "aaf7af4b40d84d7ee48ea7e587eace881c3339eb53006f405bf74873e3bbd1e8",
+      "symbol": "procedure"
+    },
+    "burst-tti": {
+      "path": "src/sandbox_benchmarks/procedures/burst.py",
+      "sha256": "e51baa961d0248f9d5806a1fff1d12c3c324614d8f9273c740683b39a9ef4a0f",
+      "symbol": "procedure"
+    },
+    "deepswe": {
+      "path": "src/sandbox_benchmarks/procedures/deep_swe.py",
+      "sha256": "b445bf7c325ca44c1b6ce18241a2efdf0454f7f1c3ca263ae05b40f26f6ee8d8",
+      "symbol": "procedure"
+    },
+    "delayed-resume": {
+      "path": "src/sandbox_benchmarks/procedures/resume_after_wait.py",
+      "sha256": "63ee37a0355c576872ee0be3bc4fb06e87f60b11b6cbe9658810a3fb5819f416",
+      "symbol": "procedure"
+    },
+    "exec-latency": {
+      "path": "src/sandbox_benchmarks/procedures/true.py",
+      "sha256": "3afb12bbba8166c7779d6da4e1b224a0ed98f1675715fa19a1b44f114c614654",
+      "symbol": "procedure"
+    },
+    "exec-latency-2vcpu-8gib": {
+      "path": "src/sandbox_benchmarks/procedures/true.py",
+      "sha256": "3afb12bbba8166c7779d6da4e1b224a0ed98f1675715fa19a1b44f114c614654",
+      "symbol": "procedure"
+    },
+    "exec-latency-per-100-calls": {
+      "path": "src/sandbox_benchmarks/procedures/true.py",
+      "sha256": "3afb12bbba8166c7779d6da4e1b224a0ed98f1675715fa19a1b44f114c614654",
+      "symbol": "procedure"
+    },
+    "fork": {
+      "path": "src/sandbox_benchmarks/procedures/snapshot.py",
+      "sha256": "a23660a4f0c8c69cabf6db1834b2494e8f20d7bbd88cfce4a714b69cd6c07cab",
+      "symbol": "procedure"
+    },
+    "github-actions": {
+      "path": "src/sandbox_benchmarks/procedures/github_actions.py",
+      "sha256": "cbbfc7eef29d94bdd9fcd07a6b227e27548017f80b2341b5f4865b7a77697c6c",
+      "symbol": "procedure"
+    },
+    "hard-links": {
+      "path": "src/sandbox_benchmarks/procedures/hardlink.py",
+      "sha256": "b18a249af6c4d9d8ee73f58063d01d33cfc37845236834069ccfb46bc096412c",
+      "symbol": "procedure"
+    },
+    "hard-links-2vcpu-8gib": {
+      "path": "src/sandbox_benchmarks/procedures/hardlink.py",
+      "sha256": "b18a249af6c4d9d8ee73f58063d01d33cfc37845236834069ccfb46bc096412c",
+      "symbol": "procedure"
+    },
+    "image-build-2vcpu-4gib": {
+      "path": "src/sandbox_benchmarks/procedures/image_build.py",
+      "sha256": "16ab1751b23a4de0a6f8ebd820fa7a46443ccf09fddd0297f75450f302e86c3e",
+      "symbol": "procedure"
+    },
+    "list": {
+      "path": "src/sandbox_benchmarks/procedures/primitives.py",
+      "sha256": "b352308b878d14b337f80335240e7b4696db90b2c1c59e7b171a83814c63e249",
+      "symbol": "procedure"
+    },
+    "list-2vcpu-8gib": {
+      "path": "src/sandbox_benchmarks/procedures/primitives.py",
+      "sha256": "b352308b878d14b337f80335240e7b4696db90b2c1c59e7b171a83814c63e249",
+      "symbol": "procedure"
+    },
+    "package-registries": {
+      "path": "src/sandbox_benchmarks/procedures/install.py",
+      "sha256": "e0f0706d85d08a57c29972a67027ceffcb187b5ef12a9e8a60f2f103e020c0bc",
+      "symbol": "procedure"
+    },
+    "pause-resume": {
+      "path": "src/sandbox_benchmarks/procedures/pause_resume.py",
+      "sha256": "fca6f3e772a08256801fb0f72f61ea2b0ad7067e37261e84150531f46ac49b6d",
+      "symbol": "procedure"
+    },
+    "previews": {
+      "path": "src/sandbox_benchmarks/procedures/previews.py",
+      "sha256": "6dd701f9758fe3dae78593ebf75f31af6264ee52f969d02c7abd989981a127c9",
+      "symbol": "procedure"
+    },
+    "r2e-gym": {
+      "path": "src/sandbox_benchmarks/procedures/rl_rollouts.py",
+      "sha256": "164bd82e13d8a5a2c002929a8f4fd9892e46f37d01a2a0f738e996d9cfd7b2bb",
+      "symbol": "procedure"
+    },
+    "random-read": {
+      "path": "src/sandbox_benchmarks/procedures/disk_fio.py",
+      "sha256": "6b72c573bbd4cf00d9656599b98f40c61f99825c649d4df3f7da4687cf9ffb0a",
+      "symbol": "procedure"
+    },
+    "random-write": {
+      "path": "src/sandbox_benchmarks/procedures/disk_fio.py",
+      "sha256": "6b72c573bbd4cf00d9656599b98f40c61f99825c649d4df3f7da4687cf9ffb0a",
+      "symbol": "procedure"
+    },
+    "read-4kib": {
+      "path": "src/sandbox_benchmarks/procedures/primitives.py",
+      "sha256": "b352308b878d14b337f80335240e7b4696db90b2c1c59e7b171a83814c63e249",
+      "symbol": "procedure"
+    },
+    "read-4kib-2vcpu-8gib": {
+      "path": "src/sandbox_benchmarks/procedures/primitives.py",
+      "sha256": "b352308b878d14b337f80335240e7b4696db90b2c1c59e7b171a83814c63e249",
+      "symbol": "procedure"
+    },
+    "reconnect": {
+      "path": "src/sandbox_benchmarks/procedures/reconnect.py",
+      "sha256": "37f57655ab344b6fd4f9a26b93302453a875f6de9477844edc2100de9d0ea6ba",
+      "symbol": "procedure"
+    },
+    "sequential-read": {
+      "path": "src/sandbox_benchmarks/procedures/disk_fio.py",
+      "sha256": "6b72c573bbd4cf00d9656599b98f40c61f99825c649d4df3f7da4687cf9ffb0a",
+      "symbol": "procedure"
+    },
+    "sequential-tti": {
+      "path": "src/sandbox_benchmarks/procedures/sequential_creates.py",
+      "sha256": "5800d5d0fa06c9af95d47ae6926259e0beb823b9086bb306af86f7c644ab0ab7",
+      "symbol": "procedure"
+    },
+    "sequential-write": {
+      "path": "src/sandbox_benchmarks/procedures/disk_fio.py",
+      "sha256": "6b72c573bbd4cf00d9656599b98f40c61f99825c649d4df3f7da4687cf9ffb0a",
+      "symbol": "procedure"
+    },
+    "snapshot-and-restore": {
+      "path": "src/sandbox_benchmarks/procedures/snapshot.py",
+      "sha256": "a23660a4f0c8c69cabf6db1834b2494e8f20d7bbd88cfce4a714b69cd6c07cab",
+      "symbol": "procedure"
+    },
+    "stream-triad": {
+      "path": "src/sandbox_benchmarks/procedures/cpu.py",
+      "sha256": "aaf7af4b40d84d7ee48ea7e587eace881c3339eb53006f405bf74873e3bbd1e8",
+      "symbol": "procedure"
+    },
+    "terminal-bench-4-0": {
+      "path": "src/sandbox_benchmarks/procedures/terminal_bench.py",
+      "sha256": "fda39afae50655b9787ac133eb7dc4cf1175ff82bd1f5397b90311b3ae6e559b",
+      "symbol": "procedure"
+    },
+    "write-4kib": {
+      "path": "src/sandbox_benchmarks/procedures/primitives.py",
+      "sha256": "b352308b878d14b337f80335240e7b4696db90b2c1c59e7b171a83814c63e249",
+      "symbol": "procedure"
+    },
+    "write-4kib-2vcpu-8gib": {
+      "path": "src/sandbox_benchmarks/procedures/primitives.py",
+      "sha256": "b352308b878d14b337f80335240e7b4696db90b2c1c59e7b171a83814c63e249",
+      "symbol": "procedure"
+    }
+  },
+  "schema": "sandbox-benchmarks.procedures/1",
+  "source": {
+    "ref": "procedures-v1.0.4",
+    "repository": "https://github.com/boxrouter/sandbox-provider-benchmarks",
+    "root": "src/sandbox_benchmarks/procedures"
+  },
+  "version": "1.0.4"
+}

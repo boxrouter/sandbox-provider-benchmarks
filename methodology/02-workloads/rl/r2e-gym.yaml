@@ -1,0 +1,2336 @@
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+id: r2e-gym
+version: 1.1.8
+effective: '2026-10-30'
+name: '{name:test.r2e-gym}'
+category: workload
+notes:
+  what_this_measures: The result covers environment reset, snapshot creation, restore, tool calls and
+    reward checks; no model runs.
+  how_to_read: The {param:r2e-gym.1.1.4.statistics.primary} summarizes successful trials in the axis unit;
+    {direction:tool_time}.
+  summary: Rollouts of one coding task share a prepared snapshot. No model is called.
+  how_it_is_measured: Recorded rollout trajectories share a snapshotted coding environment; tool calls
+    use the sandbox clock and reward commands use the job-host monotonic clock.
+  cost_summary: The cost covers the first sandbox create through the last confirmed destroy, divided by
+    successful trials.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of one rollout's replayed tool calls' runtimes, each by the sandbox's own clock.
+  quantity: Tool-call runtime
+  per: rollout
+- name: reward_time
+  unit: ms
+  direction: lower_is_better
+  description: Runtime of {name:test.r2e-gym}'s reward command for one rollout.
+  quantity: Reward-command runtime
+  per: rollout
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest (docker.io/namanjain12/<repository>_final@sha256:<digest>);
+      the digests are in the parameters' workloads.json.
+    modification: Prepared in each account before the run. Sandboxes 2 to 5 start from a snapshot of sandbox
+      1 taken after the environment reset.
+  network: unknown
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 900
+procedure:
+  mode: sequential
+  trials: 4
+  sandboxes_per_trial: 5
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Sandbox 1 is created from the task's prepared image and reset; sandboxes 2 to 5 are created
+      one after another from its snapshot, each only after the previous one has been probed, destroyed
+      and confirmed gone. The restore request names no capability. The snapshot is deleted and checked
+      gone after the last sandbox. Providers without create-from-snapshot are not measured.
+  variants:
+  - id: numpy-0a476002600c
+    label: numpy-masked-method-lookup
+    parameters:
+      task: namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.0.label} configuration.
+  - id: numpy-dda20349d172
+    label: numpy-issubdtype-abstract-types
+    parameters:
+      task: namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.1.label} configuration.
+  - id: numpy-61640a849557
+    label: numpy-apply-axis-empty
+    parameters:
+      task: namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.2.label} configuration.
+  - id: numpy-171a3e5811e4
+    label: numpy-unstructured-single-field
+    parameters:
+      task: namanjain12/numpy_final:171a3e5811e43643788c20075be9ba52efb83b81
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.3.label} configuration.
+  - id: numpy-bb46a495ee52
+    label: numpy-masked-median-scalar
+    parameters:
+      task: namanjain12/numpy_final:bb46a495ee5201fb94c14776f41181343e5b7fb2
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.4.label} configuration.
+  - id: numpy-504b287bdf47
+    label: numpy-indices-sparse-option
+    parameters:
+      task: namanjain12/numpy_final:504b287bdf4745256044f336f17c88ddcb0175dd
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.5.label} configuration.
+  - id: numpy-3c0b4db0b51e
+    label: numpy-strided-custom-dtype
+    parameters:
+      task: namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.6.label} configuration.
+  - id: coveragepy-89f44c12465b
+    label: coveragepy-behavior-flag-rename
+    parameters:
+      task: namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.7.label} configuration.
+  - id: numpy-6b8d55e66e53
+    label: numpy-masked-median-multiple
+    parameters:
+      task: namanjain12/numpy_final:6b8d55e66e532d66e1701ad039b4cda306839b3f
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.8.label} configuration.
+  - id: numpy-ad48eaa76403
+    label: numpy-histogram-edge-rounding
+    parameters:
+      task: namanjain12/numpy_final:ad48eaa76403798c298c2761e53e1e43008ab1b1
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.9.label} configuration.
+  stages:
+  - id: setup
+    name: '{name:stage.setup}'
+    description: Sandbox 1 is created from the task's prepared image, {name:test.r2e-gym}'s environment is reset in
+      it and it is snapshotted.
+    record_steps:
+    - create
+    - reset
+    - snapshot
+  - id: create-from-snapshot
+    name: '{name:stage.create-from-snapshot}'
+    record_steps:
+    - restore
+  - id: tool-calls
+    name: '{name:stage.tool-calls}'
+    description: One recorded rollout's tool calls are replayed in each of sandboxes 2 to 5.
+    record_steps:
+    - cmd
+  - id: reward
+    name: '{name:stage.reward}'
+    record_steps:
+    - reward
+  - id: destroy
+    name: '{name:stage.destroy}'
+    description: Each sandbox is destroyed after its last command; the snapshot is deleted after the last
+      sandbox.
+    record_steps:
+    - destroy
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start sandbox 1 from the task's prepared image, with the snapshots capability requested.
+    timer:
+      from: the create request
+      until: the create call returns
+    timeout_seconds: 600
+    record_steps:
+    - create
+    in_sandboxes:
+    - 1
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` to sandbox 1 until it answers. Sandboxes created from the snapshot skip
+      it.
+    timer: null
+  - id: reset
+    name: Reset
+    action: After an untimed upload of {name:test.r2e-gym}'s four tools, run {name:test.r2e-gym}'s environment reset commands
+      in order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started in the background.
+    timer:
+      from: each reset command starting, by the sandbox's own clock
+      until: it exits, by the sandbox's own clock
+    timeout_seconds: 150
+    repeats: true
+    record_steps:
+    - reset
+    in_sandboxes:
+    - 1
+  - id: snapshot
+    name: '{name:stage.snapshot}'
+    action: Create a snapshot of sandbox 1, sent after the reset script ended with nothing sent in between.
+    timer:
+      from: the snapshot request
+      until: the snapshot call returns
+    timeout_seconds: 600
+    record_steps:
+    - snapshot
+    in_sandboxes:
+    - 1
+  - id: restore
+    name: '{name:stage.create-from-snapshot}'
+    action: For each of sandboxes 2 to 5, create a sandbox from the snapshot once the previous sandbox
+      is confirmed gone.
+    timer:
+      from: the restore request
+      sent: once the previous sandbox is confirmed gone
+      until: the restore call returns
+    timeout_seconds: 600
+    record_steps:
+    - restore
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: tool_calls
+    name: '{name:stage.tool-calls}'
+    action: 'Replay one rollout''s tool calls back to back in recorded order as one script started in
+      the background in sandbox 2, 3, 4 or 5, each as {name:test.r2e-gym} ran it: `timeout 90 <tool> <arguments>`
+      under `sh -c` in /testbed.'
+    timer:
+      from: each call starting, by the sandbox's own clock
+      until: it exits, by the sandbox's own clock
+    timeout_seconds: 120
+    repeats: true
+    record_steps:
+    - cmd
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: reward
+    name: '{name:stage.reward}'
+    action: After an untimed command reads the rollout's patch, run {name:test.r2e-gym}'s reward command (`timeout
+      300 bash /root/run_tests.sh`).
+    timer:
+      from: the reward command
+      sent: after an untimed command reads the rollout's patch
+      until: the call returns, both by the job-host clock
+    timeout_seconds: 330
+    record_steps:
+    - reward
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
+      the last sandbox, delete the snapshot and check it is gone, untimed.
+    timer:
+      from: the destroy request
+      until: the destroy call returns
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first tool call of a rollout starts in its sandbox, by the sandbox's own clock.
+  stop: The last tool call of the rollout exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: 36
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the first create request to the last confirmed destroy; whether snapshot storage is
+    billed is unknown.
+  per_success: Cost of the successful trials divided by their number; failed attempts' cost is not included.
+parameters:
+  path: parameters/r2e-gym/1.1.8/
+  sha256: 3d483c04fe1811ae24375425c83766c053ec4e574e2ac5e32234b1d19b4d1f44
+capabilities:
+  required:
+  - snapshots
+interpretation:
+  what_to_do: Compare which provider serves reinforcement-learning rollouts that share a prepared environment
+    fastest.
+  informs: How long a provider takes to serve RL rollouts from one snapshotted coding environment.
+  limits:
+  - Providers without create-from-snapshot support through the integration are not measured.
+  - The rollout dataset licence is unknown.
+  - Whether snapshot storage is billed is unknown.
+  caveats:
+  - The first sandbox gets the ready check right after its create; the sandboxes created from its snapshot
+    do not.
+  - The restore request names no capability.
+  - Whether snapshot storage is billed is unknown.
+validity_checks:
+- id: rollout_set_pinned
+  threat: A fetched rollout set that differs from the one this version pins would replay different tool
+    calls.
+  check: The protocol pins the SHA-256 of the rollout set; a batch whose fetched set differs is a failure
+    of the benchmark, not of the provider.
+- id: one_at_a_time
+  threat: Sandboxes alive together would change the load on the provider.
+  check: Each of sandboxes 2 to 5 is created only after the previous one has been probed, destroyed and
+    confirmed gone.
+- id: snapshot_cleanup
+  threat: A leftover snapshot would carry cost and state into later trials.
+  check: After the last sandbox the snapshot is deleted and checked gone, untimed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    reset: 150
+    snapshot: 600
+    restore: 600
+    tool_calls: 120
+    reward: 330
+    destroy: 300
+  retries: None; the first failed step ends the trial. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: unknown
+  provider_errors:
+  - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched rollout set that differs from the pinned set.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A provider with no create-from-snapshot through the integration is not measured.
+  - A workload that does not replay on that provider.
+  - An error shown not to be the provider's.
+source:
+  name: "{name:test.r2e-gym} RL trajectories (AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories) replayed
+    with {name:test.r2e-gym}'s tools"
+  version: dataset revision e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e; {name:test.r2e-gym} commit 9a3c2495ab69a3ca1e85f395c308bc6f72d4161f
+  ids:
+  - rollout set sha256:c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635
+  - 10 tasks (nine numpy, one coveragepy) with four rollouts each, ids <task>-run1 to <task>-run4
+  - 'tool sha256: file_editor d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596, search
+    45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c, execute_bash 01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32,
+    finish fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff'
+  licence: Unknown for the rollout dataset; Apache-2.0 for the {name:test.r2e-gym} harness and tools, which remain
+    reference-only.
+  venue_terms:
+  - '{name:test.r2e-gym}'
+execution:
+  mode: trace_replay
+  inference: false
+
+
+---
+id: r2e-gym
+version: 1.1.5
+effective: '2026-10-27'
+name: R2E-Gym
+category: workload
+notes:
+  what_this_measures: The result covers environment reset, snapshot creation, restore, tool calls and
+    reward checks; no model runs.
+  how_to_read: The {param:r2e-gym.1.1.4.statistics.primary} summarizes successful trials in the axis
+    unit; {direction:tool_time}.
+  summary: Recorded coding rollouts share a snapshotted environment, with no model called.
+  how_it_is_measured: Recorded rollout trajectories share a snapshotted coding environment; tool calls
+    use the sandbox clock and reward commands use the job-host monotonic clock.
+  cost_summary: The cost covers the first sandbox create through the last confirmed destroy, divided
+    by successful trials.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of one rollout's replayed tool calls' runtimes, each by the sandbox's own clock.
+  quantity: Tool-call runtime
+  per: rollout
+- name: reward_time
+  unit: ms
+  direction: lower_is_better
+  description: Runtime of R2E-Gym's reward command for one rollout.
+  quantity: Reward-command runtime
+  per: rollout
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest (docker.io/namanjain12/<repository>_final@sha256:<digest>);
+      the digests are in the parameters' workloads.json.
+    modification: Prepared in each account before the run. Sandboxes 2 to 5 start from a snapshot of
+      sandbox 1 taken after the environment reset.
+  network: unknown
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 900
+procedure:
+  mode: sequential
+  trials: 4
+  sandboxes_per_trial: 5
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Sandbox 1 is created from the task's prepared image and reset; sandboxes 2 to 5 are created
+      one after another from its snapshot, each only after the previous one has been probed, destroyed
+      and confirmed gone. The restore request names no capability. The snapshot is deleted and checked
+      gone after the last sandbox. Providers without create-from-snapshot are not measured.
+  variants:
+  - id: numpy-0a476002600c
+    label: numpy 0a476002600c
+    parameters:
+      task: namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.0.label} configuration.
+  - id: numpy-dda20349d172
+    label: numpy dda20349d172
+    parameters:
+      task: namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.1.label} configuration.
+  - id: numpy-61640a849557
+    label: numpy 61640a849557
+    parameters:
+      task: namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.2.label} configuration.
+  - id: numpy-171a3e5811e4
+    label: numpy 171a3e5811e4
+    parameters:
+      task: namanjain12/numpy_final:171a3e5811e43643788c20075be9ba52efb83b81
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.3.label} configuration.
+  - id: numpy-bb46a495ee52
+    label: numpy bb46a495ee52
+    parameters:
+      task: namanjain12/numpy_final:bb46a495ee5201fb94c14776f41181343e5b7fb2
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.4.label} configuration.
+  - id: numpy-504b287bdf47
+    label: numpy 504b287bdf47
+    parameters:
+      task: namanjain12/numpy_final:504b287bdf4745256044f336f17c88ddcb0175dd
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.5.label} configuration.
+  - id: numpy-3c0b4db0b51e
+    label: numpy 3c0b4db0b51e
+    parameters:
+      task: namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.6.label} configuration.
+  - id: coveragepy-89f44c12465b
+    label: coveragepy 89f44c12465b
+    parameters:
+      task: namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.7.label} configuration.
+  - id: numpy-6b8d55e66e53
+    label: numpy 6b8d55e66e53
+    parameters:
+      task: namanjain12/numpy_final:6b8d55e66e532d66e1701ad039b4cda306839b3f
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.8.label} configuration.
+  - id: numpy-ad48eaa76403
+    label: numpy ad48eaa76403
+    parameters:
+      task: namanjain12/numpy_final:ad48eaa76403798c298c2761e53e1e43008ab1b1
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.9.label} configuration.
+  stages:
+  - id: setup
+    name: Setup
+    description: Sandbox 1 is created from the task's prepared image, R2E-Gym's environment is reset
+      in it and it is snapshotted.
+    record_steps:
+    - create
+    - reset
+    - snapshot
+  - id: create-from-snapshot
+    name: Create from snapshot
+    description: Each of sandboxes 2 to 5 is created from the snapshot.
+    record_steps:
+    - restore
+  - id: tool-calls
+    name: Tool calls
+    description: One recorded rollout's tool calls are replayed in each of sandboxes 2 to 5.
+    record_steps:
+    - cmd
+  - id: reward
+    name: Reward
+    description: R2E-Gym's reward command runs after each rollout.
+    record_steps:
+    - reward
+  - id: destroy
+    name: Destroy
+    description: Each sandbox is destroyed after its last command; the snapshot is deleted after the
+      last sandbox.
+    record_steps:
+    - destroy
+  steps:
+  - id: create
+    name: Create
+    action: Start sandbox 1 from the task's prepared image, with the snapshots capability requested.
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+    timeout_seconds: 600
+    record_steps:
+    - create
+    in_sandboxes:
+    - 1
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` to sandbox 1 until it answers. Sandboxes created from the snapshot
+      skip it.
+    timer: null
+  - id: reset
+    name: Reset
+    action: After an untimed upload of R2E-Gym's four tools, run R2E-Gym's environment reset commands
+      in order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started in the background.
+    timer:
+      start_event: The command starts, by the sandbox's own clock.
+      stop_event: The command exits, by the sandbox's own clock.
+    timeout_seconds: 150
+    repeats: true
+    record_steps:
+    - reset
+    in_sandboxes:
+    - 1
+  - id: snapshot
+    name: Snapshot
+    action: Create a snapshot of sandbox 1, sent after the reset script ended with nothing sent in between.
+    timer:
+      start_event: The snapshot request is dispatched.
+      stop_event: The snapshot call returns.
+    timeout_seconds: 600
+    record_steps:
+    - snapshot
+    in_sandboxes:
+    - 1
+  - id: restore
+    name: Create from snapshot
+    action: For each of sandboxes 2 to 5, create a sandbox from the snapshot once the previous sandbox
+      is confirmed gone.
+    timer:
+      start_event: The restore request is dispatched.
+      stop_event: The restore call returns.
+    timeout_seconds: 600
+    record_steps:
+    - restore
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: tool_calls
+    name: Tool calls
+    action: 'Replay one rollout''s tool calls back to back in recorded order as one script started in
+      the background in sandbox 2, 3, 4 or 5, each as R2E-Gym ran it: `timeout 90 <tool> <arguments>`
+      under `sh -c` in /testbed.'
+    timer:
+      start_event: The call starts, by the sandbox's own clock.
+      stop_event: The call exits, by the sandbox's own clock; its runtime is the difference between
+        two consecutive readings.
+    timeout_seconds: 120
+    repeats: true
+    record_steps:
+    - cmd
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: reward
+    name: Reward
+    action: After an untimed command reads the rollout's patch, run R2E-Gym's reward command (`timeout
+      300 bash /root/run_tests.sh`).
+    timer:
+      start_event: The reward command is sent, measured by the job-host monotonic clock.
+      stop_event: The call returns, measured by the job-host monotonic clock.
+    timeout_seconds: 330
+    record_steps:
+    - reward
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: destroy
+    name: Destroy
+    action: After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
+      the last sandbox, delete the snapshot and check it is gone, untimed.
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first tool call of a rollout starts in its sandbox, by the sandbox's own clock.
+  stop: The last tool call of the rollout exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: 36
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the first create request to the last confirmed destroy; whether snapshot storage
+    is billed is unknown.
+  per_success: Cost of the successful trials divided by their number; failed attempts' cost is not included.
+parameters:
+  path: parameters/r2e-gym/1.1.4/
+  sha256: bca7e012017c557013116e06fbee133aeb77e2d67d400560c79a98fd1871dc3b
+capabilities:
+  required:
+  - snapshots
+interpretation:
+  what_to_do: Compare which provider serves reinforcement-learning rollouts that share a prepared environment
+    fastest.
+  informs: How long a provider takes to serve RL rollouts from one snapshotted coding environment.
+  limits:
+  - Providers without create-from-snapshot support through the integration are not measured.
+  - The rollout dataset licence is unknown.
+  - Whether snapshot storage is billed is unknown.
+  caveats:
+  - The first sandbox gets the ready check right after its create; the sandboxes created from its snapshot
+    do not.
+  - The restore request names no capability.
+  - Whether snapshot storage is billed is unknown.
+validity_checks:
+- id: rollout_set_pinned
+  threat: A fetched rollout set that differs from the one this version pins would replay different tool
+    calls.
+  check: The protocol pins the SHA-256 of the rollout set; a batch whose fetched set differs is a failure
+    of the benchmark, not of the provider.
+- id: one_at_a_time
+  threat: Sandboxes alive together would change the load on the provider.
+  check: Each of sandboxes 2 to 5 is created only after the previous one has been probed, destroyed
+    and confirmed gone.
+- id: snapshot_cleanup
+  threat: A leftover snapshot would carry cost and state into later trials.
+  check: After the last sandbox the snapshot is deleted and checked gone, untimed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    reset: 150
+    snapshot: 600
+    restore: 600
+    tool_calls: 120
+    reward: 330
+    destroy: 300
+  retries: None; the first failed step ends the trial. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: unknown
+  provider_errors:
+  - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched rollout set that differs from the pinned set.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A provider with no create-from-snapshot through the integration is not measured.
+  - A workload that does not replay on that provider.
+  - An error shown not to be the provider's.
+source:
+  name: R2E-Gym RL trajectories (AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories) replayed with R2E-Gym's
+    tools
+  version: dataset revision e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e; R2E-Gym commit 9a3c2495ab69a3ca1e85f395c308bc6f72d4161f
+  ids:
+  - rollout set sha256:c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635
+  - 10 tasks (nine numpy, one coveragepy) with four rollouts each, ids <task>-run1 to <task>-run4
+  - 'tool sha256: file_editor d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596, search
+    45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c, execute_bash 01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32,
+    finish fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff'
+  licence: Unknown for the rollout dataset; Apache-2.0 for the R2E-Gym harness and tools, which remain
+    reference-only.
+  venue_terms:
+  - R2E-Gym
+execution:
+  mode: trace_replay
+  inference: false
+
+
+---
+id: r2e-gym
+version: 1.1.4
+effective: '2026-10-26'
+name: R2E-Gym
+category: workload
+notes:
+  what_this_measures: The result covers environment reset, snapshot and restore, rollout tool calls, and
+    reward checks. Tool calls use the sandbox clock; reward commands use the job-host monotonic clock.
+  how_to_read: The median is shown in milliseconds. Lower is better.
+  summary: Time to prepare a coding environment, then serve four recorded R2E-Gym rollouts from its snapshot.
+  how_it_is_measured: Four recorded rollouts per task come from R2E-Gym trajectory data and are replayed
+    with R2E-Gym's tools. Tool calls use the sandbox clock; reward commands use the job-host monotonic
+    clock.
+  cost_summary: Cost from the first sandbox create through the last confirmed destroy, divided by successful
+    trials.
+  cost_how_to_read: Cost per successful trial excludes failed attempts. Snapshot storage billing is unknown.
+    Lower is better.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of one rollout's replayed tool calls' runtimes, each by the sandbox's own clock.
+  quantity: Tool-call runtime
+  per: rollout
+- name: reward_time
+  unit: ms
+  direction: lower_is_better
+  description: Runtime of R2E-Gym's reward command for one rollout.
+  quantity: Reward-command runtime
+  per: rollout
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest (docker.io/namanjain12/<repository>_final@sha256:<digest>);
+      the digests are in the parameters' workloads.json.
+    modification: Prepared in each account before the run. Sandboxes 2 to 5 start from a snapshot of sandbox
+      1 taken after the environment reset.
+  network: unknown
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 900
+procedure:
+  mode: sequential
+  trials: 4
+  sandboxes_per_trial: 5
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Sandbox 1 is created from the task's prepared image and reset; sandboxes 2 to 5 are created
+      one after another from its snapshot, each only after the previous one has been probed, destroyed
+      and confirmed gone. The restore request names no capability. The snapshot is deleted and checked
+      gone after the last sandbox. Providers without create-from-snapshot are not measured.
+  variants:
+  - id: numpy-0a476002600c
+    label: numpy 0a476002600c
+    parameters:
+      task: namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7
+    description: This option selects the recorded workload used for the measurement.
+  - id: numpy-dda20349d172
+    label: numpy dda20349d172
+    parameters:
+      task: namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8
+    description: This option selects the recorded workload used for the measurement.
+  - id: numpy-61640a849557
+    label: numpy 61640a849557
+    parameters:
+      task: namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d
+    description: This option selects the recorded workload used for the measurement.
+  - id: numpy-171a3e5811e4
+    label: numpy 171a3e5811e4
+    parameters:
+      task: namanjain12/numpy_final:171a3e5811e43643788c20075be9ba52efb83b81
+    description: This option selects the recorded workload used for the measurement.
+  - id: numpy-bb46a495ee52
+    label: numpy bb46a495ee52
+    parameters:
+      task: namanjain12/numpy_final:bb46a495ee5201fb94c14776f41181343e5b7fb2
+    description: This option selects the recorded workload used for the measurement.
+  - id: numpy-504b287bdf47
+    label: numpy 504b287bdf47
+    parameters:
+      task: namanjain12/numpy_final:504b287bdf4745256044f336f17c88ddcb0175dd
+    description: This option selects the recorded workload used for the measurement.
+  - id: numpy-3c0b4db0b51e
+    label: numpy 3c0b4db0b51e
+    parameters:
+      task: namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754
+    description: This option selects the recorded workload used for the measurement.
+  - id: coveragepy-89f44c12465b
+    label: coveragepy 89f44c12465b
+    parameters:
+      task: namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532
+    description: This option selects the recorded workload used for the measurement.
+  - id: numpy-6b8d55e66e53
+    label: numpy 6b8d55e66e53
+    parameters:
+      task: namanjain12/numpy_final:6b8d55e66e532d66e1701ad039b4cda306839b3f
+    description: This option selects the recorded workload used for the measurement.
+  - id: numpy-ad48eaa76403
+    label: numpy ad48eaa76403
+    parameters:
+      task: namanjain12/numpy_final:ad48eaa76403798c298c2761e53e1e43008ab1b1
+    description: This option selects the recorded workload used for the measurement.
+  stages:
+  - id: setup
+    name: Setup
+    description: Sandbox 1 is created from the task's prepared image, R2E-Gym's environment is reset in
+      it and it is snapshotted.
+    record_steps:
+    - create
+    - reset
+    - snapshot
+  - id: create-from-snapshot
+    name: Create from snapshot
+    description: Each of sandboxes 2 to 5 is created from the snapshot.
+    record_steps:
+    - restore
+  - id: tool-calls
+    name: Tool calls
+    description: One recorded rollout's tool calls are replayed in each of sandboxes 2 to 5.
+    record_steps:
+    - cmd
+  - id: reward
+    name: Reward
+    description: R2E-Gym's reward command runs after each rollout.
+    record_steps:
+    - reward
+  - id: destroy
+    name: Destroy
+    description: Each sandbox is destroyed after its last command; the snapshot is deleted after the last
+      sandbox.
+    record_steps:
+    - destroy
+  steps:
+  - id: create
+    name: Create
+    action: Start sandbox 1 from the task's prepared image, with the snapshots capability requested.
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+    timeout_seconds: 600
+    record_steps:
+    - create
+    in_sandboxes:
+    - 1
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` to sandbox 1 until it answers. Sandboxes created from the snapshot skip
+      it.
+    timer: null
+  - id: reset
+    name: Reset
+    action: After an untimed upload of R2E-Gym's four tools, run R2E-Gym's environment reset commands
+      in order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started in the background.
+    timer:
+      start_event: The command starts, by the sandbox's own clock.
+      stop_event: The command exits, by the sandbox's own clock.
+    timeout_seconds: 150
+    repeats: true
+    record_steps:
+    - reset
+    in_sandboxes:
+    - 1
+  - id: snapshot
+    name: Snapshot
+    action: Create a snapshot of sandbox 1, sent after the reset script ended with nothing sent in between.
+    timer:
+      start_event: The snapshot request is dispatched.
+      stop_event: The snapshot call returns.
+    timeout_seconds: 600
+    record_steps:
+    - snapshot
+    in_sandboxes:
+    - 1
+  - id: restore
+    name: Create from snapshot
+    action: For each of sandboxes 2 to 5, create a sandbox from the snapshot once the previous sandbox
+      is confirmed gone.
+    timer:
+      start_event: The restore request is dispatched.
+      stop_event: The restore call returns.
+    timeout_seconds: 600
+    record_steps:
+    - restore
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: tool_calls
+    name: Tool calls
+    action: 'Replay one rollout''s tool calls back to back in recorded order as one script started in
+      the background in sandbox 2, 3, 4 or 5, each as R2E-Gym ran it: `timeout 90 <tool> <arguments>`
+      under `sh -c` in /testbed.'
+    timer:
+      start_event: The call starts, by the sandbox's own clock.
+      stop_event: The call exits, by the sandbox's own clock; its runtime is the difference between two
+        consecutive readings.
+    timeout_seconds: 120
+    repeats: true
+    record_steps:
+    - cmd
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: reward
+    name: Reward
+    action: After an untimed command reads the rollout's patch, run R2E-Gym's reward command (`timeout
+      300 bash /root/run_tests.sh`).
+    timer:
+      start_event: The reward command is sent, measured by the job-host monotonic clock.
+      stop_event: The call returns, measured by the job-host monotonic clock.
+    timeout_seconds: 330
+    record_steps:
+    - reward
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: destroy
+    name: Destroy
+    action: After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
+      the last sandbox, delete the snapshot and check it is gone, untimed.
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first tool call of a rollout starts in its sandbox, by the sandbox's own clock.
+  stop: The last tool call of the rollout exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: 36
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the first create request to the last confirmed destroy; whether snapshot storage is
+    billed is unknown.
+  per_success: Cost of the successful trials divided by their number; failed attempts' cost is not included.
+parameters:
+  path: parameters/r2e-gym/1.1.4/
+  sha256: bca7e012017c557013116e06fbee133aeb77e2d67d400560c79a98fd1871dc3b
+capabilities:
+  required:
+  - snapshots
+interpretation:
+  what_to_do: Compare which provider serves reinforcement-learning rollouts that share a prepared environment
+    fastest.
+  informs: How long a provider takes to serve RL rollouts from one snapshotted coding environment.
+  limits:
+  - Providers without create-from-snapshot support through the integration are not measured.
+  - The rollout dataset licence is unknown.
+  - Whether snapshot storage is billed is unknown.
+  caveats:
+  - The first sandbox gets the ready check right after its create; the sandboxes created from its snapshot
+    do not.
+  - The restore request names no capability.
+  - Whether snapshot storage is billed is unknown.
+validity_checks:
+- id: rollout_set_pinned
+  threat: A fetched rollout set that differs from the one this version pins would replay different tool
+    calls.
+  check: The protocol pins the SHA-256 of the rollout set; a batch whose fetched set differs is a failure
+    of the benchmark, not of the provider.
+- id: one_at_a_time
+  threat: Sandboxes alive together would change the load on the provider.
+  check: Each of sandboxes 2 to 5 is created only after the previous one has been probed, destroyed and
+    confirmed gone.
+- id: snapshot_cleanup
+  threat: A leftover snapshot would carry cost and state into later trials.
+  check: After the last sandbox the snapshot is deleted and checked gone, untimed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    reset: 150
+    snapshot: 600
+    restore: 600
+    tool_calls: 120
+    reward: 330
+    destroy: 300
+  retries: None; the first failed step ends the trial. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: unknown
+  provider_errors:
+  - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched rollout set that differs from the pinned set.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A provider with no create-from-snapshot through the integration is not measured.
+  - A workload that does not replay on that provider.
+  - An error shown not to be the provider's.
+source:
+  name: R2E-Gym RL trajectories (AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories) replayed with R2E-Gym's
+    tools
+  version: dataset revision e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e; R2E-Gym commit 9a3c2495ab69a3ca1e85f395c308bc6f72d4161f
+  ids:
+  - rollout set sha256:c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635
+  - 10 tasks (nine numpy, one coveragepy) with four rollouts each, ids <task>-run1 to <task>-run4
+  - 'tool sha256: file_editor d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596, search
+    45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c, execute_bash 01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32,
+    finish fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff'
+  licence: Unknown for the rollout dataset; Apache-2.0 for the R2E-Gym harness and tools, which remain
+    reference-only.
+  venue_terms:
+  - R2E-Gym
+execution:
+  mode: trace_replay
+  inference: false
+
+---
+id: r2e-gym
+version: 1.1.15
+effective: '2026-11-02'
+name: '{name:test.r2e-gym}'
+category: workload
+notes:
+  what_this_measures: The result covers environment reset, snapshot creation, restore, tool calls and
+    reward checks; no model runs.
+  how_to_read: The {param:r2e-gym.1.1.4.statistics.primary} summarizes successful trials in the axis unit;
+    {direction:tool_time}.
+  summary: Rollouts of one coding task share a prepared snapshot. No model is called.
+  how_it_is_measured: Recorded rollout trajectories share a snapshotted coding environment; tool calls
+    and reward commands use the sandbox clock.
+  cost_summary: The cost covers the first sandbox create through the last confirmed destroy, divided by
+    successful trials.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.10
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of one rollout's replayed tool calls' runtimes, each by the sandbox's own clock.
+  quantity: Tool-call runtime
+  per: rollout
+- name: reward_time
+  unit: ms
+  direction: lower_is_better
+  description: Runtime of {name:test.r2e-gym}'s reward command for one rollout.
+  quantity: Reward-command runtime
+  per: rollout
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest (docker.io/namanjain12/<repository>_final@sha256:<digest>);
+      the digests are in the parameters' workloads.json.
+    modification: Prepared in each account before the run. Sandboxes 2 to 5 start from a snapshot of sandbox
+      1 taken after the environment reset.
+  network: unknown
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 900
+procedure:
+  mode: sequential
+  trials: 20
+  sandboxes_per_trial: 5
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Sandbox 1 is created from the task's prepared image and reset; sandboxes 2 to 5 are created
+      one after another from its snapshot, each only after the previous one has been probed, destroyed
+      and confirmed gone. The restore request names no capability. The snapshot is deleted and checked
+      gone after the last sandbox. Providers without create-from-snapshot are not measured.
+  variants:
+  - id: numpy-0a476002600c
+    label: numpy-masked-method-lookup
+    parameters:
+      task: namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.0.label} configuration.
+  - id: numpy-dda20349d172
+    label: numpy-issubdtype-abstract-types
+    parameters:
+      task: namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.1.label} configuration.
+  - id: numpy-61640a849557
+    label: numpy-apply-axis-empty
+    parameters:
+      task: namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.2.label} configuration.
+  - id: numpy-171a3e5811e4
+    label: numpy-unstructured-single-field
+    parameters:
+      task: namanjain12/numpy_final:171a3e5811e43643788c20075be9ba52efb83b81
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.3.label} configuration.
+  - id: numpy-bb46a495ee52
+    label: numpy-masked-median-scalar
+    parameters:
+      task: namanjain12/numpy_final:bb46a495ee5201fb94c14776f41181343e5b7fb2
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.4.label} configuration.
+  - id: numpy-504b287bdf47
+    label: numpy-indices-sparse-option
+    parameters:
+      task: namanjain12/numpy_final:504b287bdf4745256044f336f17c88ddcb0175dd
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.5.label} configuration.
+  - id: numpy-3c0b4db0b51e
+    label: numpy-strided-custom-dtype
+    parameters:
+      task: namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.6.label} configuration.
+  - id: coveragepy-89f44c12465b
+    label: coveragepy-behavior-flag-rename
+    parameters:
+      task: namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.7.label} configuration.
+  - id: numpy-6b8d55e66e53
+    label: numpy-masked-median-multiple
+    parameters:
+      task: namanjain12/numpy_final:6b8d55e66e532d66e1701ad039b4cda306839b3f
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.8.label} configuration.
+  - id: numpy-ad48eaa76403
+    label: numpy-histogram-edge-rounding
+    parameters:
+      task: namanjain12/numpy_final:ad48eaa76403798c298c2761e53e1e43008ab1b1
+    description: The workload uses the {param:r2e-gym.1.1.8.procedure.variants.9.label} configuration.
+  stages:
+  - id: setup
+    name: '{name:stage.setup}'
+    description: Sandbox 1 is created from the task's prepared image, {name:test.r2e-gym}'s environment
+      is reset in it and it is snapshotted.
+    record_steps:
+    - create
+    - reset
+    - snapshot
+  - id: create-from-snapshot
+    name: '{name:stage.create-from-snapshot}'
+    record_steps:
+    - restore
+  - id: tool-calls
+    name: '{name:stage.tool-calls}'
+    description: One recorded rollout's tool calls are replayed in each of sandboxes 2 to 5.
+    record_steps:
+    - cmd
+  - id: reward
+    name: '{name:stage.reward}'
+    record_steps:
+    - reward
+  - id: destroy
+    name: '{name:stage.destroy}'
+    description: Each sandbox is destroyed after its last command; the snapshot is deleted after the last
+      sandbox.
+    record_steps:
+    - destroy
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start sandbox 1 from the task's prepared image, with the snapshots capability requested.
+    timer:
+      from: the create request
+      until: the create call returns
+    timeout_seconds: 600
+    record_steps:
+    - create
+    in_sandboxes:
+    - 1
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` to sandbox 1 until it answers. Sandboxes created from the snapshot skip
+      it.
+    timer: null
+  - id: reset
+    name: Reset
+    action: After an untimed upload of {name:test.r2e-gym}'s four tools, run {name:test.r2e-gym}'s environment
+      reset commands in order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started
+      in the background.
+    timer:
+      from: each reset command starting, by the sandbox's own clock
+      until: it exits, by the sandbox's own clock
+    timeout_seconds: 150
+    repeats: true
+    record_steps:
+    - reset
+    in_sandboxes:
+    - 1
+  - id: snapshot
+    name: '{name:stage.snapshot}'
+    action: Create a snapshot of sandbox 1, sent after the reset script ended with nothing sent in between.
+    timer:
+      from: the snapshot request
+      until: the snapshot call returns
+    timeout_seconds: 600
+    record_steps:
+    - snapshot
+    in_sandboxes:
+    - 1
+  - id: restore
+    name: '{name:stage.create-from-snapshot}'
+    action: For each of sandboxes 2 to 5, create a sandbox from the snapshot once the previous sandbox
+      is confirmed gone.
+    timer:
+      from: the restore request
+      sent: once the previous sandbox is confirmed gone
+      until: the restore call returns
+    timeout_seconds: 600
+    record_steps:
+    - restore
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: tool_calls
+    name: '{name:stage.tool-calls}'
+    action: 'Replay one rollout''s tool calls back to back in recorded order as one script started in
+      the background in sandbox 2, 3, 4 or 5, each as {name:test.r2e-gym} ran it: `timeout 90 <tool> <arguments>`
+      under `sh -c` in /testbed.'
+    timer:
+      from: each call starting, by the sandbox's own clock
+      until: it exits, by the sandbox's own clock
+    timeout_seconds: 120
+    repeats: true
+    record_steps:
+    - cmd
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: reward
+    name: '{name:stage.reward}'
+    action: After an untimed command reads the rollout's patch, run {name:test.r2e-gym}'s reward command
+      (`timeout 300 bash /root/run_tests.sh`).
+    timer:
+      from: the reward command
+      sent: after an untimed command reads the rollout's patch
+      until: the call returns, both by the sandbox's own clock
+    timeout_seconds: 330
+    record_steps:
+    - reward
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
+      the last sandbox, delete the snapshot and check it is gone, untimed.
+    timer:
+      from: the destroy request
+      until: the destroy call returns
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first tool call of a rollout starts in its sandbox, by the sandbox's own clock.
+  stop: The last tool call of the rollout exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: 180
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+parameters:
+  path: parameters/r2e-gym/1.1.15/
+  sha256: 3d483c04fe1811ae24375425c83766c053ec4e574e2ac5e32234b1d19b4d1f44
+capabilities:
+  required:
+  - snapshots
+interpretation:
+  what_to_do: Compare which provider serves reinforcement-learning rollouts that share a prepared environment
+    fastest.
+  informs: How long a provider takes to serve RL rollouts from one snapshotted coding environment.
+  limits:
+  - Providers without create-from-snapshot support through the integration are not measured.
+  - The rollout dataset licence is unknown.
+  - Whether snapshot storage is billed is unknown.
+  caveats:
+  - The first sandbox gets the ready check right after its create; the sandboxes created from its snapshot
+    do not.
+  - The restore request names no capability.
+  - Whether snapshot storage is billed is unknown.
+validity_checks:
+- id: rollout_set_pinned
+  threat: A fetched rollout set that differs from the one this version pins would replay different tool
+    calls.
+  check: The protocol pins the SHA-256 of the rollout set; a batch whose fetched set differs is a failure
+    of the benchmark, not of the provider.
+- id: one_at_a_time
+  threat: Sandboxes alive together would change the load on the provider.
+  check: Each of sandboxes 2 to 5 is created only after the previous one has been probed, destroyed and
+    confirmed gone.
+- id: snapshot_cleanup
+  threat: A leftover snapshot would carry cost and state into later trials.
+  check: After the last sandbox the snapshot is deleted and checked gone, untimed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    reset: 150
+    snapshot: 600
+    restore: 600
+    tool_calls: 120
+    reward: 330
+    destroy: 300
+  retries: None; the first failed step ends the trial. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: unknown
+  provider_errors:
+  - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched rollout set that differs from the pinned set.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A provider with no create-from-snapshot through the integration is not measured.
+  - A workload that does not replay on that provider.
+  - An error shown not to be the provider's.
+source:
+  name: '{name:test.r2e-gym} RL trajectories (AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories) replayed
+    with {name:test.r2e-gym}''s tools'
+  version: dataset revision e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e; {name:test.r2e-gym} commit 9a3c2495ab69a3ca1e85f395c308bc6f72d4161f
+  ids:
+  - rollout set sha256:c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635
+  - 10 tasks (nine numpy, one coveragepy) with four rollouts each, ids <task>-run1 to <task>-run4
+  - 'tool sha256: file_editor d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596, search
+    45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c, execute_bash 01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32,
+    finish fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff'
+  licence: Unknown for the rollout dataset; Apache-2.0 for the {name:test.r2e-gym} harness and tools,
+    which remain reference-only.
+  venue_terms:
+  - '{name:test.r2e-gym}'
+execution:
+  mode: trace_replay
+  inference: false
+independence_answers:
+  fresh_sandbox:
+    status: exception
+    text: 'Each task uses five sandboxes: the first is created from the prepared image and snapshotted,
+      and four rollouts run in sandboxes restored from that snapshot. The task, not the sandbox, is the
+      sample, and nothing is shared across tasks.'
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: The task's image is prepared ahead and the snapshot is created in the trial, so each task meets
+      its own snapshot only. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+
+---
+id: r2e-gym
+version: 1.1.7
+effective: '2026-10-29'
+name: '{name:test.r2e-gym}'
+category: workload
+notes:
+  what_this_measures: The result covers environment reset, snapshot creation, restore, tool calls and
+    reward checks; no model runs.
+  how_to_read: The {param:r2e-gym.1.1.4.statistics.primary} summarizes successful trials in the axis unit;
+    {direction:tool_time}.
+  summary: Rollouts of one coding task share a prepared snapshot. No model is called.
+  how_it_is_measured: Recorded rollout trajectories share a snapshotted coding environment; tool calls
+    use the sandbox clock and reward commands use the job-host monotonic clock.
+  cost_summary: The cost covers the first sandbox create through the last confirmed destroy, divided by
+    successful trials.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of one rollout's replayed tool calls' runtimes, each by the sandbox's own clock.
+  quantity: Tool-call runtime
+  per: rollout
+- name: reward_time
+  unit: ms
+  direction: lower_is_better
+  description: Runtime of R2E-Gym's reward command for one rollout.
+  quantity: Reward-command runtime
+  per: rollout
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest (docker.io/namanjain12/<repository>_final@sha256:<digest>);
+      the digests are in the parameters' workloads.json.
+    modification: Prepared in each account before the run. Sandboxes 2 to 5 start from a snapshot of sandbox
+      1 taken after the environment reset.
+  network: unknown
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 900
+procedure:
+  mode: sequential
+  trials: 4
+  sandboxes_per_trial: 5
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Sandbox 1 is created from the task's prepared image and reset; sandboxes 2 to 5 are created
+      one after another from its snapshot, each only after the previous one has been probed, destroyed
+      and confirmed gone. The restore request names no capability. The snapshot is deleted and checked
+      gone after the last sandbox. Providers without create-from-snapshot are not measured.
+  variants:
+  - id: numpy-0a476002600c
+    label: numpy 0a476002600c
+    parameters:
+      task: namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.0.label} configuration.
+  - id: numpy-dda20349d172
+    label: numpy dda20349d172
+    parameters:
+      task: namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.1.label} configuration.
+  - id: numpy-61640a849557
+    label: numpy 61640a849557
+    parameters:
+      task: namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.2.label} configuration.
+  - id: numpy-171a3e5811e4
+    label: numpy 171a3e5811e4
+    parameters:
+      task: namanjain12/numpy_final:171a3e5811e43643788c20075be9ba52efb83b81
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.3.label} configuration.
+  - id: numpy-bb46a495ee52
+    label: numpy bb46a495ee52
+    parameters:
+      task: namanjain12/numpy_final:bb46a495ee5201fb94c14776f41181343e5b7fb2
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.4.label} configuration.
+  - id: numpy-504b287bdf47
+    label: numpy 504b287bdf47
+    parameters:
+      task: namanjain12/numpy_final:504b287bdf4745256044f336f17c88ddcb0175dd
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.5.label} configuration.
+  - id: numpy-3c0b4db0b51e
+    label: numpy 3c0b4db0b51e
+    parameters:
+      task: namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.6.label} configuration.
+  - id: coveragepy-89f44c12465b
+    label: coveragepy 89f44c12465b
+    parameters:
+      task: namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.7.label} configuration.
+  - id: numpy-6b8d55e66e53
+    label: numpy 6b8d55e66e53
+    parameters:
+      task: namanjain12/numpy_final:6b8d55e66e532d66e1701ad039b4cda306839b3f
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.8.label} configuration.
+  - id: numpy-ad48eaa76403
+    label: numpy ad48eaa76403
+    parameters:
+      task: namanjain12/numpy_final:ad48eaa76403798c298c2761e53e1e43008ab1b1
+    description: The workload uses the {param:r2e-gym.1.1.5.procedure.variants.9.label} configuration.
+  stages:
+  - id: setup
+    name: '{name:stage.setup}'
+    description: Sandbox 1 is created from the task's prepared image, R2E-Gym's environment is reset in
+      it and it is snapshotted.
+    record_steps:
+    - create
+    - reset
+    - snapshot
+  - id: create-from-snapshot
+    name: '{name:stage.create-from-snapshot}'
+    record_steps:
+    - restore
+  - id: tool-calls
+    name: '{name:stage.tool-calls}'
+    description: One recorded rollout's tool calls are replayed in each of sandboxes 2 to 5.
+    record_steps:
+    - cmd
+  - id: reward
+    name: '{name:stage.reward}'
+    record_steps:
+    - reward
+  - id: destroy
+    name: '{name:stage.destroy}'
+    description: Each sandbox is destroyed after its last command; the snapshot is deleted after the last
+      sandbox.
+    record_steps:
+    - destroy
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start sandbox 1 from the task's prepared image, with the snapshots capability requested.
+    timer:
+      from: the create request
+      until: the create call returns
+    timeout_seconds: 600
+    record_steps:
+    - create
+    in_sandboxes:
+    - 1
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` to sandbox 1 until it answers. Sandboxes created from the snapshot skip
+      it.
+    timer: null
+  - id: reset
+    name: Reset
+    action: After an untimed upload of R2E-Gym's four tools, run R2E-Gym's environment reset commands
+      in order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started in the background.
+    timer:
+      from: each reset command starting, by the sandbox's own clock
+      until: it exits, by the sandbox's own clock
+    timeout_seconds: 150
+    repeats: true
+    record_steps:
+    - reset
+    in_sandboxes:
+    - 1
+  - id: snapshot
+    name: '{name:stage.snapshot}'
+    action: Create a snapshot of sandbox 1, sent after the reset script ended with nothing sent in between.
+    timer:
+      from: the snapshot request
+      until: the snapshot call returns
+    timeout_seconds: 600
+    record_steps:
+    - snapshot
+    in_sandboxes:
+    - 1
+  - id: restore
+    name: '{name:stage.create-from-snapshot}'
+    action: For each of sandboxes 2 to 5, create a sandbox from the snapshot once the previous sandbox
+      is confirmed gone.
+    timer:
+      from: the restore request
+      sent: once the previous sandbox is confirmed gone
+      until: the restore call returns
+    timeout_seconds: 600
+    record_steps:
+    - restore
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: tool_calls
+    name: '{name:stage.tool-calls}'
+    action: 'Replay one rollout''s tool calls back to back in recorded order as one script started in
+      the background in sandbox 2, 3, 4 or 5, each as R2E-Gym ran it: `timeout 90 <tool> <arguments>`
+      under `sh -c` in /testbed.'
+    timer:
+      from: each call starting, by the sandbox's own clock
+      until: it exits, by the sandbox's own clock
+    timeout_seconds: 120
+    repeats: true
+    record_steps:
+    - cmd
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: reward
+    name: '{name:stage.reward}'
+    action: After an untimed command reads the rollout's patch, run R2E-Gym's reward command (`timeout
+      300 bash /root/run_tests.sh`).
+    timer:
+      from: the reward command
+      sent: after an untimed command reads the rollout's patch
+      until: the call returns, both by the job-host clock
+    timeout_seconds: 330
+    record_steps:
+    - reward
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
+      the last sandbox, delete the snapshot and check it is gone, untimed.
+    timer:
+      from: the destroy request
+      until: the destroy call returns
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first tool call of a rollout starts in its sandbox, by the sandbox's own clock.
+  stop: The last tool call of the rollout exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: 36
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the first create request to the last confirmed destroy; whether snapshot storage is
+    billed is unknown.
+  per_success: Cost of the successful trials divided by their number; failed attempts' cost is not included.
+parameters:
+  path: parameters/r2e-gym/1.1.7/
+  sha256: bca7e012017c557013116e06fbee133aeb77e2d67d400560c79a98fd1871dc3b
+capabilities:
+  required:
+  - snapshots
+interpretation:
+  what_to_do: Compare which provider serves reinforcement-learning rollouts that share a prepared environment
+    fastest.
+  informs: How long a provider takes to serve RL rollouts from one snapshotted coding environment.
+  limits:
+  - Providers without create-from-snapshot support through the integration are not measured.
+  - The rollout dataset licence is unknown.
+  - Whether snapshot storage is billed is unknown.
+  caveats:
+  - The first sandbox gets the ready check right after its create; the sandboxes created from its snapshot
+    do not.
+  - The restore request names no capability.
+  - Whether snapshot storage is billed is unknown.
+validity_checks:
+- id: rollout_set_pinned
+  threat: A fetched rollout set that differs from the one this version pins would replay different tool
+    calls.
+  check: The protocol pins the SHA-256 of the rollout set; a batch whose fetched set differs is a failure
+    of the benchmark, not of the provider.
+- id: one_at_a_time
+  threat: Sandboxes alive together would change the load on the provider.
+  check: Each of sandboxes 2 to 5 is created only after the previous one has been probed, destroyed and
+    confirmed gone.
+- id: snapshot_cleanup
+  threat: A leftover snapshot would carry cost and state into later trials.
+  check: After the last sandbox the snapshot is deleted and checked gone, untimed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    reset: 150
+    snapshot: 600
+    restore: 600
+    tool_calls: 120
+    reward: 330
+    destroy: 300
+  retries: None; the first failed step ends the trial. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: unknown
+  provider_errors:
+  - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched rollout set that differs from the pinned set.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A provider with no create-from-snapshot through the integration is not measured.
+  - A workload that does not replay on that provider.
+  - An error shown not to be the provider's.
+source:
+  name: R2E-Gym RL trajectories (AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories) replayed with R2E-Gym's
+    tools
+  version: dataset revision e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e; R2E-Gym commit 9a3c2495ab69a3ca1e85f395c308bc6f72d4161f
+  ids:
+  - rollout set sha256:c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635
+  - 10 tasks (nine numpy, one coveragepy) with four rollouts each, ids <task>-run1 to <task>-run4
+  - 'tool sha256: file_editor d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596, search
+    45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c, execute_bash 01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32,
+    finish fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff'
+  licence: Unknown for the rollout dataset; Apache-2.0 for the R2E-Gym harness and tools, which remain
+    reference-only.
+  venue_terms:
+  - R2E-Gym
+execution:
+  mode: trace_replay
+  inference: false
+
+---
+id: r2e-gym
+version: 1.1.0
+effective: "2026-10-26"
+name: R2E-Gym
+category: workload
+description: >-
+  How long a sandbox takes to set up a coding environment once, snapshot it, and then serve four
+  recorded RL rollouts of the same task from sandboxes created from that snapshot, replaying the
+  rollouts' tool calls and R2E-Gym's reward check. No model is called. It shows which provider
+  serves reinforcement-learning rollouts that share a prepared environment fastest.
+notes:
+  what_this_measures: >-
+    How long a sandbox takes to set up a coding environment once, snapshot it, and serve four
+    recorded RL rollouts of the same task from sandboxes created from that snapshot. No model is
+    called.
+  how_to_read: >-
+    Each provider's median is shown in milliseconds, split into the Setup, Create from snapshot,
+    Tool calls, Reward and Destroy stages. Lower is better.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+
+metrics:
+  - name: tool_time
+    unit: ms
+    direction: lower_is_better
+    description: Sum of one rollout's replayed tool calls' runtimes, each by the sandbox's own clock.
+  - name: reward_time
+    unit: ms
+    direction: lower_is_better
+    description: Runtime of R2E-Gym's reward command for one rollout.
+
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: "Each task's own image, pinned by digest (docker.io/namanjain12/<repository>_final@sha256:<digest>); the digests are in the parameters' workloads.json."
+    modification: Prepared in each account before the run. Sandboxes 2 to 5 start from a snapshot of sandbox 1 taken after the environment reset.
+  network: unknown
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing tuned per provider.
+  lifetime_seconds: 900
+
+procedure:
+  mode: sequential
+  trials: 4
+  sandboxes_per_trial: 5
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: >-
+      Sandbox 1 is created from the task's prepared image and reset; sandboxes 2 to 5 are created
+      one after another from its snapshot, each only after the previous one has been probed,
+      destroyed and confirmed gone. The restore request names no capability. The snapshot is
+      deleted and checked gone after the last sandbox. Providers without create-from-snapshot are
+      not measured.
+  variants:
+    - id: numpy-0a476002600c
+      label: numpy 0a476002600c
+      parameters: { task: "namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7" }
+    - id: numpy-dda20349d172
+      label: numpy dda20349d172
+      parameters: { task: "namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8" }
+    - id: numpy-61640a849557
+      label: numpy 61640a849557
+      parameters: { task: "namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d" }
+    - id: numpy-171a3e5811e4
+      label: numpy 171a3e5811e4
+      parameters: { task: "namanjain12/numpy_final:171a3e5811e43643788c20075be9ba52efb83b81" }
+    - id: numpy-bb46a495ee52
+      label: numpy bb46a495ee52
+      parameters: { task: "namanjain12/numpy_final:bb46a495ee5201fb94c14776f41181343e5b7fb2" }
+    - id: numpy-504b287bdf47
+      label: numpy 504b287bdf47
+      parameters: { task: "namanjain12/numpy_final:504b287bdf4745256044f336f17c88ddcb0175dd" }
+    - id: numpy-3c0b4db0b51e
+      label: numpy 3c0b4db0b51e
+      parameters: { task: "namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754" }
+    - id: coveragepy-89f44c12465b
+      label: coveragepy 89f44c12465b
+      parameters: { task: "namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532" }
+    - id: numpy-6b8d55e66e53
+      label: numpy 6b8d55e66e53
+      parameters: { task: "namanjain12/numpy_final:6b8d55e66e532d66e1701ad039b4cda306839b3f" }
+    - id: numpy-ad48eaa76403
+      label: numpy ad48eaa76403
+      parameters: { task: "namanjain12/numpy_final:ad48eaa76403798c298c2761e53e1e43008ab1b1" }
+  stages:
+    - id: setup
+      name: Setup
+      description: >-
+        Sandbox 1 is created from the task's prepared image, R2E-Gym's environment is reset in it
+        and it is snapshotted.
+      record_steps: [create, reset, snapshot]
+    - id: create-from-snapshot
+      name: Create from snapshot
+      description: Each of sandboxes 2 to 5 is created from the snapshot.
+      record_steps: [restore]
+    - id: tool-calls
+      name: Tool calls
+      description: One recorded rollout's tool calls are replayed in each of sandboxes 2 to 5.
+      record_steps: [cmd]
+    - id: reward
+      name: Reward
+      description: R2E-Gym's reward command runs after each rollout.
+      record_steps: [reward]
+    - id: destroy
+      name: Destroy
+      description: Each sandbox is destroyed after its last command; the snapshot is deleted after the last sandbox.
+      record_steps: [destroy]
+  steps:
+    - id: create
+      name: Create
+      action: Start sandbox 1 from the task's prepared image, with the snapshots capability requested.
+      timer:
+        start_event: The create request is dispatched.
+        stop_event: The create call returns.
+      timeout_seconds: 600
+      record_steps: [create]
+      in_sandboxes: [1]
+    - id: ready_check
+      name: Ready check
+      action: Untimed; send `true` to sandbox 1 until it answers. Sandboxes created from the snapshot skip it.
+      timer: null
+    - id: reset
+      name: Reset
+      action: >-
+        After an untimed upload of R2E-Gym's four tools, run R2E-Gym's environment reset commands in
+        order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started in the
+        background.
+      timer:
+        start_event: The command starts, by the sandbox's own clock.
+        stop_event: The command exits, by the sandbox's own clock.
+      timeout_seconds: 150
+      repeats: true
+      record_steps: [reset]
+      in_sandboxes: [1]
+    - id: snapshot
+      name: Snapshot
+      action: Create a snapshot of sandbox 1, sent after the reset script ended with nothing sent in between.
+      timer:
+        start_event: The snapshot request is dispatched.
+        stop_event: The snapshot call returns.
+      timeout_seconds: 600
+      record_steps: [snapshot]
+      in_sandboxes: [1]
+    - id: restore
+      name: Create from snapshot
+      action: For each of sandboxes 2 to 5, create a sandbox from the snapshot once the previous sandbox is confirmed gone.
+      timer:
+        start_event: The restore request is dispatched.
+        stop_event: The restore call returns.
+      timeout_seconds: 600
+      record_steps: [restore]
+      in_sandboxes: [2, 3, 4, 5]
+    - id: tool_calls
+      name: Tool calls
+      action: >-
+        Replay one rollout's tool calls back to back in recorded order as one script started in the
+        background in sandbox 2, 3, 4 or 5, each as R2E-Gym ran it: `timeout 90 <tool> <arguments>`
+        under `sh -c` in /testbed.
+      timer:
+        start_event: The call starts, by the sandbox's own clock.
+        stop_event: The call exits, by the sandbox's own clock; its runtime is the difference between two consecutive readings.
+      timeout_seconds: 120
+      repeats: true
+      record_steps: [cmd]
+      in_sandboxes: [2, 3, 4, 5]
+    - id: reward
+      name: Reward
+      action: After an untimed command reads the rollout's patch, run R2E-Gym's reward command (`timeout 300 bash /root/run_tests.sh`).
+      timer:
+        start_event: The reward command is sent, measured by the job-host monotonic clock.
+        stop_event: The call returns, measured by the job-host monotonic clock.
+      timeout_seconds: 330
+      record_steps: [reward]
+      in_sandboxes: [2, 3, 4, 5]
+    - id: destroy
+      name: Destroy
+      action: >-
+        After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
+        the last sandbox, delete the snapshot and check it is gone, untimed.
+      timer:
+        start_event: The destroy request is dispatched.
+        stop_event: The destroy call returns.
+      timeout_seconds: 300
+      record_steps: [destroy]
+
+timing_boundaries:
+  start: The first tool call of a rollout starts in its sandbox, by the sandbox's own clock.
+  stop: The last tool call of the rollout exits, by the sandbox's own clock.
+
+statistics:
+  primary: median
+  secondary:
+    - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: 36
+    requires_all_successful: false
+
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the first create request to the last confirmed destroy; whether snapshot storage is billed is unknown.
+  per_success: Cost of the successful trials divided by their number; failed attempts' cost is not included.
+
+parameters:
+  path: parameters/r2e-gym/1.1.0/
+  sha256: bca7e012017c557013116e06fbee133aeb77e2d67d400560c79a98fd1871dc3b
+
+capabilities:
+  required:
+    - snapshots
+
+interpretation:
+  what_to_do: >-
+    Compare which provider serves reinforcement-learning rollouts that share a prepared
+    environment fastest.
+  informs: How long a provider takes to serve RL rollouts from one snapshotted coding environment.
+  limits:
+    - No model is called; the rollouts are recorded and their tool calls replayed.
+    - A provider with no create-from-snapshot through the integration is not measured.
+  caveats:
+    - >-
+      The first sandbox gets the ready check right after its create; the sandboxes created from its
+      snapshot do not.
+    - The restore request names no capability.
+    - Whether snapshot storage is billed is unknown.
+
+validity_checks:
+  - id: rollout_set_pinned
+    threat: A fetched rollout set that differs from the one this version pins would replay different tool calls.
+    check: The protocol pins the SHA-256 of the rollout set; a batch whose fetched set differs is a failure of the benchmark, not of the provider.
+  - id: one_at_a_time
+    threat: Sandboxes alive together would change the load on the provider.
+    check: Each of sandboxes 2 to 5 is created only after the previous one has been probed, destroyed and confirmed gone.
+  - id: snapshot_cleanup
+    threat: A leftover snapshot would carry cost and state into later trials.
+    check: After the last sandbox the snapshot is deleted and checked gone, untimed.
+
+failure_policy:
+  timeout_seconds:
+    create: 600
+    reset: 150
+    snapshot: 600
+    restore: 600
+    tool_calls: 120
+    reward: 330
+    destroy: 300
+  retries: None; the first failed step ends the trial. A top-up run replaces a provider-owned failure of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: unknown
+  provider_errors:
+    - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
+    - A failure whose owner is uncertain.
+  benchmark_errors:
+    - A fetched rollout set that differs from the pinned set.
+    - A failure of the benchmark's own script.
+  exclusions:
+    - A provider with no create-from-snapshot through the integration is not measured.
+    - A workload that does not replay on that provider.
+    - An error shown not to be the provider's.
+
+source:
+  name: R2E-Gym RL trajectories (AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories) replayed with R2E-Gym's tools
+  version: "dataset revision e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e; R2E-Gym commit 9a3c2495ab69a3ca1e85f395c308bc6f72d4161f"
+  ids:
+    - rollout set sha256:c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635
+    - "10 tasks (nine numpy, one coveragepy) with four rollouts each, ids <task>-run1 to <task>-run4"
+    - "tool sha256: file_editor d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596, search 45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c, execute_bash 01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32, finish fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff"
+  licence: Unknown for the rollout dataset; Apache-2.0 for the R2E-Gym harness and tools, which remain reference-only.
+
+execution:
+  mode: trace_replay
+  inference: false
+
+---
+id: r2e-gym
+version: 1.1.22
+effective: '2026-11-08'
+name: '{name:test.r2e-gym}'
+category: workload
+notes:
+  what_this_measures: The result covers environment reset, snapshot creation, restore, tool calls and
+    reward checks; no model runs.
+  how_to_read: The {param:r2e-gym.1.1.22.statistics.primary} summarizes successful trials in the axis unit;
+    {direction:tool_time}.
+  summary: Rollouts of one coding task share a prepared snapshot. No model is called.
+  how_it_is_measured: Recorded rollout trajectories share a snapshotted coding environment; tool calls
+    and reward commands use the sandbox clock.
+  cost_summary: The cost covers the first sandbox create through the last confirmed destroy, divided by
+    successful trials.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of one rollout's replayed tool calls' runtimes, each by the sandbox's own clock.
+  quantity: Tool-call runtime
+  per: rollout
+- name: reward_time
+  unit: ms
+  direction: lower_is_better
+  description: Runtime of {name:test.r2e-gym}'s reward command for one rollout.
+  quantity: Reward-command runtime
+  per: rollout
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest (docker.io/namanjain12/<repository>_final@sha256:<digest>);
+      the digests are in the parameters' workloads.json.
+    modification: Prepared in each account before the run. Sandboxes 2 to 5 start from a snapshot of sandbox
+      1 taken after the environment reset.
+  network: unknown
+  lifetime_seconds: 900
+procedure:
+  mode: sequential
+  trials: 20
+  sandboxes_per_trial: 5
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Sandbox 1 is created from the task's prepared image and reset; sandboxes 2 to 5 are created
+      one after another from its snapshot, each only after the previous one has been probed, destroyed
+      and confirmed gone. The restore request names no capability. The snapshot is deleted and checked
+      gone after the last sandbox. Providers without create-from-snapshot are not measured.
+  variants:
+  - id: numpy-0a476002600c
+    label: numpy-masked-method-lookup
+    parameters:
+      task: namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.0.label} configuration.
+  - id: numpy-dda20349d172
+    label: numpy-issubdtype-abstract-types
+    parameters:
+      task: namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.1.label} configuration.
+  - id: numpy-61640a849557
+    label: numpy-apply-axis-empty
+    parameters:
+      task: namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.2.label} configuration.
+  - id: numpy-171a3e5811e4
+    label: numpy-unstructured-single-field
+    parameters:
+      task: namanjain12/numpy_final:171a3e5811e43643788c20075be9ba52efb83b81
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.3.label} configuration.
+  - id: numpy-bb46a495ee52
+    label: numpy-masked-median-scalar
+    parameters:
+      task: namanjain12/numpy_final:bb46a495ee5201fb94c14776f41181343e5b7fb2
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.4.label} configuration.
+  - id: numpy-504b287bdf47
+    label: numpy-indices-sparse-option
+    parameters:
+      task: namanjain12/numpy_final:504b287bdf4745256044f336f17c88ddcb0175dd
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.5.label} configuration.
+  - id: numpy-3c0b4db0b51e
+    label: numpy-strided-custom-dtype
+    parameters:
+      task: namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.6.label} configuration.
+  - id: coveragepy-89f44c12465b
+    label: coveragepy-behavior-flag-rename
+    parameters:
+      task: namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.7.label} configuration.
+  - id: numpy-6b8d55e66e53
+    label: numpy-masked-median-multiple
+    parameters:
+      task: namanjain12/numpy_final:6b8d55e66e532d66e1701ad039b4cda306839b3f
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.8.label} configuration.
+  - id: numpy-ad48eaa76403
+    label: numpy-histogram-edge-rounding
+    parameters:
+      task: namanjain12/numpy_final:ad48eaa76403798c298c2761e53e1e43008ab1b1
+    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.9.label} configuration.
+  stages:
+  - id: setup
+    name: '{name:stage.setup}'
+    description: Sandbox 1 is created from the task's prepared image, {name:test.r2e-gym}'s environment
+      is reset in it and it is snapshotted.
+    record_steps:
+    - create
+    - reset
+    - snapshot
+  - id: create-from-snapshot
+    name: '{name:stage.create-from-snapshot}'
+    record_steps:
+    - restore
+  - id: tool-calls
+    name: '{name:stage.tool-calls}'
+    description: One recorded rollout's tool calls are replayed in each of sandboxes 2 to 5.
+    record_steps:
+    - cmd
+  - id: reward
+    name: '{name:stage.reward}'
+    record_steps:
+    - reward
+  - id: destroy
+    name: '{name:stage.destroy}'
+    description: Each sandbox is destroyed after its last command; the snapshot is deleted after the last
+      sandbox.
+    record_steps:
+    - destroy
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start sandbox 1 from the task's prepared image, with the snapshots capability requested.
+    timer:
+      from: the create request
+      until: the create call returns
+    timeout_seconds: 600
+    record_steps:
+    - create
+    in_sandboxes:
+    - 1
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` to sandbox 1 until it answers. Sandboxes created from the snapshot skip
+      it.
+    timer: null
+  - id: reset
+    name: Reset
+    action: After an untimed upload of {name:test.r2e-gym}'s four tools, run {name:test.r2e-gym}'s environment
+      reset commands in order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started
+      in the background.
+    timer:
+      from: each reset command starting, by the sandbox's own clock
+      until: it exits, by the sandbox's own clock
+    timeout_seconds: 150
+    repeats: true
+    record_steps:
+    - reset
+    in_sandboxes:
+    - 1
+  - id: snapshot
+    name: '{name:stage.snapshot}'
+    action: Create a snapshot of sandbox 1, sent after the reset script ended with nothing sent in between.
+    timer:
+      from: the snapshot request
+      until: the snapshot call returns
+    timeout_seconds: 600
+    record_steps:
+    - snapshot
+    in_sandboxes:
+    - 1
+  - id: restore
+    name: '{name:stage.create-from-snapshot}'
+    action: For each of sandboxes 2 to 5, create a sandbox from the snapshot once the previous sandbox
+      is confirmed gone.
+    timer:
+      from: the restore request
+      sent: once the previous sandbox is confirmed gone
+      until: the restore call returns
+    timeout_seconds: 600
+    record_steps:
+    - restore
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: tool_calls
+    name: '{name:stage.tool-calls}'
+    action: 'Replay one rollout''s tool calls back to back in recorded order as one script started in
+      the background in sandbox 2, 3, 4 or 5, each as {name:test.r2e-gym} ran it: `timeout 90 <tool> <arguments>`
+      under `sh -c` in /testbed.'
+    timer:
+      from: each call starting, by the sandbox's own clock
+      until: it exits, by the sandbox's own clock
+    timeout_seconds: 120
+    repeats: true
+    record_steps:
+    - cmd
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: reward
+    name: '{name:stage.reward}'
+    action: After an untimed command reads the rollout's patch, run {name:test.r2e-gym}'s reward command
+      (`timeout 300 bash /root/run_tests.sh`).
+    timer:
+      from: the reward command
+      sent: after an untimed command reads the rollout's patch
+      until: the call returns, both by the sandbox's own clock
+    timeout_seconds: 330
+    record_steps:
+    - reward
+    in_sandboxes:
+    - 2
+    - 3
+    - 4
+    - 5
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
+      the last sandbox, delete the snapshot and check it is gone, untimed.
+    timer:
+      from: the destroy request
+      until: the destroy call returns
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first tool call of a rollout starts in its sandbox.
+  stop: The last tool call of the rollout exits.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: 180
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+parameters:
+  path: parameters/r2e-gym/1.1.22/
+  sha256: f195d4340305f72639d16f2c43977ba738bde628b147d3d1ce500990ecf56671
+capabilities:
+  required:
+  - snapshots
+interpretation:
+  what_to_do: Compare which provider serves reinforcement-learning rollouts that share a prepared environment
+    fastest.
+  informs: How long a provider takes to serve RL rollouts from one snapshotted coding environment.
+  limits:
+  - Providers without create-from-snapshot support through the integration are not measured.
+  - The rollout dataset licence is unknown.
+  - Whether snapshot storage is billed is unknown.
+  caveats:
+  - The first sandbox gets the ready check right after its create; the sandboxes created from its snapshot
+    do not.
+  - The restore request names no capability.
+  - Whether snapshot storage is billed is unknown.
+validity_checks:
+- id: rollout_set_pinned
+  threat: A fetched rollout set that differs from the one this version pins would replay different tool
+    calls.
+  check: The protocol pins the SHA-256 of the rollout set; a batch whose fetched set differs is a failure
+    of the benchmark, not of the provider.
+- id: one_at_a_time
+  threat: Sandboxes alive together would change the load on the provider.
+  check: Each of sandboxes 2 to 5 is created only after the previous one has been probed, destroyed and
+    confirmed gone.
+- id: snapshot_cleanup
+  threat: A leftover snapshot would carry cost and state into later trials.
+  check: After the last sandbox the snapshot is deleted and checked gone, untimed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    reset: 150
+    snapshot: 600
+    restore: 600
+    tool_calls: 120
+    reward: 330
+    destroy: 300
+  retries: None; the first failed step ends the trial. A top-up run refills every missed, excluded or
+    failed slot whoever owned the failure; each failed trial stays in the data with its owner and cause.
+  success: unknown
+  provider_errors:
+  - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched rollout set that differs from the pinned set.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A provider with no create-from-snapshot through the integration is not measured.
+  - A workload that does not replay on that provider.
+  - An error shown not to be the provider's.
+source:
+  name: '{name:test.r2e-gym} RL trajectories (AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories) replayed
+    with {name:test.r2e-gym}''s tools'
+  version: dataset revision e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e; {name:test.r2e-gym} commit 9a3c2495ab69a3ca1e85f395c308bc6f72d4161f
+  ids:
+  - rollout set sha256:c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635
+  - 10 tasks (nine numpy, one coveragepy) with four rollouts each, ids <task>-run1 to <task>-run4
+  - 'tool sha256: file_editor d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596, search
+    45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c, execute_bash 01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32,
+    finish fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff'
+  licence: Unknown for the rollout dataset; Apache-2.0 for the {name:test.r2e-gym} harness and tools,
+    which remain reference-only.
+  venue_terms:
+  - '{name:test.r2e-gym}'
+execution:
+  mode: trace_replay
+  inference: false
+independence_answers:
+  fresh_sandbox:
+    status: exception
+    text: 'Each task uses five sandboxes: the first is created from the prepared image and snapshotted,
+      and four rollouts run in sandboxes restored from that snapshot. The task, not the sandbox, is the
+      sample, and nothing is shared across tasks.'
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: The task's image is prepared ahead and the snapshot is created in the trial, so each task meets
+      its own snapshot only. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

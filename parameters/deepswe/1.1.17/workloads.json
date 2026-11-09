@@ -1,0 +1,112 @@
+[
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "abs-stepped-slices",
+      "trial": "abs-stepped-slices__WkdQbBj"
+    },
+    "id": "abs-stepped-slices-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7d5m4ed35zfp7gyhx7wdahed82yw72-v1.1@sha256:3a4d47f5281269305343c83729836ac2f3172811aee72681e472a4196178eda1",
+    "label": "Claude Opus 5 high: abs-stepped-slices",
+    "version": "sha256:f087083622779b7b"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "actionlint-action-pinning-lint",
+      "trial": "actionlint-action-pinning-lint__a6gMP39"
+    },
+    "id": "actionlint-action-pinning-lint-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79dnvkvq8j9bs22ededmsc79823akj-v1.1@sha256:522a6e93a31656d03cc79474dafc5542bb27109051914d5566d7d29789c2a1a6",
+    "label": "Claude Opus 5 high: actionlint-action-pinning-lint",
+    "version": "sha256:c9ac5eeb44119973"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "adaptix-name-mapping-aliases",
+      "trial": "adaptix-name-mapping-aliases__QsGLDd8"
+    },
+    "id": "adaptix-name-mapping-aliases-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh73dq4n55jdxasppe6jjmth4183d47n-v1.1@sha256:528654670f3c591e6491fc6fa01a0b8905bc8dee1b0557c5e76231bcc206f8fe",
+    "label": "Claude Opus 5 high: adaptix-name-mapping-aliases",
+    "version": "sha256:b243205dd133f072"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "aiomonitor-task-snapshots-diff",
+      "trial": "aiomonitor-task-snapshots-diff__8j54cmk"
+    },
+    "id": "aiomonitor-task-snapshots-diff-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75rc2q0zhmsqwk7wewfwwtrx830v2n-v1.1@sha256:e0c8b4e4044d5831693b4f6a6da483b255a889b71376574fba9e3c93d36ceb7c",
+    "label": "Claude Opus 5 high: aiomonitor-task-snapshots-diff",
+    "version": "sha256:fd10d66865ffaa04"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "awilix-async-container-initialization",
+      "trial": "awilix-async-container-initializ__47C93q4"
+    },
+    "id": "awilix-async-container-initialization-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh70bg8gy4xks4eyh1s71ecmk9822p9c-v1.1@sha256:748294a8ece567691f0a628d03c3531024d9f5e1acd13d5c6dd1ecba490831e6",
+    "label": "Claude Opus 5 high: awilix-async-container-initialization",
+    "version": "sha256:92d25a2705014f38"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "cliffy-config-file-parsing",
+      "trial": "cliffy-config-file-parsing__4hZVvuS"
+    },
+    "id": "cliffy-config-file-parsing-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh72088pg9vkc6peacnkc35yy9832jff-v1.1@sha256:0a8dd8f1270ec4bb88efadad3021762e1d07274f686276c8a484d26a00bd91b5",
+    "label": "Claude Opus 5 high: cliffy-config-file-parsing",
+    "version": "sha256:0a6e9c510062295e"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "mobly-grouped-test-barriers",
+      "trial": "mobly-grouped-test-barriers__r7B3jQD"
+    },
+    "id": "mobly-grouped-test-barriers-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh74b2m0tjfn59vq8btqrj774s821570-v1.1@sha256:e7f48723e4bf9244cbe5206fdcb204456383c31f43c5a16da98efadda057998f",
+    "label": "Claude Opus 5 high: mobly-grouped-test-barriers",
+    "version": "sha256:0011df0d4fb7c5aa"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "tengo-callable-instance-isolation",
+      "trial": "tengo-callable-instance-isolatio__a3D7Hmk"
+    },
+    "id": "tengo-callable-instance-isolation-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7ajwvesks1d5kkpeqx7y79sd8238zn-v1.1@sha256:4ef42ab32e07164ff16f4af59da104016a605cf436c6fde1be8c68745740582f",
+    "label": "Claude Opus 5 high: tengo-callable-instance-isolation",
+    "version": "sha256:40979d853690854b"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "tengo-destructuring-bindings",
+      "trial": "tengo-destructuring-bindings__4mFguwj"
+    },
+    "id": "tengo-destructuring-bindings-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7ajwvesks1d5kkpeqx7y79sd8238zn-v1.1@sha256:4ef42ab32e07164ff16f4af59da104016a605cf436c6fde1be8c68745740582f",
+    "label": "Claude Opus 5 high: tengo-destructuring-bindings",
+    "version": "sha256:7532bd8041c72204"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-high",
+      "task": "yjs-map-conflict-detection",
+      "trial": "yjs-map-conflict-detection__UzpR3vW"
+    },
+    "id": "yjs-map-conflict-detection-claude-opus-5-high",
+    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fwz4nedevfex8ssk2p8xbt9836scp-v1.1@sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef",
+    "label": "Claude Opus 5 high: yjs-map-conflict-detection",
+    "version": "sha256:b2c2f515c2da49df"
+  }
+]

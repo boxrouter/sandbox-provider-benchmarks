@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/sbs/0.2/measurement.schema.json",
+  "title": "SBS measurement",
+  "description": "One raw observation. Allowlist only: no provider resource or request identifiers, no raw error text.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider", "methodology", "run_id", "trial", "timestamp", "region", "machine_config", "measurement", "value", "unit", "success", "exclusion_reason"],
+  "$defs": {
+    "requested_region": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "source"],
+          "properties": {
+            "value": {"type": "string", "minLength": 1},
+            "source": {"const": "recorded"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "source", "reason"],
+          "properties": {
+            "value": {"type": "null"},
+            "source": {"const": "unknown"},
+            "reason": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "observed_region": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "source"],
+          "properties": {
+            "value": {"type": "string", "minLength": 1},
+            "source": {"const": "measured"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "source", "reason"],
+          "properties": {
+            "value": {"type": "null"},
+            "source": {"const": "unknown"},
+            "reason": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    }
+  },
+  "properties": {
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "description": "Provider slug, as in the run manifest.",
+      "examples": ["e2b"]
+    },
+    "methodology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "description": "Methodology the observation belongs to.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+|[a-z0-9][a-z0-9-]*)$",
+          "description": "Methodology id.",
+          "examples": ["sandbox.create.sequential_tti"]
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
+          "description": "Methodology version.",
+          "examples": ["1.0.0"]
+        }
+      }
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "description": "Run the observation came from.",
+      "examples": ["2026-11-01-a"]
+    },
+    "trial": {
+      "type": "integer",
+      "minimum": 1,
+      "x-unit": "trial number",
+      "description": "1-based trial number within the run, provider and variant.",
+      "examples": [7]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "x-unit": "UTC",
+      "description": "UTC time the observation was taken.",
+      "examples": ["2026-11-01T09:12:03Z"]
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "observed"],
+      "description": "Requested placement and the provider's observed placement for this trial. An unknown observation has a reason.",
+      "properties": {
+        "requested": {"$ref": "#/$defs/requested_region"},
+        "observed": {"$ref": "#/$defs/observed_region"}
+      },
+      "examples": [{"requested": {"value": "us", "source": "recorded"}, "observed": {"value": null, "source": "unknown", "reason": "Core does not report the sandbox's region"}}]
+    },
+    "machine_config": {
+      "type": "string",
+      "description": "Id of the machine config in the run manifest.",
+      "examples": ["2x4"]
+    },
+    "variant": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Variant id of the methodology, where it has variants.",
+      "examples": ["python3"]
+    },
+    "sandbox_index": {
+      "type": "integer",
+      "minimum": 1,
+      "x-unit": "sandbox number",
+      "description": "1-based position of the sandbox within its trial, where a trial creates several.",
+      "examples": [1]
+    },
+    "measurement": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Name of the metric observed, as declared in the methodology.",
+      "examples": ["time_to_interactive"]
+    },
+    "value": {
+      "type": ["number", "null"],
+      "x-unit": "see `unit`",
+      "description": "Observed value, or null when the attempt produced none.",
+      "examples": [412.7]
+    },
+    "unit": {
+      "enum": ["ms", "s", "MIPS", "GB/s", "MB/s", "MiB/s", "links/s", "IOPS", "USD", "count", "percent", "ratio"],
+      "description": "Unit of the value.",
+      "examples": ["ms"]
+    },
+    "success": {
+      "type": "boolean",
+      "description": "Whether the attempt succeeded. A failure that is not excluded counts against the provider.",
+      "examples": [true]
+    },
+    "exclusion_reason": {
+      "oneOf": [
+        { "type": "null" },
+        { "enum": ["not_provider_failure", "benchmark_error", "does_not_replay", "external", "replaced_by_top_up", "not_in_comparison_set"] }
+      ],
+      "description": "Null, or the allowlisted reason this observation is left out of aggregates: `not_provider_failure` (error shown not to be the provider's), `benchmark_error` (the benchmark's own failure), `does_not_replay` (workload does not replay on that provider), `external` (setup step failed the same way on every provider), `replaced_by_top_up` (a later batch replaced it).",
+      "examples": [null]
+    },
+    "test_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Page test identity when several tests share one methodology."
+    },
+    "workload": {"type": "string", "description": "Workload or upstream trial identity only; never command or trajectory text."}
+  }
+}

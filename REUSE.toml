@@ -1,0 +1,89 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+version = 1
+
+[[annotations]]
+path = [
+  "NOTICE",
+  "methodology/**",
+  "parameters/*/*/protocol.json",
+  "parameters/*/*/workloads.json",
+  ".gitignore",
+  ".pre-commit-config.yaml",
+  "contracts/text/1.0.0.json",
+  "contracts/pre-template-ids.json",
+  "contracts/procedures/*.json",
+  "contracts/text/chart-bindings.json",
+  "Makefile",
+  "README.md",
+  "SECURITY.md",
+  "docs/fields.md",
+  "docs/operation-timing.md",
+  "docs/RUNBOOK.md",
+  "pyproject.toml",
+  "reference-tests/cpu/README.md",
+  "reference-tests/disk/README.md",
+  "reference-tests/disk/disk.fio",
+  "reference-tests/filesystem/README.md",
+  "reference-tests/memory/README.md",
+  "reference-tests/network/README.md",
+  "ruff.toml",
+  "schemas/*.schema.json",
+  "src/sandbox_benchmark_verifier/py.typed",
+  "tests/fixtures/reference-tests/cpu.txt",
+  "tests/fixtures/reference-tests/disk/rand_read.json",
+  "tests/fixtures/reference-tests/disk/rand_write.json",
+  "tests/fixtures/reference-tests/disk/seq_read.json",
+  "tests/fixtures/reference-tests/disk/seq_write.json",
+  "tests/fixtures/reference-tests/filesystem.yaml",
+  "tests/fixtures/reference-tests/memory.txt",
+  "tests/fixtures/reference-tests/network/git_clone.json",
+  "tests/fixtures/reference-tests/network/npm_ci.json",
+  "tests/fixtures/reference-tests/network/pip_install.json",
+  "tests/fixtures/shapes/pause_resume.json",
+  "tests/fixtures/shapes/snapshot.json",
+  "uv.lock",
+]
+SPDX-FileCopyrightText = "BoxRouter, Inc."
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "procedures/**"
+SPDX-FileCopyrightText = "BoxRouter, Inc."
+SPDX-License-Identifier = "LicenseRef-PolyForm-Shield-1.0.0"
+
+[[annotations]]
+path = [
+  "names/aliases.yaml",
+  "names/names.yaml",
+  "data/README.md",
+  "contracts/text/asked-vs-measured.json",
+  "contracts/text/drill-down-rows.json",
+  "contracts/text/fact-list.json",
+  "contracts/text/methodology-page.json",
+  "contracts/text/workload-subtitles.json",
+  "contracts/text/public-source-provenance.json",
+  "contracts/text/hover-templates.json",
+  "contracts/text/index-copy.json",
+  "contracts/text/shared-concepts.json",
+  "methodology/**",
+  "parameters/*/*/protocol.json",
+  "parameters/*/*/workloads.json",
+  "runs/README.md",
+  "traces/README.md",
+]
+SPDX-FileCopyrightText = "BoxRouter, Inc."
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = [
+  "parameters/package-registries/*/assets/axios-package.json",
+  "parameters/package-registries/*/assets/axios-package-lock.json",
+]
+SPDX-FileCopyrightText = "2014-present Matt Zabriskie & Collaborators"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "parameters/package-registries/*/assets/fastapi-requirements.txt"
+SPDX-FileCopyrightText = "2018 Sebastián Ramírez"
+SPDX-License-Identifier = "MIT"

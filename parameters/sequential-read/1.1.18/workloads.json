@@ -1,0 +1,46 @@
+[
+  {
+    "data": {
+      "cache_probe_bytes": 268435456,
+      "file_bytes": 1073741824,
+      "free_bytes": 2147483648,
+      "job_file": "disk.fio",
+      "job_file_sha256": "fd3213eb531c5908cd1dbd4d11db8c12312bcee2fe17e9b8571011b5ef89a4b7",
+      "min_interval_seconds": 59,
+      "min_zlib_ratio": 0.99,
+      "queue_depth": 64,
+      "ramp_seconds": 5,
+      "rows": {
+        "disk-rand-read-4k": {
+          "bs": "4k",
+          "rw": "randread",
+          "value": "iops"
+        },
+        "disk-rand-write-4k": {
+          "bs": "4k",
+          "rw": "randwrite",
+          "value": "iops"
+        },
+        "disk-seq-read-1m": {
+          "bs": "1m",
+          "rw": "read",
+          "value": "mib_s"
+        },
+        "disk-seq-write-1m": {
+          "bs": "1m",
+          "rw": "write",
+          "value": "mib_s"
+        }
+      },
+      "runtime_seconds": 60,
+      "tool": {
+        "asset": "fio-3.39-linux-x86_64-static",
+        "name": "fio",
+        "sha256": "4986f10f2072a20e1dd1b7c31311b14610b1174235410a11491167953e655ddb"
+      }
+    },
+    "id": "fio-1g",
+    "label": "fio 3.39, 1 GiB file, 64 requests in flight, direct I/O",
+    "version": "sha256:27fec8028fe46aaa"
+  }
+]

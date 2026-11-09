@@ -1,0 +1,122 @@
+[
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "atrx-vep-crispr__74e1bd18",
+      "task": "atrx-vep-crispr",
+      "trial": "b923504f-ed37-52a9-8824-65204c3dd97c"
+    },
+    "id": "atrx-vep-crispr-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:1e76f612b6879b0dad1f1049a2120198bb3014d8870668be3d19e798eec717fc",
+    "label": "Claude Opus 5.5 max: atrx-vep-crispr",
+    "version": "sha256:4081c5f6fc1a2fee"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "batched-eval-parity__dde40b66",
+      "task": "batched-eval-parity",
+      "trial": "9f962204-0adb-5a6a-9ff1-8b9dd1298e53"
+    },
+    "id": "batched-eval-parity-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:8b334892d29ab0ee056961c30b59379ce9623d836c863075361d02305e1ff34c",
+    "label": "Claude Opus 5.5 max: batched-eval-parity",
+    "version": "sha256:38ff6f387f13211b"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "cargo-flight-dispatch__b3c3ecfc",
+      "task": "cargo-flight-dispatch",
+      "trial": "a779bfb4-5fb9-598e-93cf-04dea7b0caaa"
+    },
+    "id": "cargo-flight-dispatch-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:772bcd008202f408496047001090076cb5809346790b411c60da0d215dbce36c",
+    "label": "Claude Opus 5.5 max: cargo-flight-dispatch",
+    "version": "sha256:0279456228d16c4f"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "coq-block-bound__3df2da97",
+      "task": "coq-block-bound",
+      "trial": "328c7ba3-3253-5bbf-8233-96cd89f8d42d"
+    },
+    "id": "coq-block-bound-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:f10e0825aa3643e7f4cc32bb7754d9195e510a8d0930f9fddeecb8796c3056ab",
+    "label": "Claude Opus 5.5 max: coq-block-bound",
+    "version": "sha256:8e260d50ea2272a1"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "freecad-impeller__9fef4a05",
+      "task": "freecad-impeller",
+      "trial": "da58e066-b46f-54c8-957c-6103353f0a5a"
+    },
+    "id": "freecad-impeller-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:95d3cfc8c2460604873a9c361ba54ba808527d24449e3f2360da93e69452a043",
+    "label": "Claude Opus 5.5 max: freecad-impeller",
+    "version": "sha256:81da0cda03b9e389"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "glycan-ms2-elucidation__edadc3d2",
+      "task": "glycan-ms2-elucidation",
+      "trial": "af7aa536-9d3e-5c1b-bce1-9d4445113667"
+    },
+    "id": "glycan-ms2-elucidation-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:303ddc33be1b2ec7590b6675a1a6bc1e38db32232a4a6e77504f18a157444a83",
+    "label": "Claude Opus 5.5 max: glycan-ms2-elucidation",
+    "version": "sha256:20a043337cab6bb6"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "mvcc-lsm-compaction__7fa81c3f",
+      "task": "mvcc-lsm-compaction",
+      "trial": "ea4e968d-610b-59b0-89b5-6829281acfd6"
+    },
+    "id": "mvcc-lsm-compaction-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:8ee365efea951719622c523c63fcfc3faf4db24637972c55ac178f6f282359aa",
+    "label": "Claude Opus 5.5 max: mvcc-lsm-compaction",
+    "version": "sha256:361b6836aca57709"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "production-planning__bfef2fb5",
+      "task": "production-planning",
+      "trial": "7b950c6c-f843-531a-b21f-e1894e743425"
+    },
+    "id": "production-planning-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:5230459f892d1cb4c688c3fa1d27e27a6edf5e457cf747be2344ea384236dc77",
+    "label": "Claude Opus 5.5 max: production-planning",
+    "version": "sha256:16147e8c24045876"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "roy-polymorph-cn__186d9ce5",
+      "task": "roy-polymorph-cn",
+      "trial": "f68b575a-97a8-5259-89b7-85fa519bebff"
+    },
+    "id": "roy-polymorph-cn-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:c278559ab707f790db9a0d5f4546d754e5389f7802d97c090ce2fbde3446e19f",
+    "label": "Claude Opus 5.5 max: roy-polymorph-cn",
+    "version": "sha256:3db5e36147b45670"
+  },
+  {
+    "data": {
+      "config": "claude-opus-5-5-max",
+      "name": "session-window-debug__44fefc00",
+      "task": "session-window-debug",
+      "trial": "ed8198cb-62b1-540f-a3dc-aff328da317b"
+    },
+    "id": "session-window-debug-claude-opus-5-5-max",
+    "image": "ghcr.io/sandbox-test-images/base-image@sha256:db0780f33f7a666f42fe5e5691b6af9ed9d60e9c26475754e3ca3b3cb4741e77",
+    "label": "Claude Opus 5.5 max: session-window-debug",
+    "version": "sha256:7a48cbfb711d7f57"
+  }
+]

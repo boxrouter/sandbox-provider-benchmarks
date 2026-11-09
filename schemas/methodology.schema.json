@@ -1,0 +1,1606 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/sbs/0.1/methodology.schema.json",
+  "title": "SBS methodology document",
+  "description": "One Sandbox Benchmark Spec (SBS) methodology: what a benchmark measures and how, with no run-specific region, date or provider. Runs, measurements and aggregates cite a methodology by id and version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "effective", "name", "category"],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/methodology_id",
+      "description": "Stable dotted identifier. Runs, measurements and aggregates cite it; it never changes when the document is edited.",
+      "examples": ["sandbox.create.sequential_tti"]
+    },
+    "version": {
+      "$ref": "#/$defs/semver",
+      "description": "Semantic version of this methodology. Any change to what is measured or how bumps it; results from different versions are never combined.",
+      "examples": ["1.0.0"]
+    },
+    "effective": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "x-unit": "UTC date",
+      "description": "Date (UTC, YYYY-MM-DD) from which this version applies.",
+      "examples": ["2026-10-25"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable name of the benchmark.",
+      "examples": ["Sequential time to interactive"]
+    },
+    "category": {
+      "enum": ["common", "index", "workload", "sandbox_operation", "machine_performance", "reliability"],
+      "description": "Where the benchmark sits in the methodology tree. `common` marks the shared document every other methodology inherits from.",
+      "examples": ["sandbox_operation"]
+    },
+    "headline": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "A short one-line label of what the headline value is, restating the description and metrics without adding claims. Pages draw it under a title with the metric's direction.",
+      "examples": ["Create to first command"]
+    },
+    "panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "quantities"],
+      "description": "What a machine test's panel says about the standard test it runs. The panel's title is generated from the tab's specification and the source name by the machine-panel-text rule; its subtitle is the Introduction.",
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "The test's command line in its shortest form that identifies the test, as the benchmark runs it; a value the owner already holds is a placeholder, such as the requested vCPU count.",
+          "examples": ["7zzs b -mmt1"]
+        },
+        "quantities": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "The measurable quantities the test reports, as a noun phrase that completes `benchmarks ...`.",
+          "examples": ["compression and decompression speed"]
+        }
+      }
+    },
+    "notes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["what_this_measures", "how_to_read"],
+      "description": "Short reader notes shown under the benchmark's chart, written from facts this document already states. Pages draw them as given and write no text of their own.",
+      "properties": {
+        "summary": {
+          "type": "string", "minLength": 1, "maxLength": 140,
+          "description": "One sentence for the benchmark panel's Description slot."
+        },
+        "how_it_is_measured": {
+          "type": "string", "minLength": 1, "maxLength": 300,
+          "description": "Provenance, timing span and clock text for the How It's Measured slot."
+        },
+        "cost_summary": {
+          "type": "string", "minLength": 1, "maxLength": 140,
+          "description": "One sentence for a cost view's Description slot."
+        },
+        "cost_how_to_read": {
+          "type": "string", "minLength": 1, "maxLength": 300,
+          "description": "How to read the cost view, including its statistic and unit."
+        },
+        "statistics": {
+          "type": "object", "additionalProperties": false,
+          "description": "Reader text for statistic tooltips on the common methodology. Optional.",
+          "properties": {
+            "median": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for the median statistic. Optional."},
+            "mean": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for the mean statistic. Optional."},
+            "p95": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for the p95 statistic. Optional."},
+            "tail_fallback": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for the tail fallback rule. Optional."},
+            "typical": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for the typical statistic. Optional."}
+          }
+        },
+        "stage_medians": {"type": "string", "minLength": 1, "maxLength": 300, "description": "Shared explanation of stage medians on stacked charts. Optional."},
+        "time_between_stages": {"type": "string", "minLength": 1, "maxLength": 300, "description": "Shared explanation of time between stages on stacked charts. Optional."},
+        "not_ranked": {
+          "type": "object", "additionalProperties": false,
+          "description": "Reasons shown when a provider is not ranked. Optional.",
+          "properties": {
+            "not_offered": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a capability the provider does not offer. Optional."},
+            "in_development": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a capability in development. Optional."},
+            "too_few_runs": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for too few successful runs. Optional."},
+            "failing_often": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a provider that fails often. Optional."},
+            "not_measured": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a result that was not measured. Optional."}
+          }
+        },
+        "what_this_measures": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400,
+          "description": "What the chart's number is, in one or two plain sentences.",
+          "examples": ["Time from the start of a sandbox create request until the first command returns successfully."]
+        },
+        "how_to_read": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "How to read the chart: the statistic shown, its unit and which direction is better.",
+          "examples": ["Each provider's median is shown in milliseconds. Lower is better."]
+        }
+      }
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What the benchmark measures and what a reader can decide from the result, in plain words.",
+      "examples": ["Time from asking for a new sandbox until its first command returns."]
+    },
+    "capability_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "declaration_path", "use"],
+      "description": "The public source of provider capability declarations and how the benchmark page uses them.",
+      "properties": {
+        "repository": { "type": "string", "format": "uri", "description": "SPS repository URL." },
+        "release": { "type": "string", "pattern": "^v\\d+\\.\\d+\\.\\d+$", "description": "Pinned SPS release; versions before sbs.common 1.0.14 carry one." },
+        "declaration_path": { "type": "string", "description": "Repository-relative declaration path pattern." },
+        "use": { "type": "string", "minLength": 1, "description": "How the benchmark page uses declarations." }
+      }
+    },
+    "status": {
+      "enum": ["active", "planned"],
+      "default": "active",
+      "description": "`planned` marks a benchmark the page lists as Coming Soon: the document records its definition so far, publishes no number, and may omit the procedure, timing, environment and statistics sections. Absent means active.",
+      "examples": ["planned"]
+    },
+    "composition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputs", "aggregation", "weighting", "inclusion"],
+      "description": "For an index: the benchmarks it combines and how. An index has no trials of its own; its value is computed from the aggregates of the cited benchmarks.",
+      "properties": {
+        "input_selection": {
+          "enum": ["latest_as_of_effective", "retrospective_exact"],
+          "default": "latest_as_of_effective",
+          "description": "How the exact immutable inputs below are selected. Omitted means the newest version in force on this index's effective date. retrospective_exact permits an older exact version only when it was already effective then and inherits the same sbs.common. This does not change the index's effective date, the input measurements, or compatibility."
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The complete exact input vector, cited by canonical id and immutable version.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "version", "quantity"],
+            "properties": {
+              "id": { "$ref": "#/$defs/methodology_id", "description": "Id of the input methodology.", "examples": ["workload.coding.deepswe"] },
+              "version": { "$ref": "#/$defs/semver", "description": "Version of the input methodology.", "examples": ["1.0.0"] },
+              "quantity": { "type": "string", "description": "The value taken from that benchmark's result, in plain words.", "examples": ["Typical time per trace."] }
+            }
+          }
+        },
+        "per_input_value": {
+          "type": "string",
+          "description": "How each input's per-provider value is formed before the inputs are combined.",
+          "examples": ["Geometric mean over the traces every provider completed of each trace's median time."]
+        },
+        "aggregation": {
+          "enum": ["geometric_mean", "arithmetic_mean"],
+          "description": "How the inputs' values are combined into the index.",
+          "examples": ["geometric_mean"]
+        },
+        "weighting": {
+          "type": "string",
+          "description": "Weight of each input.",
+          "examples": ["Equal weight per input; nothing is made relative to the best provider."]
+        },
+        "inclusion": {
+          "type": "string",
+          "description": "Which providers get an index value.",
+          "examples": ["Only providers with a value in every input."]
+        },
+        "not_displayed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["condition", "reason"],
+            "properties": {
+              "condition": { "type": "string", "description": "When a provider is not shown on the index." },
+              "reason": { "type": "string", "description": "The reason the page gives." }
+            }
+          },
+          "description": "Providers left off the index, and why."
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "inputs"],
+            "properties": {
+              "id": { "$ref": "#/$defs/snake_name", "description": "Scope id." },
+              "label": { "type": "string", "description": "Human-readable scope label." },
+              "inputs": { "type": "array", "items": { "$ref": "#/$defs/methodology_id" }, "description": "Ids of the inputs this scope combines." }
+            }
+          },
+          "description": "Subsets of the inputs combined by the same rule, each its own index."
+        },
+        "levels": {
+          "type": "array",
+          "minItems": 1,
+          "description": "For a score built from several levels of means: the parts the top level averages, each a section of the names table. The levels below a part are the names table's own tree under that section; each level is the arithmetic mean of the one below.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "section"],
+            "properties": {
+              "id": { "$ref": "#/$defs/snake_name", "description": "Part id." },
+              "label": { "type": "string", "description": "Human-readable part label." },
+              "section": { "type": "string", "description": "Id of the names-table section whose tree the part averages.", "examples": ["workloads"] },
+              "measure": { "enum": ["time", "cost"], "description": "The workload score the part takes, where the section's tests have both; absent where the tests have one measure." }
+            }
+          }
+        },
+        "display_levels": {
+          "type": "array",
+          "description": "Levels shown beside the parts that the top level does not average: each the arithmetic mean of the listed parts, null where one is null.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "mean_of"],
+            "properties": {
+              "id": { "$ref": "#/$defs/snake_name", "description": "Level id." },
+              "label": { "type": "string", "description": "Human-readable level label." },
+              "mean_of": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/snake_name" }, "description": "Ids of the parts it averages." }
+            }
+          }
+        },
+        "rank": {
+          "type": "string",
+          "description": "How providers are ranked on every level of a score tree."
+        },
+        "leaves": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "How the names table's tests become the score's leaves where a test is not a leaf of its own.",
+          "properties": {
+            "first_test_only": { "type": "array", "items": { "type": "string" }, "description": "Ids of tabs whose tests the page chooses among with a selector: only the first test, the panel's default, is a leaf." },
+            "summed": {
+              "type": "array",
+              "description": "Tests the page draws as one bar of added segments: one leaf, their medians added.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "tests"],
+                "properties": {
+                  "id": { "type": "string", "description": "Id of the names-table view that names the leaf." },
+                  "tests": { "type": "array", "minItems": 2, "items": { "type": "string" }, "description": "Ids of the names-table tests added." }
+                }
+              }
+            }
+          }
+        },
+        "plots": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "For a view that plots two indexes against each other: what each axis shows.",
+          "properties": {
+            "x": { "$ref": "#/$defs/methodology_ref", "description": "Index on the horizontal axis." },
+            "y": { "$ref": "#/$defs/methodology_ref", "description": "Index on the vertical axis." },
+            "note": { "type": "string", "description": "Further facts about the pairing." }
+          }
+        }
+      }
+    },
+    "inherits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "description": "The common methodology whose defaults (statistics, cost, failure policy, trial policy) apply wherever this document is silent.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/methodology_id",
+          "description": "Id of the inherited methodology.",
+          "examples": ["sbs.common"]
+        },
+        "version": {
+          "$ref": "#/$defs/semver",
+          "description": "Version of the inherited methodology.",
+          "examples": ["1.0.0"]
+        }
+      }
+    },
+    "independence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["principle", "rounds", "rules", "run_check"],
+      "description": "Common methodology only: the rules that keep one trial's result from depending on another trial, the independence check run on every run, and its thresholds fixed in advance.",
+      "properties": {
+        "principle": { "type": "string", "minLength": 1 },
+        "rounds": { "type": "integer", "minimum": 1, "description": "Rounds each pair's trials are spread over." },
+        "rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "rule"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+              "rule": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "run_check": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scope", "significance", "verdict", "checks"],
+          "properties": {
+            "scope": { "type": "string", "minLength": 1 },
+            "material_effect": { "type": "number", "exclusiveMinimum": 0, "description": "Version 1.0.7 only: one effect size for every check." },
+            "outliers": { "type": "object", "description": "Version 1.0.7 only: the outlier rule, stated beside the checks." },
+            "min_trials": { "type": "integer", "minimum": 1, "description": "Fewest successful trials a pair needs to be checked (from version 1.0.8)." },
+            "significance": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["test", "correction", "q", "across"],
+              "properties": {
+                "test": { "type": "string" },
+                "correction": { "enum": ["benjamini_hochberg"] },
+                "q": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+                "across": { "type": "string" }
+              }
+            },
+            "verdict": { "type": "string", "minLength": 1 },
+            "checks": {
+              "type": "array",
+              "minItems": 1,
+              "description": "Each check with its thresholds, fixed before any run. Thresholds are numbers, flags, lists of names or lists of number pairs.",
+              "items": {
+                "type": "object",
+                "required": ["id", "measures"],
+                "properties": {
+                  "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+                  "measures": { "type": "string", "minLength": 1 }
+                },
+                "additionalProperties": {
+                  "oneOf": [
+                    { "type": "number" },
+                    { "type": "boolean" },
+                    {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          { "type": "string" },
+                          { "type": "array", "items": { "type": "number" } }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "independence_answers": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "How the benchmark answers each rule of the inherited common methodology's `independence.rules`, keyed by rule id: it meets the rule, or it is an exception with its reason. The verifier fails a benchmark that leaves a rule unanswered.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "text"],
+        "properties": {
+          "status": { "enum": ["meets", "exception"] },
+          "text": { "type": "string", "minLength": 1, "description": "How the rule is met, or why the benchmark is an exception." }
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The values the benchmark produces, one entry each.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "unit", "direction"],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/snake_name",
+            "description": "Metric name. Measurements and aggregates refer to it.",
+            "examples": ["time_to_interactive"]
+          },
+          "unit": {
+            "$ref": "#/$defs/unit",
+            "description": "Unit of the metric's values.",
+            "examples": ["ms"]
+          },
+          "direction": {
+            "enum": ["lower_is_better", "higher_is_better"],
+            "description": "Which way is better; decides the worse-side tail.",
+            "examples": ["lower_is_better"]
+          },
+          "quantity": {
+            "type": "string", "minLength": 1,
+            "description": "Plain-word quantity used in a chart caption, such as time, rating or bandwidth."
+          },
+          "per": {
+            "type": ["string", "null"], "minLength": 1,
+            "description": "Unit of work used after per in a chart caption, such as trace, job, rollout, call or sandbox."
+          },
+          "phase": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["kind", "id"],
+            "properties": {
+              "kind": {"enum": ["stage", "phase"]},
+              "id": {"type": "string", "minLength": 1},
+              "parent": {"type": "string", "minLength": 1}
+            },
+            "description": "Optional reference to one source-owned stage or phase name."
+          },
+          "statistic": {
+            "type": "string", "minLength": 1,
+            "description": "Optional source statistic id when this metric uses a different statistic from the document."
+          },
+          "description": {
+            "type": "string",
+            "description": "What this metric is, in one sentence.",
+            "examples": ["Create request start to first command exit code returned."]
+          },
+          "formula": {
+            "type": "string",
+            "description": "How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`) or `latency(<record step>)`, joined by `+` and `-`, with `median(...)` over the sandboxes or runs of a trial.",
+            "examples": [
+              "median(latency(first-true)) + start"
+            ]
+          }
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the sandbox and its surroundings must be. Never names a date or provider; the sandbox's region is a run's, and only the job host's region is stated here.",
+      "properties": {
+        "size": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["vcpu", "memory_gib"],
+          "description": "Requested machine size.",
+          "properties": {
+            "vcpu": {
+              "type": "integer",
+              "minimum": 1,
+              "x-unit": "vCPU",
+              "description": "Requested virtual CPUs.",
+              "examples": [2]
+            },
+            "memory_gib": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "x-unit": "GiB",
+              "description": "Requested memory.",
+              "examples": [4]
+            }
+          }
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reference"],
+          "description": "Image every sandbox starts from.",
+          "properties": {
+            "reference": {
+              "type": "string",
+              "description": "Image reference pinned by digest, or `unknown`.",
+              "examples": ["ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b"]
+            },
+            "modification": {
+              "type": "string",
+              "description": "How the benchmark changes the image per trial, if it does.",
+              "examples": ["One small layer holding the trial id is appended and pushed, so each trial starts from an image the provider has not seen."]
+            }
+          }
+        },
+        "network": {
+          "type": "string",
+          "description": "Network requirements of the sandbox for this benchmark, or `unknown`.",
+          "examples": ["unknown"]
+        },
+        "region_policy": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "object", "additionalProperties": false, "required": ["selection"],
+              "properties": { "selection": { "const": "no_portable_region_request" } }
+            }
+          ],
+          "description": "Rule for choosing a region. The region of a particular run is recorded in the run manifest, not here.",
+          "examples": ["The provider's US region, never a narrower one."]
+        },
+        "job_host": {
+          "type": "string",
+          "description": "Where the benchmark's job host runs and what that means for every latency: the clocks run on it, so each operation time includes the network path between it and the provider's API. It names the job host's region, because that distance is part of every result.",
+          "examples": ["Every provider is timed from its own cloud job host in one named region; latency includes the network path to the provider's API."]
+        },
+        "network_path": {
+          "type": "string",
+          "description": "How a run measures that network path before a provider's chain starts: untimed, with no sandbox and no API call, recorded in the run manifest.",
+          "examples": ["The median time to open a TCP connection over 10 attempts to each API host of the provider."]
+        },
+        "lifetime_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "x-unit": "s",
+          "description": "Maximum lifetime the provider is asked to enforce on each sandbox.",
+          "examples": [300]
+        },
+        "capability_settings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          },
+          "description": "Settings the benchmark applies per capability gate, such as the access and ports a preview opens.",
+          "examples": [
+            {
+              "previews": {
+                "access": "public",
+                "ports": [
+                  8080
+                ]
+              }
+            }
+          ]
+        },
+        "connection_idle_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "x-unit": "s",
+          "description": "How long provider connections stay idle before a new handshake is needed, where the integration allows setting it.",
+          "examples": [300]
+        }
+      }
+    },
+    "clocks": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Which clock times what.",
+      "properties": {
+        "operation": {
+          "type": "string",
+          "description": "Clock for operation durations (create, destroy, command round trip).",
+          "examples": ["Monotonic clock of the job host."]
+        },
+        "command_runtime": {
+          "type": "string",
+          "description": "Clock for a command's own runtime.",
+          "examples": ["The sandbox's own clock, read around the command."]
+        }
+      }
+    },
+    "ready_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "retry_on", "interval_ms", "max_attempts", "attempt_timeout_seconds"],
+      "description": "Untimed wait that runs right after a create returns, before the trial uses the sandbox.",
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "Command sent until the sandbox answers.",
+          "examples": ["true"]
+        },
+        "retry_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Answers treated as not ready and retried; any other failure ends the trial.",
+          "examples": [["HTTP 502", "HTTP 503", "HTTP 504", "connection refused", "connection reset"]]
+        },
+        "interval_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "x-unit": "ms",
+          "description": "Pause after a not-ready answer returns before the next attempt.",
+          "examples": [100]
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "x-unit": "attempts",
+          "description": "Attempts before the trial fails as the provider's.",
+          "examples": [40]
+        },
+        "attempt_timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "x-unit": "s",
+          "description": "Timeout of one attempt.",
+          "examples": [30]
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Whether the time spent in the check is part of any published number.",
+          "examples": [false]
+        },
+        "skipped_by_benchmarks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/methodology_id" },
+          "description": "Methodology ids that do not run the check because their first command is the thing measured.",
+          "examples": [["sandbox.create.sequential_tti"]]
+        }
+      }
+    },
+    "procedure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "trials", "concurrency", "warm_cold_policy", "steps"],
+      "description": "How a trial runs.",
+      "properties": {
+        "sweep": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "parameter",
+            "name",
+            "unit",
+            "values"
+          ],
+          "description": "One declared varying dimension; workload records are generated from these values, never separate methodology definitions.",
+          "properties": {
+            "parameter": {
+              "$ref": "#/$defs/snake_name"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "unit": {
+              "$ref": "#/$defs/unit"
+            },
+            "values": {
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "image"
+                ],
+                "properties": {
+                  "value": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "image": {
+                    "type": "string",
+                    "pattern": "^[^\\s]+@sha256:[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "mode": {
+          "enum": ["sequential", "concurrent", "single"],
+          "description": "How the trial's sandboxes or commands are scheduled: one after another, all at once, or one sandbox with one pass.",
+          "examples": ["sequential"]
+        },
+        "trials": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "const": "unknown" }
+          ],
+          "x-unit": "trials",
+          "description": "Intended number of trials per provider and variant.",
+          "examples": [40]
+        },
+        "sandboxes_per_trial": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "const": "unknown" }
+          ],
+          "x-unit": "sandboxes",
+          "description": "Sandboxes one trial creates; a variant may override it.",
+          "examples": [10]
+        },
+        "concurrency": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["trials_in_parallel", "sandboxes_at_once"],
+          "description": "How much runs at the same time.",
+          "properties": {
+            "trials_in_parallel": {
+              "type": "integer",
+              "minimum": 1,
+              "x-unit": "trials",
+              "description": "Trials of one provider that run at the same time.",
+              "examples": [1]
+            },
+            "sandboxes_at_once": {
+              "oneOf": [
+                { "type": "integer", "minimum": 1 },
+                { "const": "variant" }
+              ],
+              "x-unit": "sandboxes",
+              "description": "Sandboxes alive at the same time within a trial; `variant` means the variant's own parameter sets it.",
+              "examples": [1]
+            }
+          }
+        },
+        "warm_cold_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["policy"],
+          "description": "What is warm and what is cold at each measurement, stated rather than removed.",
+          "properties": {
+            "policy": {
+              "type": "string",
+              "description": "Plain-words statement of the warm and cold conditions.",
+              "examples": ["The image is new for every trial, so sandbox 1 is cold; later sandboxes follow the previous one by seconds and may use warmer provider hosts."]
+            },
+            "cold": {
+              "type": "string",
+              "description": "Which measurements count as cold.",
+              "examples": ["Sandbox 1 of a trial."]
+            },
+            "warm": {
+              "type": "string",
+              "description": "Which measurements count as warm.",
+              "examples": ["Sandbox 10 of a trial."]
+            }
+          }
+        },
+        "shared_trial": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "with",
+            "version"
+          ],
+          "description": "Marks a document measured in the same trial as another (files list, write and read; CPU and memory; disk rows). The named owner holds the `parameters`; this document holds none.",
+          "properties": {
+            "with": {
+              "$ref": "#/$defs/methodology_id",
+              "description": "Id of the owning methodology."
+            },
+            "version": {
+              "$ref": "#/$defs/semver",
+              "description": "Version of the owning methodology."
+            }
+          }
+        },
+        "cadence": {
+          "type": "string",
+          "description": "When trials run: the public schedule, such as how often and at what times.",
+          "examples": [
+            "Every 6 hours."
+          ]
+        },
+        "variants": {
+          "type": "array",
+          "description": "Parameter sets the same procedure runs with. Results of different variants are kept apart.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": {
+                "anyOf": [{ "$ref": "#/$defs/snake_name" }, { "$ref": "#/$defs/record_id" }],
+                "description": "Variant id used in measurements and aggregates. Either a snake_name or a record_id (hyphenated), so it can equal the id a stored record carries.",
+                "examples": ["true", "spotify-player"]
+              },
+              "label": {
+                "type": "string",
+                "description": "Human-readable variant label.",
+                "examples": ["First command: true"]
+              },
+              "description": {
+                "type": "string", "minLength": 1, "maxLength": 160,
+                "description": "Tooltip text for this variant."
+              },
+              "notes": {
+                "type": "object", "additionalProperties": false,
+                "description": "Optional reader notes specific to a variant.",
+                "properties": {
+                  "summary": {"type": "string", "minLength": 1, "maxLength": 140, "description": "Description text for this variant. Optional."},
+                  "what_this_measures": {"type": "string", "minLength": 1, "maxLength": 300, "description": "What the chart value means for this variant. Optional."},
+                  "how_it_is_measured": {"type": "string", "minLength": 1, "maxLength": 300, "description": "Provenance, timing span and clock for this variant. Optional."},
+                  "how_to_read": {"type": "string", "minLength": 1, "maxLength": 300, "description": "How to read this variant result. Optional."}
+                }
+              },
+              "command": {
+                "type": "string",
+                "description": "Exact command text the variant runs, where it runs one.",
+                "examples": ["git --version"]
+              },
+              "parameters": {
+                "type": "object",
+                "description": "Variant parameters as name/value pairs, such as the number of sandboxes created at once.",
+                "examples": [{ "sandboxes": 20 }]
+              }
+            }
+          }
+        },
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The named parts of a trial a page shows apart, each covering one or more recorded steps.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "record_steps"],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/record_id",
+                "description": "Stage id: the slug of the stage name.",
+                "examples": ["create-from-snapshot"]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Stage name as a page shows it.",
+                "examples": ["Create from snapshot"]
+              },
+              "description": {
+                "type": "string",
+                "description": "What the stage covers, in plain words."
+              },
+              "record_steps": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "type": "string", "minLength": 1 },
+                "description": "Step ids stored records carry for the measurements this stage covers.",
+                "examples": [["restore"]]
+              }
+            }
+          }
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Ordered steps of one trial.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "action", "timer"],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/snake_name",
+                "description": "Step id.",
+                "examples": ["create"]
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable step name.",
+                "examples": ["Create"]
+              },
+              "operation": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The operation the step makes: a key of `contracts/operations.yaml`. Required for a benchmark added after `contracts/pre-template-ids.json`.",
+                "examples": ["snapshots.create"]
+              },
+              "action": {
+                "type": "string",
+                "description": "What happens in the step, in plain words.",
+                "examples": ["Ask the provider for a fresh sandbox from the trial's image."]
+              },
+              "timer": {
+                "oneOf": [
+                  { "type": "null" },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["start_event", "stop_event"],
+                    "properties": {
+                      "start_event": {
+                        "type": "string",
+                        "description": "Event that starts the step's timer. Versions before the hover system state the timer this way; later versions use `from`, `sent` and `until`.",
+                        "examples": ["The create request is dispatched."]
+                      },
+                      "stop_event": {
+                        "type": "string",
+                        "description": "Event that stops the step's timer.",
+                        "examples": ["The create call returns."]
+                      },
+                      "provider_notes": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "description": "Public boundary differences by provider slug, where a provider's own API moves the stop event. Provider names appear only as keys.",
+                        "examples": [
+                          {
+                            "vercel": "The stop event is observed by a 2 s poll."
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["from", "until"],
+                    "description": "The step's timer as three parts: the hover renders `Time from {from}, sent {sent}, until {until}.` and the method page renders the same parts.",
+                    "properties": {
+                      "from": {
+                        "type": "string",
+                        "description": "The request or call the timer starts at, as a noun phrase.",
+                        "examples": ["the pause request"]
+                      },
+                      "sent": {
+                        "type": "string",
+                        "description": "The state the request is sent in, as a clause that follows `sent`; leave it out when the request has no start state worth saying.",
+                        "examples": ["once the loaded data has settled for 60 s"]
+                      },
+                      "until": {
+                        "type": "string",
+                        "description": "The event that stops the timer, as a clause.",
+                        "examples": ["the provider reports the sandbox paused"]
+                      },
+                      "provider_notes": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "description": "Public boundary differences by provider slug, where a provider's own API moves the stop event. Provider names appear only as keys.",
+                        "examples": [
+                          {
+                            "vercel": "The stop event is observed by a 2 s poll."
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ],
+                "description": "Timer events of the step, or null for a step that is recorded or run but not timed."
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "x-unit": "s",
+                "description": "Longest the step may take before it fails.",
+                "examples": [300]
+              },
+              "repeats": {
+                "type": "boolean",
+                "description": "Whether the step is attempted more than once under a stated rule.",
+                "examples": [false]
+              },
+              "record_steps": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "#/$defs/record_id"
+                },
+                "description": "Step ids stored records carry for the measurements this step covers.",
+                "examples": [
+                  [
+                    "first-true"
+                  ]
+                ]
+              },
+              "in_sandboxes": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "description": "The 1-based sandboxes of a trial the step runs in; absent means every one.",
+                "examples": [
+                  [
+                    1
+                  ]
+                ]
+              },
+              "variants": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/snake_name"
+                    },
+                    {
+                      "$ref": "#/$defs/record_id"
+                    }
+                  ]
+                },
+                "description": "Variant ids the step applies to; absent means every variant.",
+                "examples": [
+                  [
+                    "spotify-player"
+                  ]
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "description": "The directory of exact workload parameters this methodology version pins: `workloads.json`, optionally `protocol.json` and `assets/`. A parameters directory belongs to one id and version and never changes once released.",
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^parameters/[a-z0-9][a-z0-9_.-]*/[^/]+/$",
+          "description": "Repository-relative directory, `parameters/<methodology id>/<version>/`.",
+          "examples": [
+            "parameters/workload.coding.deepswe/1.1.0/"
+          ]
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Tree digest of the directory: the SHA-256 of one line `<file sha256> <relative path>\\n` per file, files sorted by relative path in byte order. `sandbox-benchmark-verify validate` recomputes it.",
+          "examples": [
+            "0000000000000000000000000000000000000000000000000000000000000000"
+          ]
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Provider capabilities the benchmark needs, by SPS gate name. A provider without a required capability shows no number rather than a failure.",
+      "properties": {
+        "required": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Gates every provider must declare to be measured.",
+          "examples": [
+            [
+              "commands.run"
+            ]
+          ]
+        },
+        "optional": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          },
+          "description": "Gates that change the environment when present, each with the settings the benchmark applies.",
+          "examples": [
+            {
+              "pause_resume": {}
+            }
+          ]
+        }
+      }
+    },
+    "interpretation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How a reader should use the result.",
+      "properties": {
+        "what_to_do": {
+          "type": "string",
+          "description": "What a reader can decide or do with the result, in plain words."
+        },
+        "informs": {
+          "type": "string",
+          "description": "The decision or question the result informs."
+        },
+        "limits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What the result does not show."
+        },
+        "caveats": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Conditions that change how the result reads."
+        }
+      }
+    },
+    "validity_checks": {
+      "type": "array",
+      "description": "Checks that guard the benchmark against a result that looks valid and is not.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "threat",
+          "check"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/snake_name",
+            "description": "Check id; pages key their wording on it."
+          },
+          "threat": {
+            "type": "string",
+            "description": "What could make the number wrong."
+          },
+          "check": {
+            "type": "string",
+            "description": "What is verified, and what happens to a trial that fails it."
+          }
+        }
+      }
+    },
+    "timing_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "stop"],
+      "description": "Where the headline measurement starts and stops, in plain words.",
+      "properties": {
+        "start": {
+          "type": "string",
+          "description": "The event that starts the measurement.",
+          "examples": ["The create request for the sandbox is dispatched."]
+        },
+        "stop": {
+          "type": "string",
+          "description": "The event that stops the measurement.",
+          "examples": ["The first command's exit code has returned to the job host."]
+        }
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary"],
+      "description": "How raw measurements become published numbers.",
+      "properties": {
+        "primary": {
+          "enum": ["median", "mean", "p95", "p99", "p5", "slowest", "lowest", "geometric_mean", "arithmetic_mean", "success_rate"],
+          "description": "The number the benchmark leads with.",
+          "examples": ["median"]
+        },
+        "secondary": {
+          "type": "array",
+          "items": { "enum": ["median", "mean", "p95", "p99", "p5", "slowest", "lowest", "geometric_mean", "arithmetic_mean", "success_rate"] },
+          "uniqueItems": true,
+          "description": "Further numbers published beside the primary.",
+          "examples": [["mean"]]
+        },
+        "unit_statistic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default", "options"],
+          "description": "The statistic of each unit that a composite combines; the reader chooses one of the options.",
+          "properties": {
+            "default": {"enum": ["median", "mean", "p95"], "description": "The option used until the reader chooses another."},
+            "options": {
+              "type": "array",
+              "items": {"enum": ["median", "mean", "p95"]},
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "examples": [{"default": "median", "options": ["median", "mean", "p95"]}]
+        },
+        "missing_unit_penalty": {
+          "type": "number",
+          "exclusiveMinimum": 1,
+          "description": "Retired from time-index 1.1.17 and cost-index 1.1.15, which fill a missing unit with the slowest time (or highest cost) any provider had, with no factor. Earlier, immutable versions still carry it.",
+          "examples": [1.2]
+        },
+        "percentile_method": {
+          "type": "string",
+          "description": "How percentiles are taken from the sample.",
+          "examples": ["Nearest rank over successful trials; nothing trimmed."]
+        },
+        "combine_variants": {
+          "enum": [
+            "mean",
+            "median"
+          ],
+          "description": "How the primary statistic of each variant is combined into the benchmark's headline number; absent means variants are not combined.",
+          "examples": [
+            "mean"
+          ]
+        },
+        "tail": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The worse-side tail published beside the median. Omit when the benchmark publishes none.",
+          "properties": {
+            "worse_side_percentile": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 99,
+              "x-unit": "percentile",
+              "description": "Percentile used where lower is better; where higher is better its mirror (100 minus it) is used.",
+              "examples": [95]
+            },
+            "min_successes": {
+              "type": "integer",
+              "minimum": 1,
+              "x-unit": "successes",
+              "description": "Successes needed before the percentile is used; below it, the worst trial (slowest, or lowest) is shown instead.",
+              "examples": [20]
+            }
+          }
+        },
+        "interval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "if": { "properties": { "type": { "enum": ["bootstrap_percentile", "cluster_bootstrap_percentile"] } }, "required": ["type"] },
+          "then": { "required": ["confidence", "resamples"] },
+          "description": "Confidence interval published with the primary statistic.",
+          "properties": {
+            "type": {
+              "enum": ["bootstrap_percentile", "cluster_bootstrap_percentile", "wilson_score", "none"],
+              "description": "Interval method: percentile bootstrap over the run's successful trials, or over whole trials when the statistic pools several measurements from each (the cluster bootstrap: draw trials with replacement, recompute the statistic from the measurements of the drawn trials). The interval is read from the sorted resampled statistics at index cut × (resamples − 1), with cut (1 − confidence) / 2 for the lower bound and 1 − (1 − confidence) / 2 for the upper.",
+              "examples": ["bootstrap_percentile"]
+            },
+            "cluster": {
+              "type": "string",
+              "minLength": 1,
+              "description": "What a cluster bootstrap resamples whole: the unit that owns the pooled measurements.",
+              "examples": ["trial"]
+            },
+            "confidence": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1,
+              "x-unit": "fraction (0 to 1)",
+              "description": "Confidence level.",
+              "examples": [0.95]
+            },
+            "resamples": {
+              "type": "integer",
+              "minimum": 1,
+              "x-unit": "resamples",
+              "description": "Number of bootstrap resamples.",
+              "examples": [10000]
+            },
+            "seed": {
+              "type": "integer",
+              "description": "Random seed, so the interval is reproducible from the same measurements.",
+              "examples": [0]
+            },
+            "applies_to": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Statistics the interval is computed for.",
+              "examples": [["median"]]
+            }
+          }
+        },
+        "sample": {
+          "enum": ["trial", "pooled_calls"],
+          "description": "What the statistics are taken over: each trial's value (the default), or every call of every successful trial pooled together.",
+          "examples": ["pooled_calls"]
+        },
+        "scatter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sampling"],
+          "if": { "properties": { "sampling": { "const": "one_random_call_per_trial" } }, "required": ["sampling"] },
+          "then": { "required": ["seed"] },
+          "description": "Which points the Scatter view draws.",
+          "properties": {
+            "sampling": {
+              "enum": ["every_trial", "one_random_call_per_trial"],
+              "description": "Every trial's value, or one call chosen at random from each trial: random.Random(seed), the trials in run order, each trial's call index drawn with randrange over its successful calls in call order.",
+              "examples": ["every_trial"]
+            },
+            "seed": {
+              "type": "integer",
+              "description": "Random seed, so the same calls are drawn from the same measurements.",
+              "examples": [0]
+            }
+          }
+        },
+        "ranking": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "When a provider is ranked.",
+          "properties": {
+            "ranked": {
+              "type": "boolean",
+              "description": "Whether providers are ordered on the primary statistic.",
+              "examples": [true]
+            },
+            "min_successes": {
+              "oneOf": [
+                { "type": "integer", "minimum": 1 },
+                { "const": "unknown" }
+              ],
+              "x-unit": "successes",
+              "description": "Successes below which a provider is not ranked (\"too few runs yet\").",
+              "examples": [1]
+            },
+            "failing_often": {
+              "type": "string",
+              "description": "Rule that shows a provider but does not rank it for failing too often.",
+              "examples": ["At least two failures and more than 1 in 10 of successes plus provider failures; exclusions and the benchmark's own failures are left out."]
+            },
+            "requires_all_successful": {
+              "type": "boolean",
+              "description": "Whether the headline is defined only when every sandbox of a trial answered.",
+              "examples": [false]
+            }
+          }
+        }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method"],
+      "description": "How a cost, if any, is produced.",
+      "properties": {
+        "method": {
+          "enum": ["provider_reported_or_priced", "not_published", "not_applicable"],
+          "description": "Cost comes from the provider's own cost or usage records for the sandbox priced at list rates, or is not published for this benchmark. Where neither record exists the cost is unknown, never zero or a range.",
+          "examples": ["provider_reported_or_priced"]
+        },
+        "pricing_reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The public price source a priced cost uses.",
+          "properties": {
+            "repository": {
+              "type": "string",
+              "description": "Repository holding the price sheets.",
+              "examples": ["sandbox-provider-pricing"]
+            },
+            "document": {
+              "type": "string",
+              "description": "The released document that states the method for one sandbox's cost, for the price and rules versions a publication records.",
+              "examples": ["cost-method.json"]
+            },
+            "versions": {
+              "type": "string",
+              "description": "Where the versions that select that method are recorded.",
+              "examples": ["The price and rules versions recorded in the publication; they select each sandbox's method."]
+            },
+            "function": {
+              "type": "string",
+              "description": "Only in versions released before sbs.common 1.0.6: the function that turns usage into a cost.",
+              "examples": ["price()"]
+            },
+            "price_sheet_version": {
+              "type": "string",
+              "description": "Only in versions released before sbs.common 1.0.6: where the price-sheet version used is recorded.",
+              "examples": ["recorded in the run manifest"]
+            }
+          }
+        },
+        "billed_span": {
+          "type": "string",
+          "description": "Only in versions released before sbs.common 1.0.6, and no longer defined: the provider's records set the billed period, differently for each provider.",
+          "examples": ["From the create request to the confirmed destroy."]
+        },
+        "counted_sandboxes": {
+          "type": "string",
+          "description": "Which sandboxes count toward one unit's cost.",
+          "examples": ["A unit's cost is the sum of the costs of the sandboxes it created."]
+        },
+        "per_success": {
+          "type": "string",
+          "description": "How cost per success is formed.",
+          "examples": ["Cost of the successful attempts divided by their number; failed attempts' cost is left out."]
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Further facts about the cost.",
+          "examples": [["The provider may also charge for image preparation or short-lived image storage."]]
+        }
+      }
+    },
+    "failure_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeout_seconds", "provider_errors", "benchmark_errors", "exclusions"],
+      "description": "How a trial ends and who owns a failure.",
+      "properties": {
+        "timeout_seconds": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 1 },
+          "x-unit": "s",
+          "description": "Timeout in seconds per step id (or named span).",
+          "examples": [{ "create": 300, "first_command_from_create": 120 }]
+        },
+        "retries": {
+          "type": "string",
+          "description": "Retry policy of the benchmark itself.",
+          "examples": ["None; the first failed step ends the trial and the steps after it are not reached."]
+        },
+        "blockers": {
+          "type": "string",
+          "description": "Conditions that stop additional trials before the intended successful sample is reached."
+        },
+        "provider_errors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "What counts as the provider's failure. An uncertain owner counts against the provider.",
+          "examples": [["A create or transport error.", "A sandbox that never answers."]]
+        },
+        "benchmark_errors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "What counts as a failure of the benchmark itself rather than the provider.",
+          "examples": [["Output the benchmark cannot parse after a command exited 0."]]
+        },
+        "exclusions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "What is left out of a result. An excluded trial is kept in the data with its reason.",
+          "examples": [["A failure shown not to be the provider's."]]
+        },
+        "success": {
+          "type": "string",
+          "description": "What makes a trial succeed.",
+          "examples": ["Every check passes and every resource the trial created is confirmed deleted."]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "description": "The workload or tool the benchmark runs, where it comes from.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the workload or tool.",
+          "examples": ["7-Zip"]
+        },
+        "version": {
+          "type": "string",
+          "description": "Exact version or digest, or `unknown`.",
+          "examples": ["25.01"]
+        },
+        "dataset_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The release of the source's dataset the workload selects from, as its publisher names it.",
+          "examples": ["v1.1"]
+        },
+        "ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Identifiers that pin the exact bytes, such as asset names and SHA-256 hashes.",
+          "examples": [["7zzs-25.01-linux-x64-static sha256:5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422"]]
+        },
+        "licence": {
+          "type": "string",
+          "description": "Licence of the workload or tool, or `unknown`.",
+          "examples": ["LGPL-2.1-or-later"]
+        },
+        "venue_terms": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "description": "Workload source names checked for incorrect claims about where work runs.",
+          "examples": [[]]
+        },
+        "datasets": {
+          "type": "array",
+          "description": "Named workload datasets and their pinned source identifiers, version and redistribution licence.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "source", "version", "licence"],
+            "properties": {
+              "id": { "type": "string" },
+              "source": { "type": "string" },
+              "version": { "type": "string" },
+              "licence": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "inference"],
+      "description": "How the workload runs.",
+      "properties": {
+        "mode": {
+          "enum": ["trace_replay", "script"],
+          "description": "Whether the benchmark replays a recorded trace of operations or runs a script.",
+          "examples": ["script"]
+        },
+        "inference": {
+          "const": false,
+          "description": "Always false: no model is called; benchmarks measure the sandbox, not an agent."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "category": { "not": { "enum": ["common", "index"] } },
+          "status": { "not": { "const": "planned" } }
+        }
+      },
+      "then": {
+        "required": ["inherits", "metrics", "environment", "procedure", "timing_boundaries", "statistics", "cost", "failure_policy"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "category": { "const": "index" } },
+        "required": ["category"]
+      },
+      "then": {
+        "required": ["inherits", "metrics", "composition", "statistics", "cost"],
+        "not": { "required": ["procedure"] }
+      }
+    },
+    {
+      "if": {
+        "required": ["composition"],
+        "properties": {
+          "composition": { "required": ["input_selection"] }
+        }
+      },
+      "then": {
+        "required": ["category"],
+        "properties": { "category": { "const": "index" } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "planned" } },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["inherits", "failure_policy"]
+      }
+    }
+  ],
+  "$defs": {
+    "methodology_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "quantity"],
+      "properties": {
+        "id": { "$ref": "#/$defs/methodology_id" },
+        "version": { "$ref": "#/$defs/semver" },
+        "quantity": { "type": "string" }
+      }
+    },
+    "methodology_id": {
+      "type": "string",
+      "pattern": "^([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+|[a-z0-9][a-z0-9-]*)$",
+      "description": "A released dotted id, or a canonical id: the slug of the benchmark's name (lowercase letters, digits and hyphens)."
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Identifier written the way a stored record spells it: lowercase letters, digits and hyphens."
+    },
+    "snake_name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "unit": {
+      "enum": ["points", "ms", "s", "MIPS", "GB/s", "MB/s", "MiB/s", "links/s", "IOPS", "USD", "count", "percent", "ratio", "B", "KiB", "MiB", "GiB"]
+    }
+  }
+}

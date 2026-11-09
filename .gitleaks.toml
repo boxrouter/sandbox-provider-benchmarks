@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public image signing-key fingerprints identify verification keys, not private keys."
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)parameters/(deepswe|terminal-bench-4-0)/[^/]+/protocol\.json$''']
+regexTarget = "line"
+regexes = ['''^\s*"GPG_KEY": "[0-9A-Fa-f]{40}",?\s*$''']
+
+[[allowlists]]
+description = "The source commit pins a public repository revision, not an authentication credential."
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)reference-tests/network/run\.py$''']
+regexTarget = "match"
+regexes = ['''FASTAPI_COMMIT = "[0-9a-f]{40}"''']

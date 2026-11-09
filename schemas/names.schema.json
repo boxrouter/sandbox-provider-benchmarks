@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/benchmark-names-2.json",
+  "title": "Canonical benchmark names",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "names"],
+  "properties": {
+    "schema": {"const": "boxrouter.bench.names/2", "description": "Names table schema version.", "examples": ["boxrouter.bench.names/2"]},
+    "catalog_selection": {
+      "type": "object", "additionalProperties": false, "required": ["default_common"],
+      "properties": {
+        "default_common": {
+          "type": "object", "additionalProperties": false, "required": ["id", "version"],
+          "properties": {
+            "id": { "const": "sbs.common" },
+            "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+          }
+        },
+        "region_country_policy": {
+          "type": "object", "additionalProperties": false, "required": ["source", "countries"],
+          "properties": {
+            "source": {"$ref": "#/properties/catalog_selection/properties/default_common"},
+            "equivalents": {
+              "type": "array", "minItems": 1, "uniqueItems": true,
+              "items": {"$ref": "#/properties/catalog_selection/properties/default_common"}
+            },
+            "countries": {
+              "type": "array", "minItems": 1, "uniqueItems": true,
+              "items": {"type": "string", "pattern": "^[A-Z]{2}$"}
+            }
+          }
+        }
+      }
+    },
+    "all_variant_template": {"type": "string", "pattern": "\\{Units\\}"},
+    "names": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["row", "kind", "id", "name"],
+        "properties": {
+          "row": {"type": "integer", "minimum": 1},
+          "kind": {
+            "description": "Name row kind, including `hero` and `page`.",
+            "examples": ["hero"],
+            "enum": [
+              "section", "subsection", "index", "view", "tab", "test",
+              "variant", "job", "stage", "capability", "hero", "page",
+              "quantity", "phase", "per-unit", "statistic", "stage-line", "clock", "readout-line", "axis", "scope"
+            ]
+          },
+          "id": {"type": "string", "pattern": "^[a-z0-9]+([-_][a-z0-9]+)*$"},
+          "name": {"type": "string", "minLength": 1},
+          "status": {"enum": ["live", "coming_soon"]},
+          "shows_cost": {"const": false, "description": "On a section row: no test under it shows a cost anywhere (cost-scope). Absent means its tests may."},
+          "metric": {"$ref": "#/$defs/metric"},
+          "label": {"$ref": "#/$defs/label"},
+          "rejected_labels": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+          "parent": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "document": {"type": "string", "pattern": "^[a-z0-9_]+([-.][a-z0-9_]+)*$"},
+          "workload": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "page": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "common_section": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "short": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "gap": {"type": "string", "minLength": 1},
+          "intro": {"type": "string", "minLength": 1, "maxLength": 160, "description": "One-sentence introduction for a section or sub-section. Optional."},
+          "measure": {
+            "type": "string", "minLength": 1, "maxLength": 40,
+            "description": "The measure word a machine tab's panel title ends with, before the tool in parentheses. Optional.",
+            "examples": ["Speed"]
+          },
+          "subtitle": {
+            "type": "string", "minLength": 1, "maxLength": 160,
+            "description": "The subtitle of a combined view (a view row whose parent is not the overview): the panel draws it instead of one test's summary, then the direction. Required on such a view row. Optional elsewhere.",
+            "examples": ["Times repeated requests that read/write a fixed incompressible payload to a sandbox file."]
+          },
+          "unit": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "plural": {"type": "string", "minLength": 1, "maxLength": 40},
+          "numbered": {
+            "type": "string", "minLength": 3, "maxLength": 40, "pattern": "\\{n\\}",
+            "description": "A per-unit word with its number, the one string every numbered unit reads (legend, table, hover, drill); `{n}` is the number. Optional.",
+            "examples": ["Sandbox {n}"]
+          },
+          "reads_as": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "unit_description": {"type": "string", "minLength": 1, "maxLength": 120},
+          "sentence": {"type": "string", "minLength": 1, "maxLength": 40},
+          "presentation": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+              "panel": {"enum": ["sequential-start", "burst-start", "image-build", "pause-resume"]},
+              "cost": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["label", "divisor"],
+                "properties": {
+                  "label": {"type": "string", "minLength": 1, "maxLength": 40},
+                  "divisor": {"enum": [1, 1000]}
+                }
+              },
+              "own_time_total": {"const": true},
+              "capability": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+              "stage_labels": {"const": "names"}
+            }
+          },
+          "selector": {
+            "type": "object", "additionalProperties": false,
+            "description": "Selector label and selection mode for a test row. Optional.",
+            "required": ["mode"],
+            "properties": {
+              "label": {"type": "string", "minLength": 1, "maxLength": 40, "description": "Label before a test's variant or job selector. Optional.", "examples": ["Job"]},
+              "description": {"type": "string", "minLength": 1, "maxLength": 140},
+              "mode": {"enum": ["chooses", "narrows"], "description": "Whether a selector chooses what is shown or narrows what is averaged.", "examples": ["chooses"]},
+              "option": {"type": "string", "minLength": 1, "maxLength": 40},
+              "after": {"type": "string", "minLength": 1, "maxLength": 40},
+              "options": {
+                "type": "array",
+                "items": {"type": "string", "pattern": "^[a-z0-9]+([-_][a-z0-9]+)*$"},
+                "minItems": 1,
+                "uniqueItems": true
+              }
+            }
+          },
+          "summary": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Page summary. Optional."}
+        },
+        "allOf": [{
+          "if": {"properties": {"kind": {"const": "index"}}},
+          "then": {"properties": {"selector": {"properties": {"label": false, "after": false}}}},
+          "else": {"properties": {"selector": {"required": ["label"]}}}
+        }]
+      }
+    },
+    "display_name_history": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["kind", "id", "previous_names"], "properties": {"kind": {"type": "string"}, "id": {"type": "string"}, "previous_names": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}}}},
+    "metric_label_grammar": {"$ref": "#/$defs/metric_label_grammar"}
+  },
+  "$defs": {
+    "metric": {
+      "type": "object", "additionalProperties": false,
+      "required": ["document", "version", "name"],
+      "properties": {
+        "document": {"type": "string", "pattern": "^[a-z0-9_]+([-.][a-z0-9_]+)*$"},
+        "version": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1}
+      }
+    },
+    "label": {
+      "type": "object", "additionalProperties": false,
+      "required": ["form", "target"],
+      "properties": {
+        "form": {"enum": ["short", "long", "axis", "caption"]},
+        "target": {"enum": ["metric", "test", "index", "hero", "pricing-panel"]}
+      }
+    },
+    "metric_label_grammar": {
+      "type": "object", "additionalProperties": false,
+      "required": ["forms", "composition", "contexts", "quantities", "vocabulary_rules"],
+      "properties": {
+        "tokens": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "per_clause",
+            "unit_clause",
+            "directions"
+          ],
+          "properties": {
+            "per_clause": {
+              "type": "string",
+              "minLength": 1
+            },
+            "unitless_units": {
+              "type": "array",
+              "items": {"type": "string", "minLength": 1},
+              "uniqueItems": true
+            },
+            "unit_clause": {
+              "type": "string",
+              "minLength": 1
+            },
+            "directions": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "lower_is_better",
+                "higher_is_better"
+              ],
+              "properties": {
+                "lower_is_better": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "higher_is_better": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        "forms": {
+          "type": "object", "additionalProperties": false,
+          "required": ["short", "long", "axis", "caption"],
+          "properties": {
+            "short": {"$ref": "#/$defs/label_form"},
+            "long": {"$ref": "#/$defs/label_form"},
+            "axis": {"$ref": "#/$defs/label_form"},
+            "caption": {"$ref": "#/$defs/label_form"}
+          }
+        },
+        "composition": {
+          "type": "object",
+          "propertyNames": {"enum": ["per_clause", "unit_clause", "rate_denominators", "comparison", "capitalization", "no_runtime_titlecase", "typical", "median", "mean", "other_statistics"]},
+          "required": ["per_clause", "unit_clause", "rate_denominators", "comparison", "capitalization", "no_runtime_titlecase", "typical", "median", "mean", "other_statistics"],
+          "additionalProperties": {"type": "string", "minLength": 1}
+        },
+        "contexts": {
+          "type": "object",
+          "propertyNames": {"enum": ["metric-view-tab", "group-tab", "selected-test-row-and-title", "hero-or-standalone", "provider-column-or-card", "chart-axis", "chart-caption-or-rank-card-line", "details-reading", "pricing-panel"]},
+          "required": ["metric-view-tab", "group-tab", "selected-test-row-and-title", "hero-or-standalone", "provider-column-or-card", "chart-axis", "chart-caption-or-rank-card-line", "details-reading", "pricing-panel"],
+          "additionalProperties": {"$ref": "#/$defs/label_context"}
+        },
+        "quantities": {
+          "type": "object",
+          "propertyNames": {"enum": ["time", "cost", "rate", "bandwidth", "rating", "operations", "links", "latency", "time_score", "cost_score", "provider_score"]},
+          "required": ["time", "cost", "rate", "bandwidth", "rating", "operations", "links", "latency", "time_score", "cost_score", "provider_score"],
+          "additionalProperties": {"$ref": "#/$defs/quantity_rule"}
+        },
+        "vocabulary_rules": {
+          "type": "object",
+          "propertyNames": {"enum": ["scope", "prices", "legacy_rate", "startup", "no_fabrication"]},
+          "required": ["scope", "prices", "legacy_rate", "startup", "no_fabrication"],
+          "additionalProperties": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "label_form": {
+      "type": "object", "additionalProperties": false, "required": ["template", "use", "case"],
+      "properties": {
+        "template": {"type": "string", "minLength": 1},
+        "use": {"type": "string", "minLength": 1},
+        "case": {"enum": ["title", "sentence"]},
+        "comparison_template": {"type": "string", "minLength": 1},
+        "identity_override": {"type": "string", "minLength": 1},
+        "omit": {"type": "array", "items": {"type": "string"}},
+        "statistic": {"type": "string", "minLength": 1}
+      }
+    },
+    "label_context": {
+      "type": "object", "additionalProperties": false, "required": ["form"],
+      "properties": {
+        "form": {"enum": ["short", "long", "axis", "caption", "canonical-group-name"]},
+        "precondition": {"type": "string", "minLength": 1},
+        "target": {"type": "string", "minLength": 1},
+        "rule": {"type": "string", "minLength": 1}
+      }
+    },
+    "quantity_rule": {
+      "type": "object", "additionalProperties": false,
+      "required": ["applies_to", "name_ref"],
+      "properties": {
+        "applies_to": {"type": "string", "minLength": 1},
+        "name_ref": {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "id"],
+          "properties": {
+            "kind": {"enum": ["view", "quantity"]},
+            "id": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    }
+  }
+}

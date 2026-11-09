@@ -1,0 +1,27 @@
+
+7-Zip (z) 25.01 (x64) : Copyright (c) 1999-2025 Igor Pavlov : 2025-08-03
+ 64-bit locale=C.UTF-8 Threads:32 OPEN_MAX:1024, ASM
+
+ mt1
+Compiler:  ver:9.4.0 GCC 9.4.0 : SSE2
+Linux : 7.0.0-38-generic : #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2 : x86_64
+PageSize:4KB THP:madvise hwcap:2 hwcap2:2
+AMD Ryzen 9 7950X 16-Core Processor
+(A60F12)
+
+1T CPU Freq (MHz):  5270  5263  5275  5272  5247  5266  5276
+
+RAM size:  128005 MB,  # CPU hardware threads:  32
+RAM usage:    437 MB,  # Benchmark threads:      1
+
+                       Compressing  |                  Decompressing
+Dict     Speed Usage    R/U Rating  |      Speed Usage    R/U Rating
+         KiB/s     %   MIPS   MIPS  |      KiB/s     %   MIPS   MIPS
+
+22:       5491   100   5348   5342  |      85063    87   8357   7263
+23:       3546    94   3859   3613  |     123726   100  10720  10710
+24:       5413   100   5837   5820  |     124533   100  10954  10933
+25:       4759   100   5433   5434  |     112429   100  10008  10007
+----------------------------------  | ------------------------------
+Avr:      4802    98   5119   5053  |     111437    97  10010   9728
+Tot:              97   7564   7390

@@ -1,0 +1,293 @@
+id: sbs.common
+version: 1.0.17
+effective: '2026-11-07'
+name: Common methodology
+category: common
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1cb7f85ec988a9dcf66c47f953f8e7984d88c987fec964aa327afafb63cc9a0b
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider. Results are never aggregated across job-host regions; each job-host region is
+    its own series.
+  connection_idle_seconds: 300
+  job_host: Every provider is timed from its own cloud job host, the same kind of host for every provider,
+    in the AWS region its publication names (every trial's host record carries it as job_host). Each latency
+    includes the network path from the job host to the provider's API, which is part of the result and is
+    not the provider's own speed.
+  network_path: 'Before each provider''s chain starts the run measures that path, untimed and at no cost:
+    the median time to open a TCP connection over 10 attempts to each API host of the provider, with no
+    sandbox and no API call. It is kept in the run manifest with the job host''s name.'
+clocks:
+  operation: Monotonic clock of the job host, around each call.
+  command_runtime: The sandbox's own clock, read just before and after the command. Total time, runtime
+    and latency (total minus runtime) stay separate.
+ready_check:
+  command: 'true'
+  retry_on:
+  - HTTP 502
+  - HTTP 503
+  - HTTP 504
+  - connection refused
+  - connection reset
+  interval_ms: 100
+  max_attempts: 40
+  attempt_timeout_seconds: 30
+  published: false
+  skipped_by_benchmarks:
+  - sandbox.create.sequential_tti
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+    - cost_per_success
+  ranking:
+    ranked: true
+    min_successes: unknown
+    requires_all_successful: true
+cost:
+  method: provider_reported_or_priced
+  counted_sandboxes: A unit's cost is the sum of the costs of the sandboxes it created.
+  per_success: Cost of the successful attempts divided by their number, shown per success or per 1,000
+    successes; failed attempts' cost is not included.
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    document: cost-method.json
+    versions: The price and rules versions recorded in the publication; they select each sandbox's method.
+  notes:
+  - A unit with a sandbox whose cost is unknown has no cost; it is never zero and never a range.
+failure_policy:
+  timeout_seconds: {}
+  retries: The first failed step ends the trial. Run each workload and primitive benchmark until its intended
+    number of successful trials, re-running missed trials and failures of any owner within the run budget.
+    Independent trials may be topped up; interacting trials require a complete rerun.
+  success: Every benchmark-specific check passes and every resource the trial created is confirmed deleted.
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A failure whose owner is uncertain.
+  - Forty not-ready answers to the ready check, or any other failure of it.
+  benchmark_errors:
+  - A failure of the benchmark's own script, such as output it cannot parse after a command exited 0.
+  exclusions:
+  - Only successful trials enter public results and downloads. Keep unsuccessful attempts, ownership,
+    replacements and costs in private evidence for cleanup and diagnosis.
+  - Reliability is a separate future benchmark.
+  blockers: Stop when the same failure repeats on every attempt, when more re-runs than the intended number
+    of successes are needed, or when the run budget is exhausted. Show a blocked result as Not ranked
+    or Not displayed with its reason.
+capability_source:
+  repository: https://github.com/boxrouter/sandbox-provider-spec
+  declaration_path: providers/<provider>/declaration*.yaml
+  use: The benchmark page uses declarations to include tests whose required capabilities are declared
+    and exclude tests when a required capability is absent.
+independence:
+  principle: 'No trial''s result depends on another trial: not on what ran before it, what ran beside
+    it, what an earlier trial left behind, how busy the job host was, or how much of the account''s limits
+    other trials used. What every customer gets from the provider (image caches, host placement, warm
+    pools) stays in the result and is recorded, not removed.'
+  rounds: 4
+  rules:
+  - id: fresh_sandbox
+    rule: Every trial runs in its own fresh sandbox. Passes, calls or rows run inside one sandbox are
+      one sample, not several. A benchmark whose trial uses more than one sandbox states that as an exception.
+  - id: equal_concurrency
+    rule: Every provider runs at the same declared trials_in_parallel width, which must fit within the
+      host concurrency cap and the provider's documented concurrent sandbox limit. Rounds follow the
+      shuffled order below. A width change requires a new methodology version; it is never a runtime
+      flag. Where a provider documents a limit on how fast sandboxes may be created, the run spaces its
+      creates to that limit, outside every timed step; the spacing is the provider's own documented rule,
+      not a choice of ours, and the run manifest records it. A benchmark that runs fewer states why.
+  - id: shuffled_order
+    rule: The order of a provider's benchmarks is shuffled once per run, with the seed recorded in the
+      run manifest, and each pair's trials are spread over 4 rounds interleaved with the other benchmarks,
+      so a pair's trials come from several separate moments rather than one block.
+  - id: caches
+    rule: The provider's image caches stay on, because every customer gets them. Page and package caches
+      are avoided wherever a benchmark says so, and each benchmark states what is cold and what is warm.
+  - id: job_host
+    rule: Each provider's trials run from their own job host, so one provider's load cannot slow another's.
+      The job host's monotonic clock is the operation clock.
+  - id: shared_provider_hosts
+    rule: A trial may share provider hosts, disks and networks with the other trials of its own batch
+      that are in flight, and the number in flight is recorded for each trial. Trials never share a sandbox,
+      and a worker starts no new trial until the previous trial's resources are confirmed deleted.
+  - id: empty_account
+    rule: The benchmark account holds no live sandboxes other than the run's own. The run checks this
+      before each provider's chain and records the number of other live sandboxes at the start and end
+      of each batch.
+  - id: placement_facts
+    rule: 'Each trial records, untimed and outside the measured steps, where it ran: the CPU model and
+      count, the kernel, the device and file system behind the working directory, and any host or zone
+      identifier the provider exposes, together with the job host''s load over the trial''s window.'
+  - id: run_check
+    rule: Every run is checked before publication by the independence check below. Its thresholds are
+      fixed here, before any run, and a pair that fails stays out of the publication until its trials
+      are excluded under the outlier rule, the effect is explained in the record, or the pair is re-run.
+  - id: outliers
+    rule: A value is excluded as implausible only by the objective outlier and physical-limit checks below,
+      with its reason. An excluded trial stays in the data as excluded.
+  run_check:
+    scope: Each provider and benchmark pair, on each main metric, with one point per trial, the same checks
+      for every provider. A pair with fewer successful trials than min_trials is not checked and the report
+      says so; so is any check whose per-trial facts or round were not recorded.
+    min_trials: 15
+    significance:
+      test: Rank-based, two-sided.
+      correction: benjamini_hochberg
+      q: 0.05
+      across: 'One family: every finding that can fail (trend, first_round, round_start, lag1, overlap,
+        host_saturated and the clustering of a tier split), across every pair of the run. host_type makes
+        notes only and is corrected apart.'
+    verdict: A check fails a pair only when its effect passes the size stated for it and its corrected
+      q is under 0.05. A significant but smaller effect is reported and never fails. Each pair also reports
+      the smallest effect the checks could have found, at 80% power at the corrected level, so a pass
+      is never read as proof of independence. A failing pair stays out of the publication until its trials
+      are excluded with a recorded reason, the effect is explained in the record, or the pair is re-run.
+    checks:
+    - id: trend
+      measures: The fitted change of the value across the trial order, as a percentage of the pair's median.
+      min_effect_pct: 8.0
+    - id: first_round
+      measures: The trials of the pair's first round (round 0 of the run's rounds) against its later rounds.
+        A pair with no recorded round skips this check.
+      min_effect_pct: 15.0
+      min_each: 5
+    - id: round_start
+      measures: The first trials of each round, those that began before any trial of that round had ended
+        and so follow another benchmark's round, against the rest of the same round, each value taken
+        as a ratio to its round's median so a level that belongs to the round's moment is not compared.
+      min_effect_pct: 15.0
+      min_each: 5
+    - id: lag1
+      measures: The rank correlation of each trial's residual with the one before it, within a batch,
+        after taking each batch's level and a Theil-Sen trend out. It fails only where the effect, the
+        correlation times the series' robust spread, also reaches min_effect_pct.
+      min_abs_rho: 0.5
+      min_effect_pct: 8.0
+    - id: overlap
+      measures: Trials that ran beside other trials of the same batch against solo ones, inside each batch
+        and as ratios to the batch's median. Beside means a time-weighted mean of at least shared_min
+        other trials holding a sandbox over the trial's window; solo means at most solo_max. A batch with
+        only one kind says nothing.
+      min_effect_pct: 15.0
+      min_each: 5
+      solo_max: 0.1
+      shared_min: 1.0
+    - id: host_saturated
+      measures: Trials taken while the job host was saturated against the others. Saturated is CPU at
+        cpu_share of its limit or any throttling, memory pressure (some avg10) at or above mem_pressure_some_avg10
+        percent, or, where the host has no pressure files, available memory under mem_available_min_kib.
+        With at least min_each hot and cool trials the comparison decides; with too few of either to compare,
+        the pair fails when the saturated share is at least fail_share, and otherwise it is a note listing
+        the saturated trials.
+      min_effect_pct: 15.0
+      min_each: 5
+      cpu_share: 0.9
+      mem_pressure_some_avg10: 10.0
+      mem_available_min_kib: 262144
+      fail_share: 0.25
+    - id: host_type
+      measures: 'The median of trials grouped by recorded host type against the most common type, where
+        the common type holds at least min_base trials and the group at least min_each. A host-type effect
+        is placement, which every customer gets too: it is a note the page states and never fails (fails
+        is false).'
+      min_effect_pct: 20.0
+      min_each: 3
+      min_base: 5
+      fails: false
+    - id: tier_split
+      measures: 'Whether the values form two tiers: a group of at least min_group trials whose Ashman
+        D reaches the floor for its size (min_ashman_d_by_n: the last entry whose size is at or below
+        the group''s), with at least min_minority trials in the smaller tier. A split is reported as,
+        for example, 8 of 40 trials about 2 times, from note_ratio. It fails only when the ratio is at
+        least fail_ratio, the smaller tier has at least fail_min_minority trials and they cluster in time
+        (a runs test, corrected with the family above), because a split scattered through the run is placement.'
+      min_group: 8
+      min_ashman_d_by_n:
+      - - 8
+        - 6.3
+      - - 20
+        - 5.0
+      - - 40
+        - 4.2
+      - - 100
+        - 3.6
+      - - 200
+        - 3.4
+      min_minority: 3
+      note_ratio: 1.3
+      fail_ratio: 1.8
+      fail_min_minority: 5
+    - id: outliers
+      measures: 'Isolated values: at most max(1, max_share times the group size) lie beyond robust_z robust
+        sigmas of the median and at least min_ratio times away from it, in a group of at least min_group
+        trials. An isolated value on the better side of the median, where no sandbox could deliver it
+        (a cache hit, a failed probe), fails unless one of explained_by_flags in its own record explains
+        it; a slow spike is kept and reported. Where the metric''s steps include one of warm_pool_steps,
+        every trial uses a fresh image, so a faster value is the provider''s warm-pool behaviour and a
+        note unless a recorded fact in tie_facts ties it to an earlier trial of ours. A larger share is
+        a mode and is read as a tier split. A failing trial is excluded with that reason and stays in
+        the data as excluded.'
+      robust_z: 6.0
+      min_ratio: 2.0
+      min_group: 8
+      max_share: 0.05
+      warm_pool_steps:
+      - create
+      - build
+      tie_facts:
+      - sandbox_reused
+      - image_shared_with_earlier_trial
+      explained_by_flags:
+      - ceiling
+      - direct_cached
+    - id: cache_flags
+      measures: 'The benchmark''s own physical-limit and cache checks, recorded on each trial. They come
+        from a trial''s own data, not from another trial, so they are never failures: a check named in
+        state is stated on the page, and one named in note is reported only, when it fired in at least
+        min_share of a pair''s trials.'
+      state:
+      - ceiling
+      - direct_cached
+      note:
+      - cpu_bound
+      - throttled
+      min_share: 0.15
+notes:
+  summary: Timing, successful trials, statistics and cost are common; only composites fill an incomplete
+    unit with the slowest median any provider had.
+  what_this_measures: It sets the shared timing, trial-success, statistics, cost, and failure rules that
+    apply to every benchmark.
+  how_to_read: >-
+    Shared benchmark results use the median and worst-side tail; each benchmark states its units and
+    direction. Interactive subset sums are labelled derived views: per trial, sum selected sandboxes
+    only when all have values; report the statistic using the same estimators and tail floor with no interval.
+  statistics:
+    median: The nearest-rank 50th percentile of successful trials, with no values trimmed.
+    mean: The arithmetic mean of successful trials; no values are trimmed.
+    p95: For lower-is-better results, the nearest-rank 95th percentile of successful trials; no values
+      are trimmed.
+    tail_fallback: 'With fewer than 20 successes, the worst trial is shown instead: the slowest or the
+      lowest.'
+    typical: The typical time is the median across successful trials.
+  stage_medians: Each step and the total have separate medians, so the parts may not add up.
+  time_between_stages: Step means add to the total, apart from time between steps.
+  not_ranked:
+    not_offered: This option is not offered by the provider on its plan.
+    in_development: The benchmark is still in development for this provider.
+    too_few_runs: The workload is not ranked because it has not reached its declared number of successful
+      trials.
+    not_measured: No result was measured for this provider.

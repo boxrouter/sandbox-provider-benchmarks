@@ -1,0 +1,26 @@
+{
+  "deepswe": {
+    "source": "the {name:test.deepswe} {param:deepswe.1.1.22.source.dataset_version} raw data",
+    "set_clause": "a replay of commands from an agent's attempt to solve a repository task",
+    "set_sentence": "Each trace is a replay of commands from an agent's attempt to solve a repository task.",
+    "unit_sentence": "This trace is a replay of commands from an agent's attempt to solve the {label} task."
+  },
+  "terminal-bench-4-0": {
+    "source": "the {name:test.terminal-bench-4-0} public leaderboard",
+    "set_clause": "a replay of an agent's commands and file edits on a terminal task",
+    "set_sentence": "Each trace is a replay of commands and file edits from an agent's attempt to solve a terminal task.",
+    "unit_sentence": "This trace is a replay of commands and file edits from an agent's attempt to solve the {label} task."
+  },
+  "ci-jobs": {
+    "source": "open-source repositories' GitHub Actions workflows",
+    "set_clause": "a replay of one repository's CI steps from a cold start",
+    "set_sentence": "Each job is a replay of one repository's CI steps from a cold start.",
+    "unit_sentence": "This job is a replay of the {label} repository's CI steps from a cold start."
+  },
+  "r2e-gym": {
+    "source": "the {name:test.r2e-gym} raw data",
+    "set_clause": "a replay of {countword:r2e-gym.1.1.22.parameters.workload.rollouts} recorded rollouts from an agent's attempts at a repository task",
+    "set_sentence": "Each task is a replay of {countword:r2e-gym.1.1.22.parameters.workload.rollouts} recorded rollouts from an agent's attempts to solve a repository task.",
+    "unit_sentence": "This task is a replay of {countword:r2e-gym.1.1.22.parameters.workload.rollouts} recorded rollouts from an agent's attempts to solve the {label} task."
+  }
+}

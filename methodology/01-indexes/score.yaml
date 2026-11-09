@@ -1,0 +1,369 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+id: index.cost_score
+version: 1.0.8
+effective: '2026-11-08'
+name: '{name:quantity.cost-score}'
+category: index
+headline: '{name:hero.cost-score}'
+notes:
+  summary: '{param:content.index_copy.descriptions.cost_score}'
+  what_this_measures: '{param:content.index_copy.details.cost_score.what_this_measures}'
+  how_it_is_measured: '{param:content.index_copy.details.cost_score.how_it_is_measured}'
+  how_to_read: '{param:content.index_copy.details.cost_score.how_to_read}'
+  cost_summary: '{param:content.index_copy.description}'
+  cost_how_to_read: '{param:content.index_copy.details.cost_score.how_to_read}'
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: typical_cost_score
+  unit: points
+  direction: higher_is_better
+  description: Arithmetic mean over the combined workloads of each workload's cost score for the provider.
+  quantity: cost_score
+  per: provider
+composition:
+  inputs:
+  - id: deepswe
+    version: 1.1.22
+    quantity: Cost per trace
+  - id: terminal-bench-4-0
+    version: 1.1.19
+    quantity: Cost per trace
+  - id: github-actions
+    version: 1.1.16
+    quantity: Cost per job
+  per_input_value: 'A provider''s score for a workload is the arithmetic mean, over that workload''s units
+    (traces or jobs) that some provider completed on the unit statistic, of each unit''s score: 100 times
+    the best provider''s cost on the unit divided by this provider''s, or 0 when it has no result. A unit
+    without a result adds no points and stays in the denominator; nothing is substituted.'
+  aggregation: arithmetic_mean
+  weighting: Equal weight per workload; a workload a provider has no result on adds 0.
+  inclusion: Only providers that have a result of their own in at least one workload of the scope. A provider
+    with results but no provider-sourced cost in a workload has no cost score for it.
+  not_displayed:
+  - condition: At least one counted trial of the provider in a workload has no provider-sourced cost.
+    reason: The page names how many of the counted trials have no provider-sourced cost; the provider
+      has no cost, never a zero or a range.
+  - condition: A unit's cost on the chosen statistic is zero.
+    reason: A unit costs nothing, so the geometric mean is undefined and the provider has no cost.
+  - condition: No unit of a workload was completed by any measured provider.
+    reason: No unit was completed by any provider, so no workload cost exists.
+  - condition: A workload has no provider-sourced cost for the provider.
+    reason: The page gives "a workload has no provider-sourced cost for it".
+  scopes:
+  - id: execution
+    label: Execution (all three workloads)
+    inputs:
+    - deepswe
+    - terminal-bench-4-0
+    - github-actions
+  - id: coding
+    label: Coding ({name:test.deepswe}, {name:test.terminal-bench-4-0})
+    inputs:
+    - deepswe
+    - terminal-bench-4-0
+  - id: ci
+    label: '{name:test.ci-jobs}'
+    inputs:
+    - github-actions
+statistics:
+  primary: arithmetic_mean
+  percentile_method: The p95 set contains every unit completed by at least one measured provider, as for every unit statistic. For each provider's completed unit, use the exact inherited common's worse-side tail, with its worst successful value below that common's successful-trial floor. No separate scheduled-trial cutoff removes a completed unit from the set.
+  ranking:
+    ranked: true
+    failing_often: Not applied at the composite; each workload applies it to its own result.
+    requires_all_successful: false
+  unit_statistic:
+    default: median
+    options:
+    - median
+    - mean
+    - p95
+cost:
+  method: provider_reported_or_priced
+  counted_sandboxes: The composite takes each input workload's per-unit cost as given.
+  per_success: Each workload's per-unit cost is its cost on the unit statistic over the successful trials;
+    failed attempts' cost is not included.
+  notes:
+  - A cost comes from the provider's own cost or usage record priced at list rates. Without one the provider
+    has no cost on this composite; it is never zero and never a range.
+interpretation:
+  limits:
+  - Every counted trial must have an exact provider-reported or calculated cost.
+  - The composite excludes failed attempts from the successful-unit costs.
+
+
+---
+id: index.speed_score
+version: 1.0.8
+effective: '2026-11-08'
+name: '{name:quantity.time-score}'
+category: index
+headline: '{name:hero.time-score}'
+notes:
+  summary: '{param:content.index_copy.descriptions.time_score}'
+  what_this_measures: '{param:content.index_copy.details.time_score.what_this_measures}'
+  how_it_is_measured: '{param:content.index_copy.details.time_score.how_it_is_measured}'
+  how_to_read: '{param:content.index_copy.details.time_score.how_to_read}'
+  cost_summary: '{param:content.index_copy.description}'
+  cost_how_to_read: '{param:content.index_copy.details.time_score.how_to_read}'
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: typical_time_score
+  unit: points
+  direction: higher_is_better
+  description: Arithmetic mean over the combined workloads of each workload's time score for the provider.
+  quantity: time_score
+  per: provider
+composition:
+  inputs:
+  - id: deepswe
+    version: 1.1.22
+    quantity: Time per trace
+  - id: terminal-bench-4-0
+    version: 1.1.19
+    quantity: Time per trace
+  - id: github-actions
+    version: 1.1.16
+    quantity: Time per job
+  per_input_value: 'A provider''s score for a workload is the arithmetic mean, over that workload''s units
+    (traces or jobs) that some provider completed on the unit statistic, of each unit''s score: 100 times
+    the best provider''s time on the unit divided by this provider''s, or 0 when it has no result. A unit
+    without a result adds no points and stays in the denominator; nothing is substituted.'
+  aggregation: arithmetic_mean
+  weighting: Equal weight per workload; a workload a provider has no result on adds 0.
+  inclusion: Only providers that have a result of their own in at least one workload of the scope. The
+    composite applies no ranking floor or failing-often rule of its own.
+  not_displayed:
+  - condition: The provider has no result of its own in any workload of the scope, for example because
+      it was not measured there.
+    reason: The page lists the provider under "Not displayed" without a stated reason on this view; if
+      no provider qualifies it says that no provider has a result in any of the benchmarks in the composite.
+  - condition: No unit of a workload was completed by any measured provider.
+    reason: The workload has no time for any provider, so no provider has a composite value.
+  scopes:
+  - id: execution
+    label: Execution (all three workloads)
+    inputs:
+    - deepswe
+    - terminal-bench-4-0
+    - github-actions
+  - id: coding
+    label: Coding ({name:test.deepswe}, {name:test.terminal-bench-4-0})
+    inputs:
+    - deepswe
+    - terminal-bench-4-0
+  - id: ci
+    label: '{name:test.ci-jobs}'
+    inputs:
+    - github-actions
+statistics:
+  primary: arithmetic_mean
+  percentile_method: The p95 set contains every unit completed by at least one measured provider, as for every unit statistic. For each provider's completed unit, use the exact inherited common's worse-side tail, with its worst successful value below that common's successful-trial floor. No separate scheduled-trial cutoff removes a completed unit from the set.
+  ranking:
+    ranked: true
+    failing_often: Not applied at the composite; each workload applies it to its own result.
+    requires_all_successful: false
+  unit_statistic:
+    default: median
+    options:
+    - median
+    - mean
+    - p95
+cost:
+  method: not_applicable
+  notes:
+  - '{name:time-index} carries no cost; {name:cost-index} and {name:time-vs-cost} show it.'
+interpretation:
+  limits:
+  - The composite applies no extra ranking rule.
+  - The comparison retains the measurement boundaries of its workload inputs.
+
+
+---
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+id: index.provider_score
+version: 1.0.16
+effective: '2026-11-08'
+name: '{name:hero.provider-score}'
+category: index
+headline: '{name:hero.provider-score}'
+notes:
+  what_this_measures: '{param:content.index_copy.details.provider_score.what_this_measures_four_scores}'
+  how_it_is_measured: '{param:content.index_copy.details.provider_score.how_it_is_measured}'
+  how_to_read: '{param:content.index_copy.details.provider_score.how_to_read}'
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: provider_score
+  unit: points
+  direction: higher_is_better
+  description: One of the provider's four part scores, each an arithmetic mean of the level below it.
+  quantity: provider_score
+  per: provider
+composition:
+  inputs:
+  - id: deepswe
+    version: 1.1.22
+    quantity: '{name:quantity.time-score} and {name:quantity.cost-score} per trace'
+  - id: terminal-bench-4-0
+    version: 1.1.19
+    quantity: '{name:quantity.time-score} and {name:quantity.cost-score} per trace'
+  - id: r2e-gym
+    version: 1.1.22
+    quantity: '{name:quantity.time-score} and {name:quantity.cost-score} per task'
+  - id: github-actions
+    version: 1.1.16
+    quantity: '{name:quantity.time-score} and {name:quantity.cost-score} per job'
+  - id: sequential-tti
+    version: 1.2.18
+    quantity: Score on the test's default configuration
+  - id: burst-tti
+    version: 1.2.15
+    quantity: Score on the test's default configuration
+  - id: exec-latency-per-100-calls
+    version: 1.0.11
+    quantity: Score on the test's default configuration
+  - id: read-4kib
+    version: 1.1.13
+    quantity: Score on the test's default configuration
+  - id: write-4kib
+    version: 1.1.13
+    quantity: Score on the test's default configuration
+  - id: list
+    version: 1.1.13
+    quantity: Score on the test's default configuration
+  - id: read-4kib-2vcpu-8gib
+    version: 1.0.3
+    quantity: Score on the test's default configuration
+  - id: write-4kib-2vcpu-8gib
+    version: 1.0.3
+    quantity: Score on the test's default configuration
+  - id: list-2vcpu-8gib
+    version: 1.0.3
+    quantity: Score on the test's default configuration
+  - id: pause-resume
+    version: 1.2.16
+    quantity: Score on the test's default configuration
+  - id: delayed-resume
+    version: 1.2.16
+    quantity: Score on the test's default configuration
+  - id: snapshot-and-restore
+    version: 1.1.14
+    quantity: Score on the test's default configuration
+  - id: fork
+    version: 1.1.15
+    quantity: Score on the test's default configuration
+  - id: image-build-2vcpu-4gib
+    version: 1.2.14
+    quantity: Score on the test's default configuration
+  - id: previews
+    version: 1.1.14
+    quantity: Score on the test's default configuration
+  - id: reconnect
+    version: 1.1.13
+    quantity: Score on the test's default configuration
+  - id: 7-zip-1-thread
+    version: 1.1.18
+    quantity: Score on the test's default configuration
+  - id: stream-triad
+    version: 1.1.18
+    quantity: Score on the test's default configuration
+  - id: sequential-read
+    version: 1.1.18
+    quantity: Score on the test's default configuration
+  - id: sequential-write
+    version: 1.1.18
+    quantity: Score on the test's default configuration
+  - id: random-read
+    version: 1.1.17
+    quantity: Score on the test's default configuration
+  - id: random-write
+    version: 1.1.17
+    quantity: Score on the test's default configuration
+  - id: hard-links
+    version: 1.1.17
+    quantity: Score on the test's default configuration
+  - id: hard-links-2vcpu-8gib
+    version: 1.0.3
+    quantity: Score on the test's default configuration
+  - id: package-registries
+    version: 1.1.16
+    quantity: Score on the test's default configuration
+  per_input_value: 'A workload suite''s score is its time score or its cost score (the arithmetic mean
+    of its units'' scores). Exclude from the unit set for every provider any unit with a failed attempt
+    whose recorded owner is not the provider, unless a later successful rerun replaces that failure; an
+    unknown owner counts as provider-owned. A provider with no result on a remaining unit scores 0 there.
+    An operation or machine leaf''s score is 100 times the best provider''s value divided by this provider''s
+    where lower is better, or 100 times this provider''s value divided by the best provider''s where higher
+    is better. The leaf''s value is the test''s median in its default configuration: the variant the test
+    publishes as its default, else its first variant; where the bar has segments, its total; and, where
+    a step is switched off in the test''s default view, the total without that step.'
+  aggregation: arithmetic_mean
+  weighting: 'Equal weight at every level: a suite''s score is a mean of its units'' scores; a subsection''s
+    or tab''s, of its suites'' or leaves''; a part''s, of its subsections'' or tabs'' (the machine performance
+    part, of its tabs). Before averaging a workload-time or workload-cost level, omit any workload marked
+    Not offered for a provider from that level for every provider. A remaining child that some provider
+    has a score on and this provider has none counts 0. A child that no provider has a value on is left
+    out for every provider.'
+  inclusion: Every provider, at every level that has a child with a value for some provider.
+  not_displayed:
+  - condition: No child of a level has a value for any provider.
+    reason: The level has no score for any provider.
+  - condition: A cost score's unit lacks a provider-sourced cost for the provider.
+    reason: The provider has no cost score for the workload, as on the cost score.
+  levels:
+  - id: workload_time
+    label: '{name:quantity.workload-time}'
+    section: workloads
+    measure: time
+  - id: workload_cost
+    label: '{name:quantity.workload-cost}'
+    section: workloads
+    measure: cost
+  - id: sandbox_operations
+    label: '{name:quantity.sandbox-operations-score}'
+    section: sandbox-operations
+  - id: machine_performance
+    label: '{name:quantity.machine-performance-score}'
+    section: machine-performance
+  rank: 'Every level of the tree is ranked: providers are ordered by the level''s published score, higher
+    first, and tied providers share the better rank (1, 2, 2, 4). The count of providers is the number
+    with a score at that level; a provider with none has no rank.'
+  leaves:
+    first_test_only:
+    - cpu
+    - exec
+    summed:
+    - id: files-read-write
+      tests:
+      - read-4kib
+      - write-4kib
+statistics:
+  primary: arithmetic_mean
+  percentile_method: Not applicable; a leaf takes the median.
+  ranking:
+    ranked: true
+    failing_often: Not applied here; each test applies it to its own result.
+    requires_all_successful: false
+  unit_statistic:
+    default: median
+    options:
+    - median
+cost:
+  method: not_applicable
+  notes:
+  - The cost score, one of the four parts' inputs, carries the cost; the other parts carry none.
+interpretation:
+  limits:
+  - A workload marked Not offered for a provider remains on its own leaderboard with its reason and is
+    omitted from workload-time and workload-cost levels for every provider.
+  - Each leaf keeps the measurement boundaries of its test in the default configuration.

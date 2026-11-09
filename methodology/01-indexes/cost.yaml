@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+id: cost-index
+version: 1.1.27
+effective: '2026-11-08'
+name: '{name:cost-index}'
+category: index
+headline: Composite cost
+notes:
+  summary: '{param:content.index_copy.descriptions.cost}'
+  what_this_measures: '{param:content.index_copy.details.cost.what_this_measures}'
+  how_it_is_measured: '{param:content.index_copy.details.cost.how_it_is_measured}'
+  how_to_read: '{param:content.index_copy.details.cost.how_to_read}'
+  cost_summary: '{param:content.index_copy.description}'
+  cost_how_to_read: '{param:content.index_copy.details.cost.how_to_read}'
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: typical_cost
+  unit: USD
+  direction: lower_is_better
+  description: Geometric mean over the combined workloads of each workload's cost for the provider.
+  quantity: cost
+  per: provider
+composition:
+  inputs:
+  - id: deepswe
+    version: 1.1.22
+    quantity: Cost per trace
+  - id: terminal-bench-4-0
+    version: 1.1.19
+    quantity: Cost per trace
+  - id: github-actions
+    version: 1.1.16
+    quantity: Cost per job
+  per_input_value: >-
+    The geometric mean, over the units (traces or jobs) that some provider completed in that
+    workload, of each unit's cost on the unit statistic (the median unless the reader chooses the mean
+    or the 95th percentile) over its successful trials, taken only where every counted trial of the
+    provider has a provider-reported or calculated cost (an exact total: no estimate and no range).
+    If a unit has a failed attempt with an explicitly recorded owner other than the provider, omit
+    that unit for every provider unless a later successful rerun replaces the failure. Treat an
+    unknown owner as provider-owned. For each remaining unit a provider did not complete, use the
+    highest exact cost on the same statistic any provider had on it. The page uses each workload's
+    first listed variant as its overall result.
+  aggregation: geometric_mean
+  weighting: Equal weight per workload; nothing is made relative to the best provider and there is no
+    0-100 score.
+  inclusion: >-
+    Omit a workload from this scope for every provider if any provider's workload result is
+    marked Not offered for its required capability. Keep that workload on its own leaderboard, with
+    its Not offered status and reason. Among the remaining workloads, include only providers that
+    have results in at least one workload. A provider with no result for a remaining workload takes
+    the highest workload cost on the same statistic any provider had. A workload where it has results
+    but no provider-sourced cost is not substituted.
+  not_displayed:
+  - condition: At least one counted trial of the provider in a workload has no provider-sourced cost.
+    reason: The page names how many of the counted trials have no provider-sourced cost; the provider
+      has no cost, never a zero or a range.
+  - condition: A unit's cost on the chosen statistic is zero.
+    reason: A unit costs nothing, so the geometric mean is undefined and the provider has no cost.
+  - condition: No unit of a workload was completed by any measured provider.
+    reason: No unit was completed by any provider, so no workload cost exists.
+  - condition: A workload has no provider-sourced cost for the provider.
+    reason: The page gives "a workload has no provider-sourced cost for it".
+  scopes:
+  - id: execution
+    label: Execution (all three workloads)
+    inputs:
+    - deepswe
+    - terminal-bench-4-0
+    - github-actions
+  - id: coding
+    label: Coding ({name:test.deepswe}, {name:test.terminal-bench-4-0})
+    inputs:
+    - deepswe
+    - terminal-bench-4-0
+  - id: ci
+    label: '{name:test.ci-jobs}'
+    inputs:
+    - github-actions
+statistics:
+  primary: geometric_mean
+  percentile_method: The 95th percentile is the nearest rank over a unit's successful trials; the composite
+    is a single derived value per provider.
+  ranking:
+    ranked: true
+    failing_often: Not applied at the composite; each workload applies it to its own result.
+    requires_all_successful: false
+  unit_statistic:
+    default: median
+    options:
+    - median
+    - mean
+    - p95
+cost:
+  method: provider_reported_or_priced
+  counted_sandboxes: The composite takes each input workload's per-unit cost as given.
+  per_success: Each workload's per-unit cost is its cost on the unit statistic over the successful trials;
+    failed attempts' cost is not included.
+  notes:
+  - A cost comes from the provider's own cost or usage record priced at list rates. Without one the provider
+    has no cost on this composite; it is never zero and never a range.
+interpretation:
+  limits:
+  - Every counted trial must have an exact provider-reported or calculated cost.
+  - The composite excludes failed attempts from the successful-unit costs.

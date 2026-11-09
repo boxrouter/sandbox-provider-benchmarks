@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: CC-BY-4.0
+# Legacy entries are retained only while the converter removes them from reader text.
+# Never add an entry: fix the text. An entry for an item that no longer breaks its rule is an error.
+rules:
+  methodology-style.reuse-phrasing: []
+  methodology-style.say-once: []
+  methodology-style.introduction-sentence: []

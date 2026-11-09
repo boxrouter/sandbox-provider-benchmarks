@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+# Generated from the verified distribution; only visibility and [source] are owner-edited.
+procedures_public = true
+version = "1.0.4"
+distribution = "sandbox_benchmarks-1.0.4-py3-none-any.whl"
+distribution_sha256 = "a5ce22cf0f6d92a8986e69944cd30df041992e52a5112bb3d63a41cbf0c3f479"
+catalogue = "contracts/procedures/1.0.4.json"
+catalogue_sha256 = "83b15d59ecdf0d7973228364c0df86fa46527e9e6e7d3f0cf53192a231ea88a8"
+
+[source]
+repository = "https://github.com/boxrouter/sandbox-provider-benchmarks"
+root = "procedures"
+ref = "main"

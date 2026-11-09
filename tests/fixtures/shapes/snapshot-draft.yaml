@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+name: Fixture Snapshot
+notes:
+  summary: A sandbox creates a snapshot, a new sandbox starts from it and runs a first command.
+  what_this_measures: The result records snapshot creation, creation of a sandbox from that snapshot and the first
+    command in the new sandbox.
+  how_it_is_measured: A job-host monotonic clock times each snapshot, restore and first-command call from dispatch
+    until its result returns.
+  how_to_read: The median is shown in milliseconds; lower is better.
+  cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, divided by successful units.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+metrics:
+- name: snapshot_time
+  unit: ms
+  direction: lower_is_better
+  description: Time from snapshot request dispatch until the snapshot call returns.
+  quantity: time
+  per: sandbox
+interpretation:
+  informs: How long a sandbox takes to save as a snapshot and how long a new sandbox takes to start from it.
+  what_to_do: Compare the steps an agent takes to save a prepared environment and start again from it.
+validity_checks:
+- id: marker_read_back
+  threat: A snapshot that restores an empty sandbox would still look fast.
+  check: The marker file written before the snapshot is read back in the new sandbox; a missing or different marker
+    is the provider's failure.
+source:
+  name: fixed snapshot marker and standard runtime commands
+  version: '1'
+  licence: Apache-2.0
+failure_policy:
+  success: The snapshot and restore succeed, the first command exits 0 and the marker matches.
+  provider_errors:
+  - A snapshot, restore or command API failure, or a missing or changed marker.
+  benchmark_errors:
+  - A malformed timing record or benchmark-side workload failure.
+workloads:
+- id: marker
+  label: A standard sandbox with a marker file
+  data:
+    command: git --version
+    marker:
+      read: cat /workspace/snapshot/marker
+      text: fixture-snapshot-marker/v1
+      timeout_s: 30
+      write: mkdir -p /workspace/snapshot && printf %s fixture-snapshot-marker/v1 > /workspace/snapshot/marker
+    restores: 1
+    snapshots:
+      deletable: true
+      original_after: any
+steps:
+  marker:
+    action: Write the fixed marker file in the first sandbox before the snapshot.
+  marker-check:
+    action: Read back the marker in the new sandbox and check it matches.

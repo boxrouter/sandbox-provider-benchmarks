@@ -1,0 +1,3528 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: CC-BY-4.0
+schema: boxrouter.text-conventions/1
+version: 1
+editing:
+  source: conventions/text-conventions.yaml
+  reference: docs/reference/text-conventions.md
+slots:
+  title:
+    purpose: Identify the selected canonical subject.
+    form: canonical
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: Title
+    enabled: true
+    required: true
+    casing: title
+    order: 0
+  description:
+    purpose: State the measured boundary or counted outcome, without interpreting its result.
+    form: sentence
+    min_length: 8
+    max_length: 200
+    max_sentences: 2
+    name: Description
+    enabled: true
+    required: true
+    casing: sentence
+    order: 1
+    source: notes.introduction
+  caption:
+    purpose: Retired; direction is shown once at the end of the subtitle.
+    form: forbidden
+    min_length: 0
+    max_length: 0
+    max_sentences: 2
+    name: Caption
+    enabled: false
+    required: false
+    casing: preserve
+    order: 99
+  axis-title:
+    purpose: Name the actual display unit and quantity where the axis must stand alone; match plotted
+      tick scaling.
+    form: label
+    min_length: 1
+    max_length: 80
+    max_sentences: 1
+    name: Axis Title
+    enabled: true
+    required: true
+    casing: title
+    order: 2
+    generated: metric_label_grammar.forms.axis
+    quantity_owner: true
+  details.composite:
+    purpose: Say how the All view of a workload combines its units, as the first part of its Details.
+    form: sentence
+    min_length: 8
+    max_length: 300
+    max_sentences: 2
+    name: Details / Composite
+    enabled: true
+    required: false
+    casing: sentence
+    order: 4
+    heading: Composite
+    source: details.composite.sentence_source
+  details.setup:
+    purpose: Give provenance or fixed workload, timing boundaries and clock; derived indexes name inputs
+      and aggregation.
+    form: sentence
+    min_length: 8
+    max_length: 300
+    max_sentences: 2
+    name: Details / Setup
+    enabled: true
+    required: false
+    casing: sentence
+    order: 5
+    heading: Setup
+    source: notes.setup
+  details.trial-steps:
+    purpose: Say what one trial does, in order, after the setup.
+    form: sentence
+    min_length: 8
+    max_length: 400
+    max_sentences: 3
+    name: Details / Trial Steps
+    enabled: true
+    required: false
+    casing: sentence
+    order: 6
+    heading: Trial Steps
+    source: notes.trial_steps
+  details.limitations:
+    purpose: State one exclusion or constraint per item; the method page's Scope Limits and Caveats draw the same items.
+    form: sentence
+    min_length: 8
+    max_length: 240
+    max_sentences: 1
+    min_items: 0
+    max_items: 8
+    shown_items: 3
+    name: Details / Limitations
+    enabled: true
+    required: false
+    casing: sentence
+    order: 7
+    heading: Limitations
+    presentation: bullets
+    source: notes.limitations
+  method-reading:
+    purpose: Explain aggregation, source unit, direction and any chart-specific interpretation on the method page; the Details dropdown does not draw it.
+    form: sentence
+    min_length: 8
+    max_length: 300
+    max_sentences: 2
+    name: Method Reading
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.how_to_read
+  method-opening:
+    purpose: Open the method page; the short Description stays the subtitle.
+    form: sentence
+    min_length: 8
+    max_length: 1200
+    max_sentences: 6
+    name: Method Opening
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.opening
+  method-workload:
+    purpose: Name the upstream source, the units and variants selected, the pinned artifacts and the differences from an upstream run.
+    form: structured
+    min_length: 8
+    max_length: 4500
+    name: Method Workload
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.workload
+  method-procedure:
+    purpose: Give the trial's steps in order with its clocks, background execution, concurrency and cleanup.
+    form: structured
+    min_length: 8
+    max_length: 4500
+    name: Method Procedure
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.procedure
+  method-metrics:
+    purpose: Define the primary and secondary metrics, their clocks and the stage classification.
+    form: structured
+    min_length: 8
+    max_length: 3500
+    name: Method Metrics
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.metrics
+  method-calculation:
+    purpose: State how a composite or derived value is calculated from its inputs.
+    form: structured
+    min_length: 8
+    max_length: 3500
+    name: Method Calculation
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.calculation
+  method-failure-policy:
+    purpose: State the test's pass criteria, its failure and exclusion conditions and its diagnostic checks.
+    form: structured
+    min_length: 8
+    max_length: 3000
+    name: Method Failure Policy
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.failure_policy
+  method-statistics-rules:
+    purpose: State the test's statistical, tail and ranking rules, citing Common Methodology for the shared ones.
+    form: structured
+    min_length: 8
+    max_length: 4500
+    name: Method Statistics Rules
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.statistics_rules
+  method-independence:
+    purpose: State the trial independence rules, the run checks and the outlier gates; written on Common Methodology.
+    form: structured
+    min_length: 8
+    max_length: 4500
+    name: Method Independence
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: notes.independence
+  details.latest-result:
+    purpose: Retired; measured results are already present in the chart.
+    form: forbidden
+    min_length: 0
+    max_length: 0
+    max_sentences: 3
+    name: Details / Latest Result
+    enabled: false
+    required: false
+    casing: preserve
+    order: 99
+  details.sources:
+    purpose: Link the exact method and public source provenance.
+    form: link
+    min_length: 1
+    max_length: 240
+    max_sentences: 1
+    name: Details / Sources
+    enabled: true
+    required: false
+    casing: preserve
+    order: 8
+    heading: Sources
+    generated: record.source_url
+  page-summary:
+    purpose: State the page scope; also supplies its search description.
+    form: sentence
+    min_length: 8
+    max_length: 160
+    max_sentences: 1
+    name: Page Summary
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: names[kind=page].summary
+  section-intro:
+    purpose: State the common scope of the section before its controls.
+    form: sentence
+    min_length: 8
+    max_length: 160
+    max_sentences: 2
+    name: Section Intro
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    source: names[kind=section|subsection].intro
+  control-label:
+    purpose: Identify the selection dimension.
+    form: canonical
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: Control Label
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+  option-label:
+    purpose: Identify the selected variant, job or trace; when the choice is a shell command, name it by its command word, shown as code (for example, `true`), with the full command under it.
+    form: canonical
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: Option Label
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  legend-label:
+    purpose: Identify the plotted stage.
+    form: canonical
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: Legend Label
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  tooltip:
+    purpose: Explain the hovered stage, variant, statistic or capability.
+    form: sentence
+    min_length: 8
+    max_length: 140
+    max_sentences: 1
+    name: Tooltip
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    repeat_label: false
+    max_provider_mentions: 1
+    source: description
+  not-displayed:
+    purpose: List omitted provider identities with source-owned reasons.
+    form: label
+    min_length: 1
+    max_length: 500
+    max_sentences: 1
+    name: Not Displayed
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+    generated: publication+notes.not_ranked
+  empty-state:
+    purpose: State which required evidence is missing and how a result qualifies.
+    form: sentence
+    min_length: 8
+    max_length: 240
+    max_sentences: 2
+    name: Empty State
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    generated: statistics.ranking
+  status-line:
+    purpose: Show region and measurement date, without clock times.
+    form: label
+    min_length: 1
+    max_length: 160
+    max_sentences: 1
+    name: Status Line
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+    generated: publication
+    runtime_fields:
+    - region
+    - measurement_date
+  tab-label:
+    purpose: Identify a canonical group or test.
+    form: canonical
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: Tab Label
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  view-label:
+    purpose: Identify the metric view in a selected-test context.
+    form: canonical
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: View Label
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  section-heading:
+    purpose: Identify the canonical collection.
+    form: canonical
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: Section Heading
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  page-title:
+    purpose: Identify the page.
+    form: canonical
+    min_length: 1
+    max_length: 60
+    max_sentences: 1
+    name: Page Title
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  row-name:
+    purpose: Identify the benchmark in a provider row.
+    form: canonical
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: Row Name
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  column-header:
+    purpose: Identify the canonical compared metric or capability.
+    form: canonical
+    min_length: 1
+    max_length: 60
+    max_sentences: 1
+    name: Column Header
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  rank-card-line:
+    purpose: Explain the plotted rank statistic and direction.
+    form: label
+    min_length: 15
+    max_length: 15
+    max_sentences: 2
+    name: Rank Card Line
+    enabled: true
+    required: false
+    casing: sentence
+    order: 99
+    const: Lower is better
+    generated: metric_label_grammar.forms.caption
+  coming-soon:
+    purpose: Identify planned content.
+    form: chrome
+    min_length: 1
+    max_length: 40
+    max_sentences: 1
+    name: Coming Soon
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  chart.bar-row:
+    purpose: Identify the provider and plotted result; ranking status appears only in the chart footer.
+    form: label
+    min_length: 1
+    max_length: 2000
+    name: Chart / Bar Row
+    enabled: true
+    required: false
+    casing: title
+    order: 99
+  chart.status-footer:
+    purpose: Name each provider's ranking or display status once below the chart, in a short clause; the reason is in the provider's drill-down.
+    form: label
+    min_length: 1
+    max_length: 1000
+    name: Chart / Status Footer
+    enabled: true
+    required: false
+    casing: preserve
+    order: 99
+    generated: ranking_status_footer
+  chart.provider-notes:
+    purpose: Name the providers that have a note of their own (a billing rule) once below the chart; the note is in each provider's drill-down.
+    form: label
+    min_length: 1
+    max_length: 1000
+    name: Chart / Provider Notes
+    enabled: true
+    required: false
+    casing: preserve
+    order: 99
+    generated: ranking_status_footer
+  subtitle:
+    purpose: Identify the headline boundary and direction without repeating the title.
+    form: label
+    min_length: 19
+    max_length: 90
+    max_sentences: 1
+    name: Hero Subtitle
+    enabled: true
+    required: true
+    casing: preserve
+    order: 99
+    generated: headline+metric.direction
+  chart:
+    purpose: Contain rendered chart markup or an explicit no-data state.
+    form: structured
+    min_length: 0
+    max_length: 100000
+    name: Chart
+    enabled: true
+    required: false
+    casing: preserve
+    order: 99
+  axis-direction:
+    name: Axis Direction
+    purpose: Retired; direction is shown once at the end of the subtitle, never on an axis.
+    form: forbidden
+    casing: preserve
+    min_length: 0
+    max_length: 0
+    max_sentences: 1
+    required: false
+    enabled: false
+    order: 99
+  methodology-reader-entry:
+    name: Methodology Reader Entry
+    purpose: Define one shared concept with a name and source badge, and a short meaning and worked example
+      where its section has no rule text of its own.
+    form: structured
+    casing: sentence
+    min_length: 1
+    max_length: 280
+    required: true
+    enabled: true
+    order: 99
+    max_semicolons: 1
+    required_fields:
+    - name
+    - source
+    source_badges:
+    - Measured
+    - Calculated
+    - Published
+    - Recorded
+  hero-description:
+    name: Hero Description
+    purpose: Give the short owner-authored hero boundary, independently of the long panel Description.
+    form: label
+    casing: preserve
+    min_length: 1
+    max_length: 60
+    max_sentences: 1
+    required: true
+    enabled: true
+    order: 99
+panel:
+  slot_order:
+  - title
+  - description
+  - axis-title
+  - details.composite
+  - details.setup
+  - details.trial-steps
+  - details.limitations
+  - details.sources
+  required_slots:
+  - title
+  - description
+  - axis-title
+  optional_slots:
+  - details.composite
+  - details.setup
+  - details.trial-steps
+  - details.limitations
+  - details.sources
+  forbidden_slots:
+  - caption
+  - axis-direction
+  - details.latest-result
+details:
+  part_order:
+  - details.composite
+  - details.setup
+  - details.trial-steps
+  - details.limitations
+  - details.sources
+  show_only_when_filled: true
+  full_method:
+    slot: details.sources
+    label: Full Method
+    href_source: owner.public_method_url
+    required: true
+  # A workload panel's Details pane on a composite view (All Traces, All Jobs, All Tasks): rule details-pane-summarizes.
+  composite:
+    heading: Composite
+    sentence_source: reader.common.blocks.common.all_view_aggregation
+    term: workload value
+    term_href: /benchmarks/methodology/sbs.common#workload-value
+    unit_headings:
+      details.setup: Per-{Unit} Setup
+      details.trial-steps: Per-{Unit} Steps
+      timed-part: Per-{Unit} Timed Part
+    # The overview composite panels (Composite Workload Time, Cost, Time vs Cost): {Unit} is the index's counted unit, workload;
+    # the calculation text stands under Composite.
+    overview_headings:
+      details.setup: Per-{Unit} Setup
+      details.trial-steps: Composite
+  # The line after the timed part; {section} is the methodology page's Measurement section, linked.
+  all_steps: 'All {n} trial steps: {section}'
+axis:
+  max_direction_occurrences: 0
+# A table column whose values share a unit names it once in its header, and its cells hold the number only (web rule units-in-header;
+table:
+  unit_header: "{name} ({unit})"
+subtitle:
+  template: '{description} {direction}'
+  separator: ' '
+  placement: end-of-subtitle
+  max_direction_occurrences: 1
+  directions:
+    lower_is_better: Lower is better.
+    higher_is_better: Higher is better.
+  time_vs_cost_direction: Faster and cheaper is better.
+  # The last line of a chart without segments (one bar per provider): the metric's label in sentence case, then the direction sentence with its first letter lowercased ("Time per job, lower is better."). Web fills it; it types neither.
+  measure_template: '{measure}, {direction}'
+  frontier_template: 'Displays each provider’s {name} {time} and {name} {cost} on a frontier graph.'
+  score_composite_template: 'Averages a {measure} score over the workloads'' scores.'
+  score_set_template: 'Averages a {measure} score over each {unit}. {set_sentence}'
+  score_frontier_template: 'A time score and a cost score are each averaged from each {unit}. {set_sentence}'
+  score_frontier_composite_template: 'A time score and a cost score are each averaged from workloads'' scores.'
+  # A workload's words are contracts/text/workload-subtitles.json's, by test id: source, set_clause, set_sentence and unit_sentence (whose {label} is the selected unit's label); {unit} is the names table's unit word.
+  workload_unit_template: '{Measure} per {unit}. {unit_sentence}'
+  workload_set_template: 'Aggregates a {measure} statistic over each {unit}, {set_clause} (selected from {source}).'
+title:
+  # Every panel's title. A bracketed group is dropped when any part inside it is empty.
+  template: '{category}[ {unit}] {measure}[ ({tool})][{separator}{variant}]'
+  # The name of the category unit of a workload's All view: the statistic whose name it is (Composite).
+  composite_unit_statistic: typical
+  # A variant that is the full name of a names row of one of these kinds (with no selector option) names the panel by itself: the title is that name and the measure.
+  whole_name_kinds:
+  - test
+  - view
+  measure_in_name:
+  - sequential-tti
+  - burst-tti
+inline_code:
+  mark: '`'
+vocabulary:
+  overview: composite
+banned_patterns:
+  internal_ids:
+  - \b[a-z][a-z0-9]*_[a-z0-9_]+\b
+  - \b[a-z][a-z0-9-]*/[0-9]+\b(?![-.]?\w)
+  - \bv?\d+\.\d+\.\d+\b
+  - \b(?:stat-nearest-rank|cpu-7zip-mt|trial-cost)\b
+  unresolved_placeholders: &id003
+  - \{[^{}]+\}
+  raw_values:
+  - <[a-z0-9]+(?:_[a-z0-9]+)+>
+  - \b[a-z0-9]+(?:-[a-z0-9]+){3,}\b
+  - '[.!?]\s*\('
+  page_describing:
+  - (?i)\b(?:the|this) (?:page(?! cache)|UI|interface)\b
+  - (?i)\b(?:greyed|grayed)\b
+  - (?i)\bplanned definition\b
+  - (?i)\bnot a shipped\b
+  - (?i)\bcoming soon tag\b
+allowed_literals:
+- sha_ni
+- avx2
+- avx512f
+- apply_patch
+- /root/run_tests.sh
+- 'sh -c <command>'
+- 'bash -c <command>'
+- 'timeout 120 <command>'
+- 'timeout 90 <tool> <arguments>'
+- './7zzs b -mmt<N>'
+- '<provider>'
+- '<digest>'
+- '<task tag>'
+- 'namanjain12/<repository>_final'
+- namanjain12/numpy_final
+- namanjain12/coveragepy_final
+- node_modules
+fact_scope:
+  page:
+  - measurement_date
+  - region
+  - machine_size
+  - provider_list
+  - header_trial_count
+  panel:
+  - metric_value
+  - leader
+  - selected_variant
+  - panel_specific_trial_count
+  rule: A fact shown in the page header must not appear in a panel or its hover text. Panel-specific counts
+    are allowed only when they differ from a header count.
+  forbidden_panel_runtime_fields:
+  - measurement_date
+  - region
+  - machine_size
+  - provider_list
+  - header_trial_count
+  date_pattern: \b(?:Measured|measured|Checked|checked)\s+(?:\d{1,2}\s+[A-Z][a-z]{2}|\d{4}-\d{2}-\d{2})\b
+  literal_patterns:
+    region: (?i)\b(?:Virginia|Oregon|The Dalles|Los Angeles|S[aã]o Paulo|Ashburn|Portland|Iowa|Ohio|Frankfurt|Amsterdam|London|Singapore|Sydney|Tokyo|Mumbai|(?:af|ap|ca|cn|eu|il|me|mx|sa|us)-(?:[a-z]+-?){1,3}\d)\b
+    measurement_date: (?i)\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)(?:\s+\d{4})?)\b
+    size: (?i)\b\d+(?:\.\d+)?\s*(?:vCPUs?|GiB|MiB|GB|MB)\b
+sentence_rule:
+  predicate_pattern: \b(?:gets?|is|are|was|were|has|have|shows?|measures?|times|uses?|runs?|records?|compares?|covers?|reports?|reported|gives?|adds?|plots?|returns?|takes?|reads?|writes?|creates?|starts?|ends?|counts?|includes?|excludes?|comes?|come|replays?|retains?|keeps?|limits?|depends?|can|does|do|will|must|should|receives?|implies|imply|needs?|took|varied|requested|estimated|leads?|meets?|computes?|shares?|spans?|says?|say|appears?|appl(?:y|ies)|differs?|sums?|combines?|aggregates?|reflects?|exposes?|lists?|pauses?|resumes?|supplies|supply|exercises?|installs?|excludes?|benchmarks?|set|choose|see|fail(?:s|ed)?|holds?|stops?)\b
+naming:
+  source: names/names.yaml
+  references: Every benchmark, workload, group and index name in reader text, labels and schema descriptions uses a name placeholder resolved from the registry at build time.
+  enforcement: Editable templates reject literal canonical names; all reader projections and consumer output reject retired display names. Locked scientific records remain immutable and their reader projections resolve registry references.
+  check: sandbox_benchmark_verifier.name_refs source_name_errors and published_name_errors
+  form: title
+  retired_words:
+  - typical
+  clock_name_forbidden_words:
+  - runner
+  title_case_kinds:
+  - hero
+  - index
+  - page
+  - quantity
+  - section
+  - stage
+  - statistic
+  - tab
+  - test
+  - view
+  preserve:
+  - proper names
+  - acronyms
+  - commands
+  - unit symbols
+  own_casing:
+  - p95
+  own_casing_words:
+  - fio
+  small_words:
+  - a
+  - an
+  - and
+  - as
+  - at
+  - by
+  - for
+  - from
+  - in
+  - of
+  - 'on'
+  - or
+  - per
+  - the
+  - to
+  - vs
+  - with
+  # The label rule (founder, 2026-11-08): every short label is Title Case; a sentence (it ends with a period), helper text, an error, an identifier, a unit and a brand name keep their own form. Each catalog lists the dotted paths of its labels; `exceptions` are fragments that a sentence reads or captions.
+  label_catalogs:
+  - file: contracts/text/methodology-page.json
+    paths:
+    - field_labels.*
+    - enum_labels.*
+    - navigation.*
+    - actions.*
+    - sections.*.name
+    - common_sections.*.name
+    - pages.*
+    - availability.*
+    - metric_names.*
+    - standard_image.labels.*
+    - standard_image.registry_link
+    - standard_image.copy
+    - standard_image.copied
+    exceptions:
+    - pages.checked
+    - pages.price_speed
+    - pages.provider_price_speed
+    - pages.provider_columns
+  - file: contracts/text/1.0.0.json
+    paths:
+    - ranking_statuses.*.label
+    - statistics_selector.label
+    - dots_selector.label
+    - sandbox_selector.one
+    - sandbox_selector.many
+    - sandbox_selector.starts.*.label
+    - provider_capabilities.supported
+    - provider_capabilities.not_supported
+  - file: contracts/text/fact-list.json
+    paths:
+    - fact_failed_*
+    - fact_no_result_not_measured
+    exceptions:
+    - fact_failed_trial_one
+    - fact_failed_trial_many
+uniqueness:
+  scope: selected-panel
+  slots:
+  - title
+  - description
+  - details.setup
+  - details.limitations
+  - details.sources
+  comparison: casefold-collapse-whitespace
+  quantity_owner: axis-title
+  similarity_threshold: 0.8
+  compare_details_with:
+  - description
+headings:
+  forbid_ancestor_repeat: true
+  forbid_adjacent_repeat: true
+  equivalent_names:
+  - - shared methodology
+    - common methodology
+methodology_style:
+  list_markers:
+    bullet: '- '
+    numbered: '\d+\. '
+  scope: Every notes field of reader/methods.yaml (a list's items one by one) and everything under its common.
+  exemptions: conventions/methodology-style-exemptions.yaml
+  allowed_words:
+  - word: dispatched
+  rules:
+  - id: methodology-style.reuse-phrasing
+    text: Reuse the existing phrasing for the same idea.
+    check: phrase-table
+    phrases:
+    - idea: the cost of a test
+      canonical: The cost is the sum of the provider-sourced costs of the sandboxes, per successful <unit>.
+      variants:
+      - provider-sourced costs of the sandboxes, divided by
+    - idea: how the statistic and direction are read
+      canonical: The statistic reference summarizes successful trials in the axis unit; then the direction reference.
+      variants:
+      - '[{]param:measured\.statistics\.primary[}] is shown in [{]unit:'
+      - '[{]param:measured\.statistics\.primary[}] summarizes the successful trials'
+    - idea: what the providers are compared on
+      canonical: Providers compared on <quantity>.
+      variants:
+      - '(?i)\b(?:this test|the benchmark) measures the providers[''’]'
+  - id: methodology-style.say-once
+    text: Say a shared rule once, in Common or the tab block, and cite it. A sentence that carries a test's own name, a number, a parameter value or a variant word is that test's own and is not compared.
+    check: repeated-sentence
+    min_words: 4
+    min_word_length: 4
+    shared_parameters:
+    - measured.statistics.
+  - id: methodology-style.not-the-agent
+    text: Never call the provider's process in the sandbox "the agent".
+    check: forbidden-pattern
+    sections:
+    - sandbox-operations
+    - machine-performance
+    flags: i
+    patterns:
+    - '\bthe agent\b'
+  - id: methodology-style.no-intensifiers
+    text: Use no intensifier unless the sentence needs it.
+    check: forbidden-pattern
+    flags: i
+    patterns:
+    - '\b(?:actually|completely|strictly|literally|exact|exactly)\b'
+  - id: methodology-style.no-typed-time-unit
+    text: Name no time unit in the Metrics text; At a Glance and the chart axis show the unit.
+    check: forbidden-pattern
+    fields:
+    - metrics
+    flags: i
+    patterns:
+    - '\b(?:seconds|milliseconds|minutes|hours)\b'
+    - '\bin (?:µs|ms)\b'
+  - id: methodology-style.recorded-sizes
+    text: A measured byte count (an image's bytes, a recorded fact in a parameter file) is never typed; reader text reads it through an image-size placeholder, which draws it in decimal MB and GB to three significant digits by presentation.byte_size, the way the results panel does. A size that a test, provider or tool defines in binary (the machine's memory, a payload, fio's blocks and file, a billing unit) is drawn in the unit its owner defines and never converted to kB, MB or GB; a rate is shown in the unit its tool reports (fio MiB/s, STREAM GB/s).
+    check: recorded-size
+  - id: methodology-style.introduction-no-machine-size
+    text: An Introduction never names the machine size, neither as a machine placeholder nor as a typed size; At a Glance's Machine Size row states it.
+    check: forbidden-pattern
+    raw: true
+    fields:
+    - introduction
+    patterns:
+    - '[{]machine:'
+    - '\b\d+\s*(?:vCPUs?|GiB)\b'
+  - id: methodology-style.introduction-not-the-job-host
+    text: An Introduction never makes the job host the subject of the timed action, so it does not start "Times the job host"; At a Glance's Clock row names the clock.
+    check: forbidden-pattern
+    raw: true
+    fields:
+    - introduction
+    patterns:
+    - '^Times the job host\b'
+  - id: methodology-style.noun-phrase-headings
+    text: Write a heading as a noun phrase, never a clause.
+    check: heading
+    clause_starters:
+    - when
+    - if
+    - because
+    - while
+    - after
+    - before
+    - how
+    - why
+    - what
+    verb_endings:
+    - is
+    - are
+    - was
+    - were
+    - does
+    - do
+    - has
+    - have
+    - works
+    - runs
+    - measures
+    - starts
+    - ends
+    - counts
+    - happens
+    - fails
+  - id: methodology-style.no-negative-framing
+    text: Say what is true; use no "never ... and never" doublet and no em-dash aside.
+    check: forbidden-pattern
+    flags: i
+    patterns:
+    - '\bnever\b[^.?!]+\band never\b'
+    - '—never [^—]+—'
+    - —
+    - ' -- '
+  - id: methodology-style.colon
+    text: 'A colon follows only a noun that the words after it explain (two timed stages: Resume and Read), never a closing parenthesis, a code mark, a number or a verb. The check sees those four endings and the verbs listed here, in the fields listed here; whether the words after the colon explain the noun is for the reader of the change to judge.'
+    check: colon-after-noun
+    fields:
+    - metric
+    verbs:
+    - is
+    - are
+    - was
+    - were
+    - returns
+    - reads
+    - runs
+    - measures
+    - times
+    - includes
+    - covers
+    - uses
+    - reports
+    - computes
+    - means
+  - id: methodology-style.no-abstract-gets
+    text: Name what the test measures; do not write what "a X gets".
+    check: forbidden-pattern
+    flags: i
+    patterns:
+    - '\b(?:measure|test|time|report)s? what (?:a|an|the) \w+'
+  - id: methodology-style.one-workload-per-page
+    text: Name no other workload in a workload's text.
+    check: other-workload
+  - id: methodology-style.latency
+    text: Write time, not the retired word; it stays only as the defined term (total time minus runtime) or inside a current name.
+    check: defined-term
+    term: latency
+    defined_term_patterns:
+    - '^\W*latency\W+(?:is|means|equals)\b'
+    - '[“"`]latency[”"`]'
+  - id: methodology-style.numbers-are-references
+    text: Write each number the measured definition holds as a reference to the measured definition, never as digits or as a number word (two to twelve). A number with a unit matches a value in that unit; a bare count matches a count of the same thing; a count before "variants" matches the number of the definition's variants; a version matches one the definition's source names, unless it is part of a name the names table owns.
+    check: definition-digits
+    ignore_values:
+    - 0
+    - 1
+    units:
+      bytes: {dimension: size, factor: 1, text: [byte, bytes], keys: [bytes]}
+      kib: {dimension: size, factor: 1024, text: [kib], keys: [kib]}
+      mib: {dimension: size, factor: 1048576, text: [mib], keys: [mib]}
+      gib: {dimension: size, factor: 1073741824, text: [gib], keys: [gib]}
+      ms: {dimension: time, factor: 1, text: [ms], keys: [ms]}
+      seconds: {dimension: time, factor: 1000, text: [s, sec, second, seconds], keys: [seconds]}
+      minutes: {dimension: time, factor: 60000, text: [min, mins, minute, minutes], keys: [minutes]}
+      vcpu: {dimension: cpu, factor: 1, text: [vcpu, vcpus], keys: [vcpu]}
+  - id: methodology-style.introduction-sentence
+    text: An Introduction is one sentence of at most 200 characters, as the reader reads it. A test's starts with "Times" when the quantity is a time and "Measures" otherwise, a composite's with "Measures", a score's with "Averages" and the Time vs Cost frontier's with "Displays", never with a test, tab or workload name, since the panel's title and tab already name it. It says where the timing starts and ends, or what is measured. It holds no metric id, unit, or "lower/higher is better", since the chart's axis and the end of the subtitle carry those, and its numbers are references. The chart's subtitle and the methodology page both read it, except a workload's subtitle, which is the workload-subtitle-template. A combined view's subtitle in the names table follows the same shape.
+    check: introduction-sentence
+    max_length: 200
+    time_verb: Times
+    other_verb: Measures
+    index_verbs:
+    - Measures
+    - Averages
+    - Displays
+    time_units:
+    - ms
+    direction_pattern: '\b(?:lower|higher)\s+is\s+better\b'
+  - id: methodology-style.metric-paragraph
+    text: A Metrics paragraph is one paragraph per metric, kept in the test's reader field metric. It starts with the metric's name and "is the", never with a verb, in one sentence shape for every test; it replaces both the Introduction and the old metrics note in the Metrics section, since the Introduction is already the subtitle. A test holds no metrics note beside it.
+    check: metric-paragraph
+  - id: methodology-style.status-labels
+    text: A ranking status label exists once, at its owner content.ranking_statuses, in Title Case ("Not Ranked", "Provider Failures"), and every field label, enum label, heading, footer, drill-down row, rank cell and reader sentence reads it there through a param placeholder. Reader text, the page contracts and these conventions never type one, in any casing or with its colon, nor a retired one. The label rule (founder, 2026-11-08) covers every short label, not only a status; each catalog in naming.label_catalogs is Title Case, and a sentence-case label fails the names check.
+    check: status-label
+  - id: methodology-style.step-note-not-step
+    text: A trial step's note says only what its step's sentence does not, and never retells the step; it shares no run of four or more words with the step and gives no timed status other than the step's, which the definition's steps own.
+    check: step-note
+    min_shared_words: 4
+  - id: methodology-style.code-marks
+    text: A code mark is for a command, a path, a flag, an environment variable or an API call, since those are what a reader could type; the field ids (burst_time, create_from_snapshot) stay in the data and under Data Sources, and a label, a number or a unit is plain text.
+    check: code-marks
+    deferred_fields:
+    - metrics
+    - metric
+    field_id_pattern: '[a-z][a-z0-9]*(?:_[a-z0-9]+)+'
+    environment_variables:
+    - http_proxy
+    - https_proxy
+    value_keys:
+    - sha256
+    - path
+    - expected_body
+    - websocket_subprotocol
+    plain_words: []
+    commands: [7zzs, apk, apply_patch, apt, apt-get, attach, autoreconf, base64, bash, Bash, black, cargo, cat, checkout, cherry-pick, chmod, clean, conda, cp, create, ctest, curl, dd, destroy, diff, Edit, eslint, fetch, find, fio, flake8, fsync, git, Glob, Grep, grep, head, isort, jest, log, make, merge, micromamba, mkdir, mv, mvn, mypy, node, nosetests, npm, nproc, patch, pause, perl, pip, pnpm, poetry, pylint, pytest, python3, Read, read, rebase, reset, restore, resume, rg, rm, ruff, show, snapshot, sqlite3, stream, stress-ng, sudo, tail, timeout, touch, tox, 'true', tsc, unittest, uv, vitest, Write, xz, yarn]
+    typable_patterns:
+    - '[~.]?/[^`]*'
+    - '[\w.-]+/[\w./<>*:-]*'  # a path, including an image reference with its :tag
+    - '\.[\w.-]+'
+    - '--?[A-Za-z][^`]*'
+    - '\$?[A-Z][A-Z0-9_]{2,}(?:\b.*)?'
+    - '__[A-Z_]+'
+    - '[\w.-]+ ?[=:] ?\S.*'
+    - '[a-z][\w-]*(?:\.[\w-]+)+(?:\(\))?'
+    - '[a-z]\w*\(.*\)'
+    - '[0-9a-f]{8,64}'
+    - '(?:GET|POST) \S+'
+    - '[\d.]+:\S+'
+    - 'node_modules'
+  - id: methodology-style.paragraph-shape
+    text: A reader paragraph is at most about 400 characters as the page draws it, every placeholder resolved, and breaks at each change of topic; an enumeration of three or more items that each carry detail is a list, with a "- " line for each item (a "1. " line where the order means something) as a block of its own, and a list item is at most 1200 characters.
+    check: paragraph-shape
+    deferred_fields:
+    - metrics
+    - metric
+    max_length: 400
+    max_item_length: 1200
+    min_items: 3
+    min_item_length: 40
+    exempt_paragraphs:
+    - starts: The remaining pool is stratified across
+      reason: One sentence that names the ten selected traces after its colon.
+    - starts: Because steps fetch from live external registries
+      reason: One sentence that classifies one outcome two ways; two items are not a list.
+  - id: methodology-style.one-numbered-list
+    text: A test page's trial steps are its one numbered list; every other list in its reader text is "- " lines.
+    check: one-numbered-list
+  - id: methodology-style.measurement-prose-not-steps
+    text: The Measurement prose (Setup and the workload and procedure notes) says what the trial steps cannot, such as the image, the inputs and the reason for a choice, and never retells a step; the check refuses the lifecycle steps every trial has (creating the sandbox, the untimed readiness check and destroying the sandbox).
+    check: forbidden-pattern
+    flags: i
+    fields:
+    - setup
+    - workload
+    - procedure
+    - setup_read
+    - shared_workload
+    - shared_procedure
+    - shared_cpu_mem_procedure
+    patterns:
+    - '\bcreat(?:e|es|ing) (?:a fresh|a new|one) sandbox\b'
+    - '\bsandbox is created\b'
+    - '\buntimed readiness check\b'
+    - '\bdestroy(?:s|ed|ing)?\b[^.]*\bsandbox\b'
+    - '\bsandbox is (?:destroyed|confirmed gone)\b'
+taxonomy_order:
+  source: names/names.yaml
+  rule: Each rendered benchmark/index/tab list must be a subsequence of its canonical kind and parent
+    order.
+metric_forms:
+  short:
+    template: '{quantity}'
+    comparison_template: '{left.quantity} vs {right.quantity}'
+    use: Metric-view controls only when the surrounding selected-test context is explicit; a comparison
+      supplies both metric references.
+    omit:
+    - phase
+    - per
+    - unit
+    - direction
+    - statistic
+    slot: control-label
+  long:
+    template: '{phase?} {quantity}{per_clause?}'
+    use: Standalone metric labels, provider columns and cards, heroes, test rows and panel Titles.
+    omit:
+    - statistic
+    - direction
+    slot: title
+  axis:
+    template: '{phase_if_ambiguous?} {quantity}{unit_clause}'
+    use: Each numeric axis, including both axes of a comparison.
+    statistic: Omitted; the selected statistic belongs to its control.
+    slot: axis-title
+rules:
+- id: text.min-chars
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: min_chars
+    value:
+      from: slot.min_length
+  severity: error
+  when: &id001
+    field: slot.enabled
+    op: eq
+    value: true
+  text: Add enough text to meet the minimum of {value} characters.
+- id: text.max-chars
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: max_chars
+    value:
+      from: slot.max_length
+  severity: error
+  when: *id001
+  text: Shorten this text to at most {value} characters.
+- id: text.retired-slot
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: max_chars
+    value: 0
+  severity: error
+  when:
+    field: slot.enabled
+    op: eq
+    value: false
+  text: Remove this retired slot; its information is already shown elsewhere.
+- id: text.casing
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: casing
+    value:
+      from: slot.casing
+    small_words:
+      from: conventions.naming.small_words
+    predicate_pattern:
+      from: conventions.sentence_rule.predicate_pattern
+  severity: error
+  when: *id001
+  text: Use the declared {value} casing and preserve canonical names, commands and units.
+- id: text.const
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: equals
+    value:
+      from: slot.const
+  severity: error
+  when:
+    field: slot.const
+    op: exists
+  text: 'Use the convention value exactly: {value}.'
+- id: sentence.max-count
+  applies_to:
+    slots:
+    - '*'
+    forms: &id002
+    - sentence
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: max_sentences
+    value:
+      from: slot.max_sentences
+    boundary_pattern: (?<=[.!?])\s+
+  severity: error
+  text: Use no more than {value} sentences.
+  when:
+    field: scope.context
+    op: ne
+    value: authored
+- id: reader.capital-start
+  applies_to: &id006
+    slots:
+    - '*'
+    exclude_slots:
+    - chart
+    - presentation.*
+  target: record
+  predicate: &id005
+    kind: starts_with_capital
+    value: true
+    allow_number: true
+    allowed_starts:
+      from: conventions.proper_names
+    each_sentence: true
+    boundary_pattern: (?<=[.!?])\s+
+  severity: error
+  text: Start this sentence with a capital letter.
+- id: sentence.period
+  applies_to:
+    slots:
+    - '*'
+    forms: *id002
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: ends_with_period
+    value: true
+  severity: error
+  text: End this sentence with one period.
+  when:
+    field: scope.context
+    op: ne
+    value: authored
+- id: sentence.predicate
+  applies_to:
+    slots:
+    - '*'
+    forms: *id002
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: required_pattern
+    value:
+      from: conventions.sentence_rule.predicate_pattern
+    flags: i
+  severity: error
+  text: Write a complete sentence with a finite verb; replace the fragment.
+  when:
+    field: scope.context
+    op: eq
+    value: generated
+- id: reader.no-internal_ids
+  applies_to:
+    slots:
+    - '*'
+    forms: &id004
+    - sentence
+    - canonical
+    - label
+    - link
+    - fragment
+    - action-label
+    - chrome
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: forbidden_pattern
+    value:
+      from: conventions.banned_patterns.internal_ids
+    ignore_patterns: *id003
+    ignore_literals:
+      from: conventions.allowed_literals
+  severity: error
+  text: Replace internal IDs, field names and version suffixes with reader-facing names.
+- id: reader.no-page_describing
+  applies_to:
+    slots:
+    - '*'
+    forms: *id004
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: forbidden_pattern
+    value:
+      from: conventions.banned_patterns.page_describing
+  severity: error
+  text: Describe the measurement, not the page, UI or a status flag.
+- id: reader.no-unresolved_placeholders
+  applies_to: &id010
+    slots:
+    - '*'
+    forms: *id004
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate: &id009
+    kind: forbidden_pattern
+    value:
+      from: conventions.banned_patterns.unresolved_placeholders
+  severity: error
+  text: Resolve the placeholder from source data or omit the slot.
+  when: &id011
+    field: scope.context
+    op: ne
+    value: authored
+- id: reader.vocabulary
+  applies_to:
+    slots:
+    - '*'
+    forms: *id004
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: allowed_vocabulary
+    value:
+      typical: []
+  severity: error
+  text: Composite names the value across workloads, and, as the title category, the geometric mean over one workload's units in that workload's All view (DeepSWE Composite Time, All Traces). The All view name (All Traces, All Jobs, All Tasks) names the view; the words workload value name one workload's value in prose. The statistic's own name names one unit's value.
+- id: tooltip.no-label-repeat
+  applies_to:
+    slots:
+    - tooltip
+    - tooltip.*
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: forbidden_pattern
+    value:
+      from: record.label
+    literal: true
+    flags: i
+  severity: error
+  text: Remove the repeated label; use the tooltip to explain it.
+- id: tooltip.no-raw-values
+  applies_to:
+    slots:
+    - tooltip
+    - tooltip.*
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: forbidden_pattern
+    value:
+      from: conventions.banned_patterns.raw_values
+  severity: error
+  text: Print the owner's sentence for the code; never a field reference, a runner step id or a count after
+    the sentence.
+- id: panel.required-slots
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: scope
+  predicate:
+    kind: required
+    value:
+      from: scope.required_slots
+  severity: error
+  text: 'Fill the missing required slots: {observed}.'
+- id: panel.slot-order
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: scope
+  predicate:
+    kind: order
+    value:
+      from: conventions.panel.slot_order
+  severity: error
+  text: Put title, description, axis and filled Details parts in the declared order.
+- id: panel.no-duplicate-copy
+  applies_to:
+    slots:
+      from: conventions.uniqueness.slots
+    exclude_slots:
+    - presentation.*
+  target: scope
+  predicate:
+    kind: unique_across_slots
+    value: 1.0
+  severity: error
+  text: Remove duplicated text; keep each fact in one slot.
+- id: details.add-information
+  applies_to:
+    slots:
+    - description
+    - details.*
+    exclude_slots:
+    - presentation.*
+  target: scope
+  predicate:
+    kind: unique_across_slots
+    value:
+      from: conventions.uniqueness.similarity_threshold
+    compare_between:
+    - - description
+    - - details.*
+  severity: error
+  text: Make Details add information beyond the Description.
+- id: details.typed-shape
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: scope
+  predicate:
+    kind: schema
+    value:
+      from: scope.details
+    shape: details
+  severity: error
+  when:
+    field: scope.details
+    op: exists
+  text: Use known, filled Details parts in order; Limits allows at most three bullets.
+- id: subtitle.direction-once
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: scope
+  predicate:
+    kind: max_occurrences
+    value: 1
+    literals:
+      from: conventions.subtitle.directions
+    ignore_slots:
+    - subtitle
+    - description
+  severity: error
+  text: Show direction once, at the end of the panel subtitle; remove it from axis titles and other text.
+- id: footer.provider-once
+  applies_to:
+    slots:
+    - chart.status-footer
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: max_occurrences
+    value: 1
+    literals:
+      from: record.providers.*.provider
+  severity: error
+  text: Name each provider once; remove its name from the reason.
+- id: reader.no-header-facts
+  applies_to: &id008
+    slots:
+    - '*'
+    forms: *id004
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate: &id007
+    kind: forbidden_pattern
+    value:
+      from: scope.page_facts.*.surface_forms.*
+    literal: true
+    flags: i
+  severity: error
+  text: Remove the fact already shown in the page header.
+- id: text.known-slot
+  applies_to:
+    slots:
+    - '*'
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: allowed_values
+    value:
+      from: scope.slot_rules
+    subject:
+      from: record.slot
+  severity: error
+  text: Use a declared source slot; remove the unknown slot.
+- id: hero.required-parts
+  applies_to:
+    slots:
+    - subtitle
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: required
+    value:
+      from: conventions.hero.required_parts
+    subject:
+      from: record.values
+  severity: error
+  text: Supply the owner hero_description and metric-bound direction.
+- id: hero.subtitle-template
+  applies_to:
+    slots:
+    - subtitle
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: template
+    value:
+      from: record.values
+    template:
+      from: conventions.hero.template
+  severity: error
+  text: Render the complete source hero subtitle template.
+- id: hero.exact-separator
+  applies_to:
+    slots:
+    - subtitle
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: separator
+    value:
+      from: conventions.hero.separator
+    parts: 2
+  severity: error
+  text: Separate the short description and direction with exactly period, space.
+- id: hero.description-no-period
+  applies_to:
+    slots:
+    - hero-description
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: forbidden_pattern
+    value: '[\r\n]|\.$'
+  severity: error
+  text: Use a one-line short hero description without a trailing period.
+- id: hero.direction-value
+  applies_to:
+    slots:
+    - subtitle
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: allowed_values
+    value:
+    - Lower
+    - Higher
+    subject:
+      from: record.values.direction
+  severity: error
+  text: Resolve Lower or Higher from the bound metric.
+- id: reader.readability
+  applies_to:
+    slots:
+    - description
+    - details.*
+    - tooltip
+    - tooltip.*
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: readability_grade
+    value:
+      from: conventions.readability.max_grade
+  severity: advisory
+  text: Consider simpler words or a shorter sentence; estimated reading grade is {observed}, target at
+    most {value}.
+- id: reader.jargon
+  applies_to:
+    slots:
+    - description
+    - details.*
+    - tooltip
+    - tooltip.*
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: forbidden_pattern
+    value:
+      from: conventions.readability.jargon_patterns
+  severity: advisory
+  text: Consider plain wording instead of flagged jargon; use wording that is clear to the reader.
+- id: hero.short-description-bound
+  applies_to:
+    slots:
+    - subtitle
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: max_chars
+    value:
+      from: conventions.slots.hero-description.max_length
+    subject:
+      from: record.values.hero_description
+  severity: error
+  text: Shorten the owner hero description to at most {value} characters.
+- id: hero.short-description-line
+  applies_to:
+    slots:
+    - subtitle
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: forbidden_pattern
+    value: '[\r\n]|\.$'
+    subject:
+      from: record.values.hero_description
+  severity: error
+  text: Keep the hero description on one line without a trailing period.
+- id: hero.metric-direction
+  applies_to:
+    slots:
+    - subtitle
+    exclude_slots:
+    - presentation.*
+  target: record
+  predicate:
+    kind: mapped_value
+    value:
+      from: record.values.direction
+    subject:
+      from: record.metric_direction
+    mapping:
+      from: conventions.hero.direction_words
+  severity: error
+  text: Use the direction declared by the bound source metric.
+- id: public-source-provenance
+  text: Public outputs identify public methodology, provider-spec and pricing versions, and verified public upstream sources. Closed implementation revisions stay in private evidence. Provider API or platform revisions appear only when reported at run time as measurement evidence.
+  predicate:
+    kind: schema
+    value: public-source-only-provenance
+    evidence_required: true
+    checked_by: source
+    allowed_version_sources: [methodology, provider_spec, pricing]
+    provider_platform_version: runtime-reported-only
+    registry_view_from: public_source_provenance.registry_view
+    upstream_versions: code-without-date-inference
+  applies_to: {slots: [presentation.page]}
+  target: scope
+  severity: error
+- id: methodology-reader-labels-complete
+  text: Give every methodology schema key a reader label, every enum value a reader word, and every section
+    a reader name, order and default state.
+  predicate:
+    kind: required
+    value: methodology-reader-text-covers-schema
+    evidence_required: true
+    checked_by: methodology
+  applies_to:
+    slots:
+    - methodology-reader-text
+  target: scope
+  severity: error
+- id: methodology-formula-defined
+  text: Give every composite a formula with each variable defined and one spoken-form sentence.
+  predicate:
+    kind: required
+    value:
+    - composition.formula
+    - composition.formula.variables
+    - composition.formula.aria_label
+    evidence_required: true
+    checked_by: methodology
+  applies_to:
+    slots:
+    - methodology-reader-text
+  target: record
+  severity: error
+- id: methodology-no-duplicate-fields
+  text: State each fact once in a methodology document; do not copy procedure variants or stages to the
+    top level.
+  predicate:
+    kind: unique
+    value: methodology-fact-once
+    evidence_required: true
+    checked_by: methodology
+  applies_to:
+    slots:
+    - methodology-reader-text
+  target: record
+  severity: error
+- id: methodology-names-title-case
+  text: Write methodology document names in Title Case.
+  predicate:
+    kind: casing
+    value: title
+    evidence_required: true
+    checked_by: methodology
+  applies_to:
+    slots:
+    - title
+  target: record
+  severity: error
+shapes:
+  details:
+    type: ordered_parts
+    tag: kind
+    min_parts: 1
+    parts:
+    - kind: composite
+      slot: details.composite
+      properties:
+        text:
+          type: string
+          minLength: 1
+          pattern: \S
+      required:
+      - text
+    - kind: setup
+      slot: details.setup
+      properties:
+        text:
+          type: string
+          minLength: 1
+          pattern: \S
+      required:
+      - text
+    - kind: trial_steps
+      slot: details.trial-steps
+      properties:
+        text:
+          type: string
+          minLength: 1
+          pattern: \S
+      required:
+      - text
+    - kind: limitations
+      slot: details.limitations
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+            minLength: 1
+            pattern: \S
+      required:
+      - items
+    - kind: sources
+      slot: details.sources
+      properties:
+        links:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - label
+            - href
+            properties:
+              label:
+                type: string
+                minLength: 1
+                pattern: \S
+              href:
+                type: string
+                format: uri
+                minLength: 1
+          contains:
+            type: object
+            required:
+            - label
+            properties:
+              label:
+                const: Full Method
+      required:
+      - links
+reporting:
+  offending_text_max_chars: 200
+  redact_without_blocklist: true
+  blocklist_environment: PUBLIC_TEXT_BLOCKLIST
+writing_review_proposal:
+  enabled: false
+  blocking: false
+  trigger: PRs changing authored reader text or conventions
+  actor: An existing writing-review agent
+  output: One advisory PR comment with concise suggested improvements and the applicable rule IDs
+  constraints:
+  - Do not block CI or merging.
+  - Do not alter source text, measurements or canonical names.
+  - Do not post comments until the coordinator explicitly enables this proposal.
+hero:
+  template: '{hero_description}. {direction} is better.'
+  separator: '. '
+  required_parts:
+  - hero_description
+  - direction
+  direction_words:
+    lower_is_better: Lower
+    higher_is_better: Higher
+readability:
+  max_grade: 9
+  method: Approximate English Flesch–Kincaid grade; advisory only.
+  jargon_patterns:
+  - (?i)\bper workload\b
+  - (?i)\bcombined into\b
+  - (?i)\bmedian of medians\b
+
+presentation:
+  link_kinds: [title, row, chart_label, control]
+  calendar_date:
+    locale: en-US
+    options:
+      timeZone: UTC
+      month: short
+      day: numeric
+      year: numeric
+    range_template: '{from} to {to}'
+    time_options: {timeZone: UTC, hour: 2-digit, minute: 2-digit, hourCycle: h23}
+    date_time_template: '{date} {time} UTC'
+    example: Oct 26, 2026
+  # reaches (the first unit below that), with this many significant digits, thousands separators and no trailing zeros.
+  # image_sizes.byte_size_text and web's bytesText read these values and run every vector.
+  byte_size:
+    significant_digits: 3
+    units:
+    - {unit: MB, factor: 1000000}
+    - {unit: GB, factor: 1000000000}
+    vectors:
+    - {bytes: 387666432, text: 388 MB}
+    - {bytes: 418727404, text: 419 MB}
+    - {bytes: 999000000, text: 999 MB}
+    - {bytes: 1000000000, text: 1 GB}
+    - {bytes: 1073741824, text: 1.07 GB}
+    - {bytes: 1151836160, text: 1.15 GB}
+    - {bytes: 2443095512, text: 2.44 GB}
+    - {bytes: 7237809664, text: 7.24 GB}
+    example: 7.24 GB
+  # A size a test, provider or tool defines in binary (a payload, a block, a machine): the largest unit that divides the byte
+  # count exactly, else bytes. placeholders.size_text and web read these values and run every vector.
+  size_text:
+    base: 1024
+    units: [KiB, MiB, GiB, TiB]
+    below_unit: {one: byte, many: bytes}
+    vectors:
+    - {bytes: 1, text: 1 byte}
+    - {bytes: 1000, text: '1,000 bytes'}
+    - {bytes: 1024, text: 1 KiB}
+    - {bytes: 1536, text: '1,536 bytes'}
+    - {bytes: 4096, text: 4 KiB}
+    - {bytes: 1048576, text: 1 MiB}
+    - {bytes: 1073741824, text: 1 GiB}
+    - {bytes: 4294967296, text: 4 GiB}
+    example: 4 KiB
+  rules:
+  - id: requested-size-only
+    text: Show only the requested sandbox size on benchmark pages and drawers. Keep measured size, CPU model, effective cores and hardware or check notes in private evidence; do not render their rows or readings controls.
+    predicate: {kind: schema, value: requested-size-only, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.drawer, presentation.provider-page]}
+    target: record
+    severity: error
+
+  - id: drawer-no-empty-headed-section
+    text: Omit any drawer section or fact heading whose body has no reader content.
+    predicate: {kind: schema, value: drawer-headed-content, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.drawer]}
+    target: record
+    severity: error
+  - id: composite-fallback-explained
+    text: Describe a missing composite result in owner words, with the fallback rule on the secondary line; never render the internal word filled.
+    predicate: {kind: schema, value: composite-fallback-reader-explanation, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.drawer]}
+    target: record
+    severity: error
+  - id: substitution-names-source
+    text: A text that says a trace or workload was substituted names the value it took, the slowest (or highest-cost) value any provider recorded; a line that only says something is absent does not.
+    predicate: {kind: schema, value: substitution-text-names-source, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.drawer, chart.status-footer]}
+    target: record
+    severity: error
+  - id: substitution-shown-one-level-up
+    text: Show a substitution one level up from its gap; a trace's gap is counted on its workload's All tab and named, without counts, in the composite's Provider Failures line; a workload's gap is shown in the composite.
+    predicate: {kind: schema, value: substitution-one-level-up, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.drawer, chart.status-footer]}
+    target: record
+    severity: error
+  - id: failed-trials-listed
+    text: >-
+      A provider's drill-down lists only unresolved failures: units or individual results with no successful trial after the recorded retries. A successful result has no failure list; replaced attempts never appear as failures, exclusions, footnotes or hover lines. The section uses the one owner label, Provider Failures, at every level. It is folded with the shared disclosure and closed until opened; each listed trial has no status word. On the composite the section names each index workload with such a trial and opens to its traces, jobs or tasks and then to their sandbox IDs ({parameters.composite_depth} levels). On a workload's All tab it names each trace, job or task and opens to its sandbox IDs ({parameters.workload_all_depth} levels). On one trace, job or task, and on every Sandbox Operations and Machine Performance view, it opens straight to the sandbox IDs ({parameters.single_depth} level). A trial shows all its sandbox IDs, or its trial id when it made none. Workloads follow the index order, traces, jobs and tasks the selector order, and trials their start order. A section with nothing to list is left out.
+    parameters:
+      composite_depth: 3
+      workload_all_depth: 2
+      single_depth: 1
+    predicate: {kind: schema, value: failed-trials-listed, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.drawer]}
+    target: scope
+    severity: error
+  - id: not-displayed-no-success
+    text: >-
+      On a view of one trace, job, task or variant, a provider with no successful trial has no bar and is named in the panel's status line for its result's status, with its result's reason; nothing is substituted there. Substitution happens only one level up, as substitution-shown-one-level-up says. When a provider named in a status line has no bar in the view and has trials to list under failed-trials-listed, its name is a button that opens and closes a drill-down with only that section, where a bar's drill-down opens, one drill-down open at a time; otherwise its name is plain text.
+    predicate: {kind: schema, value: not-displayed-no-success, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.chart-panel]}
+    target: scope
+    severity: error
+  - id: panel-anatomy
+    text: 'Keep each chart panel in the declared slot order: Title, Description, axis title, chart, then
+      Details. A slot with nothing in it is not drawn, so a chart starts the same distance under its
+      header on every panel.'
+    severity: error
+    predicate:
+      kind: order
+      value:
+      - title
+      - description
+      - axis-title
+      - chart
+      - details
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.chart-panel
+    target: scope
+  - id: hero-subtitle
+    text: Give every hero a non-empty description, the exact “. ” separator, and a direction phrase.
+    severity: error
+    predicate:
+      kind: required
+      value:
+      - hero-description
+      - direction
+      separator: '. '
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.hero-subtitle
+    target: record
+  - id: hero-no-details
+    text: Keep Details out of compact hero panels; link the hero to its full panel.
+    severity: error
+    predicate:
+      kind: forbidden
+      value: details
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.hero
+    target: scope
+  - id: details-required
+    text: Include Details on every non-hero chart panel, tab, and view that displays data.
+    severity: error
+    predicate:
+      kind: required
+      value: details
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.chart-panel
+      variants:
+      - full
+    target: scope
+    when:
+      field: scope.has_data
+      op: eq
+      value: true
+  - id: axis-title-required
+    text: Give every numeric axis a title that names its quantity and unit; comparisons title both axes.
+    severity: error
+    predicate:
+      kind: required
+      value: axis-title
+      both_axes: true
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.numeric-axis
+    target: scope
+  - id: axis-title-quantity-only
+    text: An axis title is the quantity and unit only, such as “Time (ms)”; direction never appears on
+      an axis.
+    severity: error
+    predicate:
+      kind: forbidden
+      value:
+        from: conventions.subtitle.directions
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.numeric-axis
+    target: scope
+  - id: subtitle-direction-end
+    text: End every chart panel subtitle, hero included, with exactly one direction phrase after the
+      subtitle's closing period, except a time-vs-cost chart; a panel with tabs shows the selected
+      metric's direction.
+    severity: error
+    predicate:
+      kind: schema
+      value: subtitle-ends-with-one-selected-metric-direction
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+      - presentation.hero-subtitle
+    target: scope
+  - id: time-vs-cost-direction
+    text: A chart that plots time against cost shows the single owner phrase in
+      subtitle.time_vs_cost_direction as its corner label and no direction in its subtitle or on
+      either axis.
+    severity: error
+    predicate:
+      kind: schema
+      value: time-vs-cost-uses-combined-direction
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: score-ranking-flag
+    text: The score ranking is reached only by the URL flag ranking=score, which carries through links and has no control on the page; without it the page renders the default ranking unchanged.
+    severity: error
+    predicate:
+      kind: schema
+      value: score-ranking-only-by-url-flag
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: workload-subtitle-template
+    text: A workload panel's subtitle, Time and Cost, is exactly the owner template for its measure and selection level, filled with the unit word from the names table and the test's words from contracts/text/workload-subtitles.json ({label} the selected unit's label), then the measure line.
+    severity: error
+    predicate:
+      kind: schema
+      value: workload-subtitle-equals-level-template
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: measure-in-subtitle
+    text: A chart with one bar per provider and no segments draws no measure label above its bars; the last line of its subtitle names the measure from subtitle.measure_template (the metric's label in sentence case, then the direction sentence lowercased), and the measure words carry the hover the label carried.
+    severity: error
+    predicate:
+      kind: schema
+      value: single-bar-chart-names-its-measure-in-the-subtitle
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: single-page-tab-title
+    text: A methodology page that is the only page of a results tab or section takes the tab's or section's label as its title, the name its chart panel and the rail use, so its title, breadcrumb and index card read one name; a tab with several pages keeps each test's name. The test's own name still appears in the page, in its Metrics paragraph and At a Glance.
+    severity: error
+    predicate:
+      kind: schema
+      value: single-page-tab-page-title-equals-tab-label
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    target: scope
+  - id: page-host-wording
+    text: A methodology page that holds several tests draws its host test's reader notes page_headline as At a Glance's Short Name and page_introduction as its subtitle, when the host has them; with no page_introduction it has no subtitle. The host's headline and introduction stay its chart panel's.
+    severity: error
+    predicate:
+      kind: schema
+      value: grouped-page-reads-the-host-page-notes
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    target: scope
+  - id: grouped-page-named-metrics
+    text: On a page that holds several tests, a test whose Metrics paragraph names each of its metrics (by their metric_names names) draws no list of those names under the paragraph, and At a Glance's Metrics gives it one entry, the test's name, whose line joins its metrics' quantities in the order the page first lists them, in the list style and sentence case ("Time and cost"), and shows a unit only when its metrics share it. A test whose paragraph does not name each of its metrics keeps the list, and At a Glance lists each metric.
+    severity: error
+    predicate:
+      kind: schema
+      value: grouped-page-lists-only-unnamed-metrics
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    target: scope
+  - id: section-page-results-link
+    text: The results link of an index page that is its section's only page reads the section's name from the names table ("View Overview Results") and opens that section of the results page.
+    severity: error
+    predicate:
+      kind: schema
+      value: section-page-results-link-names-and-opens-its-section
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    target: scope
+  - id: glance-clock-label
+    text: At a Glance's Clock row is exactly the names table's label of each clock the headline number is read from (the reader's clock ids), two of them joined in the list style ("a and b"); what a clock is and how it is read stays in Common's clocks and its Measurement section, never in the row.
+    severity: error
+    predicate:
+      kind: schema
+      value: glance-clock-row-is-a-names-clock-label
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    target: scope
+  - id: cost-segments-follow-time
+    text: A workload's Cost view draws exactly the segments of its Time view; each segment's cost is the shown cost times its share of the Time bar under the same statistic.
+    severity: error
+    predicate:
+      kind: schema
+      value: cost-view-segments-equal-time-view-segments
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: cost-scope
+    text: >-
+      Cost reaches a reader only for the Workloads (DeepSWE, Terminal-Bench 4.0, CI Actions and R2E-Gym), the composites built on them (Composite Workload Cost, Composite Workload Time vs Cost, Cost Score and the cost part of Provider Score) and Common's cost rules. A Sandbox Operations or Machine Performance test shows no cost anywhere: no methodology Cost section, no Cost tab, no Cost view, no cost cell, hover row or rank card.
+    severity: error
+    predicate: {kind: schema, value: no-cost-outside-workloads, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.panel, presentation.drawer]}
+    target: scope
+  - id: drilldown-same-for-time-and-cost
+    text: >-
+      A workload's Cost drill-down is its Time drill-down with the cost where the time was. On the All view it has the same unit column, with one row for each trace, job or task, whose long names wrap after their hyphens and are never cut short. On one trace, job or task it has the Time drill-down's group rows and a Total row, with no column that names the unit, because the title and the menu already do. It has the statistic columns the data has costs for, and the same facts, except those about time, such as the interval of the median. Each cost, in the table and in the Cost fact, is the one the bar shows under the selected statistic.
+    severity: error
+    predicate: {kind: schema, value: cost-drilldown-equals-time-drilldown, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.drawer]}
+    target: scope
+  - id: drilldown-statistic-columns
+    text: >-
+      Every drill-down table of a measured value, time or cost, has one row for each part of the panel's value (a segment, a test, a trace, a job, a task or a workload) and a total row, and one column for each statistic of the panel's Statistics menu that a table can show: Median, Mean and p95, in the menu's order and with the menu's names. Every header is drawn in one colour, and no column is set apart for the selected statistic. A cell the data has no value for shows the missing marker. A p95 that is the worst trial carries ranking_status_footer.worst_trial_marker in its header, and the menu's fallback suffix becomes that marker's footnote under the table. A substituted cell carries ranking_status_footer.substituted_marker, and its explanation becomes that marker's footnote under the table. No table has a Max column or a single Typical column.
+    severity: error
+    predicate: {kind: schema, value: drilldown-columns-equal-statistics-menu, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.drawer]}
+    target: scope
+  - id: methodology-hash-links
+    text: >-
+      A hash is never drawn in full in a methodology page's prose. For a SHA-256, the word in front of it is a link in the link
+      colour with a dotted underline; its hover card shows the kind, the full hash in monospace and the copy prompt, and a click
+      copies the full hash. A Git commit is a direct link to its commit's page in the same colour and underline, opening in a new
+      tab, with no card. A table's commit cell is the short commit and never wraps. A command a reader runs keeps its full hash
+      and its own Copy button.
+    severity: error
+    predicate: {kind: schema, value: no-full-hash-in-prose, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.chart-panel]}
+    target: scope
+  - id: methodology-commands-table
+    text: >-
+      A table of the commands a page's variants run is one column, Command, holding each full command as written; the variants'
+      labels are not drawn beside them. Each command's program name (its first word) is its own span that never breaks, set as a
+      chip in the Timed pill's colour on a light fill and border of that colour, at the semibold weight, with the reading
+      surface's control radius; the rest of the command stays plain monospace.
+    severity: error
+    predicate: {kind: schema, value: commands-table-one-column-program-chip, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.chart-panel]}
+    target: scope
+  - id: methodology-formula
+    text: >-
+      A formula is centred in the text column; it never shows a vertical scroll bar, and it scrolls sideways only when it is wider
+      than the column. Its limits are never cut off.
+    severity: error
+    predicate: {kind: schema, value: formula-centred-no-vertical-scroll, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.chart-panel]}
+    target: scope
+  - id: methodology-identifier-cells
+    text: >-
+      A table cell that holds an identifier never breaks inside a name. A repository or a path breaks only after a "/" ("numpy/numpy"
+      may break after its slash, never between "nump" and "y", and never after a hyphen); a command breaks only between whole tokens, at
+      its spaces. A cell that does not fit its column scrolls the table sideways instead.
+    severity: error
+    predicate: {kind: schema, value: identifier-cell-breaks-only-after-slash, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.chart-panel]}
+    target: scope
+  - id: methodology-step-pills
+    text: >-
+      On a methodology page's trial steps, only a step inside the headline band (the steps whose time is the number) carries a
+      pill, and the pill reads the owner's steps.timed label with no time on it; no other step carries a pill. A step's note (a fact
+      about that one step, from the reader's step_notes) is drawn under the step as one line in the reading surface's muted colour, at the meta size, the size of the metadata beside it, never smaller. A step's time limit is drawn by
+      methodology-step-limits-one-table.
+    severity: error
+    predicate: {kind: schema, value: step-pill-only-on-headline-steps, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.chart-panel]}
+    target: scope
+  - id: methodology-step-limits-one-table
+    text: >-
+      A trial step's time limit is drawn once on a methodology page, in the Failures section's table of steps and their limits, read
+      from the definition's steps. No step, pill or paragraph of reader text states it.
+    severity: error
+    predicate: {kind: schema, value: step-limits-only-in-the-failures-table, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.methodology-page]}
+    target: scope
+  - id: no-empty-disclosures
+    text: >-
+      A disclosure on a benchmarks page (a methodology section, a Details pane, a row of a drill-down or any dropdown) is drawn only
+      when it has content. One with nothing in it, or only whitespace, is not drawn.
+    severity: error
+    predicate: {kind: schema, value: disclosure-drawn-only-with-content, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.page, presentation.provider-page]}
+    target: scope
+  - id: test-facts-from-measured-document
+    text: >-
+      A fact the methodology defines for a test (its machine size, trial count, step limits, region policy and version) is drawn on
+      the benchmarks pages from the methodology document the test was measured under, never from a second copy in the published data
+      or in web. A test's machine size is its measured document version's own environment.size; a composite document states none,
+      and its page draws none. A publication whose result records a requested size other than its measured document's is refused
+      when it is built.
+    severity: error
+    predicate: {kind: schema, value: test-facts-read-from-measured-document, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.page, presentation.provider-page]}
+    target: scope
+  - id: details-pane-summarizes
+    text: >-
+      A workload panel's Details pane summarizes, and the methodology page holds the full procedure. It shows the timed part, the
+      step or steps whose time is the chart's number (the definition's headline steps, the ones the methodology page's band
+      covers), without step tags or limits, and then the line details.all_steps, whose count is the definition's number of steps
+      and whose section name links to the methodology page's Measurement section. A composite view (the All view of a workload's
+      traces, jobs or tasks) names its scope by the test's counted unit from the names table, with the details.composite unit
+      headings, and opens with the details.composite part: Common Methodology's sentence on how the All view combines its units,
+      read from details.composite.sentence_source, its term linked to Common's workload value. A view of one trace, job or task
+      keeps the plain headings and has no Composite part. The overview composite panels (Composite Workload Time, Cost and
+      Time vs Cost) use the details.composite overview headings: Per-Workload Setup instead of Setup, and Composite instead of
+      Trial Steps, with the calculation text under Composite.
+    severity: error
+    predicate: {kind: schema, value: details-pane-summarizes-workload, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.chart-panel]}
+    target: scope
+  - id: frontier-subtitle-template
+    text: >-
+      Every workload's time-vs-cost chart's subtitle is the owner template subtitle.frontier_template with the workload's name, and nothing else; the composite's is its Introduction. Under the score ranking (score-ranking-flag), the composite's is subtitle.score_frontier_composite_template and a workload All view's is subtitle.score_frontier_template with the unit and description from that workload's names row.
+    severity: error
+    predicate:
+      kind: schema
+      value: frontier-subtitle-equals-template
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: panel-title-pattern
+    text: >-
+      Every panel's title is the category (the panel's name), the category unit where there is one (a workload's unit name for one unit, Composite for its All view), the measure, the tool in parentheses where the test runs a named tool, and the variant after the separator "{parameters.separator}" where the panel has one, as the owner template title.template fills them, on every page that draws the panel; parentheses hold only the tool. Where the chosen variant is the full name of a test or a view (a names row of kind test or view, with no selector option of its own), the title is that name and the measure alone. The one exception is a test whose name already holds the measure (title.measure_in_name: Sequential TTI and Burst TTI, because TTI is time to interactive): its title is the name alone.
+    parameters:
+      separator: ' · '
+    severity: error
+    predicate:
+      kind: schema
+      value: panel-title-equals-template
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: rendered-no-raw-backticks
+    text: Owner text may mark inline code with backticks; the shared text renderer shows it as a mono
+      token, so rendered text never contains a backtick.
+    severity: error
+    predicate:
+      kind: forbidden
+      value: '`'
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+      - presentation.hero
+    target: scope
+  - id: zero-tick
+    text: Label a numeric zero tick with its unit, using “$0” for currency and “0 s” for seconds.
+    severity: error
+    predicate:
+      kind: schema
+      value: zero-tick-matches-axis-unit
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.numeric-axis
+    target: scope
+  - id: bar-value-unit
+    text: "Print each bar's value with its axis unit; when the interval is on, the label is the interval alone, written {parameters.interval_label}, or {parameters.interval_label_currency} for a money value: its bounds joined by an en dash, then the unit, or the currency sign on the first bound. Time labels keep {parameters.decimal_places} decimal place at their fixed display resolution. A positive value below that resolution reads {parameters.below_resolution_label}, with resolution filled from the decimal place, and keeps its axis unit; actual zero remains zero. Tooltips and raw data retain the measured value. Numeric axis ticks keep the significant figures that distinguish positive positions and never round them to zero. The fractional ticks on one axis share one decimal count: the fewest decimals that tell every tick apart at two significant figures; a whole tick keeps no decimals."
+    parameters:
+      interval_label: "{low}–{high} {unit}"
+      interval_label_currency: "${low}–{high}"
+      decimal_places: 1
+      below_resolution_label: "<{resolution}"
+    severity: error
+    predicate:
+      kind: schema
+      value: bar-value-matches-axis-unit
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.numeric-axis
+    target: scope
+  - id: hover-layout
+    text: "Every hover is built from the same rows, top to bottom, and a row appears only when its condition holds. The label is always shown, {parameters.label_font_px} px on a {parameters.label_line_px} px line and weight {parameters.label_weight}: a segment's legend chip name without its step count, \"Composite\" on a composite bar, otherwise the selected unit's name where the chart has a unit selector and the test's name where it has none, bare, with nothing appended and nothing in parentheses. Trials follows on every bar built from trials, the successful trials, summed over the units on an All bar and absent on a composite bar. Then only the statistic selected in the chart's menu, with its value written as the bar's own label writes it, or as a heading without a value on an All or composite bar. The 95% CI row follows the median, {parameters.ci_gap_px} px below it and indented {parameters.ci_indent_px} px, only when the interval is switched on and the result has one. A segment of one trace, job or task lists the commands that ran in its stage, each as its short form, at most {parameters.command_rows_max}, flush with the rows above, then \"and {n} more\". A command's short form is its program, then its `-m` module when it runs one (\"python -m pytest\") and otherwise its first subcommand that is not a flag (\"pip install\", \"apt-get install\", \"npm ci\"), so never more than the program and one more word, three with `-m`; commands with the same short form are one row with their counts added, and the drill-down keeps the recorded program names. An All or composite bar lists each unit's value of the selected statistic, largest first, at most {parameters.unit_rows_max}, indented {parameters.unit_indent_px} px under the statistic heading, a filled value marked, then \"and {n} more {units}\" with the workload's unit word in the plural. A Time vs Cost point has a Time and a Cost row and no interval; a Box plot has its Max, P75, Median, P25 and Min rows after Trials; a Scatter dot has one \"Trial {k} of {n}\" row and no Trials row; a cost range's statistic row is the low to high range. Rows are {parameters.row_font_px} px on a {parameters.row_line_px} px line with the value at weight {parameters.value_weight}; the label has {parameters.label_gap_px} px below it, rows {parameters.row_gap_px} px between them and list rows {parameters.list_row_gap_px} px. A card has {parameters.padding_y_px} px above and below, {parameters.padding_x_px} px at the sides, and a {parameters.radius_px} px radius. Every hover is as wide as its content, at least {parameters.min_width_px} px and at most {parameters.max_width_px} px, {parameters.viewport_inset_px} px short of the viewport on each side; a short hover is thin and no hover has a fixed width. A hover that lists unit names (an All or composite bar's unit rows and a unit's title: traces, tasks, jobs, workloads) is drawn with every name whole: its width is {parameters.unit_list_width}, that is as wide as its longest whole name on one line, with no maximum other than {parameters.viewport_inset_px} px short of the viewport on each side; where even that window cannot hold a name it wraps only at the name's hyphens and is never cut or ellipsized, and the drill-down and the table keep the full name too. Notes come only from structured check identifiers and their recorded counts through shared owner templates; never use per-result authored prose, host placement commentary or tier-split timing comparisons. Nothing is clipped. A numeric row (Trials, the statistic, the interval, the box-plot rows, a unit value, Time and Cost) keeps its label and its value side by side, the value right-aligned in a tabular column. A definition row (Start, End and Source on a legend chip or a measure hover) is stacked: its label sits above its sentence, both left-aligned, {parameters.definition_label_gap_px} px apart, definitions {parameters.definition_gap_px} px apart, and Source sits under a hairline with {parameters.definition_gap_px} px above its label. A label is at least as wide as one row of itself up to {parameters.max_width_px} px; a longer label wraps balanced with no one-word last line (\"Latency per / 100 Calls\"). A legend chip's stage definition and a sentence hover use the same label and row sizes, and no hover shows an unfilled {field}."
+    parameters:
+      min_width_px: 20
+      max_width_px: 300
+      unit_list_width: fit-longest-name
+      viewport_inset_px: 12
+      ci_indent_px: 10
+      unit_rows_max: 5
+      command_rows_max: 4
+      label_font_px: 14
+      label_line_px: 18
+      label_weight: 600
+      row_font_px: 12
+      row_line_px: 16
+      value_weight: 600
+      label_gap_px: 6
+      row_gap_px: 4
+      list_row_gap_px: 2
+      ci_gap_px: 0
+      unit_indent_px: 10
+      definition_label_gap_px: 1
+      definition_gap_px: 8
+      padding_y_px: 8
+      padding_x_px: 10
+      radius_px: 6
+    severity: error
+    predicate:
+      kind: schema
+      value: hover-rows-content-width-bounded
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: hover-follows-pointer
+    text: Every chart hover, bar or legend, sits above and to the right of the pointer, follows it, and uses one background.
+    severity: error
+    predicate:
+      kind: schema
+      value: hover-follows-pointer-one-background
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: hover-cards-complete
+    text: Every legend chip, bar segment and selector option has a hover card from its owner, a stage's Start, End and Source or what an option fixes, and no card breaks a word of its label across lines or runs past the window.
+    severity: error
+    predicate:
+      kind: schema
+      value: every-hover-has-a-card-with-unbroken-labels
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: legend-hover-highlights
+    text: Hovering a legend chip lifts the segments of its stage in every bar of the panel and dims the rest, in every panel, view and benchmark that draws segmented bars.
+    severity: error
+    predicate:
+      kind: schema
+      value: legend-hover-lifts-its-segments
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: menus-open-down
+    text: Every dropdown menu opens below its button and nowhere else. A menu that does not fit under its button scrolls the window by the overflow before it is placed; one taller than the room that is left is capped and scrolls inside.
+    severity: error
+    predicate:
+      kind: schema
+      value: dropdown-menus-open-down
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: provider-note-links
+    text: Every note that names an incomplete or missing provider draws each provider name as a link that opens that provider's drill-down in the same panel; a provider without data opens a drill-down whose values read as not measured and whose details give the error explanation. The note ends with the owner's open_hint exactly when its names open a drill-down; a note of only providers the reader removed from the chart (their click restores them) has none. The parenthetical after a provider names what is incomplete one level down, in the owner's list_style. The composite names its workloads, a workload's All view names its units (a job by the short name of the names table), and a single unit gives the count of the provider's unsuccessful trials. The Not Ranked line is the exception; it names its providers with no parenthetical, and the drill-down a Not Ranked name opens has no status row, only the provider's failures (Andre, 2026-11-08, "just get rid of that 100 of 108 or 0 of 18 note because it makes no sense to someone trying to read it. they just wonder where the 108 or 18 numbers come from. removing it makes it simpler. people dont need to know this.").
+    severity: error
+    predicate:
+      kind: schema
+      value: provider-names-in-notes-open-the-drill-down
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: drilldown-no-value-cell
+    text: A value cell of a drill-down that has nothing to read, the table of a provider without data, says N/A, the owner's fact_not_available. Everywhere else an absent result keeps its own words, such as Not Measured.
+    severity: error
+    predicate:
+      kind: schema
+      value: drilldown-cell-without-value-reads-na
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: failed-trial-lines
+    text: In a failure list, each unit has one row per distinct error, started with the owner's fact_trial_error label and showing how many trials hit it (fact_failed_trial_one or fact_failed_trial_many), and the row opens to the sandbox ids that hit that error, as one line that starts with the owner's fact_sandbox_id label for one sandbox or fact_sandbox_ids for several, then the ids in monospace. Only an unresolved result lists failures, and a result with any successful trial lists none. A listed trial's error and evidence are read directly from its published record, never written per result by an agent. A trial counted as excluded opens to the exclusion's own reason, never to an error, so a trace that does not replay never reads as a provider failure. Every unresolved id stays listed under its error; recovered attempts stay out of the list.
+    severity: error
+    predicate:
+      kind: schema
+      value: failed-trial-lines-open-to-their-cause
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: exclusion-reason
+    text: The reason a result is missing and the reason a trial is excluded are each one of the generic reasons the methodology owns, Provider failure for anything on the provider's side (a documented provider limit that a test runs into included, with no source link shown) and Test in development for ours, never free text. In scope are the result-level gap reason (reason_code, provider_failure or test_in_development) and exclusion reasons (exclusions[].reason). Out of scope are the causes of individual failed trials (failures[].reason), which the runner writes from structured checks and published trial records and which stay distinct so the failure list can group by error, and Not Supported results, which carry no reason because the status label is the whole statement. Provider files and data recipes pick a code from the set; the specific cause stays in internal records. The runner refuses to build a publication with any other result-level or exclusion reason, and a result with no reason shows the general sentence of ours.
+    severity: error
+    predicate:
+      kind: schema
+      value: displayed-reasons-are-generic
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: replaced-failures-not-shown
+    text: A failure replaced by a later trial (reason excluded_failure_replaced_by_batch, a trace failure replaced by a later trial) is outside the benchmark's scope and is not shown, with no list row, no count and no note.
+    severity: error
+    predicate:
+      kind: schema
+      value: replaced-failures-are-not-shown
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: status-footer-short
+    text: A note under a graph names each provider with one short status in parentheses, then the owner sentence that points to the provider details, and holds no reason sentence and no link. A note about providers that is not a status (a billing rule on a Cost chart) names the providers only, then the same owner sentence; the note itself is in each provider's drill-down. Statuses that draw no bar for the provider (not offered, in development, not measured) share the label Not Displayed, and the parenthetical is the provider's own status label in lower case (Blaxel (not supported)); a provider whose status is Not Displayed itself has no parenthetical. A provider with a count of its own (10 trials) shows the count, and the incomplete labels keep the names one level down; a status whose owner policy sets reason to false (Not Ranked) shows no parenthetical and no reason (provider-note-links). The provider's drill-down of a status that allows details and carries a reason holds the full reason and, where the data has one, its source link. A status whose owner policy sets details to false (not offered, in development) shows only its shared status label, with no custom provider reason, diagnostic drawer or hint, and the same one state applies to every provider and benchmark. A not offered result carries no reason since runner #1248 (2026-11-04), whose status is the whole statement.
+    severity: error
+    predicate:
+      kind: schema
+      value: status-footer-short-clause
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.status-footer
+    target: record
+  - id: incomplete-one-label
+    text: The note under the graph and the drill-down's failure list both read the one owner label, Provider Failures, at every level, its rows listing what is incomplete, a unit the score fills marked with the incomplete marker, and the fill rule once under the list.
+    severity: error
+    predicate:
+      kind: schema
+      value: incomplete-data-one-label-per-level
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: tail-fallback-label
+    text: Below the tail floor (fewer successes than the methodology's statistics.tail.min_successes) a unit's p95 is its worst trial, and says so. Every place the chart or table shows that value as p95 ends with the owner's suffix, uses max where lower is better and uses min where higher is better, with the floor read from the methodology and never typed. A unit with the floor or more shows its p95 and no suffix. A statistics menu whose p95 has no unit at the floor greys the p95 option, cannot be picked, and says statistics_selector.p95_unavailable (Fewer than the floor trials) on hover.
+    severity: error
+    predicate:
+      kind: schema
+      value: p95-below-the-floor-labelled-by-its-fallback
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: stage-hover-start-context
+    text: A stage's hover is three lines, Start, End and Source. Start names what happened before the stage only when the stage is not the first in its bar; the first stage starts with its own request.
+    severity: error
+    predicate:
+      kind: schema
+      value: stage-start-names-preceding-event-unless-first
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: selector-option-disabled
+    text: An option that no data supports stays in its selector, greyed and not selectable, with the not-allowed cursor and a hover that says why.
+    severity: error
+    predicate:
+      kind: schema
+      value: unsupported-option-greyed-with-reason
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.selector
+    target: scope
+  - id: selector-label-colon
+    text: A selector's label is written without a colon in the names table; the page draws one colon after it, in a dropdown and in a legend group alike.
+    severity: error
+    predicate:
+      kind: schema
+      value: selector-label-colon-from-convention
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.selector
+    target: scope
+  - id: selector-row
+    text: Put a panel's selectors in one row above the chart, aligned right, in one shared style with
+      their names-table labels, Statistics last.
+    severity: error
+    predicate:
+      kind: schema
+      value: selectors-in-one-row-statistics-last
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.selector
+    target: scope
+  - id: bar-offset-fixed
+    text: Align every chart's bars at one page-wide x position. Size the shared label column from the
+      longest full label, including the provider and its class or variant. Leave {parameters.panel_gap_px} px between the end
+      of the longest drawn label and the bars in panels, never after the bare provider name. A hero
+      panel is static, so it sizes its own name column from the provider names it shows and leaves {parameters.hero_gap_px} px after the longest of them. Hiding a
+      provider never moves the bars.
+    parameters:
+      panel_gap_px: 25
+      hero_gap_px: 16
+    severity: error
+    predicate:
+      kind: schema
+      value: bar-offset-set-by-longest-provider-name
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: hide-control-gutter
+    text: Place each chart's hide control, a {parameters.hide_size_px} px square, {parameters.hide_left_px} px from the panel's left edge,
+      {parameters.name_gap_px} px before the provider name's hover box, which pads the name by {parameters.name_pad_px} px.
+    parameters:
+      hide_left_px: 9
+      hide_size_px: 26
+      name_gap_px: 6
+      name_pad_px: 7
+    severity: error
+    predicate:
+      kind: schema
+      value: hide-control-gutter-matches-name-hover-box
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: second-tab-row
+    text: >-
+      Draw the second row of tabs, such as Time, Cost and Time vs Cost, with one component directly under the first tab row, {parameters.gap_above_px} px below it and {parameters.height_px} px tall, on every page. When a panel draws no first row, the second row opens the panel {parameters.gap_above_when_first_px} px below its top edge, so its labels sit as far down as a first row's labels do.
+    parameters:
+      height_px: 34
+      gap_above_px: 0
+      gap_above_when_first_px: 7
+    severity: error
+    predicate:
+      kind: schema
+      value: second-tab-row-same-height-and-position
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: segment-min-width
+    text: Draw every bar segment with a value above zero at least {parameters.min_segment_px} px wide at the current
+      axis scale, and draw no segment, divider or minimum for a value of zero or none.
+    parameters:
+      min_segment_px: 10
+    severity: error
+    predicate:
+      kind: schema
+      value: bar-segment-minimum-width-after-axis-scale
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: class-label-style
+    text: Draw a provider's class word inline after its name, in a lighter colour, {parameters.class_px} px against the
+      {parameters.name_px} px name; keep the class word on every name.
+    parameters:
+      name_px: 13
+      class_px: 12
+    severity: error
+    predicate:
+      kind: schema
+      value: class-label-inline-lighter-smaller
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: machine-panel-text
+    text: A machine panel's title is the owner title template filled with the tab's name and measure, the
+      test's selected option (only where the tab's tests are the options of one selector) and the test's
+      source name as the tool. Its subtitle is the test's Introduction. The test's panel command is the
+      command line the pinned workload runs.
+    severity: error
+    predicate:
+      kind: schema
+      value: machine-panel-title-names-the-standard
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: command-choice
+    text: A choice between shell commands (Sequential TTI's first command) shows each by its command word in code style, and under it the exact command the test runs, in smaller type. The word and the command come from the test's document.
+    severity: error
+    predicate:
+      kind: schema
+      value: command-choice-is-code-with-its-command-line
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: address-state
+    text: Keep panel choices in the page while browsing; only a panel's Copy link writes them into its
+      address. Links between pages carry the provider filter; the page keeps it for the tab and cleans
+      its address.
+    severity: error
+    predicate:
+      kind: schema
+      value: panel-choices-stay-out-of-the-address
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: selected-provider-chip
+    text: Use one shared provider-label component in bar, stacked, composite, hero and pricing charts.
+      A selected provider chip hugs the full rendered label, including its class, plus the shared
+      name-padding token on each side. Its width never comes from the page-wide label column;
+      that column sets only the bar start. Names with and without hover cards follow the same
+      sizing at desktop and phone widths.
+    severity: error
+    predicate:
+      kind: schema
+      value: selected-provider-chip-fits-rendered-content-and-shared-padding
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: chart-row-focus
+    text: Mouse selection shows the provider's selected state without a focus ring. Keyboard navigation
+      shows the shared token-based focus ring inside the panel bounds, for bar and hero charts.
+    severity: error
+    predicate:
+      kind: schema
+      value: chart-row-pointer-selection-and-keyboard-focus
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: provider-names-plain
+    text: Provider names never carry hover cards, tooltips or underlines in charts, heroes, status lines,
+      drawer titles or tables. Put material warnings in the shared status lines, without attaching a
+      card to a provider name.
+    severity: error
+    predicate:
+      kind: schema
+      value: provider-names-have-no-hover-cards-or-underlines
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: unranked-rows-follow-ranked
+    text: Draw ranked providers first in the selected sort order. Draw unranked providers after every
+      ranked provider, never between them and never as a leader. Use the shared muted colour token for
+      unranked bars and label their values with published coverage.
+    severity: error
+    predicate:
+      kind: schema
+      value: ranked-prefix-unranked-muted-coverage
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: shared-status-lines
+    text: Use one shared status-line component below charts and heroes. Read labels, reasons and status
+      order from the published status policy. Show each warning inline, with plain provider names and
+      no hover card or popover covering another panel element. Mark every provider named in an
+      incomplete line (Provider Failures) with ranking_status_footer.incomplete_marker on its value, and end that
+      line with the owner sentence. The marker is set as a superscript, at {parameters.marker_scale}
+      of the surrounding text size, raised by {parameters.marker_raise_em} em.
+    parameters:
+      marker_scale: 0.7
+      marker_raise_em: 0.35
+    severity: error
+    predicate:
+      kind: schema
+      value: shared-ordered-status-lines-without-popovers
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: chart-controls-row
+    text: A chart's legend chips and all its dropdowns sit on one line directly above the chart, the
+      chips at the left and the dropdowns as one right-aligned group with Statistics last. The row
+      ends {parameters.row_gap_px} px above the chart. At {parameters.single_line_min_px} px and wider
+      the row never wraps; below that the group wraps under the chips as one unit.
+    parameters:
+      row_gap_px: 12
+      single_line_min_px: 1024
+    severity: error
+    predicate:
+      kind: schema
+      value: chart-controls-share-one-row-above-chart
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: subtitle-direction-nowrap
+    text: Keep the direction phrase together as one unbroken unit. The complete
+      phrase may wrap to the next line; no word inside it may wrap separately at phone, tablet or
+      desktop widths.
+    severity: error
+    predicate:
+      kind: schema
+      value: subtitle-direction-is-one-unbroken-run
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: statistics-selector-shared
+    text: Use the published Statistics selector label pattern on every panel, including composite panels.
+      Render it through the shared selector component from content_criteria.statistics_selector.
+      Composite names-table selectors own options only, with no separate label or trailing word.
+    severity: error
+    predicate:
+      kind: schema
+      value: all-statistics-selectors-use-owner-pattern
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.panel
+    target: scope
+  - id: ranking-footer
+    text: 'Put ranking status in the shared footer as “<Label>: <Provider> (<short status>)”.'
+    severity: error
+    predicate:
+      kind: schema
+      value: ranking-status-footer
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.status-footer
+    target: record
+  - id: links
+    text: Open internal benchmark links in the same tab and external links in a new tab.
+    severity: error
+    predicate:
+      kind: schema
+      value: internal-same-tab-external-new-tab
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.link
+    target: record
+  - id: class-in-name
+    text: Include the class in a provider’s display name when its registry lists more than one class.
+    severity: error
+    predicate:
+      kind: required_pattern
+      value: provider-name-includes-registry-class
+      evidence_required: true
+    applies_to:
+      slots:
+      - provider.display-name
+    target: record
+    when:
+      field: provider.class_count
+      op: gt
+      value: 1
+  - id: region-picker
+    text: List registry regions on overview and category pages, marking unavailable regions Coming Soon.
+    severity: error
+    predicate:
+      kind: schema
+      value: region-picker-matches-registry
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.region-picker
+    target: scope
+  - id: shared-components
+    text: Build benchmark, provider, and pricing panels from the same shared components.
+    severity: error
+    predicate:
+      kind: unique
+      value: shared-panel-component-per-element-kind
+      evidence_required: true
+    applies_to:
+      slots:
+      - presentation.panel
+      - presentation.chip
+      - presentation.tab
+      - presentation.view-bar
+      - presentation.selector
+    target: scope
+  - id: shared-section-rail
+    text: >-
+      Every benchmarks side rail uses the shared SectionRail, in one look on every page; its active item follows the section in view, and items use rail text rather than default link styling. Each category is a title over its parts, every category is open, and a methodology part may hold its own pages one indent deeper, shown only while the part or one of its pages is lit. Exactly one item is lit, mint on a clearly visible mint fill: the deepest item on the reader's path (a page rather than its part, or the open tab of the section in view), never its parents. The fill hugs the item's label with the same padding on each side at every level, and never slides: when the lit item changes, the old fill fades out and the new one fades in over 150 ms, opacity only, and at once when the reader asks for reduced motion. There are no chevrons or connectors. A coming-soon entry shows its name and 'Coming soon' on one row, right-aligned.
+    severity: error
+    predicate:
+      kind: unique
+      value: shared-section-rail
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.rail
+    target: scope
+  - id: overflow-fits-content
+    text: >-
+      Content wider than its container is made to fit: it wraps, stacks or moves to its own line. It is never hidden, clipped or given a sideways scroll to fix it. Only a wide table, chart or code block may scroll sideways, inside its own container.
+    predicate: {kind: schema, value: overflow-fits-content, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.panel, presentation.rail]}
+    target: scope
+    severity: error
+  - id: provider-top-scores
+    text: A provider page shows no overall score and no Workloads score; its top scores are the four parts, Workload Time Score, Workload Cost Score, Sandbox Operations Score and Machine Performance Score, each with its rank.
+    severity: error
+    predicate:
+      kind: unique
+      value: provider-top-scores
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: provider-score-alignment
+    text: In a provider page's score tree every scored row right-aligns its score, bar and rank, so the ranks form one column; the bar's length and the score's size step down by level (subsection, suite, unit). A lane head holds no score; the strip under the top charts is the only place the four overall scores are drawn.
+    severity: error
+    predicate:
+      kind: unique
+      value: provider-score-alignment
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: provider-one-test-groups
+    text: "On a provider page a group that holds one test is one row: it shows the test's value and opens straight to the chart or its units, keeps the group's name, and the test's name stays in the chart title."
+    severity: error
+    predicate:
+      kind: unique
+      value: provider-one-test-groups
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: link-style
+    text: A link in running text or in a list of text links is drawn in the link style, mint (--link) and underlined, including Full Method in the Details panes. A link that is itself a title, a whole row or card, a label in a chart, or a control keeps that element's style; the kinds are presentation.link_kinds (title, row, chart_label, control), and web registers each such link under one of them. Breadcrumbs keep breadcrumb-quiet and a provider's name keeps provider-link-style.
+    severity: error
+    predicate:
+      kind: unique
+      value: link-style
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.link
+    target: scope
+  - id: drill-down-row-kinds
+    text: On every chart every provider's drill-down shows all of its describing rows, and an event row only where its event happened, with no None row. The kind of each fact is the contract map drill_down_rows, decided once beside the fact labels and not per chart.
+    severity: error
+    predicate:
+      kind: schema
+      value: drill-down-rows-follow-the-kind-map
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.fact-list
+    target: scope
+  - id: provider-link-style
+    text: "A link to a provider's page is drawn in the row's own colour, underlined, the same in the top cards, the table view and the drill-down title."
+    severity: error
+    predicate:
+      kind: unique
+      value: provider-link-style
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: provider-tree-ground
+    text: A provider page's score tree and its band are drawn on the page ground, the same ground as the benchmarks overview, with no enclosing panel, background or border; the lane tints stay.
+    severity: error
+    predicate:
+      kind: unique
+      value: provider-tree-ground
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: provider-tree-rows
+    text: A provider page's score tree is a set of rows, each one strip with one horizontal hairline above it; no vertical rule appears in the tree, and an open or hovered row has one flat square fill across its whole width, lane cells and the gaps between cells included, and its text keeps its colour; the hovered Time or Cost cell is one step brighter than the rest of the row. A provider page has no section rail. The only rounded corners in the tree are the top corners of the Time and Cost lane heads, and a trace, job or task opens one panel, Time or Cost, from its arrow or its Time or Cost cell. Names stay on one line, cut with an ellipsis, and a score is indented one step per level so averaged scores sit left of the scores of individual tests.
+    severity: error
+    predicate:
+      kind: unique
+      value: provider-tree-rows
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: score-rank
+    text: Every score on a provider page shows its rank as "#n of m" in small muted text right of its bar, at every width down to 641 px; below 640 px the bar goes and the score and rank stay. The rank and the count are the published ones.
+    severity: error
+    predicate:
+      kind: unique
+      value: score-rank
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: frozen-panel
+    text: A panel opened on a provider page has no tabs, no dropdown arrows and no close or hide button; its selectors and legend chips are greyed and cannot be clicked, except that hovering a legend chip highlights its segment over the provider's highlight. It opens with the page provider's drill-down open, and a click on another provider's bar opens that provider's.
+    severity: error
+    predicate:
+      kind: unique
+      value: frozen-panel
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: soon-tag
+    text: An item that is Coming Soon wears the one shared Coming Soon tag on every page that lists it.
+    severity: error
+    predicate:
+      kind: unique
+      value: soon-tag
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: not-displayed-sentences
+    text: Each pricing Not Displayed reason is a complete sentence at its owner, and multiple reasons
+      remain separated by terminal punctuation and a space at every viewport width.
+    severity: error
+    predicate:
+      kind: schema
+      value: complete-pricing-reason-sentences
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.pricing-not-displayed
+    target: scope
+  - id: fonts-one-source
+    text: Use the same sans and monospace font stacks on every page; define each stack once site-wide
+      and remove page-local font lists.
+    severity: error
+    predicate:
+      kind: schema
+      value: site-font-stacks-one-source
+      evidence_required: true
+      checked_by: web
+      roles:
+      - sans
+      - monospace
+      definitions_per_role: 1
+      page_local_font_lists: false
+    applies_to:
+      slots:
+      - presentation.page
+    target: scope
+  - id: fact-list
+    text: Show label and value facts in the shared fact list, with one label column that every row in
+      the list shares. The first disclosure row and its caret align with the label line, without top padding or an inline-grid baseline gap.
+    severity: error
+    predicate:
+      kind: schema
+      value: fact-list-shared-label-column
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.fact-list
+    target: scope
+  - id: fact-label-required
+    text: Give every fact a label from owner text; never show a value without its label.
+    severity: error
+    predicate:
+      kind: required
+      value: label
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.fact
+    target: record
+  - id: fact-secondary-line
+    text: Put a fact's explanation, trial counts and source on its secondary line, in the secondary
+      style, never on the value line.
+    severity: error
+    predicate:
+      kind: schema
+      value: fact-value-then-secondary-line
+      max_sentences: 3
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.fact
+    target: record
+  - id: fact-groups
+    text: Order drawer facts as result, machine, then notes, with group spacing between the groups.
+    severity: error
+    predicate:
+      kind: order
+      value:
+      - result
+      - machine
+      - notes
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.fact-list
+    target: scope
+  - id: fact-list-narrow
+    text: At 479 pixels wide and narrower, put each fact's label above its value; never scroll a fact
+      list sideways.
+    severity: error
+    predicate:
+      kind: schema
+      value: fact-list-stacks-when-narrow
+      breakpoint_px: 479
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.fact-list
+    target: scope
+  - id: chart-signature
+    text: Sign every full chart panel's plot with the BoxRouter mark and name, muted, right-aligned at
+      the plot's end beside the top bar; where that row has no room, beside the bottom bar, then the
+      mark alone, then nothing on screen. Hero cards carry no signature, and it never covers a bar,
+      dot or value.
+    severity: error
+    predicate:
+      kind: schema
+      value: chart-signature-in-full-panel-plots
+      placement_order:
+      - top-row
+      - bottom-row
+      - mark-only-top-row
+      - mark-only-bottom-row
+      - none
+      excluded_slots:
+      - presentation.hero
+      viewports_px:
+      - 1440
+      - 390
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.chart-panel
+      variants:
+      - full
+    target: scope
+  - id: chart-signature-export
+    text: Every exported or downloaded chart image, hero cards included, carries the BoxRouter mark and
+      name.
+    severity: error
+    predicate:
+      kind: required
+      value: chart-signature-in-exported-images
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.chart-panel
+      - presentation.hero
+    target: scope
+  - id: availability-consistent
+    text: Show each item marked coming soon as coming soon on every rail, methodology page and benchmark panel. Read availability from the same owner taxonomy source on every surface.
+    predicate: {kind: schema, value: methodology-availability-consistent, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.page]}
+    target: scope
+    severity: error
+  - id: heading-not-repeated
+    text: Never repeat a parent heading as its only child heading. Show that item once.
+    predicate: {kind: schema, value: methodology-heading-unique, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.page]}
+    target: scope
+    severity: error
+  - id: benchmark-parent-navigation
+    text: Every benchmarks route except its index renders exactly one shared parent back or breadcrumb element linking to its parent, and to each ancestor above it in order, the topmost first (a provider page links Benchmarks, then All Providers).
+    predicate: {kind: schema, value: benchmark-parent-navigation, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.page]}
+    target: scope
+    severity: error
+  - id: benchmark-pages-owner-text
+    text: Every reader-visible string on benchmarks pages comes from its owner artifact or the shared site navigation text registry. Never author a reader label in page JSX or a string literal.
+    predicate: {kind: schema, value: benchmark-pages-owner-text, evidence_required: true, checked_by: web}
+    applies_to: {slots: [presentation.page]}
+    target: scope
+    severity: error
+  - id: methodology-page-anatomy
+    text: Open each methodology document with its breadcrumb, title, one byline (status when not live, version,
+      effective date and the documents it builds on), the summary as the lead and what it measures as a
+      second paragraph, then its sections in reading order.
+    predicate:
+      kind: order
+      value:
+      - breadcrumb
+      - title
+      - byline
+      - lead
+      - lead-detail
+      - actions
+      - sections
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    severity: error
+    target: scope
+  - id: methodology-sections-owned
+    text: Show each document's fields under the owner's reader section names, in the owner's order, open
+      or folded as the owner says; never show a schema key as a heading or label.
+    predicate:
+      kind: schema
+      value: methodology-reader-sections
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    severity: error
+    target: scope
+  - id: methodology-no-raw-keys
+    text: Never show schema keys, enum values, snake_case, dotted ids or JSON literals (null, true, false)
+      as reader text; show the owner's label, word or the linked name.
+    predicate:
+      kind: forbidden_pattern
+      value:
+      - ^[a-z][a-z0-9]*(_[a-z0-9]+)+$
+      - ^[a-z]+(\.[a-z0-9_]+){1,}$
+      - ^(null|true|false)$
+      outside: code
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+      - presentation.methodology-index
+    target: record
+    severity: error
+  - id: methodology-one-label-column
+    text: Use one label column width for every fact list on a methodology page, so every value starts at
+      the same x.
+    predicate:
+      kind: schema
+      value: methodology-page-single-label-column
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    severity: error
+    target: scope
+  - id: methodology-nested-patterns
+    text: Show steps as a numbered list, scopes as a fact list of linked names, conditions with their reason
+      beneath, and lists as bullets; never nest one fact list inside another.
+    predicate:
+      kind: schema
+      value: methodology-no-nested-fact-lists
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    severity: error
+    target: scope
+  - id: methodology-inheritance
+    text: Name the documents a methodology builds on in its byline as links, and mark any fact whose value
+      comes from one with a secondary line naming it; never show an Inherits heading.
+    predicate:
+      kind: schema
+      value: methodology-inheritance-linked
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    severity: error
+    target: scope
+  - id: methodology-metric-links
+    text: Link each methodology document to the benchmark results that use it, and every workload or document
+      it names to its own page.
+    predicate:
+      kind: schema
+      value: methodology-links-resolve
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+    severity: error
+    target: scope
+  - id: formula-as-math
+    text: Show a calculation as the owner's formula set as math, with every variable defined in a fact list
+      beneath it; never as an enum or code.
+    predicate:
+      kind: required
+      value:
+      - formula
+      - variables
+      - aria_label
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.formula
+    target: record
+    severity: error
+  - id: shared-disclosure
+    text: >-
+      Fold content only with the shared disclosure; never show a native disclosure triangle. A section disclosure turns the rail's chevron a quarter turn when open. A row disclosure, a list inside a drill-down, has a plain arrow that points right when closed and down when open, no fill, a pointer cursor, and the drill-down table's row rule under it.
+    predicate:
+      kind: unique
+      value: shared-disclosure-component
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.disclosure
+    severity: error
+    target: scope
+  - id: breadcrumb-quiet
+    text: Show breadcrumbs as muted text with no underline and no link colour; the link brightens on hover.
+    predicate:
+      kind: schema
+      value: breadcrumb-muted-links
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.breadcrumb
+    severity: error
+    target: scope
+  - id: dates-one-format
+    text: Show dates as month, day and year (Oct 27, 2026) in UTC; never show an ISO date to readers.
+    predicate:
+      kind: forbidden_pattern
+      value:
+      - \b\d{4}-\d{2}-\d{2}\b
+      outside: code
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+    target: record
+    severity: error
+  - id: methodology-no-empty-sections
+    text: Omit a section, row or heading that has nothing to show; never leave a divider or gap in its place.
+    predicate:
+      kind: schema
+      value: methodology-no-empty-blocks
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-page
+      - presentation.methodology-index
+    severity: error
+    target: scope
+  - id: methodology-index-rows
+    text: List each methodology as one link row with its name, version and effective date, and its summary
+      beneath; no cards or dividers.
+    predicate:
+      kind: schema
+      value: methodology-index-row
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.methodology-index
+    severity: error
+    target: scope
+  - id: no-hex-in-names
+    text: No title, label or selector option shows a hexadecimal identifier such as a commit or image hash;
+      such an identifier may appear only in a drill-down's details.
+    predicate:
+      kind: forbidden_pattern
+      value:
+      - \b[0-9a-f]{8,}\b
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+      - presentation.provider-page
+    target: record
+    severity: error
+  - id: no-raw-text-keys
+    text: No page surface shows a text key, placeholder or filler; text without an owner value draws nothing.
+    predicate:
+      kind: forbidden_pattern
+      value:
+      - <[a-z][a-z0-9_]*>
+      - <filler human verified text>
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.page
+      - presentation.provider-page
+    target: record
+    severity: error
+panels:
+  index:
+    extends: benchmark
+  time_vs_cost:
+    extends: benchmark
+    required_fields:
+    - notes.introduction
+    - notes.setup
+    - notes.how_to_read
+    - notes.cost_summary
+    - notes.cost_how_to_read
+    - metrics[].quantity
+    - metrics[].per
+  workload:
+    extends: benchmark
+    required_fields:
+    - notes.introduction
+    - notes.setup
+    - metrics[].quantity
+    - metrics[].per
+    - procedure.variants[].description
+    - procedure.stages[].description
+  workload_cost_view:
+    extends: benchmark
+    required_fields:
+    - notes.cost_summary
+    - notes.cost_how_to_read
+  sandbox_operations:
+    extends: benchmark
+    required_fields:
+    - notes.introduction
+    - notes.setup
+    - metrics[].quantity
+    - metrics[].per
+    - procedure.variants[].description
+    - procedure.stages[].description
+  machine_performance:
+    extends: benchmark
+    required_fields:
+    - notes.introduction
+    - notes.setup
+    - metrics[].quantity
+    - metrics[].per
+    - procedure.variants[].description
+    - procedure.stages[].description
+  hero:
+    required_slots:
+    - title
+    - subtitle
+    optional_slots:
+    - axis-title
+    details_order: []
+    slot_order:
+    - title
+    - subtitle
+    - axis-title
+    structural_slots:
+    - chart
+    variant: hero
+  section:
+    required_slots:
+    - section-heading
+    - section-intro
+    optional_slots: []
+    details_order: []
+  coming-soon:
+    required_slots:
+    - tab-label
+    - coming-soon
+    optional_slots: []
+    details_order: []
+  provider-rank:
+    required_slots:
+    - title
+    - rank-card-line
+    optional_slots: []
+    details_order: []
+  provider-row:
+    required_slots:
+    - row-name
+    optional_slots: []
+    details_order: []
+  benchmark:
+    required_slots:
+      from: conventions.panel.required_slots
+    required_fields:
+    - notes.introduction
+    - notes.setup
+    - notes.how_to_read
+    - metrics[].quantity
+    - metrics[].per
+    optional_slots:
+      from: conventions.panel.optional_slots
+    details_order:
+      from: conventions.details.part_order
+    abstract: true
+    slot_order:
+      from: conventions.panel.slot_order
+method_pages:
+  index:
+    category: index
+    required_blocks:
+    - what-it-measures
+    - how-its-measured
+    - how-to-read-it
+    - limits
+    - inputs
+    - aggregation
+    - metrics
+    - statistics
+    - sources
+  workload:
+    category: workload
+    required_blocks:
+    - what-it-measures
+    - how-its-measured
+    - how-to-read-it
+    - limits
+    - workload
+    - environment
+    - procedure
+    - metrics
+    - statistics
+    - validity
+    - sources
+  operation:
+    category: sandbox_operation
+    required_blocks:
+    - what-it-measures
+    - how-its-measured
+    - how-to-read-it
+    - limits
+    - environment
+    - procedure
+    - metrics
+    - statistics
+    - validity
+    - sources
+  machine-performance:
+    category: machine_performance
+    required_blocks:
+    - what-it-measures
+    - how-its-measured
+    - how-to-read-it
+    - limits
+    - environment
+    - procedure
+    - metrics
+    - statistics
+    - validity
+    - sources
+  capability:
+    category: capability
+    required_blocks:
+    - what-it-measures
+    - how-its-measured
+    - how-to-read-it
+    - limits
+    - capability
+    - evidence
+    - sources
+method_page:
+  header_slots:
+  - title
+  - description
+  slot_prefix: method.
+  block_rule:
+    form: structured
+    min_length: 1
+    max_length: 30000

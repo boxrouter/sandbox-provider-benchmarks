@@ -1,0 +1,747 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/text-conventions-1.json",
+  "title": "Shared reader text conventions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "editing",
+    "slots",
+    "panel",
+    "details",
+    "axis",
+    "table",
+    "subtitle",
+    "inline_code",
+    "vocabulary",
+    "banned_patterns",
+    "allowed_literals",
+    "fact_scope",
+    "sentence_rule",
+    "naming",
+    "uniqueness",
+    "headings",
+    "taxonomy_order",
+    "metric_forms",
+    "shapes",
+    "reporting",
+    "writing_review_proposal",
+    "rules",
+    "hero",
+    "readability",
+    "panels",
+    "method_pages",
+    "method_page"
+  ],
+  "properties": {
+    "schema": {
+      "const": "boxrouter.text-conventions/1"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "slots": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "purpose",
+          "form",
+          "casing",
+          "enabled",
+          "required",
+          "min_length",
+          "max_length",
+          "order"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "form": {
+            "enum": [
+              "sentence",
+              "canonical",
+              "label",
+              "link",
+              "structured",
+              "chrome",
+              "fragment",
+              "action-label",
+              "forbidden",
+              "literal"
+            ]
+          },
+          "casing": {
+            "enum": [
+              "title",
+              "sentence",
+              "preserve"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "min_length": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_length": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "min_items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "shown_items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_sentences": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_semicolons": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_provider_mentions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "const": {
+            "type": "string"
+          },
+          "heading": {
+            "type": "string"
+          },
+          "presentation": {
+            "type": "string"
+          },
+          "repeat_label": {
+            "type": "boolean"
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "source_badges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "source": {
+            "type": "string"
+          },
+          "generated": {
+            "type": "string"
+          },
+          "quantity_owner": {
+            "type": "boolean"
+          },
+          "runtime_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "editing": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "panel": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "details": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "axis": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_header"],
+      "properties": {
+        "unit_header": { "type": "string", "pattern": "\\{name\\}.*\\{unit\\}" }
+      }
+    },
+    "subtitle": {
+      "type": "object",
+      "required": [
+        "template",
+        "separator",
+        "directions",
+        "time_vs_cost_direction",
+        "measure_template",
+        "frontier_template",
+        "workload_unit_template",
+        "workload_set_template",
+        "score_composite_template",
+        "score_set_template",
+        "score_frontier_template",
+        "score_frontier_composite_template"
+      ],
+      "minProperties": 1
+    },
+    "title": {
+      "type": "object",
+      "required": [
+        "template"
+      ],
+      "minProperties": 1
+    },
+    "inline_code": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "vocabulary": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "banned_patterns": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "allowed_literals": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "fact_scope": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "sentence_rule": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "naming": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "uniqueness": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "headings": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "methodology_style": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "exemptions", "allowed_words", "list_markers", "rules"],
+      "properties": {
+        "list_markers": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "minLength": 1}},
+        "scope": {"type": "string", "minLength": 1},
+        "exemptions": {"type": "string", "minLength": 1},
+        "allowed_words": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["word"],
+            "properties": {"word": {"type": "string"}}
+          }
+        },
+        "rules": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/styleRule"}}
+      }
+    },
+    "taxonomy_order": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "metric_forms": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "slot",
+          "template"
+        ],
+        "properties": {
+          "slot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "template": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "shapes": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "reporting": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "writing_review_proposal": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    "hero": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "readability": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "jargon_patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rule"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "panels": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "required_slots": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              {
+                "type": "object",
+                "required": [
+                  "from"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          },
+          "optional_slots": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              {
+                "type": "object",
+                "required": [
+                  "from"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          },
+          "slot_order": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              {
+                "type": "object",
+                "required": [
+                  "from"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          },
+          "details_order": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              {
+                "type": "object",
+                "required": [
+                  "from"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          },
+          "extends": {
+            "type": "string"
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "structural_slots": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "variant": {
+            "type": "string"
+          },
+          "abstract": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "method_pages": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "category",
+          "required_blocks"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "required_blocks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "method_page": {
+      "type": "object",
+      "required": [
+        "header_slots",
+        "slot_prefix",
+        "block_rule"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "header_slots": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "slot_prefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "block_rule": {
+          "type": "object",
+          "required": [
+            "form",
+            "min_length",
+            "max_length"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "form": {
+              "type": "string"
+            },
+            "min_length": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "max_length": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "styleRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "check"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^methodology-style\\.[a-z][a-z0-9-]+$"},
+        "text": {"type": "string", "minLength": 1},
+        "check": {
+          "enum": ["phrase-table", "repeated-sentence", "forbidden-pattern", "heading", "definition-digits", "other-workload", "defined-term", "introduction-sentence", "code-marks", "paragraph-shape", "metric-paragraph", "colon-after-noun", "one-numbered-list", "status-label", "recorded-size", "step-note", "none"]
+        },
+        "flags": {"enum": ["i"]},
+        "raw": {"type": "boolean"},
+        "sections": {"type": "array", "items": {"type": "string"}},
+        "fields": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "verbs": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "patterns": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "min_words": {"type": "integer", "minimum": 1},
+        "min_word_length": {"type": "integer", "minimum": 1},
+        "shared_parameters": {"type": "array", "items": {"type": "string"}},
+        "units": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["dimension", "factor", "text", "keys"],
+            "properties": {
+              "dimension": {"type": "string"},
+              "factor": {"type": "number"},
+              "text": {"type": "array", "items": {"type": "string"}},
+              "keys": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        },
+        "clause_starters": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "verb_endings": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "ignore_values": {"type": "array", "items": {"type": "integer"}},
+        "term": {"type": "string"},
+        "max_length": {"type": "integer", "minimum": 1},
+        "time_verb": {"type": "string", "minLength": 1},
+        "other_verb": {"type": "string", "minLength": 1},
+        "index_verbs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "time_units": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "direction_pattern": {"type": "string", "minLength": 1},
+        "defined_term_patterns": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "deferred_fields": {"type": "array", "items": {"type": "string"}},
+        "max_item_length": {"type": "integer", "minimum": 1},
+        "min_items": {"type": "integer", "minimum": 2},
+        "min_item_length": {"type": "integer", "minimum": 1},
+        "min_shared_words": {"type": "integer", "minimum": 2},
+        "exempt_paragraphs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["starts", "reason"],
+            "properties": {"starts": {"type": "string", "minLength": 1}, "reason": {"type": "string", "minLength": 1}}
+          }
+        },
+        "field_id_pattern": {"type": "string", "minLength": 1},
+        "environment_variables": {"type": "array", "items": {"type": "string"}},
+        "value_keys": {"type": "array", "items": {"type": "string"}},
+        "plain_words": {"type": "array", "items": {"type": "string"}},
+        "commands": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "typable_patterns": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "owner": {"type": "string"},
+        "reason": {"type": "string"},
+        "phrases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["idea", "canonical", "variants"],
+            "properties": {
+              "idea": {"type": "string"},
+              "canonical": {"type": "string"},
+              "variants": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+            }
+          }
+        }
+      },
+      "allOf": [
+        {"if": {"properties": {"check": {"const": "none"}}}, "then": {"required": ["owner", "reason"]}},
+        {"if": {"properties": {"check": {"const": "forbidden-pattern"}}}, "then": {"required": ["patterns"]}},
+        {"if": {"properties": {"check": {"const": "phrase-table"}}}, "then": {"required": ["phrases"]}},
+        {"if": {"properties": {"check": {"const": "step-note"}}}, "then": {"required": ["min_shared_words"]}},
+        {"if": {"properties": {"check": {"const": "colon-after-noun"}}}, "then": {"required": ["fields", "verbs"]}},
+        {
+          "if": {"properties": {"check": {"const": "paragraph-shape"}}},
+          "then": {"required": ["deferred_fields", "max_length", "max_item_length", "min_items", "min_item_length"]}
+        },
+        {
+          "if": {"properties": {"check": {"const": "code-marks"}}},
+          "then": {"required": ["deferred_fields", "field_id_pattern", "environment_variables", "value_keys", "plain_words", "commands", "typable_patterns"]}
+        },
+        {
+          "if": {"properties": {"check": {"const": "introduction-sentence"}}},
+          "then": {"required": ["max_length", "time_verb", "other_verb", "index_verbs", "time_units", "direction_pattern"]}
+        }
+      ]
+    },
+
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "applies_to",
+        "target",
+        "predicate",
+        "severity",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]+$"
+        },
+        "applies_to": {
+          "type": "object",
+          "required": [
+            "slots"
+          ]
+        },
+        "target": {
+          "enum": [
+            "record",
+            "scope"
+          ]
+        },
+        "predicate": {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string"
+            }
+          }
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "advisory"
+          ]
+        },
+        "when": {
+          "type": "object",
+          "required": [
+            "field",
+            "op"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parameters": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": [
+              "integer",
+              "number",
+              "string"
+            ]
+          },
+          "description": "The numbers and templates the rule's text names as {parameters.<name>}; the loader resolves them, and consumers read the same values as data."
+        }
+      }
+    }
+  }
+}

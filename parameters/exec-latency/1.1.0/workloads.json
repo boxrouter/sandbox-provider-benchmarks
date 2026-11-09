@@ -1,0 +1,11 @@
+[
+  {
+    "data": {
+      "calls": 100,
+      "command": "true"
+    },
+    "id": "true",
+    "label": "true, 100 calls through Core",
+    "version": "sha256:8db60a2eeeb06993"
+  }
+]

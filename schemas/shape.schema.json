@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/sbs/0.1/shape.schema.json",
+  "title": "SBS procedure shape",
+  "description": "The shape a benchmark runner procedure block declares: its record steps in order, the operation each step makes, the sandbox it runs in and whether it is timed. The methodology scaffold reads it to write a new benchmark's steps. Each `operation` must be a key of `contracts/operations.yaml`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "block", "launch", "reads", "steps"],
+  "properties": {
+    "schema": {"const": "sandbox-benchmarks.shape/1"},
+    "block": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "The procedure module's name.",
+      "examples": ["snapshot"]
+    },
+    "launch": {
+      "enum": ["single", "sequential", "at_once"],
+      "description": "`single`: one sandbox; `sequential`: several, one after another; `at_once`: several started together."
+    },
+    "reads": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1},
+      "description": "The `workload.data` keys the block reads.",
+      "examples": [["command", "marker", "restores", "snapshots"]]
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "operation", "sandbox", "timed"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "description": "The record step id the trial record carries.",
+            "examples": ["create-from-snapshot"]
+          },
+          "operation": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The operation the step makes: a key of `contracts/operations.yaml`.",
+            "examples": ["snapshots.create"]
+          },
+          "sandbox": {
+            "enum": ["first", "rest", "every"],
+            "description": "The sandbox the step runs in: the first, every sandbox after the first, or every sandbox."
+          },
+          "timed": {"type": "boolean", "description": "Whether the step is a timed measurement."},
+          "owner": {
+            "enum": ["provider", "script"],
+            "description": "Who owns a failure of an untimed step."
+          },
+          "clock_reads": {
+            "type": "boolean",
+            "default": false,
+            "description": "A command step that reads the sandbox clock."
+          },
+          "ready_check": {
+            "type": "boolean",
+            "description": "Only on create and restore steps: whether an untimed ready check follows. Defaults to true for create and false for restore."
+          }
+        },
+        "if": {"properties": {"timed": {"const": false}}},
+        "then": {"required": ["owner"]}
+      }
+    }
+  }
+}

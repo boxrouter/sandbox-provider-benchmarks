@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/benchmark-aliases-1.json",
+  "title": "Benchmark id aliases",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema"],
+  "properties": {
+    "schema": {"const": "boxrouter.bench.aliases/1"},
+    "document": {"$ref": "#/$defs/flat"},
+    "reader_versions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/flat",
+        "required": ["id", "version", "reader_version"],
+        "maxProperties": 3
+      }
+    },
+    "test": {"$ref": "#/$defs/flat"},
+    "task": {"$ref": "#/$defs/flat"},
+    "tab": {"$ref": "#/$defs/flat"},
+    "view": {"$ref": "#/$defs/flat"},
+    "section": {"$ref": "#/$defs/flat"},
+    "subsection": {"$ref": "#/$defs/flat"},
+    "test_variant": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "string", "minLength": 1},
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "variant": {"$ref": "#/$defs/scoped"},
+    "stage": {"$ref": "#/$defs/scoped"},
+    "retired": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "retired_names": {"$ref": "#/$defs/flat"}
+  },
+  "$defs": {
+    "flat": {"type": "object", "additionalProperties": {"type": "string", "minLength": 1}},
+    "scoped": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/flat"}
+    }
+  }
+}

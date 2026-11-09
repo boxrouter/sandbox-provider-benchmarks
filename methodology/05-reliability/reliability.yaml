@@ -1,0 +1,224 @@
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+id: reliability.provider_failures
+version: 0.1.3
+effective: '2026-10-27'
+name: Reliability
+category: reliability
+status: planned
+description: Reliability measures how often each provider fails, counting only failures the provider
+  caused.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: provider_success_rate
+  unit: ratio
+  direction: higher_is_better
+  description: Successes divided by successes plus provider failures, per benchmark, over a run.
+statistics:
+  primary: success_rate
+  interval:
+    type: wilson_score
+  ranking:
+    ranked: false
+    failing_often: 'Already applied to every ranked result: a provider failing at least twice, and in
+      more than 1 in 10 of its successes plus provider failures, is shown but not ranked.'
+failure_policy:
+  timeout_seconds: {}
+  retries: None in the benchmark, of a call or a trial, except the untimed ready check after a create.
+    The first failed step ends the trial; later steps are not reached.
+  success: Every benchmark-specific check passes and every resource the trial created is confirmed deleted.
+  provider_errors:
+  - Any failure whose recorded owner is the provider, or whose owner is unknown. An unknown owner counts
+    against the provider.
+  - Create errors, transport errors and a sandbox that stops answering.
+  - Forty not-ready answers to the ready check, or any other failure of it.
+  - A failed destroy; the provider owns whether the sandbox was released, even when the trial had already
+    failed for another reason.
+  - A setup step of a replayed workload (a CI job's checkout, toolchain or install) whose own output
+    names a network failure (DNS, refused, reset or timed-out connection), unless the same step fails
+    that way on every provider in the publication.
+  - A step that sizes itself from the CPU count the system reports, where the sandbox reports more CPUs
+    than the trial asked for.
+  - A timeout is attributed according to its recorded owner and evidence; the source does not define
+    a universal timeout owner.
+  benchmark_errors:
+  - A failure whose recorded owner is BoxRouter's Core, the benchmark account, the benchmark script,
+    or an external cause. These are excluded from the provider's count and kept in the data with their
+    owner.
+  - A failure of the benchmark's own script, such as output it cannot parse after a command exited 0.
+  - A failure of a setup step caused by the same external network failure on every provider in a publication
+    (owner external), which the page lists.
+  exclusions:
+  - A failure shown, by its error fields or a trace, not to be the provider's.
+  - A recorded trace that does not replay on that provider, such as an exit-code or output mismatch,
+    or a command timeout after which the sandbox still answers a trivial command run untimed. It is
+    excluded on that provider as "does not replay here" with its cause.
+  - A trial replaced by a later batch in the same slot. The replaced trial stays in the data with the
+    batch that replaced it.
+  - A missed trial, one whose timed steps were not sent because a check found it cannot run there. It
+    is neither a success nor a failure.
+  - An excluded trial stays in the data with its reason.
+notes:
+  summary: '{param:reliability.provider_failures.0.1.3.description}'
+  what_this_measures: Failures caused by the benchmark or workload are excluded from provider-failure
+    counts.
+  how_to_read: The success rate compares successful trials with successful trials and provider failures;
+    higher is better.
+---
+id: reliability.provider_failures
+version: 0.1.5
+effective: '2026-10-27'
+name: Reliability
+category: reliability
+status: planned
+description: Reliability measures how often each provider fails, counting only failures
+  the provider caused.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: provider_success_rate
+  unit: ratio
+  direction: higher_is_better
+  description: Successes divided by successes plus provider failures, per benchmark,
+    over a run.
+statistics:
+  primary: success_rate
+  interval:
+    type: wilson_score
+  ranking:
+    ranked: false
+    failing_often: 'Already applied to every ranked result: a provider failing at
+      least twice, and in more than 1 in 10 of its successes plus provider failures,
+      is shown but not ranked.'
+failure_policy:
+  timeout_seconds: {}
+  retries: None in the benchmark, of a call or a trial, except the untimed ready check
+    after a create. The first failed step ends the trial; later steps are not reached.
+  success: Every benchmark-specific check passes and every resource the trial created
+    is confirmed deleted.
+  provider_errors:
+  - Any failure whose recorded owner is the provider, or whose owner is unknown. An
+    unknown owner counts against the provider.
+  - Create errors, transport errors and a sandbox that stops answering.
+  - Forty not-ready answers to the ready check, or any other failure of it.
+  - A failed destroy; the provider owns whether the sandbox was released, even when
+    the trial had already failed for another reason.
+  - A setup step of a replayed workload (a CI job's checkout, toolchain or install)
+    whose own output names a network failure (DNS, refused, reset or timed-out connection),
+    unless the same step fails that way on every provider in the publication.
+  - A step that sizes itself from the CPU count the system reports, where the sandbox
+    reports more CPUs than the trial asked for.
+  - A timeout is attributed according to its recorded owner and evidence; the source
+    does not define a universal timeout owner.
+  benchmark_errors:
+  - A failure whose recorded owner is BoxRouter's Core, the benchmark account, the
+    benchmark script, or an external cause. These are excluded from the provider's
+    count and kept in the data with their owner.
+  - A failure of the benchmark's own script, such as output it cannot parse after
+    a command exited 0.
+  - A failure of a setup step caused by the same external network failure on every
+    provider in a publication (owner external), which the page lists.
+  exclusions:
+  - A failure shown, by its error fields or a trace, not to be the provider's.
+  - A recorded trace that does not replay on that provider, such as an exit-code or
+    output mismatch, or a command timeout after which the sandbox still answers a
+    trivial command run untimed. It is excluded on that provider as "does not replay
+    here" with its cause.
+  - A trial replaced by a later batch in the same slot. The replaced trial stays in
+    the data with the batch that replaced it.
+  - A missed trial, one whose timed steps were not sent because a check found it cannot
+    run there. It is neither a success nor a failure.
+  - An excluded trial stays in the data with its reason.
+notes:
+  summary: '{param:reliability.provider_failures.0.1.3.description}'
+  what_this_measures: Failures caused by the benchmark or workload are excluded from
+    provider-failure counts.
+  how_to_read: The success rate compares successful trials with successful trials
+    and provider failures; {direction:provider_success_rate}.
+  how_it_is_measured: Each trial is classified from its recorded owner and evidence;
+    provider-owned and unknown-owner failures count against the provider.
+interpretation:
+  limits:
+  - The rate covers only the included benchmark trials and does not generalize to
+    other workloads.
+---
+id: reliability.provider_failures
+version: 0.1.6
+effective: '2026-11-08'
+name: Reliability
+category: reliability
+status: planned
+description: Reliability measures how often each provider fails, counting only failures
+  the provider caused.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: provider_success_rate
+  unit: ratio
+  direction: higher_is_better
+  description: Successes divided by successes plus provider failures, per benchmark,
+    over a run.
+statistics:
+  primary: success_rate
+  interval:
+    type: wilson_score
+  ranking:
+    ranked: false
+    failing_often: 'Already applied to every ranked result: a provider failing at
+      least twice, and in more than 1 in 10 of its successes plus provider failures,
+      is shown but not ranked.'
+failure_policy:
+  timeout_seconds: {}
+  retries: None in the benchmark, of a call or a trial, except the untimed ready check
+    after a create. The first failed step ends the trial; later steps are not reached.
+  success: Every benchmark-specific check passes and every resource the trial created
+    is confirmed deleted.
+  provider_errors:
+  - Any failure whose recorded owner is the provider, or whose owner is unknown. An
+    unknown owner counts against the provider.
+  - Create errors, transport errors and a sandbox that stops answering.
+  - Forty not-ready answers to the ready check, or any other failure of it.
+  - A failed destroy; the provider owns whether the sandbox was released, even when
+    the trial had already failed for another reason.
+  - A setup step of a replayed workload (a CI job's checkout, toolchain or install)
+    whose own output names a network failure (DNS, refused, reset or timed-out connection),
+    unless the same step fails that way on every provider in the publication.
+  - A step that sizes itself from the CPU count the system reports, where the sandbox
+    reports more CPUs than the trial asked for.
+  - A timeout is attributed according to its recorded owner and evidence; the source
+    does not define a universal timeout owner.
+  benchmark_errors:
+  - A failure whose recorded owner is BoxRouter's Core, the benchmark account, the
+    benchmark script, or an external cause. These are excluded from the provider's
+    count and kept in the data with their owner.
+  - A failure of the benchmark's own script, such as output it cannot parse after
+    a command exited 0.
+  - A failure of a setup step caused by the same external network failure on every
+    provider in a publication (owner external), which the page lists.
+  exclusions:
+  - A failure shown, by its error fields or a trace, not to be the provider's.
+  - A recorded trace that does not replay on that provider, such as an exit-code or
+    output mismatch, or a command timeout after which the sandbox still answers a
+    trivial command run untimed. It is excluded on that provider as "does not replay
+    here" with its cause.
+  - A trial replaced by a later batch in the same slot. The replaced trial stays in
+    the data with the batch that replaced it.
+  - A missed trial, one whose timed steps were not sent because a check found it cannot
+    run there. It is neither a success nor a failure.
+  - An excluded trial stays in the data with its reason.
+notes:
+  summary: '{param:reliability.provider_failures.0.1.6.description}'
+  what_this_measures: Failures caused by the benchmark or workload are excluded from
+    provider-failure counts.
+  how_to_read: The success rate compares successful trials with successful trials
+    and provider failures; {direction:provider_success_rate}.
+  how_it_is_measured: Each trial is classified from its recorded owner and evidence;
+    provider-owned and unknown-owner failures count against the provider.
+interpretation:
+  limits:
+  - The rate covers only the included benchmark trials and does not generalize to
+    other workloads.

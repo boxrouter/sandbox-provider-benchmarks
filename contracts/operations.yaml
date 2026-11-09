@@ -1,0 +1,98 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+# The operations a procedure step can time: one entry per `Call` the benchmark runner's TrialContext
+# makes. A shape step and a methodology step name one of these keys; nothing else lists them.
+# Per operation: the default `timeout_seconds` (the comment beside it cites the current document
+# step it comes from), the draft `action` and `timer` a new benchmark's step starts from, and the
+# provider capability (`gate`) a benchmark that uses the operation must require, or null.
+operations:
+  create:
+    timeout_seconds: 300  # sequential-tti 1.2.18, step create
+    action: Create a fresh sandbox from the standard image.
+    timer: {from: the create request, until: the create call returns}
+    gate: null
+  commands.run:
+    timeout_seconds: 30  # exec-latency 1.2.12, step true
+    action: Run the workload's command in the sandbox.
+    timer: {from: the command, until: its exit code is back at the job host}
+    gate: null
+  attach:
+    timeout_seconds: 120  # reconnect 1.1.13, step attach
+    action: Attach to the existing sandbox by its id from a new client.
+    timer: {from: the attach request, until: the attach call returns}
+    gate: null
+  script:
+    timeout_seconds: 300  # 7-zip-1-thread 1.1.18, step 7-zip-1-thread
+    action: Run the workload's script in the background and wait for it to exit.
+    timer: {from: the script start, until: the script exits}
+    gate: null
+  files.list:
+    timeout_seconds: 60  # list 1.1.13, step list
+    action: List the workload's directory in the sandbox.
+    timer: {from: the list request, until: the listing returns to the job host}
+    gate: null
+  files.write:
+    timeout_seconds: 60  # write-4kib 1.1.13, step write
+    action: Write the workload's file to the sandbox.
+    timer: {from: the write request, until: the write call returns}
+    gate: null
+  files.read:
+    timeout_seconds: 60  # read-4kib 1.1.13, step read
+    action: Read the workload's file back from the sandbox.
+    timer: {from: the read request, until: the complete file returns to the job host}
+    gate: null
+  pause:
+    timeout_seconds: 300  # pause-resume 1.2.16, step pause
+    action: Request a pause of the sandbox.
+    timer: {from: the pause request, until: the provider reports the sandbox paused and the call returns}
+    gate: pause_resume
+  resume:
+    timeout_seconds: 300  # pause-resume 1.2.16, step resume
+    action: Request a resume of the paused sandbox.
+    timer: {from: the resume request, until: the resume call returns}
+    gate: pause_resume
+  state:
+    timeout_seconds: 30  # no current document times state; the commands.run default
+    action: Ask the provider for the sandbox's state.
+    timer: {from: the state request, until: the state call returns}
+    gate: null
+  snapshots.create:
+    timeout_seconds: 600  # snapshot-and-restore 1.1.14, step snapshot
+    action: Request a snapshot of the sandbox.
+    timer: {from: the snapshot request, until: the snapshot call returns}
+    gate: snapshots
+  restore:
+    timeout_seconds: 300  # snapshot-and-restore 1.1.14, step restore
+    action: Create a new sandbox from the snapshot.
+    timer: {from: the restore request, until: the restore call returns}
+    gate: snapshots
+  destroy:
+    timeout_seconds: 300  # sequential-tti 1.2.18, step destroy
+    action: Destroy the sandbox and confirm it is gone.
+    timer: {from: the destroy request, until: the destroy call returns}
+    gate: null
+  image.prepare:
+    timeout_seconds: 1800  # image-build-2vcpu-4gib 1.2.14, step build
+    action: Prepare the workload's image with the provider.
+    timer: {from: the image prepare request, until: the provider reports the image ready}
+    gate: null
+  previews.open:
+    timeout_seconds: 60  # previews 1.1.14, step open_preview
+    action: Open the workload's port and obtain its public preview URL.
+    timer: {from: the preview open request, until: the preview URL returns}
+    gate: previews
+  process.start:
+    timeout_seconds: 60  # previews 1.1.14, step start_server
+    action: Start the workload's process in the background.
+    timer: {from: the process start request, until: the process start call returns}
+    gate: null
+  http.get:
+    timeout_seconds: 30  # previews 1.1.14, step request
+    action: Send a GET request from the job host to the preview URL.
+    timer: {from: the GET request, until: the response status and headers arrive at the job host}
+    gate: null
+  websocket.connect:
+    timeout_seconds: 10  # previews 1.1.14, step websocket
+    action: Open a WebSocket connection from the job host to the preview URL.
+    timer: {from: the connection attempt, until: the first server message arrives}
+    gate: null

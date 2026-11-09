@@ -1,0 +1,13 @@
+{
+  "schema": "sandbox-benchmarks.shape/1",
+  "block": "pause_resume",
+  "launch": "single",
+  "reads": ["command"],
+  "steps": [
+    {"id": "create", "operation": "create", "sandbox": "first", "timed": true, "ready_check": true},
+    {"id": "pause", "operation": "pause", "sandbox": "first", "timed": true},
+    {"id": "resume", "operation": "resume", "sandbox": "first", "timed": true},
+    {"id": "exec", "operation": "commands.run", "sandbox": "first", "timed": true, "clock_reads": true},
+    {"id": "destroy", "operation": "destroy", "sandbox": "first", "timed": true}
+  ]
+}

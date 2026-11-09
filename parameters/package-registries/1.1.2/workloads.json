@@ -1,0 +1,88 @@
+[
+  {
+    "data": {
+      "command": "git clone https://github.com/fastapi/fastapi.git /workspace/fastapi && git -C /workspace/fastapi checkout -q 69ddc2badf9da1123bba4d360225ae6b085985f6 && test \"$(git -C /workspace/fastapi rev-parse HEAD)\" = 69ddc2badf9da1123bba4d360225ae6b085985f6",
+      "env": {
+        "GIT_TERMINAL_PROMPT": "0",
+        "PATH": "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      },
+      "files": [],
+      "hosts": [
+        "github.com"
+      ],
+      "prepare": "rm -rf ~/.npm ~/.cache/pip && mkdir -p /workspace",
+      "source": {
+        "commit": "69ddc2badf9da1123bba4d360225ae6b085985f6",
+        "repository": "fastapi/fastapi"
+      }
+    },
+    "id": "git-clone",
+    "label": "git clone",
+    "version": "sha256:9dec661181dad2c0"
+  },
+  {
+    "data": {
+      "command": "cd /workspace/axios && npm ci",
+      "env": {
+        "GIT_TERMINAL_PROMPT": "0",
+        "PATH": "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      },
+      "files": [
+        {
+          "name": "axios-package.json",
+          "sha256": "b4ffd2888e63ccfcabc0e1f0deb316ac156138872f801145934d4a85897d0b80",
+          "to": "/tmp/install-package.json"
+        },
+        {
+          "name": "axios-package-lock.json",
+          "sha256": "b9977481fedd385a5df84dc533ab791129018d490139d5260a26f94697c444b1",
+          "to": "/tmp/install-package-lock.json"
+        }
+      ],
+      "hosts": [
+        "registry.npmjs.org"
+      ],
+      "prepare": "rm -rf ~/.npm ~/.cache/pip && mkdir -p /workspace/axios && cp /tmp/install-package.json /workspace/axios/package.json && cp /tmp/install-package-lock.json /workspace/axios/package-lock.json",
+      "source": {
+        "commit": "e6b79d9cef796ca3a903bb83e51d4752b019fd67",
+        "files": [
+          "package.json",
+          "package-lock.json"
+        ],
+        "repository": "axios/axios"
+      }
+    },
+    "id": "npm-ci",
+    "label": "npm ci",
+    "version": "sha256:ea1a8fe13f8ada7c"
+  },
+  {
+    "data": {
+      "command": "/workspace/venv/bin/pip install -r /workspace/requirements.txt",
+      "env": {
+        "GIT_TERMINAL_PROMPT": "0",
+        "PATH": "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      },
+      "files": [
+        {
+          "name": "fastapi-requirements.txt",
+          "sha256": "0f0846f791fa9e77915c2d9be01596137ed99107cec484b8c717d5d174315c6a",
+          "to": "/tmp/install-requirements.txt"
+        }
+      ],
+      "hosts": [
+        "pypi.org",
+        "files.pythonhosted.org"
+      ],
+      "prepare": "rm -rf ~/.npm ~/.cache/pip && mkdir -p /workspace && python3 -m venv /workspace/venv && cp /tmp/install-requirements.txt /workspace/requirements.txt",
+      "source": {
+        "commit": "69ddc2badf9da1123bba4d360225ae6b085985f6",
+        "export": "uv export --frozen --no-dev --group tests --extra all --no-emit-project --format requirements-txt",
+        "repository": "fastapi/fastapi"
+      }
+    },
+    "id": "pip-install",
+    "label": "pip install -r",
+    "version": "sha256:d6c58f6048ab1d4c"
+  }
+]

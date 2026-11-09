@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/benchmark-presentation-1.json",
+  "title": "Safe benchmark reader presentation projection",
+  "description": "Only owner-authored reader presentation. Scientific records, measured names, identities, parameters, conditions, procedures, timers, units, counts, rankings and publication data are excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "content_criteria", "names"],
+  "properties": {
+    "schema": {"const": "boxrouter.bench.presentation/1"},
+    "content_criteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hover_templates", "hover_slots", "statistics_selector", "conventions"],
+      "properties": {
+        "hover_templates": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/hoverTemplate"}
+        },
+        "hover_slots": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/hoverSlot"}
+        },
+        "statistics_selector": {"$ref": "#/$defs/statisticsSelector"},
+        "conventions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["presentation"],
+          "properties": {
+            "presentation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["rules"],
+              "properties": {
+                "rules": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {"oneOf": [
+                    {"$ref": "#/$defs/hoverLayoutRule"},
+                    {"$ref": "#/$defs/barValueUnitRule"},
+                    {"$ref": "#/$defs/statisticsSelectorRule"}
+                  ]}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "names": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/sectionName"}
+    }
+  },
+  "$defs": {
+    "runtimeFields": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "hoverFields": {
+      "type": "object",
+      "properties": {
+        "owner": {"type": "string", "minLength": 1},
+        "template": {"type": "string", "minLength": 1},
+        "authored_template": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "minLength": 1},
+        "slot": {"type": "string", "minLength": 1},
+        "criteria_slot": {"type": "string", "minLength": 1},
+        "form": {"type": "string", "minLength": 1},
+        "role": {"enum": ["header", "value", "body", "note", "row", "measure", "subrow", "detail", "heading", "command", "unit", "more"]},
+        "runtime_fields": {"$ref": "#/$defs/runtimeFields"},
+        "required_runtime_fields": {"$ref": "#/$defs/runtimeFields"}
+      }
+    },
+    "hoverTemplate": {
+      "allOf": [
+        {"$ref": "#/$defs/hoverFields"},
+        {"type": "object", "required": ["owner", "template", "authored_template", "form", "role", "runtime_fields", "slot"]}
+      ],
+      "unevaluatedProperties": false
+    },
+    "hoverSlot": {
+      "allOf": [
+        {"$ref": "#/$defs/hoverFields"},
+        {"type": "object", "required": ["owner", "template", "criteria_slot"]}
+      ],
+      "unevaluatedProperties": false
+    },
+    "statisticsSelector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "template", "p95_unavailable"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1},
+        "template": {"type": "string", "minLength": 1},
+        "p95_unavailable": {"type": "string", "minLength": 1}
+      }
+    },
+    "ruleBase": {
+      "type": "object",
+      "required": ["id", "text", "severity", "predicate", "applies_to", "target"],
+      "properties": {
+        "id": {"type": "string"},
+        "text": {"type": "string"},
+        "severity": {"const": "error"},
+        "predicate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value", "evidence_required"],
+          "properties": {
+            "kind": {"const": "schema"},
+            "value": {"type": "string"},
+            "evidence_required": {"const": true},
+            "checked_by": {"type": "string"}
+          }
+        },
+        "applies_to": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["slots"],
+          "properties": {"slots": {"type": "array", "items": {"type": "string"}}}
+        },
+        "target": {"const": "scope"}
+      }
+    },
+    "hoverLayoutRule": {
+      "allOf": [
+        {"$ref": "#/$defs/ruleBase"},
+        {"type": "object", "additionalProperties": false, "required": ["parameters"], "properties": {
+          "id": {"const": "hover-layout"},
+          "text": {"type": "string"}, "severity": {"const": "error"},
+          "predicate": {"type": "object", "additionalProperties": false, "required": ["kind", "value", "evidence_required", "checked_by"], "properties": {
+            "kind": {"const": "schema"}, "value": {"const": "hover-rows-content-width-bounded"}, "evidence_required": {"const": true}, "checked_by": {"type": "string"}}},
+          "applies_to": {"type": "object", "additionalProperties": false, "required": ["slots"], "properties": {"slots": {"const": ["presentation.panel"]}}},
+          "target": {"const": "scope"},
+          "parameters": {"type": "object", "additionalProperties": false, "required": ["min_width_px", "max_width_px", "unit_list_width", "viewport_inset_px", "ci_indent_px", "unit_rows_max", "command_rows_max", "label_font_px", "label_line_px", "label_weight", "row_font_px", "row_line_px", "value_weight", "label_gap_px", "row_gap_px", "list_row_gap_px", "ci_gap_px", "unit_indent_px", "definition_label_gap_px", "definition_gap_px", "padding_y_px", "padding_x_px", "radius_px"], "properties": {
+            "min_width_px": {"type": "integer", "minimum": 1}, "max_width_px": {"type": "integer", "minimum": 1}, "unit_list_width": {"const": "fit-longest-name"}, "viewport_inset_px": {"type": "integer", "minimum": 0}, "ci_indent_px": {"type": "integer", "minimum": 0}, "unit_rows_max": {"type": "integer", "minimum": 1}, "command_rows_max": {"type": "integer", "minimum": 1}, "label_font_px": {"type": "integer", "minimum": 1}, "label_line_px": {"type": "integer", "minimum": 1}, "label_weight": {"type": "integer", "minimum": 1}, "row_font_px": {"type": "integer", "minimum": 1}, "row_line_px": {"type": "integer", "minimum": 1}, "value_weight": {"type": "integer", "minimum": 1}, "label_gap_px": {"type": "integer", "minimum": 0}, "row_gap_px": {"type": "integer", "minimum": 0}, "list_row_gap_px": {"type": "integer", "minimum": 0}, "ci_gap_px": {"type": "integer", "minimum": 0}, "unit_indent_px": {"type": "integer", "minimum": 0}, "definition_label_gap_px": {"type": "integer", "minimum": 0}, "definition_gap_px": {"type": "integer", "minimum": 0}, "padding_y_px": {"type": "integer", "minimum": 0}, "padding_x_px": {"type": "integer", "minimum": 0}, "radius_px": {"type": "integer", "minimum": 0}}}
+        }}
+      ]
+    },
+    "barValueUnitRule": {
+      "allOf": [
+        {"$ref": "#/$defs/ruleBase"},
+        {"type": "object", "additionalProperties": false, "required": ["parameters"], "properties": {
+          "id": {"const": "bar-value-unit"},
+          "text": {"type": "string"}, "severity": {"const": "error"},
+          "predicate": {"type": "object", "additionalProperties": false, "required": ["kind", "value", "evidence_required"], "properties": {
+            "kind": {"const": "schema"}, "value": {"const": "bar-value-matches-axis-unit"}, "evidence_required": {"const": true}}},
+          "applies_to": {"type": "object", "additionalProperties": false, "required": ["slots"], "properties": {"slots": {"const": ["presentation.numeric-axis"]}}},
+          "target": {"const": "scope"},
+          "parameters": {"type": "object", "additionalProperties": false, "required": ["interval_label", "interval_label_currency"], "properties": {
+            "interval_label": {"type": "string"}, "interval_label_currency": {"type": "string"},
+            "decimal_places": {"type": "integer", "minimum": 0}, "below_resolution_label": {"type": "string"}}}
+        }}
+      ]
+    },
+    "statisticsSelectorRule": {
+      "allOf": [
+        {"$ref": "#/$defs/ruleBase"},
+        {"type": "object", "additionalProperties": false, "properties": {
+          "id": {"const": "statistics-selector-shared"},
+          "text": {"type": "string"}, "severity": {"const": "error"},
+          "predicate": {"type": "object", "additionalProperties": false, "required": ["kind", "value", "evidence_required"], "properties": {
+            "kind": {"const": "schema"}, "value": {"const": "all-statistics-selectors-use-owner-pattern"}, "evidence_required": {"const": true}, "checked_by": {"type": "string"}}},
+          "applies_to": {"type": "object", "additionalProperties": false, "required": ["slots"], "properties": {"slots": {"const": ["presentation.panel"]}}},
+          "target": {"const": "scope"}
+        }}
+      ]
+    },
+    "sectionName": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "name"],
+      "properties": {
+        "kind": {"const": "section"},
+        "id": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

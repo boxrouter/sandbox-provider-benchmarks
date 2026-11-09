@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+id: time-vs-cost
+version: 1.1.20
+effective: '2026-11-08'
+name: '{name:time-vs-cost}'
+category: index
+notes:
+  summary: '{param:content.index_copy.descriptions.time_vs_cost}'
+  what_this_measures: '{param:content.index_copy.details.time_vs_cost.what_this_measures}'
+  how_it_is_measured: '{param:content.index_copy.details.time_vs_cost.how_it_is_measured}'
+  how_to_read: '{param:content.index_copy.details.time_vs_cost.how_to_read}'
+  cost_summary: '{param:content.index_copy.description}'
+  cost_how_to_read: Both axes use the same costed units.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: typical_cost
+  unit: USD
+  direction: lower_is_better
+  description: The provider's {name:index.cost-index} value; the horizontal axis.
+  quantity: cost
+  per: provider
+- name: typical_time_over_cost_set
+  unit: ms
+  direction: lower_is_better
+  description: The geometric mean over the workloads of each workload's time over the units that
+    have a cost; the vertical axis.
+  quantity: time
+  per: provider
+composition:
+  inputs:
+  - id: cost-index
+    version: 1.1.27
+    quantity: Cost, execution scope
+  - id: time-index
+    version: 1.1.29
+    quantity: Time over the units that have a cost, execution scope
+  per_input_value: As in {name:index.cost-index} for cost. For time, each workload's time is taken
+    over the same units that give its cost, which for a provider with a cost is the whole common
+    set, so the vertical value equals the provider's {name:index.time-index} value. Both values use the
+    same unit statistic.
+  aggregation: geometric_mean
+  weighting: Equal weight per workload, as in {name:index.time-index} and {name:index.cost-index}.
+  inclusion: Only providers with both a {name:index.cost-index} value and a time over the cost set.
+  not_displayed:
+  - condition: The provider has no {name:index.cost-index} value or no time over the cost set.
+    reason: The page lists the provider under "Not displayed" with the {name:index.cost-index} reason,
+      for example how many trials lack a provider-sourced cost.
+  - condition: No provider qualifies.
+    reason: The page shows an empty state instead of a chart.
+  plots:
+    x:
+      id: cost-index
+      version: 1.1.27
+      quantity: Cost (USD)
+    y:
+      id: time-index
+      version: 1.1.29
+      quantity: Time (ms)
+    note: Execution scope (all three workloads). The page also offers each workload's own time against
+      cost as separate views, which belong to that workload's methodology.
+statistics:
+  primary: geometric_mean
+  percentile_method: The 95th percentile is the nearest rank over a unit's successful trials; each point
+    is a derived composite value.
+  ranking:
+    ranked: false
+  unit_statistic:
+    default: median
+    options:
+    - median
+    - mean
+    - p95
+cost:
+  method: provider_reported_or_priced
+  notes:
+  - Cost is exactly {name:index.cost-index}'s; a provider without an exact provider-sourced cost has no
+    point.
+interpretation:
+  limits:
+  - Only providers with both a cost composite and elapsed time over the cost set appear.
+  - The composite computes no measurement of its own.

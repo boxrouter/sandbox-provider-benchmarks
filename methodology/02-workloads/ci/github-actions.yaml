@@ -1,0 +1,1465 @@
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+id: github-actions
+version: 1.1.3
+effective: "2026-10-26"
+name: CI Jobs
+category: workload
+notes:
+  summary: Time for the six public repository jobs' step totals combined, with each job replayed in a
+    fresh sandbox and no cache.
+  what_this_measures: The combined result sums the six selected jobs' step runtimes, measured by the sandbox
+    clock.
+  how_it_is_measured: Each job is a public repository's own GitHub Actions job at a pinned commit, replayed in the sandbox.
+  how_to_read: The median is shown in milliseconds. Lower is better.
+  cost_summary: Cost from sandbox creation through confirmed destruction, divided by successful CI job
+    trials.
+  cost_how_to_read: Cost per successful job trial excludes failed attempts. Lower is better.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: job_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of the job's steps' runtimes, each by the sandbox's own clock.
+  quantity: Job-step runtime
+  per: job
+environment:
+  size:
+    vcpu: 4
+    memory_gib: 8
+  image:
+    reference: A prepared Linux image for the selected job.
+    modification: Prepared with 4 vCPU and 8 GiB before the run; nothing is added per trial.
+  network: Open; steps clone the repository and download toolchains and dependencies, so a network failure
+    in a setup step can fail a trial.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 900
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: 'A fresh sandbox per trial from a prepared image, with no cache of any kind: every checkout,
+      toolchain and dependency is fetched in the trial. Steps run back to back as one script.'
+  variants:
+  - id: all
+    label: All Jobs
+    parameters:
+      combines:
+      - zustand
+      - fastapi
+      - gin
+      - spotify-player
+      - jq
+      - gson
+    description: This combines the six selected public repository jobs.
+    notes:
+      summary: Time for the six jobs' step totals combined, with each job replayed in a fresh sandbox
+        and no cache.
+      what_this_measures: The result is the sum of the six selected jobs' step runtimes, measured by the
+        sandbox clock.
+  - id: zustand
+    label: Node (zustand)
+    parameters:
+      repository: pmndrs/zustand
+      commit: d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+      workflow: .github/workflows/test.yml
+      job: test
+      steps: 9
+    description: This is the test job from pmndrs/zustand, replayed at a pinned commit.
+    notes:
+      summary: Time to replay pmndrs/zustand's test job, 9 steps, in a fresh sandbox with no cache.
+      what_this_measures: The result is the sum of this job's step runtimes, measured by the sandbox clock.
+  - id: fastapi
+    label: Python (fastapi)
+    parameters:
+      repository: fastapi/fastapi
+      commit: 69ddc2badf9da1123bba4d360225ae6b085985f6
+      workflow: .github/workflows/test.yml
+      job: test (ubuntu-latest, 3.13, highest, no-deprecation, coverage)
+      steps: 5
+    description: This is the test (ubuntu-latest, 3.13, highest, no-deprecation, coverage) job from fastapi/fastapi,
+      replayed at a pinned commit.
+    notes:
+      summary: Time for fastapi/fastapi's test (ubuntu-latest, 3.13, highest, no-deprecation, coverage),
+        5 steps, without caches.
+      what_this_measures: The result is the sum of this job's step runtimes, measured by the sandbox clock.
+  - id: gin
+    label: Go (gin)
+    parameters:
+      repository: gin-gonic/gin
+      commit: 43fe48e8a0f44af783116cdb010725e6bb50255f
+      workflow: .github/workflows/gin.yml
+      job: ubuntu-latest @ Go 1.27
+      steps: 4
+    description: This is the ubuntu-latest @ Go 1.27 job from gin-gonic/gin, replayed at a pinned commit.
+    notes:
+      summary: Time to replay gin-gonic/gin's ubuntu-latest @ Go 1.27 job, 4 steps, in a fresh sandbox
+        with no cache.
+      what_this_measures: The result is the sum of this job's step runtimes, measured by the sandbox clock.
+  - id: spotify-player
+    label: Rust (spotify-player)
+    parameters:
+      repository: aome510/spotify-player
+      commit: 7dc9d17a7bf5671eb6129fdf9127729f659637fc
+      workflow: .github/workflows/ci.yml
+      job: rust-ci (ubuntu-latest)
+      steps: 7
+    description: This is the rust-ci (ubuntu-latest) job from aome510/spotify-player, replayed at a pinned
+      commit.
+    notes:
+      summary: Time to replay aome510/spotify-player's rust-ci (ubuntu-latest) job, 7 steps, in a fresh
+        sandbox with no cache.
+      what_this_measures: The result is the sum of this job's step runtimes, measured by the sandbox clock.
+  - id: jq
+    label: C (jq)
+    parameters:
+      repository: jqlang/jq
+      commit: 49fbca1242c7f46f00b849de76565764e0254a03
+      workflow: .github/workflows/ci.yml
+      job: linux (amd64)
+      steps: 5
+    description: This is the linux (amd64) job from jqlang/jq, replayed at a pinned commit.
+    notes:
+      summary: Time to replay jqlang/jq's linux (amd64) job, 5 steps, in a fresh sandbox with no cache.
+      what_this_measures: The result is the sum of this job's step runtimes, measured by the sandbox clock.
+  - id: gson
+    label: Java (gson)
+    parameters:
+      repository: google/gson
+      commit: 881d2b55de74dd6c2fded7b2cb307b048117af97
+      workflow: .github/workflows/build.yml
+      job: Build on JDK 21 (jdk)
+      steps: 3
+    description: This is the Build on JDK 21 (jdk) job from google/gson, replayed at a pinned commit.
+    notes:
+      summary: Time to replay google/gson's Build on JDK 21 (jdk) job, 3 steps, in a fresh sandbox with
+        no cache.
+      what_this_measures: The result is the sum of this job's step runtimes, measured by the sandbox clock.
+  stages:
+  - id: install
+    name: Install
+    description: 'The job''s setup steps: checkout, toolchain and dependency install.'
+    record_steps:
+    - cmd
+  - id: lint
+    name: Lint
+    description: The job's check steps, such as format, type and lint checks.
+    record_steps:
+    - cmd
+  - id: test
+    name: Test
+    description: The job's test steps.
+    record_steps:
+    - cmd
+  - id: build
+    name: Build
+    description: The job's build steps.
+    record_steps:
+    - cmd
+  steps:
+  - id: create
+    name: Create
+    action: Start a new sandbox from the prepared benchmark image.
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    timer: null
+  - id: job_steps
+    name: Job step
+    action: Run the selected job's steps back to back in workflow order as one script started in the background.
+      A `run:` line is used as written; a `uses:` step is represented by the commands that do its work,
+      such as checkout or toolchain download. Tools normally preinstalled for hosted CI jobs are fetched
+      or installed in a separate step. Each step runs under bash as a non-root sandbox user, with no input,
+      in the checkout and job environment; the job's own `sudo` lines run as the sandbox user, which may
+      be root. Core dumps are disabled before timing.
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between two
+        consecutive readings.
+    timeout_seconds: 600
+    repeats: true
+    record_steps:
+    - cmd
+  - id: destroy
+    name: Destroy
+    action: Destroy the sandbox after the job's last step and confirm it is gone.
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first step of the job starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the job exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+    - cost_per_success
+  ranking:
+    ranked: true
+    min_successes: unknown
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of the successful trials divided by their number; failed attempts' cost is not included.
+parameters:
+  path: parameters/github-actions/1.1.3/
+  sha256: c95ec83910058a173925f9dc6848e9b71cc5ed2a4b368d8a9db409831625c983
+capabilities:
+  required: []
+interpretation:
+  what_to_do: Compare which provider runs CI-style install, lint, test and build work fastest and at what
+    cost.
+  informs: How fast and how costly a provider is for the install, lint, test and build steps of a real
+    CI job.
+  limits:
+  - The same job is replayed with no caches for every trial.
+  - Tools normally preinstalled for hosted CI jobs are fetched or installed in separate steps.
+  - Each step runs as a non-root sandbox user; job `sudo` lines may run as root.
+  caveats:
+  - Each step runs under bash as the image's non-root `box` user; the job's own `sudo` lines run as the sandbox's user, which may be root.
+  - The spotify-player job is also measured by RunsOn's open runner benchmark.
+  - A step that crashes still shows its abort in its output.
+validity_checks:
+- id: every_step_exits_zero
+  threat: A step that fails would make the job time cover less work than the job does.
+  check: Every step must exit 0. A step that exits non-zero ends the trial and does not replay here, except
+    in the cases the failure policy lists as the provider's failure.
+- id: replay_script_start
+  threat: A crash writes a core dump that changes what a step costs.
+  check: The replay script turns core dumps off (`ulimit -c 0`); this is neither logged nor timed.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    job_steps: 600
+    destroy: 300
+  retries: None; the first non-zero step ends the trial. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: Every step exits 0 and the sandbox is confirmed deleted.
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A step whose output says the disk was full.
+  - A setup step (checkout, toolchain, install, system packages) whose output names a network failure
+    (DNS, a refused, reset or timed-out connection), unless every provider's sandbox failed that step
+    the same way, which is external.
+  - A step that starts one worker per reported CPU (fastapi's `pytest -n auto`) on a sandbox that reports
+    more CPUs than were asked for.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A failure of the benchmark's own script.
+  exclusions:
+  - Any other non-zero step does not replay on that provider and is excluded with its step and exit code.
+  - A setup failure that every provider's sandbox shows alike is external and excluded.
+source:
+  name: CI jobs from six public repositories
+  version: pinned per job by repository commit
+  ids:
+  - pmndrs/zustand@d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+  - fastapi/fastapi@69ddc2badf9da1123bba4d360225ae6b085985f6
+  - gin-gonic/gin@43fe48e8a0f44af783116cdb010725e6bb50255f
+  - aome510/spotify-player@7dc9d17a7bf5671eb6129fdf9127729f659637fc
+  - jqlang/jq@49fbca1242c7f46f00b849de76565764e0254a03
+  - google/gson@881d2b55de74dd6c2fded7b2cb307b048117af97
+  licence: MIT (Zustand, FastAPI, Gin and spotify-player); Apache-2.0 (Gson); MIT source (jq), bundled
+    components unaudited; unknown (spotify-player workflow)
+execution:
+  mode: trace_replay
+  inference: false
+
+---
+capabilities:
+  required: []
+category: workload
+cost:
+  method: provider_reported_or_priced
+effective: '2026-11-01'
+environment:
+  image:
+    modification: Prepared with 4 vCPU and 8 GiB before the run; nothing is added per trial.
+    reference: A prepared Linux image for the selected job.
+  lifetime_seconds: 900
+  network: Open; steps clone the repository and download toolchains and dependencies, so a network failure
+    in a setup step can fail a trial.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  size:
+    memory_gib: 8
+    vcpu: 4
+execution:
+  inference: false
+  mode: trace_replay
+failure_policy:
+  benchmark_errors:
+  - A failure of the benchmark's own script.
+  exclusions:
+  - Any other non-zero step does not replay on that provider and is excluded with its step and exit code.
+  - A setup failure that every provider's sandbox shows alike is external and excluded.
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A step whose output says the disk was full.
+  - A setup step (checkout, toolchain, install, system packages) whose output names a network failure
+    (DNS, a refused, reset or timed-out connection), unless every provider's sandbox failed that step
+    the same way, which is external.
+  - A step that starts one worker per reported CPU (fastapi's `pytest -n auto`) on a sandbox that reports
+    more CPUs than were asked for.
+  - A failure whose owner is uncertain.
+  retries: None; the first non-zero step ends the trial. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: Every step exits 0 and the sandbox is confirmed deleted.
+  timeout_seconds:
+    create: 300
+    destroy: 300
+    job_steps: 600
+id: github-actions
+inherits:
+  id: sbs.common
+  version: 1.0.10
+interpretation:
+  caveats:
+  - Each step runs under bash as the image's non-root `box` user; the job's own `sudo` lines run as the
+    sandbox's user, which may be root.
+  - The spotify-player job is also measured by RunsOn's open runner benchmark.
+  - A step that crashes still shows its abort in its output.
+  informs: How fast and how costly a provider is for the install, lint, test and build steps of a real
+    CI job.
+  limits:
+  - The same job is replayed with no caches for every trial.
+  - Tools normally preinstalled for hosted CI jobs are fetched or installed in separate steps.
+  - Each step runs as a non-root sandbox user; job `sudo` lines may run as root.
+  what_to_do: Compare which provider runs CI-style install, lint, test and build work fastest and at what
+    cost.
+metrics:
+- description: Sum of the job's steps' runtimes, each by the sandbox's own clock.
+  direction: lower_is_better
+  name: job_time
+  per: job
+  quantity: Job-step runtime
+  unit: ms
+name: '{name:test.ci-jobs}'
+notes:
+  cost_how_to_read: Only successful trials contribute to the cost value.
+  cost_summary: The cost covers sandbox creation through confirmed destruction per successful job trial.
+  how_it_is_measured: Each pinned public repository job is replayed in a fresh sandbox; step runtimes
+    use the sandbox clock.
+  how_to_read: The {param:github-actions.1.1.3.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:job_time}.
+  summary: Each selected repository job runs its recorded steps in a fresh sandbox.
+  what_this_measures: The result sums the selected jobs’ step runtimes using the sandbox clock.
+parameters:
+  path: parameters/github-actions/1.1.10/
+  sha256: c95ec83910058a173925f9dc6848e9b71cc5ed2a4b368d8a9db409831625c983
+procedure:
+  concurrency:
+    sandboxes_at_once: 1
+    trials_in_parallel: 10
+  mode: single
+  sandboxes_per_trial: 1
+  stages:
+  - description: 'The job''s setup steps: checkout, toolchain and dependency install.'
+    id: install
+    name: '{name:stage.install}'
+    record_steps:
+    - cmd
+  - description: The job's check steps, such as format, type and lint checks.
+    id: lint
+    name: '{name:stage.lint}'
+    record_steps:
+    - cmd
+  - description: The job's test steps.
+    id: test
+    name: '{name:stage.test}'
+    record_steps:
+    - cmd
+  - description: The job's build steps.
+    id: build
+    name: '{name:stage.build}'
+    record_steps:
+    - cmd
+  steps:
+  - action: Start a new sandbox from the prepared benchmark image.
+    id: create
+    name: '{name:stage.create}'
+    record_steps:
+    - create
+    timeout_seconds: 300
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+  - action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    id: ready_check
+    name: Ready check
+    timer: null
+  - action: Run the selected job's steps back to back in workflow order as one script started in the background.
+      A `run:` line is used as written; a `uses:` step is represented by the commands that do its work,
+      such as checkout or toolchain download. Tools normally preinstalled for hosted CI jobs are fetched
+      or installed in a separate step. Each step runs under bash as a non-root sandbox user, with no input,
+      in the checkout and job environment; the job's own `sudo` lines run as the sandbox user, which may
+      be root. Core dumps are disabled before timing.
+    id: job_steps
+    name: Job step
+    record_steps:
+    - cmd
+    repeats: true
+    timeout_seconds: 600
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between two
+        consecutive readings.
+  - action: Destroy the sandbox after the job's last step and confirm it is gone.
+    id: destroy
+    name: '{name:stage.destroy}'
+    record_steps:
+    - destroy
+    timeout_seconds: 300
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+  trials: 20
+  variants:
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.0.label} configuration.
+    id: all
+    label: All Jobs
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      combines:
+      - zustand
+      - fastapi
+      - gin
+      - spotify-player
+      - jq
+      - gson
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.1.label} configuration.
+    id: zustand
+    label: Node (zustand)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+      job: test
+      repository: pmndrs/zustand
+      steps: 9
+      workflow: .github/workflows/test.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.2.label} configuration.
+    id: fastapi
+    label: Python (fastapi)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 69ddc2badf9da1123bba4d360225ae6b085985f6
+      job: test (ubuntu-latest, 3.13, highest, no-deprecation, coverage)
+      repository: fastapi/fastapi
+      steps: 5
+      workflow: .github/workflows/test.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.3.label} configuration.
+    id: gin
+    label: Go (gin)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 43fe48e8a0f44af783116cdb010725e6bb50255f
+      job: ubuntu-latest @ Go 1.27
+      repository: gin-gonic/gin
+      steps: 4
+      workflow: .github/workflows/gin.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.4.label} configuration.
+    id: spotify-player
+    label: Rust (spotify-player)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 7dc9d17a7bf5671eb6129fdf9127729f659637fc
+      job: rust-ci (ubuntu-latest)
+      repository: aome510/spotify-player
+      steps: 7
+      workflow: .github/workflows/ci.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.5.label} configuration.
+    id: jq
+    label: C (jq)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 49fbca1242c7f46f00b849de76565764e0254a03
+      job: linux (amd64)
+      repository: jqlang/jq
+      steps: 5
+      workflow: .github/workflows/ci.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.6.label} configuration.
+    id: gson
+    label: Java (gson)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 881d2b55de74dd6c2fded7b2cb307b048117af97
+      job: Build on JDK 21 (jdk)
+      repository: google/gson
+      steps: 3
+      workflow: .github/workflows/build.yml
+  warm_cold_policy:
+    policy: 'A fresh sandbox per trial from a prepared image, with no cache of any kind: every checkout,
+      toolchain and dependency is fetched in the trial. Steps run back to back as one script.'
+source:
+  ids:
+  - pmndrs/zustand@d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+  - fastapi/fastapi@69ddc2badf9da1123bba4d360225ae6b085985f6
+  - gin-gonic/gin@43fe48e8a0f44af783116cdb010725e6bb50255f
+  - aome510/spotify-player@7dc9d17a7bf5671eb6129fdf9127729f659637fc
+  - jqlang/jq@49fbca1242c7f46f00b849de76565764e0254a03
+  - google/gson@881d2b55de74dd6c2fded7b2cb307b048117af97
+  licence: MIT (Zustand, FastAPI, Gin and spotify-player); Apache-2.0 (Gson); MIT source (jq), bundled
+    components unaudited; unknown (spotify-player workflow)
+  name: CI jobs from six public repositories
+  version: pinned per job by repository commit
+statistics:
+  interval:
+    applies_to:
+    - median
+    - cost_per_success
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    type: bootstrap_percentile
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  primary: median
+  ranking:
+    min_successes: unknown
+    ranked: true
+  secondary:
+  - mean
+  tail:
+    min_successes: 20
+    worse_side_percentile: 95
+timing_boundaries:
+  start: The first step of the job starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the job exits, by the sandbox's own clock.
+validity_checks:
+- check: Every step must exit 0. A step that exits non-zero ends the trial and does not replay here, except
+    in the cases the failure policy lists as the provider's failure.
+  id: every_step_exits_zero
+  threat: A step that fails would make the job time cover less work than the job does.
+- check: The replay script turns core dumps off (`ulimit -c 0`); this is neither logged nor timed.
+  id: replay_script_start
+  threat: A crash writes a core dump that changes what a step costs.
+version: 1.1.10
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: 'No cache of any kind: every checkout, toolchain and dependency is fetched in the trial from
+      a prepared image. The provider''s image caches stay on.'
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+
+---
+capabilities:
+  required: []
+category: workload
+cost:
+  billed_span: From the create request to the confirmed destroy.
+  method: provider_reported_or_priced
+  per_success: Cost of the successful trials divided by their number; failed attempts' cost is not included.
+  pricing_reference:
+    function: price()
+    price_sheet_version: recorded in the run manifest
+    repository: sandbox-provider-pricing
+effective: '2026-10-27'
+environment:
+  image:
+    modification: Prepared with 4 vCPU and 8 GiB before the run; nothing is added per trial.
+    reference: A prepared Linux image for the selected job.
+  lifetime_seconds: 900
+  network: Open; steps clone the repository and download toolchains and dependencies, so a network failure
+    in a setup step can fail a trial.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  size:
+    memory_gib: 8
+    vcpu: 4
+execution:
+  inference: false
+  mode: trace_replay
+failure_policy:
+  benchmark_errors:
+  - A failure of the benchmark's own script.
+  exclusions:
+  - Any other non-zero step does not replay on that provider and is excluded with its step and exit
+    code.
+  - A setup failure that every provider's sandbox shows alike is external and excluded.
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A step whose output says the disk was full.
+  - A setup step (checkout, toolchain, install, system packages) whose output names a network failure
+    (DNS, a refused, reset or timed-out connection), unless every provider's sandbox failed that step
+    the same way, which is external.
+  - A step that starts one worker per reported CPU (fastapi's `pytest -n auto`) on a sandbox that reports
+    more CPUs than were asked for.
+  - A failure whose owner is uncertain.
+  retries: None; the first non-zero step ends the trial. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: Every step exits 0 and the sandbox is confirmed deleted.
+  timeout_seconds:
+    create: 300
+    destroy: 300
+    job_steps: 600
+id: github-actions
+inherits:
+  id: sbs.common
+  version: 1.0.1
+interpretation:
+  caveats:
+  - Each step runs under bash as the image's non-root `box` user; the job's own `sudo` lines run as
+    the sandbox's user, which may be root.
+  - The spotify-player job is also measured by RunsOn's open runner benchmark.
+  - A step that crashes still shows its abort in its output.
+  informs: How fast and how costly a provider is for the install, lint, test and build steps of a real
+    CI job.
+  limits:
+  - The same job is replayed with no caches for every trial.
+  - Tools normally preinstalled for hosted CI jobs are fetched or installed in separate steps.
+  - Each step runs as a non-root sandbox user; job `sudo` lines may run as root.
+  what_to_do: Compare which provider runs CI-style install, lint, test and build work fastest and at
+    what cost.
+metrics:
+- description: Sum of the job's steps' runtimes, each by the sandbox's own clock.
+  direction: lower_is_better
+  name: job_time
+  per: job
+  quantity: Job-step runtime
+  unit: ms
+name: CI Jobs
+notes:
+  cost_how_to_read: Only successful trials contribute to the cost value.
+  cost_summary: The cost covers sandbox creation through confirmed destruction per successful job trial.
+  how_it_is_measured: Each pinned public repository job is replayed in a fresh sandbox; step runtimes
+    use the sandbox clock.
+  how_to_read: The {param:github-actions.1.1.3.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:job_time}.
+  summary: Each selected repository job runs its recorded steps in a fresh sandbox.
+  what_this_measures: "The result sums the selected jobs\u2019 step runtimes using the sandbox clock."
+parameters:
+  path: parameters/github-actions/1.1.3/
+  sha256: c95ec83910058a173925f9dc6848e9b71cc5ed2a4b368d8a9db409831625c983
+procedure:
+  concurrency:
+    sandboxes_at_once: 1
+    trials_in_parallel: 1
+  mode: single
+  sandboxes_per_trial: 1
+  stages:
+  - description: 'The job''s setup steps: checkout, toolchain and dependency install.'
+    id: install
+    name: Install
+    record_steps:
+    - cmd
+  - description: The job's check steps, such as format, type and lint checks.
+    id: lint
+    name: Lint
+    record_steps:
+    - cmd
+  - description: The job's test steps.
+    id: test
+    name: Test
+    record_steps:
+    - cmd
+  - description: The job's build steps.
+    id: build
+    name: Build
+    record_steps:
+    - cmd
+  steps:
+  - action: Start a new sandbox from the prepared benchmark image.
+    id: create
+    name: Create
+    record_steps:
+    - create
+    timeout_seconds: 300
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+  - action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    id: ready_check
+    name: Ready check
+    timer: null
+  - action: Run the selected job's steps back to back in workflow order as one script started in the
+      background. A `run:` line is used as written; a `uses:` step is represented by the commands that
+      do its work, such as checkout or toolchain download. Tools normally preinstalled for hosted CI
+      jobs are fetched or installed in a separate step. Each step runs under bash as a non-root sandbox
+      user, with no input, in the checkout and job environment; the job's own `sudo` lines run as the
+      sandbox user, which may be root. Core dumps are disabled before timing.
+    id: job_steps
+    name: Job step
+    record_steps:
+    - cmd
+    repeats: true
+    timeout_seconds: 600
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between
+        two consecutive readings.
+  - action: Destroy the sandbox after the job's last step and confirm it is gone.
+    id: destroy
+    name: Destroy
+    record_steps:
+    - destroy
+    timeout_seconds: 300
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+  trials: 10
+  variants:
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.0.label} configuration.
+    id: all
+    label: All Jobs
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      combines:
+      - zustand
+      - fastapi
+      - gin
+      - spotify-player
+      - jq
+      - gson
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.1.label} configuration.
+    id: zustand
+    label: Node (zustand)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+      job: test
+      repository: pmndrs/zustand
+      steps: 9
+      workflow: .github/workflows/test.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.2.label} configuration.
+    id: fastapi
+    label: Python (fastapi)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 69ddc2badf9da1123bba4d360225ae6b085985f6
+      job: test (ubuntu-latest, 3.13, highest, no-deprecation, coverage)
+      repository: fastapi/fastapi
+      steps: 5
+      workflow: .github/workflows/test.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.3.label} configuration.
+    id: gin
+    label: Go (gin)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 43fe48e8a0f44af783116cdb010725e6bb50255f
+      job: ubuntu-latest @ Go 1.27
+      repository: gin-gonic/gin
+      steps: 4
+      workflow: .github/workflows/gin.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.4.label} configuration.
+    id: spotify-player
+    label: Rust (spotify-player)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 7dc9d17a7bf5671eb6129fdf9127729f659637fc
+      job: rust-ci (ubuntu-latest)
+      repository: aome510/spotify-player
+      steps: 7
+      workflow: .github/workflows/ci.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.5.label} configuration.
+    id: jq
+    label: C (jq)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 49fbca1242c7f46f00b849de76565764e0254a03
+      job: linux (amd64)
+      repository: jqlang/jq
+      steps: 5
+      workflow: .github/workflows/ci.yml
+  - description: The workload uses the {param:github-actions.1.1.4.procedure.variants.6.label} configuration.
+    id: gson
+    label: Java (gson)
+    notes:
+      summary: '{param:github-actions.1.1.4.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.4.notes.what_this_measures}'
+    parameters:
+      commit: 881d2b55de74dd6c2fded7b2cb307b048117af97
+      job: Build on JDK 21 (jdk)
+      repository: google/gson
+      steps: 3
+      workflow: .github/workflows/build.yml
+  warm_cold_policy:
+    policy: 'A fresh sandbox per trial from a prepared image, with no cache of any kind: every checkout,
+      toolchain and dependency is fetched in the trial. Steps run back to back as one script.'
+source:
+  ids:
+  - pmndrs/zustand@d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+  - fastapi/fastapi@69ddc2badf9da1123bba4d360225ae6b085985f6
+  - gin-gonic/gin@43fe48e8a0f44af783116cdb010725e6bb50255f
+  - aome510/spotify-player@7dc9d17a7bf5671eb6129fdf9127729f659637fc
+  - jqlang/jq@49fbca1242c7f46f00b849de76565764e0254a03
+  - google/gson@881d2b55de74dd6c2fded7b2cb307b048117af97
+  licence: MIT (Zustand, FastAPI, Gin and spotify-player); Apache-2.0 (Gson); MIT source (jq), bundled
+    components unaudited; unknown (spotify-player workflow)
+  name: CI jobs from six public repositories
+  version: pinned per job by repository commit
+statistics:
+  interval:
+    applies_to:
+    - median
+    - cost_per_success
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    type: bootstrap_percentile
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  primary: median
+  ranking:
+    min_successes: unknown
+    ranked: true
+  secondary:
+  - mean
+  tail:
+    min_successes: 20
+    worse_side_percentile: 95
+timing_boundaries:
+  start: The first step of the job starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the job exits, by the sandbox's own clock.
+validity_checks:
+- check: Every step must exit 0. A step that exits non-zero ends the trial and does not replay here,
+    except in the cases the failure policy lists as the provider's failure.
+  id: every_step_exits_zero
+  threat: A step that fails would make the job time cover less work than the job does.
+- check: The replay script turns core dumps off (`ulimit -c 0`); this is neither logged nor timed.
+  id: replay_script_start
+  threat: A crash writes a core dump that changes what a step costs.
+version: 1.1.4
+
+---
+id: github-actions
+version: 1.1.0
+effective: "2026-10-26"
+name: GitHub Actions
+category: workload
+description: >-
+  How long a sandbox takes to run the steps of a public repository's own GitHub Actions job,
+  replayed from a clean checkout with nothing cached. It shows which provider runs CI-style
+  install, lint, test and build work fastest and at what cost.
+notes:
+  what_this_measures: >-
+    How long a sandbox takes to run the steps of a public repository's own GitHub Actions job,
+    replayed from a clean checkout with nothing cached.
+  how_to_read: >-
+    Each provider's median job time is shown in milliseconds, split into the Install, Lint, Test
+    and Build stages. Choose All Jobs or one job. Lower is better. The tail is the 95th percentile
+    once at least 20 trials have succeeded; below that the slowest trial is shown instead.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+
+metrics:
+  - name: job_time
+    unit: ms
+    direction: lower_is_better
+    description: Sum of the job's steps' runtimes, each by the sandbox's own clock.
+
+environment:
+  size:
+    vcpu: 4
+    memory_gib: 8
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+    modification: Prepared in each account at 4 vCPU / 8 GiB before the run; nothing is added per trial.
+  network: >-
+    Open; steps clone the repository and download toolchains and dependencies, so a network failure
+    in a setup step can fail a trial.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing tuned per provider.
+  lifetime_seconds: 900
+
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: >-
+      A fresh sandbox per trial from a prepared image, with no cache of any kind: every checkout,
+      toolchain and dependency is fetched in the trial. Steps run back to back as one script.
+  variants:
+    - id: all
+      label: All Jobs
+      parameters: { combines: [zustand, fastapi, gin, spotify-player, jq, gson] }
+    - id: zustand
+      label: Node (zustand)
+      parameters: { repository: pmndrs/zustand, commit: d7a5583cffd80af515f7dfb69583c95cbdc9e2ce, workflow: .github/workflows/test.yml, job: test, steps: 9 }
+    - id: fastapi
+      label: Python (fastapi)
+      parameters: { repository: fastapi/fastapi, commit: 69ddc2badf9da1123bba4d360225ae6b085985f6, workflow: .github/workflows/test.yml, job: "test (ubuntu-latest, 3.13, highest, no-deprecation, coverage)", steps: 5 }
+    - id: gin
+      label: Go (gin)
+      parameters: { repository: gin-gonic/gin, commit: 43fe48e8a0f44af783116cdb010725e6bb50255f, workflow: .github/workflows/gin.yml, job: "ubuntu-latest @ Go 1.27", steps: 4 }
+    - id: spotify-player
+      label: Rust (spotify-player)
+      parameters: { repository: aome510/spotify-player, commit: 7dc9d17a7bf5671eb6129fdf9127729f659637fc, workflow: .github/workflows/ci.yml, job: "rust-ci (ubuntu-latest)", steps: 7 }
+    - id: jq
+      label: C (jq)
+      parameters: { repository: jqlang/jq, commit: 49fbca1242c7f46f00b849de76565764e0254a03, workflow: .github/workflows/ci.yml, job: "linux (amd64)", steps: 5 }
+    - id: gson
+      label: Java (gson)
+      parameters: { repository: google/gson, commit: 881d2b55de74dd6c2fded7b2cb307b048117af97, workflow: .github/workflows/build.yml, job: "Build on JDK 21 (jdk)", steps: 3 }
+  stages:
+    - id: install
+      name: Install
+      description: "The job's setup steps: checkout, toolchain and dependency install."
+      record_steps: [cmd]
+    - id: lint
+      name: Lint
+      description: The job's check steps, such as format, type and lint checks.
+      record_steps: [cmd]
+    - id: test
+      name: Test
+      description: The job's test steps.
+      record_steps: [cmd]
+    - id: build
+      name: Build
+      description: The job's build steps.
+      record_steps: [cmd]
+  steps:
+    - id: create
+      name: Create
+      action: Start a new sandbox from BoxRouter's standard image, prepared in the account before the run.
+      timer:
+        start_event: The create request is dispatched.
+        stop_event: The create call returns.
+      timeout_seconds: 300
+      record_steps: [create]
+    - id: ready_check
+      name: Ready check
+      action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+      timer: null
+    - id: job_steps
+      name: Job step
+      action: >-
+        Run the job's steps back to back in the workflow's order as one script started in the
+        background. A job's `run:` lines are used as written and each `uses:` step is replaced by the
+        commands that do its work (checkout, toolchain download). Tools GitHub's runner image
+        preinstalls (Go, Rust's rustup, uv, a JDK and Maven, file, make) are fetched in a step of
+        their own, marked as the runner's stand-in. Each step runs under bash as the image's non-root
+        `box` user, as GitHub's runner runs a job as its non-root `runner` user, with no input, in
+        the checkout (itself in /workspace) and the job's environment; the job's own `sudo` lines run
+        as the sandbox's user, which may be root. The script first turns core dumps off, untimed.
+      timer:
+        start_event: The step starts, by the sandbox's own clock.
+        stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between two consecutive readings.
+      timeout_seconds: 600
+      repeats: true
+      record_steps: [cmd]
+    - id: destroy
+      name: Destroy
+      action: Destroy the sandbox after the job's last step and confirm it is gone.
+      timer:
+        start_event: The destroy request is dispatched.
+        stop_event: The destroy call returns.
+      timeout_seconds: 300
+      record_steps: [destroy]
+
+timing_boundaries:
+  start: The first step of the job starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the job exits, by the sandbox's own clock.
+
+statistics:
+  primary: median
+  secondary:
+    - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+      - median
+      - cost_per_success
+  ranking:
+    ranked: true
+    min_successes: unknown
+
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of the successful trials divided by their number; failed attempts' cost is not included.
+
+parameters:
+  path: parameters/github-actions/1.1.0/
+  sha256: 61c7ab76c62ddefececab5069a55c87389d00f662777781b6c8a72e99ec5db8a
+
+capabilities:
+  required: []
+
+interpretation:
+  what_to_do: Compare which provider runs CI-style install, lint, test and build work fastest and at what cost.
+  informs: How fast and how costly a provider is for the install, lint, test and build steps of a real CI job.
+  limits:
+    - >-
+      Each job is a public repository's own GitHub Actions job at a pinned commit. Its `run:` lines
+      are used as written and each `uses:` step is replaced by the commands that do its work
+      (checkout, toolchain download), with no cache.
+    - >-
+      Tools GitHub's runner image has preinstalled (Go, Rust's rustup, uv, a JDK and Maven, `file`
+      and `make`) are downloaded or installed in a step of their own, marked as the runner's
+      stand-in.
+  caveats:
+    - >-
+      Each step runs under bash as the image's non-root `box` user, as GitHub's runner runs a job as
+      its non-root `runner` user; the job's own `sudo` lines run as the sandbox's user, which may
+      be root.
+    - >-
+      spotify-player's job is the one RunsOn's open runner benchmark times on GitHub's and other
+      vendors' runners.
+    - A step that crashes still shows its abort in its output.
+
+validity_checks:
+  - id: every_step_exits_zero
+    threat: A step that fails would make the job time cover less work than the job does.
+    check: >-
+      Every step must exit 0. A step that exits non-zero ends the trial and does not replay here,
+      except in the cases the failure policy lists as the provider's failure.
+  - id: replay_script_start
+    threat: A crash writes a core dump that changes what a step costs.
+    check: The replay script turns core dumps off (`ulimit -c 0`); this is neither logged nor timed.
+
+failure_policy:
+  timeout_seconds:
+    create: 300
+    job_steps: 600
+    destroy: 300
+  retries: None; the first non-zero step ends the trial. A top-up run replaces a provider-owned failure of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: Every step exits 0 and the sandbox is confirmed deleted.
+  provider_errors:
+    - Create and transport errors, and a sandbox that stops answering.
+    - A step whose output says the disk was full.
+    - A setup step (checkout, toolchain, install, system packages) whose output names a network failure (DNS, a refused, reset or timed-out connection), unless every provider's sandbox failed that step the same way, which is external.
+    - A step that starts one worker per reported CPU (fastapi's `pytest -n auto`) on a sandbox that reports more CPUs than were asked for.
+    - A failure whose owner is uncertain.
+  benchmark_errors:
+    - A failure of the benchmark's own script.
+  exclusions:
+    - Any other non-zero step does not replay on that provider and is excluded with its step and exit code.
+    - A setup failure that every provider's sandbox shows alike is external and excluded.
+
+source:
+  name: GitHub Actions jobs of six public repositories
+  version: "pinned per job by repository commit"
+  ids:
+    - pmndrs/zustand@d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+    - fastapi/fastapi@69ddc2badf9da1123bba4d360225ae6b085985f6
+    - gin-gonic/gin@43fe48e8a0f44af783116cdb010725e6bb50255f
+    - aome510/spotify-player@7dc9d17a7bf5671eb6129fdf9127729f659637fc
+    - jqlang/jq@49fbca1242c7f46f00b849de76565764e0254a03
+    - google/gson@881d2b55de74dd6c2fded7b2cb307b048117af97
+  licence: "MIT (Zustand, FastAPI, Gin and spotify-player); Apache-2.0 (Gson); MIT source (jq), bundled components unaudited; unknown (spotify-player workflow)"
+
+execution:
+  mode: trace_replay
+  inference: false
+
+---
+capabilities:
+  required: []
+category: workload
+cost:
+  method: provider_reported_or_priced
+effective: '2026-11-08'
+environment:
+  image:
+    modification: Prepared with 4 vCPU and 8 GiB before the run; nothing is added per trial.
+    reference: A prepared Linux image for the selected job.
+  lifetime_seconds: 900
+  network: Open; steps clone the repository and download toolchains and dependencies, so a network failure
+    in a setup step can fail a trial.
+  size:
+    memory_gib: 8
+    vcpu: 4
+execution:
+  inference: false
+  mode: trace_replay
+failure_policy:
+  benchmark_errors:
+  - A failure of the benchmark's own script.
+  exclusions:
+  - Any other non-zero step does not replay on that provider and is excluded with its step and exit code.
+  - A setup failure that every provider's sandbox shows alike is external and excluded.
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A step whose output says the disk was full.
+  - A setup step (checkout, toolchain, install, system packages) whose output names a network failure
+    (DNS, a refused, reset or timed-out connection), unless every provider's sandbox failed that step
+    the same way, which is external.
+  - A step that starts one worker per reported CPU (fastapi's `pytest -n auto`) on a sandbox that reports
+    more CPUs than were asked for.
+  - A failure whose owner is uncertain.
+  retries: None; the first non-zero step ends the trial. A top-up run refills every missed, excluded or
+    failed slot whoever owned the failure; each failed trial stays in the data with its owner and cause.
+  success: Every step exits 0 and the sandbox is confirmed deleted.
+  timeout_seconds:
+    create: 300
+    destroy: 300
+    job_steps: 600
+id: github-actions
+inherits:
+  id: sbs.common
+  version: 1.0.18
+interpretation:
+  caveats:
+  - Each step runs under bash as the image's non-root `box` user; the job's own `sudo` lines run as the
+    sandbox's user, which may be root.
+  - The spotify-player job is also measured by RunsOn's open runner benchmark.
+  - A step that crashes still shows its abort in its output.
+  informs: How fast and how costly a provider is for the install, lint, test and build steps of a real
+    CI job.
+  limits:
+  - The same job is replayed with no caches for every trial.
+  - Tools normally preinstalled for hosted CI jobs are fetched or installed in separate steps.
+  - Each step runs as a non-root sandbox user; job `sudo` lines may run as root.
+  what_to_do: Compare which provider runs CI-style install, lint, test and build work fastest and at what
+    cost.
+metrics:
+- description: Sum of the job's steps' runtimes, each by the sandbox's own clock.
+  direction: lower_is_better
+  name: job_time
+  per: job
+  quantity: Job-step runtime
+  unit: ms
+name: '{name:test.ci-jobs}'
+notes:
+  cost_how_to_read: Only successful trials contribute to the cost value.
+  cost_summary: The cost covers sandbox creation through confirmed destruction per successful job trial.
+  how_it_is_measured: Each pinned public repository job is replayed in a fresh sandbox; step runtimes
+    use the sandbox clock.
+  how_to_read: The {param:github-actions.1.1.16.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:job_time}.
+  summary: Each selected repository job runs its recorded steps in a fresh sandbox.
+  what_this_measures: The result sums the selected jobs’ step runtimes using the sandbox clock.
+parameters:
+  path: parameters/github-actions/1.1.16/
+  sha256: c95ec83910058a173925f9dc6848e9b71cc5ed2a4b368d8a9db409831625c983
+procedure:
+  concurrency:
+    sandboxes_at_once: 1
+    trials_in_parallel: 10
+  mode: single
+  sandboxes_per_trial: 1
+  stages:
+  - description: 'The job''s setup steps: checkout, toolchain and dependency install.'
+    id: install
+    name: '{name:stage.install}'
+    record_steps:
+    - cmd
+  - description: The job's check steps, such as format, type and lint checks.
+    id: lint
+    name: '{name:stage.lint}'
+    record_steps:
+    - cmd
+  - description: The job's test steps.
+    id: test
+    name: '{name:stage.test}'
+    record_steps:
+    - cmd
+  - description: The job's build steps.
+    id: build
+    name: '{name:stage.build}'
+    record_steps:
+    - cmd
+  steps:
+  - action: Start a new sandbox from the prepared benchmark image.
+    id: create
+    name: '{name:stage.create}'
+    record_steps:
+    - create
+    timeout_seconds: 300
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+  - action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    id: ready_check
+    name: Ready check
+    timer: null
+  - action: Run the selected job's steps back to back in workflow order as one script started in the background.
+      A `run:` line is used as written; a `uses:` step is represented by the commands that do its work,
+      such as checkout or toolchain download. Tools normally preinstalled for hosted CI jobs are fetched
+      or installed in a separate step. Each step runs under bash as a non-root sandbox user, with no input,
+      in the checkout and job environment; the job's own `sudo` lines run as the sandbox user, which may
+      be root. Core dumps are disabled before timing.
+    id: job_steps
+    name: Job step
+    record_steps:
+    - cmd
+    repeats: true
+    timeout_seconds: 600
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between two
+        consecutive readings.
+  - action: Destroy the sandbox after the job's last step and confirm it is gone.
+    id: destroy
+    name: '{name:stage.destroy}'
+    record_steps:
+    - destroy
+    timeout_seconds: 300
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+  trials: 20
+  variants:
+  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.0.label} configuration.
+    id: all
+    label: All Jobs
+    notes:
+      summary: '{param:github-actions.1.1.16.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+    parameters:
+      combines:
+      - zustand
+      - fastapi
+      - gin
+      - spotify-player
+      - jq
+      - gson
+  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.1.label} configuration.
+    id: zustand
+    label: Node (zustand)
+    notes:
+      summary: '{param:github-actions.1.1.16.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+    parameters:
+      commit: d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+      job: test
+      repository: pmndrs/zustand
+      steps: 9
+      workflow: .github/workflows/test.yml
+  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.2.label} configuration.
+    id: fastapi
+    label: Python (fastapi)
+    notes:
+      summary: '{param:github-actions.1.1.16.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+    parameters:
+      commit: 69ddc2badf9da1123bba4d360225ae6b085985f6
+      job: test (ubuntu-latest, 3.13, highest, no-deprecation, coverage)
+      repository: fastapi/fastapi
+      steps: 5
+      workflow: .github/workflows/test.yml
+  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.3.label} configuration.
+    id: gin
+    label: Go (gin)
+    notes:
+      summary: '{param:github-actions.1.1.16.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+    parameters:
+      commit: 43fe48e8a0f44af783116cdb010725e6bb50255f
+      job: ubuntu-latest @ Go 1.27
+      repository: gin-gonic/gin
+      steps: 4
+      workflow: .github/workflows/gin.yml
+  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.4.label} configuration.
+    id: spotify-player
+    label: Rust (spotify-player)
+    notes:
+      summary: '{param:github-actions.1.1.16.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+    parameters:
+      commit: 7dc9d17a7bf5671eb6129fdf9127729f659637fc
+      job: rust-ci (ubuntu-latest)
+      repository: aome510/spotify-player
+      steps: 7
+      workflow: .github/workflows/ci.yml
+  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.5.label} configuration.
+    id: jq
+    label: C (jq)
+    notes:
+      summary: '{param:github-actions.1.1.16.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+    parameters:
+      commit: 49fbca1242c7f46f00b849de76565764e0254a03
+      job: linux (amd64)
+      repository: jqlang/jq
+      steps: 5
+      workflow: .github/workflows/ci.yml
+  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.6.label} configuration.
+    id: gson
+    label: Java (gson)
+    notes:
+      summary: '{param:github-actions.1.1.16.notes.summary}'
+      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+    parameters:
+      commit: 881d2b55de74dd6c2fded7b2cb307b048117af97
+      job: Build on JDK 21 (jdk)
+      repository: google/gson
+      steps: 3
+      workflow: .github/workflows/build.yml
+  warm_cold_policy:
+    policy: 'A fresh sandbox per trial from a prepared image, with no cache of any kind: every checkout,
+      toolchain and dependency is fetched in the trial. Steps run back to back as one script.'
+source:
+  ids:
+  - pmndrs/zustand@d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
+  - fastapi/fastapi@69ddc2badf9da1123bba4d360225ae6b085985f6
+  - gin-gonic/gin@43fe48e8a0f44af783116cdb010725e6bb50255f
+  - aome510/spotify-player@7dc9d17a7bf5671eb6129fdf9127729f659637fc
+  - jqlang/jq@49fbca1242c7f46f00b849de76565764e0254a03
+  - google/gson@881d2b55de74dd6c2fded7b2cb307b048117af97
+  licence: MIT (Zustand, FastAPI, Gin and spotify-player); Apache-2.0 (Gson); MIT source (jq), bundled
+    components unaudited; unknown (spotify-player workflow)
+  name: CI jobs from six public repositories
+  version: pinned per job by repository commit
+statistics:
+  interval:
+    applies_to:
+    - median
+    - cost_per_success
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    type: bootstrap_percentile
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  primary: median
+  ranking:
+    min_successes: 108
+    ranked: true
+  secondary:
+  - mean
+  tail:
+    min_successes: 20
+    worse_side_percentile: 95
+timing_boundaries:
+  start: The first step of the job starts in the sandbox.
+  stop: The last step of the job exits.
+validity_checks:
+- check: Every step must exit 0. A step that exits non-zero ends the trial and does not replay here, except
+    in the cases the failure policy lists as the provider's failure.
+  id: every_step_exits_zero
+  threat: A step that fails would make the job time cover less work than the job does.
+- check: The replay script turns core dumps off (`ulimit -c 0`); this is neither logged nor timed.
+  id: replay_script_start
+  threat: A crash writes a core dump that changes what a step costs.
+version: 1.1.16
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: 'No cache of any kind: every checkout, toolchain and dependency is fetched in the trial from
+      a prepared image. The provider''s image caches stay on.'
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

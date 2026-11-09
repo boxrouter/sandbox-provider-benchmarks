@@ -1,0 +1,1560 @@
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+id: terminal-bench-4-0
+version: 1.1.5
+effective: '2026-10-27'
+name: Terminal-Bench 4.0
+category: workload
+notes:
+  what_this_measures: The result sums command and file-edit runtimes for a recorded session using the
+    sandbox clock. Model speed is excluded.
+  how_to_read: The {param:terminal-bench-4-0.1.1.4.statistics.primary} summarizes successful trials
+    in the axis unit; {direction:tool_time}.
+  summary: "Recorded session commands and file edits run in each task\u2019s prepared sandbox image."
+  how_it_is_measured: Recorded sessions come from the {name:test.terminal-bench-4-0} public leaderboard.
+    Commands and file edits run in each task's prepared image, with each step measured by the sandbox's
+    own clock.
+  cost_summary: The cost covers sandbox creation through confirmed destruction, divided by successful
+    sessions.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of the replayed steps' runtimes for one session, each by the sandbox's own clock.
+  quantity: Command and file-edit runtime
+  per: session
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest and built from the task's environment/ at the
+      pinned commit for linux/amd64 with a thin agent layer on top (for example ghcr.io/sandbox-test-images/base-image@sha256:1e76f612b6879b0dad1f1049a2120198bb3014d8870668be3d19e798eec717fc
+      for the first task).
+    modification: The agent layer adds what Harbor 0.24.0's Claude Code install adds (curl and procps
+      where missing, Harbor's session directories), without Claude Code and Node. Prepared in each account
+      before the run.
+  network: The provider's default network, which is open, as Terminal-Bench's was. The sandbox runs
+    as root.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 1800
+procedure:
+  mode: single
+  trials: 20
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per session from an image prepared ahead. Steps run back to back with no
+      model time between them, so the page cache stays warm and no provider sleeps between steps. Each
+      session runs 20 times per provider in a run, so a result is 20 samples per session.
+  variants:
+  - id: claude-opus-5-5-max
+    label: Claude Opus 5.5 max
+    parameters:
+      config: claude-opus-5-5-max
+    description: The workload uses the {param:terminal-bench-4-0.1.1.5.procedure.variants.0.label} configuration.
+  stages:
+  - id: read
+    name: Read
+    description: Steps that match none of the other stages' patterns. A step's stage comes from the
+      patterns in the parameters' protocol.json (groups).
+    record_steps:
+    - cmd
+  - id: write
+    name: Write
+    description: Steps that change files, such as edits, redirects, `git apply`, `mv`, `cp` and `rm`.
+    record_steps:
+    - cmd
+  - id: build
+    name: Build
+    description: Steps that build, compile, lint or format, such as `go build`, `tsc`, `ruff` and `make`.
+    record_steps:
+    - cmd
+  - id: test
+    name: Test
+    description: Steps that run tests, such as `pytest`, `go test`, `vitest` and `cargo test`.
+    record_steps:
+    - cmd
+  steps:
+  - id: create
+    name: Create
+    action: Start a new sandbox from the task's prepared image.
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+    timeout_seconds: 600
+    record_steps:
+    - create
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    timer: null
+  - id: steps
+    name: Session replay
+    action: Run the session's steps in recorded order as one bash script, uploaded and started in the
+      background and polled every 10 s. A Bash step runs byte for byte as `bash -c <command>` in its
+      recorded directory with no input. An Edit step runs as a perl program that replaces the old text
+      with the new and exits 1 unless the old text occurs exactly once (every occurrence with replace-all),
+      as Claude Code's Edit refuses. A Write step decodes the content into the file and makes its directory.
+      Each step gets the image's environment plus GIT_EDITOR=true, TERM=xterm and git's user.useConfigOnly,
+      and a 600 s limit. The script first sets PATH to the image's and turns core dumps off; neither
+      is timed. The sandbox's clock is logged before and after each step with its exit code, and /proc/uptime
+      at the script's start and end; if the two clocks differ by more than 20 ms no step runtime is
+      kept.
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between
+        its two readings.
+    timeout_seconds: 600
+    repeats: true
+    record_steps:
+    - cmd
+  - id: outputs
+    name: Outputs
+    action: Untimed; the log and every step's output come back as one archive kept with the trial. Outputs
+      are not compared.
+    timer: null
+  - id: destroy
+    name: Destroy
+    action: Destroy the sandbox and confirm it is gone, the confirmation untimed.
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first step of the session starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the session exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: unknown
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of the successful sessions divided by their number; failed attempts' cost is not
+    included.
+parameters:
+  path: parameters/terminal-bench-4-0/1.1.4/
+  sha256: d987b8281f3496ecf49a39e61680673814aeef7bac08873b59715fcb929fc752
+capabilities:
+  required: []
+interpretation:
+  what_to_do: A user running terminal agents or Terminal-Bench evaluations on sandboxes can read which
+    provider makes the agent wait least on its tool calls. For a provider, tool time points at CPU,
+    disk and process start under these tools.
+  informs: Which provider makes a terminal agent wait least on its tool calls.
+  limits:
+  - Each session is replayed once per provider in a run.
+  - Steps run back to back, so the page cache stays warm and the provider does not sleep between steps.
+  - The task's own tests run separately; the replay does not check the final task result.
+  caveats:
+  - Terminal-Bench covers terminal work beyond code. By its own categories the ten tasks are four science
+    (one a Coq proof), two operations, two software, one ML evaluation and one hardware (a FreeCAD model).
+  - The images are built later than Terminal-Bench's own, and their Dockerfiles install some unpinned
+    packages, so versions can differ from the recording.
+  - An edit runs here as a `perl` or `base64` process, where Claude Code writes from its own process.
+  - Daytona's containers show the host's CPU count to `nproc` and Python; tools that size their work
+    by it run as they would for a Daytona user.
+  - 'Sessions are selected from four configurations (Claude Opus 5 high, Claude Opus 5.5 max, Claude
+    Sonnet 5 max and GLM 5.3 Flash; Codex rows are left out because `apply_patch` results are not recorded).
+    A task is eligible when it asks for 2 vCPU, at most 4 GiB and no GPU, runs in one container, and
+    has an eligible session from each of the four configurations: ten tasks. A session is eligible when
+    it had no error, ran nothing in the background, had no command time out, called no subagent, tried
+    no network install or download, and called none of the agent''s own programs (`rg`, `node`, `npm`,
+    `npx`, `claude`). For each task and configuration the earliest eligible session is taken: 40 sessions,
+    with 1,965 commands and 290 file edits. Since version 3 of the workload set only the ten Claude
+    Opus 5.5 max sessions are replayed, 303 steps; version 2 replayed four configurations once each.
+    Sonnet 5 max has 60% of the 40 sessions'' steps, 700 of them in one Coq session.'
+  - Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest and
+    workload version; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []` clears
+    the base image's CMD and Modal starts a sandbox with the image's CMD. This lets it run on Modal
+    too.
+  - 'The sessions are fetched by trial id from the endpoints in the parameters'' protocol.json and are
+    not republished: their licence is not stated.'
+validity_checks:
+- id: trace_set_pinned
+  threat: A fetched session set that differs from the one this version pins would replay different steps.
+  check: The protocol pins the SHA-256 of the extracted set; a batch whose fetched set differs sends
+    no command and its trials are missed.
+- id: exit_codes
+  threat: A step that diverges from the recording, so the replay no longer stands for the session.
+  check: A step succeeds when it exits with the code the session recorded (`Exit code N` from the result;
+    1 when Claude Code gave a `returnCodeInterpretation`, such as grep's "No matches found"; otherwise
+    0; an edit 0). The script stops at the first step whose code differs, and that trial is excluded
+    on that provider as "does not replay here", with the step and both codes.
+- id: clock_agreement
+  threat: The sandbox's clock drifts, so step runtimes are wrong.
+  check: /proc/uptime is read at the script's start and end; when the two clocks disagree by more than
+    20 ms, no step's runtime is kept.
+- id: replay_script_start
+  threat: A provider's login shell resets PATH, or a crash writes a core dump.
+  check: The script first sets PATH to the image's and turns core dumps off (`ulimit -c 0`); neither
+    is logged or timed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    steps: 600
+    destroy: 300
+  retries: None; the script stops at the first failing step. A top-up run replaces a provider-owned
+    failure of a workload benchmark; the failed trial stays in the data as excluded, with its owner
+    and cause.
+  success: 'Every step exits with the code the session recorded (`Exit code N` from the result; 1 when
+    Claude Code gave a return-code interpretation such as grep''s "No matches found"; otherwise 0; an
+    edit 0) and the sandbox is confirmed deleted. There is no end-state check: Terminal-Bench''s own
+    tests run in a separate verifier image.'
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A script that ends before its last step with no exit-code mismatch.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched session set that differs from the pinned set; no command is sent and its trials are missed.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A step whose exit code differs from the recorded one is excluded on that provider as "does not replay
+    here", with the step and both codes.
+  - A step that runs its full 600 s is excluded the same way.
+  - An error shown not to be the provider's.
+source:
+  name: Terminal-Bench 4.0 (harbor-framework/terminal-bench) leaderboard sessions
+  version: v4.0.0, commit 452bf305c6daa62fc59061d22133a7cbc7c1572e
+  ids:
+  - trace set sha256:8b44d766027082f43fbf62b72f5cb7815b568f64402071c5761de7d0b746f610
+  - '10 tasks: atrx-vep-crispr, batched-eval-parity, cargo-flight-dispatch, coq-block-bound, freecad-impeller,
+    glycan-ms2-elucidation, mvcc-lsm-compaction, production-planning, roy-polymorph-cn, session-window-debug'
+  - '10 sessions: Claude Code with Claude Opus 5.5 max, the earliest eligible session per task (303
+    steps), chosen from 40 eligible sessions of four configurations; trial ids and image digests are
+    in the parameters'' workloads.json'
+  licence: unknown
+  venue_terms:
+  - Terminal-Bench 4.0
+execution:
+  mode: trace_replay
+  inference: false
+
+
+---
+id: terminal-bench-4-0
+version: 1.1.4
+effective: '2026-10-26'
+name: Terminal-Bench 4.0
+category: workload
+notes:
+  what_this_measures: The sum of command and file-edit runtimes for a recorded session, measured by the
+    sandbox's clock. No model is called, so agent and model speed are not measured.
+  how_to_read: The median is shown in milliseconds. Lower is better.
+  summary: Time to replay recorded Terminal-Bench 4.0 session commands and file edits in each task's prepared
+    image.
+  how_it_is_measured: Recorded sessions come from the Terminal-Bench 4.0 public leaderboard. Commands
+    and file edits run in each task's prepared image, with each step measured by the sandbox's own clock.
+  cost_summary: Cost from sandbox creation through confirmed destruction, divided by successful sessions.
+  cost_how_to_read: Cost per successful session excludes failed attempts. Lower is better.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of the replayed steps' runtimes for one session, each by the sandbox's own clock.
+  quantity: Command and file-edit runtime
+  per: session
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest and built from the task's environment/ at the pinned
+      commit for linux/amd64 with a thin agent layer on top (for example ghcr.io/sandbox-test-images/base-image@sha256:1e76f612b6879b0dad1f1049a2120198bb3014d8870668be3d19e798eec717fc
+      for the first task).
+    modification: The agent layer adds what Harbor 0.24.0's Claude Code install adds (curl and procps
+      where missing, Harbor's session directories), without Claude Code and Node. Prepared in each account
+      before the run.
+  network: The provider's default network, which is open, as Terminal-Bench's was. The sandbox runs as
+    root.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 1800
+procedure:
+  mode: single
+  trials: 20
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per session from an image prepared ahead. Steps run back to back with no model
+      time between them, so the page cache stays warm and no provider sleeps between steps. Each session
+      runs 20 times per provider in a run, so a result is 20 samples per session.
+  variants:
+  - id: claude-opus-5-5-max
+    label: Claude Opus 5.5 max
+    parameters:
+      config: claude-opus-5-5-max
+    description: This option selects the recorded workload used for the measurement.
+  stages:
+  - id: read
+    name: Read
+    description: Steps that match none of the other stages' patterns. A step's stage comes from the patterns
+      in the parameters' protocol.json (groups).
+    record_steps:
+    - cmd
+  - id: write
+    name: Write
+    description: Steps that change files, such as edits, redirects, `git apply`, `mv`, `cp` and `rm`.
+    record_steps:
+    - cmd
+  - id: build
+    name: Build
+    description: Steps that build, compile, lint or format, such as `go build`, `tsc`, `ruff` and `make`.
+    record_steps:
+    - cmd
+  - id: test
+    name: Test
+    description: Steps that run tests, such as `pytest`, `go test`, `vitest` and `cargo test`.
+    record_steps:
+    - cmd
+  steps:
+  - id: create
+    name: Create
+    action: Start a new sandbox from the task's prepared image.
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+    timeout_seconds: 600
+    record_steps:
+    - create
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    timer: null
+  - id: steps
+    name: Session replay
+    action: Run the session's steps in recorded order as one bash script, uploaded and started in the
+      background and polled every 10 s. A Bash step runs byte for byte as `bash -c <command>` in its recorded
+      directory with no input. An Edit step runs as a perl program that replaces the old text with the
+      new and exits 1 unless the old text occurs exactly once (every occurrence with replace-all), as
+      Claude Code's Edit refuses. A Write step decodes the content into the file and makes its directory.
+      Each step gets the image's environment plus GIT_EDITOR=true, TERM=xterm and git's user.useConfigOnly,
+      and a 600 s limit. The script first sets PATH to the image's and turns core dumps off; neither is
+      timed. The sandbox's clock is logged before and after each step with its exit code, and /proc/uptime
+      at the script's start and end; if the two clocks differ by more than 20 ms no step runtime is kept.
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between its
+        two readings.
+    timeout_seconds: 600
+    repeats: true
+    record_steps:
+    - cmd
+  - id: outputs
+    name: Outputs
+    action: Untimed; the log and every step's output come back as one archive kept with the trial. Outputs
+      are not compared.
+    timer: null
+  - id: destroy
+    name: Destroy
+    action: Destroy the sandbox and confirm it is gone, the confirmation untimed.
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first step of the session starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the session exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: unknown
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of the successful sessions divided by their number; failed attempts' cost is not included.
+parameters:
+  path: parameters/terminal-bench-4-0/1.1.4/
+  sha256: d987b8281f3496ecf49a39e61680673814aeef7bac08873b59715fcb929fc752
+capabilities:
+  required: []
+interpretation:
+  what_to_do: A user running terminal agents or Terminal-Bench evaluations on sandboxes can read which
+    provider makes the agent wait least on its tool calls. For a provider, tool time points at CPU, disk
+    and process start under these tools.
+  informs: Which provider makes a terminal agent wait least on its tool calls.
+  limits:
+  - Each session is replayed once per provider in a run.
+  - Steps run back to back, so the page cache stays warm and the provider does not sleep between steps.
+  - The task's own tests run separately; the replay does not check the final task result.
+  caveats:
+  - Terminal-Bench covers terminal work beyond code. By its own categories the ten tasks are four science
+    (one a Coq proof), two operations, two software, one ML evaluation and one hardware (a FreeCAD model).
+  - The images are built later than Terminal-Bench's own, and their Dockerfiles install some unpinned
+    packages, so versions can differ from the recording.
+  - An edit runs here as a `perl` or `base64` process, where Claude Code writes from its own process.
+  - Daytona's containers show the host's CPU count to `nproc` and Python; tools that size their work by
+    it run as they would for a Daytona user.
+  - 'Sessions are selected from four configurations (Claude Opus 5 high, Claude Opus 5.5 max, Claude Sonnet
+    5 max and GLM 5.3 Flash; Codex rows are left out because `apply_patch` results are not recorded).
+    A task is eligible when it asks for 2 vCPU, at most 4 GiB and no GPU, runs in one container, and has
+    an eligible session from each of the four configurations: ten tasks. A session is eligible when it
+    had no error, ran nothing in the background, had no command time out, called no subagent, tried no
+    network install or download, and called none of the agent''s own programs (`rg`, `node`, `npm`, `npx`,
+    `claude`). For each task and configuration the earliest eligible session is taken: 40 sessions, with
+    1,965 commands and 290 file edits. Since version 3 of the workload set only the ten Claude Opus 5.5
+    max sessions are replayed, 303 steps; version 2 replayed four configurations once each. Sonnet 5 max
+    has 60% of the 40 sessions'' steps, 700 of them in one Coq session.'
+  - Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest and workload
+    version; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []` clears the base image's
+    CMD and Modal starts a sandbox with the image's CMD. This lets it run on Modal too.
+  - 'The sessions are fetched by trial id from the endpoints in the parameters'' protocol.json and are
+    not republished: their licence is not stated.'
+validity_checks:
+- id: trace_set_pinned
+  threat: A fetched session set that differs from the one this version pins would replay different steps.
+  check: The protocol pins the SHA-256 of the extracted set; a batch whose fetched set differs sends no
+    command and its trials are missed.
+- id: exit_codes
+  threat: A step that diverges from the recording, so the replay no longer stands for the session.
+  check: A step succeeds when it exits with the code the session recorded (`Exit code N` from the result;
+    1 when Claude Code gave a `returnCodeInterpretation`, such as grep's "No matches found"; otherwise
+    0; an edit 0). The script stops at the first step whose code differs, and that trial is excluded on
+    that provider as "does not replay here", with the step and both codes.
+- id: clock_agreement
+  threat: The sandbox's clock drifts, so step runtimes are wrong.
+  check: /proc/uptime is read at the script's start and end; when the two clocks disagree by more than
+    20 ms, no step's runtime is kept.
+- id: replay_script_start
+  threat: A provider's login shell resets PATH, or a crash writes a core dump.
+  check: The script first sets PATH to the image's and turns core dumps off (`ulimit -c 0`); neither is
+    logged or timed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    steps: 600
+    destroy: 300
+  retries: None; the script stops at the first failing step. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: 'Every step exits with the code the session recorded (`Exit code N` from the result; 1 when
+    Claude Code gave a return-code interpretation such as grep''s "No matches found"; otherwise 0; an
+    edit 0) and the sandbox is confirmed deleted. There is no end-state check: Terminal-Bench''s own tests
+    run in a separate verifier image.'
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A script that ends before its last step with no exit-code mismatch.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched session set that differs from the pinned set; no command is sent and its trials are missed.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A step whose exit code differs from the recorded one is excluded on that provider as "does not replay
+    here", with the step and both codes.
+  - A step that runs its full 600 s is excluded the same way.
+  - An error shown not to be the provider's.
+source:
+  name: Terminal-Bench 4.0 (harbor-framework/terminal-bench) leaderboard sessions
+  version: v4.0.0, commit 452bf305c6daa62fc59061d22133a7cbc7c1572e
+  ids:
+  - trace set sha256:8b44d766027082f43fbf62b72f5cb7815b568f64402071c5761de7d0b746f610
+  - '10 tasks: atrx-vep-crispr, batched-eval-parity, cargo-flight-dispatch, coq-block-bound, freecad-impeller,
+    glycan-ms2-elucidation, mvcc-lsm-compaction, production-planning, roy-polymorph-cn, session-window-debug'
+  - '10 sessions: Claude Code with Claude Opus 5.5 max, the earliest eligible session per task (303 steps),
+    chosen from 40 eligible sessions of four configurations; trial ids and image digests are in the parameters''
+    workloads.json'
+  licence: unknown
+  venue_terms:
+  - Terminal-Bench 4.0
+execution:
+  mode: trace_replay
+  inference: false
+
+---
+id: terminal-bench-4-0
+version: 1.1.12
+effective: '2026-10-31'
+name: '{name:test.terminal-bench-4-0}'
+category: workload
+notes:
+  what_this_measures: The result sums command and file-edit runtimes for a recorded session using the
+    sandbox clock. Model speed is excluded.
+  how_to_read: The {param:terminal-bench-4-0.1.1.4.statistics.primary} summarizes successful trials in
+    the axis unit; {direction:tool_time}.
+  summary: Each Terminal-Bench trace is one agent's full tool-use trace on a terminal task.
+  how_it_is_measured: Recorded sessions come from the {name:test.terminal-bench-4-0} public leaderboard.
+    Commands and file edits run in each task's prepared image, with each step measured by the sandbox's
+    own clock.
+  cost_summary: The cost covers sandbox creation through confirmed destruction, divided by successful
+    sessions.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.10
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of the replayed steps' runtimes for one session, each by the sandbox's own clock.
+  quantity: Command and file-edit runtime
+  per: session
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest and built from the task's environment/ at the pinned
+      commit for linux/amd64 with a thin agent layer on top (for example ghcr.io/sandbox-test-images/base-image@sha256:1e76f612b6879b0dad1f1049a2120198bb3014d8870668be3d19e798eec717fc
+      for the first task).
+    modification: The agent layer adds what Harbor 0.24.0's Claude Code install adds (curl and procps
+      where missing, Harbor's session directories), without Claude Code and Node. Prepared in each account
+      before the run.
+  network: The provider's default network, which is open, as Terminal-Bench's was. The sandbox runs as
+    root.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 1800
+procedure:
+  mode: single
+  trials: 20
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per session from an image prepared ahead. Steps run back to back with no model
+      time between them, so the page cache stays warm and no provider sleeps between steps. Each session
+      runs 20 times per provider in a run, so a result is 20 samples per session.
+  variants:
+  - id: claude-opus-5-5-max
+    label: Claude Opus 5.5 max
+    parameters:
+      config: claude-opus-5-5-max
+    description: The workload uses the {param:terminal-bench-4-0.1.1.5.procedure.variants.0.label} configuration.
+  stages:
+  - id: read
+    name: '{name:stage.read}'
+    description: Steps that match none of the other stages' patterns. A step's stage comes from the patterns
+      in the parameters' protocol.json (groups).
+    record_steps:
+    - cmd
+  - id: write
+    name: '{name:stage.write}'
+    description: Steps that change files, such as edits, redirects, `git apply`, `mv`, `cp` and `rm`.
+    record_steps:
+    - cmd
+  - id: build
+    name: '{name:stage.build}'
+    description: Steps that build, compile, lint or format, such as `go build`, `tsc`, `ruff` and `make`.
+    record_steps:
+    - cmd
+  - id: test
+    name: '{name:stage.test}'
+    description: Steps that run tests, such as `pytest`, `go test`, `vitest` and `cargo test`.
+    record_steps:
+    - cmd
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the task's prepared image.
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+    timeout_seconds: 600
+    record_steps:
+    - create
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    timer: null
+  - id: steps
+    name: Session replay
+    action: Run the session's steps in recorded order as one bash script, uploaded and started in the
+      background and polled every 10 s. A Bash step runs byte for byte as `bash -c <command>` in its recorded
+      directory with no input. An Edit step runs as a perl program that replaces the old text with the
+      new and exits 1 unless the old text occurs exactly once (every occurrence with replace-all), as
+      Claude Code's Edit refuses. A Write step decodes the content into the file and makes its directory.
+      Each step gets the image's environment plus GIT_EDITOR=true, TERM=xterm and git's user.useConfigOnly,
+      and a 600 s limit. The script first sets PATH to the image's and turns core dumps off; neither is
+      timed. The sandbox's clock is logged before and after each step with its exit code, and /proc/uptime
+      at the script's start and end; if the two clocks differ by more than 20 ms no step runtime is kept.
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between its
+        two readings.
+    timeout_seconds: 600
+    repeats: true
+    record_steps:
+    - cmd
+  - id: outputs
+    name: Outputs
+    action: Untimed; the log and every step's output come back as one archive kept with the trial. Outputs
+      are not compared.
+    timer: null
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone, the confirmation untimed.
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first step of the session starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the session exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: unknown
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+parameters:
+  path: parameters/terminal-bench-4-0/1.1.12/
+  sha256: d987b8281f3496ecf49a39e61680673814aeef7bac08873b59715fcb929fc752
+capabilities:
+  required: []
+interpretation:
+  what_to_do: A user running terminal agents or Terminal-Bench evaluations on sandboxes can read which
+    provider makes the agent wait least on its tool calls. For a provider, tool time points at CPU, disk
+    and process start under these tools.
+  informs: Which provider makes a terminal agent wait least on its tool calls.
+  limits:
+  - Each session is replayed once per provider in a run.
+  - Steps run back to back, so the page cache stays warm and the provider does not sleep between steps.
+  - The task's own tests run separately; the replay does not check the final task result.
+  caveats:
+  - Terminal-Bench covers terminal work beyond code. By its own categories the ten tasks are four science
+    (one a Coq proof), two operations, two software, one ML evaluation and one hardware (a FreeCAD model).
+  - The images are built later than Terminal-Bench's own, and their Dockerfiles install some unpinned
+    packages, so versions can differ from the recording.
+  - An edit runs here as a `perl` or `base64` process, where Claude Code writes from its own process.
+  - Daytona's containers show the host's CPU count to `nproc` and Python; tools that size their work by
+    it run as they would for a Daytona user.
+  - 'Sessions are selected from four configurations (Claude Opus 5 high, Claude Opus 5.5 max, Claude Sonnet
+    5 max and GLM 5.3 Flash; Codex rows are left out because `apply_patch` results are not recorded).
+    A task is eligible when it asks for 2 vCPU, at most 4 GiB and no GPU, runs in one container, and has
+    an eligible session from each of the four configurations: ten tasks. A session is eligible when it
+    had no error, ran nothing in the background, had no command time out, called no subagent, tried no
+    network install or download, and called none of the agent''s own programs (`rg`, `node`, `npm`, `npx`,
+    `claude`). For each task and configuration the earliest eligible session is taken: 40 sessions, with
+    1,965 commands and 290 file edits. Since version 3 of the workload set only the ten Claude Opus 5.5
+    max sessions are replayed, 303 steps; version 2 replayed four configurations once each. Sonnet 5 max
+    has 60% of the 40 sessions'' steps, 700 of them in one Coq session.'
+  - Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest and workload
+    version; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []` clears the base image's
+    CMD and Modal starts a sandbox with the image's CMD. This lets it run on Modal too.
+  - 'The sessions are fetched by trial id from the endpoints in the parameters'' protocol.json and are
+    not republished: their licence is not stated.'
+validity_checks:
+- id: trace_set_pinned
+  threat: A fetched session set that differs from the one this version pins would replay different steps.
+  check: The protocol pins the SHA-256 of the extracted set; a batch whose fetched set differs sends no
+    command and its trials are missed.
+- id: exit_codes
+  threat: A step that diverges from the recording, so the replay no longer stands for the session.
+  check: A step succeeds when it exits with the code the session recorded (`Exit code N` from the result;
+    1 when Claude Code gave a `returnCodeInterpretation`, such as grep's "No matches found"; otherwise
+    0; an edit 0). The script stops at the first step whose code differs, and that trial is excluded on
+    that provider as "does not replay here", with the step and both codes.
+- id: clock_agreement
+  threat: The sandbox's clock drifts, so step runtimes are wrong.
+  check: /proc/uptime is read at the script's start and end; when the two clocks disagree by more than
+    20 ms, no step's runtime is kept.
+- id: replay_script_start
+  threat: A provider's login shell resets PATH, or a crash writes a core dump.
+  check: The script first sets PATH to the image's and turns core dumps off (`ulimit -c 0`); neither is
+    logged or timed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    steps: 600
+    destroy: 300
+  retries: None; the script stops at the first failing step. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: 'Every step exits with the code the session recorded (`Exit code N` from the result; 1 when
+    Claude Code gave a return-code interpretation such as grep''s "No matches found"; otherwise 0; an
+    edit 0) and the sandbox is confirmed deleted. There is no end-state check: Terminal-Bench''s own tests
+    run in a separate verifier image.'
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A script that ends before its last step with no exit-code mismatch.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched session set that differs from the pinned set; no command is sent and its trials are missed.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A step whose exit code differs from the recorded one is excluded on that provider as "does not replay
+    here", with the step and both codes.
+  - A step that runs its full 600 s is excluded the same way.
+  - An error shown not to be the provider's.
+source:
+  name: '{name:test.terminal-bench-4-0} (harbor-framework/terminal-bench) leaderboard sessions'
+  version: v4.0.0, commit 452bf305c6daa62fc59061d22133a7cbc7c1572e
+  ids:
+  - trace set sha256:8b44d766027082f43fbf62b72f5cb7815b568f64402071c5761de7d0b746f610
+  - '10 tasks: atrx-vep-crispr, batched-eval-parity, cargo-flight-dispatch, coq-block-bound, freecad-impeller,
+    glycan-ms2-elucidation, mvcc-lsm-compaction, production-planning, roy-polymorph-cn, session-window-debug'
+  - '10 sessions: Claude Code with Claude Opus 5.5 max, the earliest eligible session per task (303 steps),
+    chosen from 40 eligible sessions of four configurations; trial ids and image digests are in the parameters''
+    workloads.json'
+  licence: unknown
+  venue_terms:
+  - '{name:test.terminal-bench-4-0}'
+execution:
+  mode: trace_replay
+  inference: false
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Commands run back to back, so the page cache is warm as in an agent session, from an image prepared
+      ahead; no earlier trial's files are present. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+
+---
+id: terminal-bench-4-0
+version: 1.1.7
+effective: '2026-10-29'
+name: Terminal-Bench 4.0
+category: workload
+notes:
+  what_this_measures: The result sums command and file-edit runtimes for a recorded session using the
+    sandbox clock. Model speed is excluded.
+  how_to_read: The {param:terminal-bench-4-0.1.1.4.statistics.primary} summarizes successful trials in
+    the axis unit; {direction:tool_time}.
+  summary: Each Terminal-Bench trace is one agent's full tool-use trace on a terminal task.
+  how_it_is_measured: Recorded sessions come from the {name:test.terminal-bench-4-0} public leaderboard.
+    Commands and file edits run in each task's prepared image, with each step measured by the sandbox's
+    own clock.
+  cost_summary: The cost covers sandbox creation through confirmed destruction, divided by successful
+    sessions.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of the replayed steps' runtimes for one session, each by the sandbox's own clock.
+  quantity: Command and file-edit runtime
+  per: session
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest and built from the task's environment/ at the pinned
+      commit for linux/amd64 with a thin agent layer on top (for example ghcr.io/sandbox-test-images/base-image@sha256:1e76f612b6879b0dad1f1049a2120198bb3014d8870668be3d19e798eec717fc
+      for the first task).
+    modification: The agent layer adds what Harbor 0.24.0's Claude Code install adds (curl and procps
+      where missing, Harbor's session directories), without Claude Code and Node. Prepared in each account
+      before the run.
+  network: The provider's default network, which is open, as Terminal-Bench's was. The sandbox runs as
+    root.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
+    tuned per provider.
+  lifetime_seconds: 1800
+procedure:
+  mode: single
+  trials: 20
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per session from an image prepared ahead. Steps run back to back with no model
+      time between them, so the page cache stays warm and no provider sleeps between steps. Each session
+      runs 20 times per provider in a run, so a result is 20 samples per session.
+  variants:
+  - id: claude-opus-5-5-max
+    label: Claude Opus 5.5 max
+    parameters:
+      config: claude-opus-5-5-max
+    description: The workload uses the {param:terminal-bench-4-0.1.1.5.procedure.variants.0.label} configuration.
+  stages:
+  - id: read
+    name: Read
+    description: Steps that match none of the other stages' patterns. A step's stage comes from the patterns
+      in the parameters' protocol.json (groups).
+    record_steps:
+    - cmd
+  - id: write
+    name: Write
+    description: Steps that change files, such as edits, redirects, `git apply`, `mv`, `cp` and `rm`.
+    record_steps:
+    - cmd
+  - id: build
+    name: Build
+    description: Steps that build, compile, lint or format, such as `go build`, `tsc`, `ruff` and `make`.
+    record_steps:
+    - cmd
+  - id: test
+    name: Test
+    description: Steps that run tests, such as `pytest`, `go test`, `vitest` and `cargo test`.
+    record_steps:
+    - cmd
+  steps:
+  - id: create
+    name: Create
+    action: Start a new sandbox from the task's prepared image.
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+    timeout_seconds: 600
+    record_steps:
+    - create
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    timer: null
+  - id: steps
+    name: Session replay
+    action: Run the session's steps in recorded order as one bash script, uploaded and started in the
+      background and polled every 10 s. A Bash step runs byte for byte as `bash -c <command>` in its recorded
+      directory with no input. An Edit step runs as a perl program that replaces the old text with the
+      new and exits 1 unless the old text occurs exactly once (every occurrence with replace-all), as
+      Claude Code's Edit refuses. A Write step decodes the content into the file and makes its directory.
+      Each step gets the image's environment plus GIT_EDITOR=true, TERM=xterm and git's user.useConfigOnly,
+      and a 600 s limit. The script first sets PATH to the image's and turns core dumps off; neither is
+      timed. The sandbox's clock is logged before and after each step with its exit code, and /proc/uptime
+      at the script's start and end; if the two clocks differ by more than 20 ms no step runtime is kept.
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between its
+        two readings.
+    timeout_seconds: 600
+    repeats: true
+    record_steps:
+    - cmd
+  - id: outputs
+    name: Outputs
+    action: Untimed; the log and every step's output come back as one archive kept with the trial. Outputs
+      are not compared.
+    timer: null
+  - id: destroy
+    name: Destroy
+    action: Destroy the sandbox and confirm it is gone, the confirmation untimed.
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first step of the session starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the session exits, by the sandbox's own clock.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: unknown
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of the successful sessions divided by their number; failed attempts' cost is not included.
+parameters:
+  path: parameters/terminal-bench-4-0/1.1.4/
+  sha256: d987b8281f3496ecf49a39e61680673814aeef7bac08873b59715fcb929fc752
+capabilities:
+  required: []
+interpretation:
+  what_to_do: A user running terminal agents or Terminal-Bench evaluations on sandboxes can read which
+    provider makes the agent wait least on its tool calls. For a provider, tool time points at CPU, disk
+    and process start under these tools.
+  informs: Which provider makes a terminal agent wait least on its tool calls.
+  limits:
+  - Each session is replayed once per provider in a run.
+  - Steps run back to back, so the page cache stays warm and the provider does not sleep between steps.
+  - The task's own tests run separately; the replay does not check the final task result.
+  caveats:
+  - Terminal-Bench covers terminal work beyond code. By its own categories the ten tasks are four science
+    (one a Coq proof), two operations, two software, one ML evaluation and one hardware (a FreeCAD model).
+  - The images are built later than Terminal-Bench's own, and their Dockerfiles install some unpinned
+    packages, so versions can differ from the recording.
+  - An edit runs here as a `perl` or `base64` process, where Claude Code writes from its own process.
+  - Daytona's containers show the host's CPU count to `nproc` and Python; tools that size their work by
+    it run as they would for a Daytona user.
+  - 'Sessions are selected from four configurations (Claude Opus 5 high, Claude Opus 5.5 max, Claude Sonnet
+    5 max and GLM 5.3 Flash; Codex rows are left out because `apply_patch` results are not recorded).
+    A task is eligible when it asks for 2 vCPU, at most 4 GiB and no GPU, runs in one container, and has
+    an eligible session from each of the four configurations: ten tasks. A session is eligible when it
+    had no error, ran nothing in the background, had no command time out, called no subagent, tried no
+    network install or download, and called none of the agent''s own programs (`rg`, `node`, `npm`, `npx`,
+    `claude`). For each task and configuration the earliest eligible session is taken: 40 sessions, with
+    1,965 commands and 290 file edits. Since version 3 of the workload set only the ten Claude Opus 5.5
+    max sessions are replayed, 303 steps; version 2 replayed four configurations once each. Sonnet 5 max
+    has 60% of the 40 sessions'' steps, 700 of them in one Coq session.'
+  - Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest and workload
+    version; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []` clears the base image's
+    CMD and Modal starts a sandbox with the image's CMD. This lets it run on Modal too.
+  - 'The sessions are fetched by trial id from the endpoints in the parameters'' protocol.json and are
+    not republished: their licence is not stated.'
+validity_checks:
+- id: trace_set_pinned
+  threat: A fetched session set that differs from the one this version pins would replay different steps.
+  check: The protocol pins the SHA-256 of the extracted set; a batch whose fetched set differs sends no
+    command and its trials are missed.
+- id: exit_codes
+  threat: A step that diverges from the recording, so the replay no longer stands for the session.
+  check: A step succeeds when it exits with the code the session recorded (`Exit code N` from the result;
+    1 when Claude Code gave a `returnCodeInterpretation`, such as grep's "No matches found"; otherwise
+    0; an edit 0). The script stops at the first step whose code differs, and that trial is excluded on
+    that provider as "does not replay here", with the step and both codes.
+- id: clock_agreement
+  threat: The sandbox's clock drifts, so step runtimes are wrong.
+  check: /proc/uptime is read at the script's start and end; when the two clocks disagree by more than
+    20 ms, no step's runtime is kept.
+- id: replay_script_start
+  threat: A provider's login shell resets PATH, or a crash writes a core dump.
+  check: The script first sets PATH to the image's and turns core dumps off (`ulimit -c 0`); neither is
+    logged or timed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    steps: 600
+    destroy: 300
+  retries: None; the script stops at the first failing step. A top-up run replaces a provider-owned failure
+    of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: 'Every step exits with the code the session recorded (`Exit code N` from the result; 1 when
+    Claude Code gave a return-code interpretation such as grep''s "No matches found"; otherwise 0; an
+    edit 0) and the sandbox is confirmed deleted. There is no end-state check: Terminal-Bench''s own tests
+    run in a separate verifier image.'
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A script that ends before its last step with no exit-code mismatch.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched session set that differs from the pinned set; no command is sent and its trials are missed.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A step whose exit code differs from the recorded one is excluded on that provider as "does not replay
+    here", with the step and both codes.
+  - A step that runs its full 600 s is excluded the same way.
+  - An error shown not to be the provider's.
+source:
+  name: Terminal-Bench 4.0 (harbor-framework/terminal-bench) leaderboard sessions
+  version: v4.0.0, commit 452bf305c6daa62fc59061d22133a7cbc7c1572e
+  ids:
+  - trace set sha256:8b44d766027082f43fbf62b72f5cb7815b568f64402071c5761de7d0b746f610
+  - '10 tasks: atrx-vep-crispr, batched-eval-parity, cargo-flight-dispatch, coq-block-bound, freecad-impeller,
+    glycan-ms2-elucidation, mvcc-lsm-compaction, production-planning, roy-polymorph-cn, session-window-debug'
+  - '10 sessions: Claude Code with Claude Opus 5.5 max, the earliest eligible session per task (303 steps),
+    chosen from 40 eligible sessions of four configurations; trial ids and image digests are in the parameters''
+    workloads.json'
+  licence: unknown
+  venue_terms:
+  - Terminal-Bench 4.0
+execution:
+  mode: trace_replay
+  inference: false
+
+
+---
+id: terminal-bench-4-0
+version: 1.1.1
+effective: "2026-10-26"
+name: Terminal-Bench 4.0
+category: workload
+description: >-
+  How long a sandbox takes to run the shell commands and file edits of a recorded Claude Code
+  session from Terminal-Bench 4.0's public leaderboard, with no model, in a fresh sandbox made
+  from the task's own image. Terminal-Bench covers terminal work beyond code. It shows which
+  provider makes a terminal agent wait least on its tool calls; it does not measure the agent
+  or model.
+notes:
+  what_this_measures: >-
+    How long a sandbox takes to run the shell commands and file edits of a recorded Claude Code
+    session from Terminal-Bench 4.0's public leaderboard, in a fresh sandbox made from the task's
+    own image. No model is called, and the agent and model are not measured.
+  how_to_read: >-
+    Each provider's median tool time is shown in milliseconds, split into the Read, Write, Build
+    and Test stages the steps fall in. Lower is better.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+
+metrics:
+  - name: tool_time
+    unit: ms
+    direction: lower_is_better
+    description: Sum of the replayed steps' runtimes for one session, each by the sandbox's own clock.
+
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: "Each task's own image, pinned by digest and built from the task's environment/ at the pinned commit for linux/amd64 with a thin agent layer on top (for example ghcr.io/sandbox-test-images/base-image@sha256:1e76f612b6879b0dad1f1049a2120198bb3014d8870668be3d19e798eec717fc for the first task)."
+    modification: >-
+      The agent layer adds what Harbor 0.24.0's Claude Code install adds (curl and procps where
+      missing, Harbor's session directories), without Claude Code and Node. Prepared in each
+      account before the run.
+  network: The provider's default network, which is open, as Terminal-Bench's was. The sandbox runs as root.
+  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing tuned per provider.
+  lifetime_seconds: 1800
+
+procedure:
+  mode: single
+  trials: 20
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: >-
+      A fresh sandbox per session from an image prepared ahead. Steps run back to back with no
+      model time between them, so the page cache stays warm and no provider sleeps between steps.
+      Each session runs 20 times per provider in a run, so a result is 20 samples per session.
+  variants:
+    - id: claude-opus-5-5-max
+      label: Claude Opus 5.5 max
+      parameters: { config: claude-opus-5-5-max }
+  stages:
+    - id: read
+      name: Read
+      description: >-
+        Steps that match none of the other stages' patterns. A step's stage comes from the patterns
+        in the parameters' protocol.json (groups).
+      record_steps: [cmd]
+    - id: write
+      name: Write
+      description: Steps that change files, such as edits, redirects, `git apply`, `mv`, `cp` and `rm`.
+      record_steps: [cmd]
+    - id: build
+      name: Build
+      description: Steps that build, compile, lint or format, such as `go build`, `tsc`, `ruff` and `make`.
+      record_steps: [cmd]
+    - id: test
+      name: Test
+      description: Steps that run tests, such as `pytest`, `go test`, `vitest` and `cargo test`.
+      record_steps: [cmd]
+  steps:
+    - id: create
+      name: Create
+      action: Start a new sandbox from the task's prepared image.
+      timer:
+        start_event: The create request is dispatched.
+        stop_event: The create call returns.
+      timeout_seconds: 600
+      record_steps: [create]
+    - id: ready_check
+      name: Ready check
+      action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+      timer: null
+    - id: steps
+      name: Session replay
+      action: >-
+        Run the session's steps in recorded order as one bash script, uploaded and started in the
+        background and polled every 10 s. A Bash step runs byte for byte as `bash -c <command>` in
+        its recorded directory with no input. An Edit step runs as a perl program that replaces the
+        old text with the new and exits 1 unless the old text occurs exactly once (every occurrence
+        with replace-all), as Claude Code's Edit refuses. A Write step decodes the content into the
+        file and makes its directory. Each step gets the image's environment plus
+        GIT_EDITOR=true, TERM=xterm and git's user.useConfigOnly, and a 600 s limit. The script first
+        sets PATH to the image's and turns core dumps off; neither is timed. The sandbox's clock is
+        logged before and after each step with its exit code, and /proc/uptime at the script's start
+        and end; if the two clocks differ by more than 20 ms no step runtime is kept.
+      timer:
+        start_event: The step starts, by the sandbox's own clock.
+        stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between its two readings.
+      timeout_seconds: 600
+      repeats: true
+      record_steps: [cmd]
+    - id: outputs
+      name: Outputs
+      action: Untimed; the log and every step's output come back as one archive kept with the trial. Outputs are not compared.
+      timer: null
+    - id: destroy
+      name: Destroy
+      action: Destroy the sandbox and confirm it is gone, the confirmation untimed.
+      timer:
+        start_event: The destroy request is dispatched.
+        stop_event: The destroy call returns.
+      timeout_seconds: 300
+      record_steps: [destroy]
+
+timing_boundaries:
+  start: The first step of the session starts in the sandbox, by the sandbox's own clock.
+  stop: The last step of the session exits, by the sandbox's own clock.
+
+statistics:
+  primary: median
+  secondary:
+    - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: unknown
+    requires_all_successful: false
+
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy.
+  per_success: Cost of the successful sessions divided by their number; failed attempts' cost is not included.
+
+parameters:
+  path: parameters/terminal-bench-4-0/1.1.1/
+  sha256: d987b8281f3496ecf49a39e61680673814aeef7bac08873b59715fcb929fc752
+
+capabilities:
+  required: []
+
+interpretation:
+  what_to_do: >-
+    A user running terminal agents or Terminal-Bench evaluations on sandboxes can read which
+    provider makes the agent wait least on its tool calls. For a provider, tool time points at CPU,
+    disk and process start under these tools.
+  informs: Which provider makes a terminal agent wait least on its tool calls.
+  limits:
+    - It does not measure the agent or the model; their time is left out.
+    - >-
+      Steps run back to back with no model time between them, so the page cache stays warm and no
+      provider sleeps between steps.
+    - >-
+      Tool time is runtime only: an agent that calls the sandbox over the provider's API once per
+      step adds one round trip per step, which this does not measure.
+    - >-
+      The selection leaves out sessions with background jobs, long commands, subagents and network
+      installs, so the set is lighter than an average Terminal-Bench session: the median recorded
+      tool time is 20 s.
+    - There is no end-state check; Terminal-Bench's own tests run in a separate verifier image.
+  caveats:
+    - >-
+      Terminal-Bench covers terminal work beyond code. By its own categories the ten tasks are four
+      science (one a Coq proof), two operations, two software, one ML evaluation and one hardware (a
+      FreeCAD model).
+    - >-
+      The images are built later than Terminal-Bench's own, and their Dockerfiles install some
+      unpinned packages, so versions can differ from the recording.
+    - >-
+      An edit runs here as a `perl` or `base64` process, where Claude Code writes from its own
+      process.
+    - >-
+      Daytona's containers show the host's CPU count to `nproc` and Python; tools that size their
+      work by it run as they would for a Daytona user.
+    - >-
+      Sessions are selected from four configurations (Claude Opus 5 high, Claude Opus 5.5 max,
+      Claude Sonnet 5 max and GLM 5.3 Flash; Codex rows are left out because `apply_patch` results
+      are not recorded). A task is eligible when it asks for 2 vCPU, at most 4 GiB and no GPU, runs
+      in one container, and has an eligible session from each of the four configurations: ten
+      tasks. A session is eligible when it had no error, ran nothing in the background, had no
+      command time out, called no subagent, tried no network install or download, and called none of
+      the agent's own programs (`rg`, `node`, `npm`, `npx`, `claude`). For each task and
+      configuration the earliest eligible session is taken: 40 sessions, with 1,965 commands and 290
+      file edits. Since version 3 of the workload set only the ten Claude Opus 5.5 max sessions are
+      replayed, 303 steps; version 2 replayed four configurations once each. Sonnet 5 max has 60%
+      of the 40 sessions' steps, 700 of them in one Coq session.
+    - >-
+      Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest
+      and workload version; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []`
+      clears the base image's CMD and Modal starts a sandbox with the image's CMD. This lets it run
+      on Modal too.
+    - >-
+      The sessions are fetched by trial id from the endpoints in the parameters' protocol.json and
+      are not republished: their licence is not stated.
+
+validity_checks:
+  - id: trace_set_pinned
+    threat: A fetched session set that differs from the one this version pins would replay different steps.
+    check: The protocol pins the SHA-256 of the extracted set; a batch whose fetched set differs sends no command and its trials are missed.
+  - id: exit_codes
+    threat: A step that diverges from the recording, so the replay no longer stands for the session.
+    check: >-
+      A step succeeds when it exits with the code the session recorded (`Exit code N` from the
+      result; 1 when Claude Code gave a `returnCodeInterpretation`, such as grep's "No matches
+      found"; otherwise 0; an edit 0). The script stops at the first step whose code differs, and
+      that trial is excluded on that provider as "does not replay here", with the step and both
+      codes.
+  - id: clock_agreement
+    threat: The sandbox's clock drifts, so step runtimes are wrong.
+    check: /proc/uptime is read at the script's start and end; when the two clocks disagree by more than 20 ms, no step's runtime is kept.
+  - id: replay_script_start
+    threat: A provider's login shell resets PATH, or a crash writes a core dump.
+    check: The script first sets PATH to the image's and turns core dumps off (`ulimit -c 0`); neither is logged or timed.
+
+failure_policy:
+  timeout_seconds:
+    create: 600
+    steps: 600
+    destroy: 300
+  retries: None; the script stops at the first failing step. A top-up run replaces a provider-owned failure of a workload benchmark; the failed trial stays in the data as excluded, with its owner and cause.
+  success: >-
+    Every step exits with the code the session recorded (`Exit code N` from the result; 1 when
+    Claude Code gave a return-code interpretation such as grep's "No matches found"; otherwise 0;
+    an edit 0) and the sandbox is confirmed deleted. There is no end-state check: Terminal-Bench's
+    own tests run in a separate verifier image.
+  provider_errors:
+    - Create and transport errors, and a sandbox that stops answering.
+    - A script that ends before its last step with no exit-code mismatch.
+    - A failure whose owner is uncertain.
+  benchmark_errors:
+    - A fetched session set that differs from the pinned set; no command is sent and its trials are missed.
+    - A failure of the benchmark's own script.
+  exclusions:
+    - A step whose exit code differs from the recorded one is excluded on that provider as "does not replay here", with the step and both codes.
+    - A step that runs its full 600 s is excluded the same way.
+    - An error shown not to be the provider's.
+
+source:
+  name: Terminal-Bench 4.0 (harbor-framework/terminal-bench) leaderboard sessions
+  version: "v4.0.0, commit 452bf305c6daa62fc59061d22133a7cbc7c1572e"
+  ids:
+    - trace set sha256:8b44d766027082f43fbf62b72f5cb7815b568f64402071c5761de7d0b746f610
+    - "10 tasks: atrx-vep-crispr, batched-eval-parity, cargo-flight-dispatch, coq-block-bound, freecad-impeller, glycan-ms2-elucidation, mvcc-lsm-compaction, production-planning, roy-polymorph-cn, session-window-debug"
+    - "10 sessions: Claude Code with Claude Opus 5.5 max, the earliest eligible session per task (303 steps), chosen from 40 eligible sessions of four configurations; trial ids and image digests are in the parameters' workloads.json"
+  licence: unknown
+
+execution:
+  mode: trace_replay
+  inference: false
+
+---
+id: terminal-bench-4-0
+version: 1.1.19
+effective: '2026-11-08'
+name: '{name:test.terminal-bench-4-0}'
+category: workload
+notes:
+  what_this_measures: The result sums command and file-edit runtimes for a recorded session using the
+    sandbox clock. Model speed is excluded.
+  how_to_read: The {param:terminal-bench-4-0.1.1.19.statistics.primary} summarizes successful trials in
+    the axis unit; {direction:tool_time}.
+  summary: Each Terminal-Bench trace is one agent's full tool-use trace on a terminal task.
+  how_it_is_measured: Recorded sessions come from the {name:test.terminal-bench-4-0} public leaderboard.
+    Commands and file edits run in each task's prepared image, with each step measured by the sandbox's
+    own clock.
+  cost_summary: The cost covers sandbox creation through confirmed destruction, divided by successful
+    sessions.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: tool_time
+  unit: ms
+  direction: lower_is_better
+  description: Sum of the replayed steps' runtimes for one session, each by the sandbox's own clock.
+  quantity: Command and file-edit runtime
+  per: session
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: Each task's own image, pinned by digest and built from the task's environment/ at the pinned
+      commit for linux/amd64 with a thin agent layer on top (for example ghcr.io/sandbox-test-images/base-image@sha256:1e76f612b6879b0dad1f1049a2120198bb3014d8870668be3d19e798eec717fc
+      for the first task).
+    modification: The agent layer adds what Harbor 0.24.0's Claude Code install adds (curl and procps
+      where missing, Harbor's session directories), without Claude Code and Node. Prepared in each account
+      before the run.
+  network: The provider's default network, which is open, as Terminal-Bench's was. The sandbox runs as
+    root.
+  lifetime_seconds: 1800
+procedure:
+  mode: single
+  trials: 20
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per session from an image prepared ahead. Steps run back to back with no model
+      time between them, so the page cache stays warm and no provider sleeps between steps. Each session
+      runs 20 times per provider in a run, so a result is 20 samples per session.
+  variants:
+  - id: claude-opus-5-5-max
+    label: Claude Opus 5.5 max
+    parameters:
+      config: claude-opus-5-5-max
+    description: The workload uses the {param:terminal-bench-4-0.1.1.19.procedure.variants.0.label} configuration.
+  stages:
+  - id: read
+    name: '{name:stage.read}'
+    description: Steps that match none of the other stages' patterns. A step's stage comes from the patterns
+      in the parameters' protocol.json (groups).
+    record_steps:
+    - cmd
+  - id: write
+    name: '{name:stage.write}'
+    description: Steps that change files, such as edits, redirects, `git apply`, `mv`, `cp` and `rm`.
+    record_steps:
+    - cmd
+  - id: build
+    name: '{name:stage.build}'
+    description: Steps that build, compile, lint or format, such as `go build`, `tsc`, `ruff` and `make`.
+    record_steps:
+    - cmd
+  - id: test
+    name: '{name:stage.test}'
+    description: Steps that run tests, such as `pytest`, `go test`, `vitest` and `cargo test`.
+    record_steps:
+    - cmd
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the task's prepared image.
+    timer:
+      start_event: The create request is dispatched.
+      stop_event: The create call returns.
+    timeout_seconds: 600
+    record_steps:
+    - create
+  - id: ready_check
+    name: Ready check
+    action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
+    timer: null
+  - id: steps
+    name: Session replay
+    action: Run the session's steps in recorded order as one bash script, uploaded and started in the
+      background and polled every 10 s. A Bash step runs byte for byte as `bash -c <command>` in its recorded
+      directory with no input. An Edit step runs as a perl program that replaces the old text with the
+      new and exits 1 unless the old text occurs exactly once (every occurrence with replace-all), as
+      Claude Code's Edit refuses. A Write step decodes the content into the file and makes its directory.
+      Each step gets the image's environment plus GIT_EDITOR=true, TERM=xterm and git's user.useConfigOnly,
+      and a 600 s limit. The script first sets PATH to the image's and turns core dumps off; neither is
+      timed. The sandbox's clock is logged before and after each step with its exit code, and /proc/uptime
+      at the script's start and end; if the two clocks differ by more than 20 ms no step runtime is kept.
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between its
+        two readings.
+    timeout_seconds: 600
+    repeats: true
+    record_steps:
+    - cmd
+  - id: outputs
+    name: Outputs
+    action: Untimed; the log and every step's output come back as one archive kept with the trial. Outputs
+      are not compared.
+    timer: null
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone, the confirmation untimed.
+    timer:
+      start_event: The destroy request is dispatched.
+      stop_event: The destroy call returns.
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+timing_boundaries:
+  start: The first step of the session starts in the sandbox.
+  stop: The last step of the session exits.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  ranking:
+    ranked: true
+    min_successes: 180
+    requires_all_successful: false
+cost:
+  method: provider_reported_or_priced
+parameters:
+  path: parameters/terminal-bench-4-0/1.1.19/
+  sha256: 6d6248ccfeed6866fe4de86bd9c4b12e1ed2de742e12ba12cc89250b765cf7c5
+capabilities:
+  required: []
+interpretation:
+  what_to_do: A user running terminal agents or Terminal-Bench evaluations on sandboxes can read which
+    provider makes the agent wait least on its tool calls. For a provider, tool time points at CPU, disk
+    and process start under these tools.
+  informs: Which provider makes a terminal agent wait least on its tool calls.
+  limits:
+  - Each session is replayed once per provider in a run.
+  - Steps run back to back, so the page cache stays warm and the provider does not sleep between steps.
+  - The task's own tests run separately; the replay does not check the final task result.
+  caveats:
+  - Terminal-Bench covers terminal work beyond code. By its own categories the ten tasks are four science
+    (one a Coq proof), two operations, two software, one ML evaluation and one hardware (a FreeCAD model).
+  - The images are built later than Terminal-Bench's own, and their Dockerfiles install some unpinned
+    packages, so versions can differ from the recording.
+  - An edit runs here as a `perl` or `base64` process, where Claude Code writes from its own process.
+  - Daytona's containers show the host's CPU count to `nproc` and Python; tools that size their work by
+    it run as they would for a Daytona user.
+  - 'Sessions are selected from four configurations (Claude Opus 5 high, Claude Opus 5.5 max, Claude Sonnet
+    5 max and GLM 5.3 Flash; Codex rows are left out because `apply_patch` results are not recorded).
+    A task is eligible when it asks for 2 vCPU, at most 4 GiB and no GPU, runs in one container, and has
+    an eligible session from each of the four configurations: ten tasks. A session is eligible when it
+    had no error, ran nothing in the background, had no command time out, called no subagent, tried no
+    network install or download, and called none of the agent''s own programs (`rg`, `node`, `npm`, `npx`,
+    `claude`). For each task and configuration the earliest eligible session is taken: 40 sessions, with
+    1,965 commands and 290 file edits. Since version 3 of the workload set only the ten Claude Opus 5.5
+    max sessions are replayed, 303 steps; version 2 replayed four configurations once each. Sonnet 5 max
+    has 60% of the 40 sessions'' steps, 700 of them in one Coq session.'
+  - Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest and workload
+    version; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []` clears the base image's
+    CMD and Modal starts a sandbox with the image's CMD. This lets it run on Modal too.
+  - 'The sessions are fetched by trial id from the endpoints in the parameters'' protocol.json and are
+    not republished: their licence is not stated.'
+validity_checks:
+- id: trace_set_pinned
+  threat: A fetched session set that differs from the one this version pins would replay different steps.
+  check: The protocol pins the SHA-256 of the extracted set; a batch whose fetched set differs sends no
+    command and its trials are missed.
+- id: exit_codes
+  threat: A step that diverges from the recording, so the replay no longer stands for the session.
+  check: A step succeeds when it exits with the code the session recorded (`Exit code N` from the result;
+    1 when Claude Code gave a `returnCodeInterpretation`, such as grep's "No matches found"; otherwise
+    0; an edit 0). The script stops at the first step whose code differs, and that trial is excluded on
+    that provider as "does not replay here", with the step and both codes.
+- id: clock_agreement
+  threat: The sandbox's clock drifts, so step runtimes are wrong.
+  check: /proc/uptime is read at the script's start and end; when the two clocks disagree by more than
+    20 ms, no step's runtime is kept.
+- id: replay_script_start
+  threat: A provider's login shell resets PATH, or a crash writes a core dump.
+  check: The script first sets PATH to the image's and turns core dumps off (`ulimit -c 0`); neither is
+    logged or timed.
+failure_policy:
+  timeout_seconds:
+    create: 600
+    steps: 600
+    destroy: 300
+  retries: None; the script stops at the first failing step. A top-up run refills every missed, excluded or
+    failed slot whoever owned the failure; each failed trial stays in the data with its owner and cause.
+  success: 'Every step exits with the code the session recorded (`Exit code N` from the result; 1 when
+    Claude Code gave a return-code interpretation such as grep''s "No matches found"; otherwise 0; an
+    edit 0) and the sandbox is confirmed deleted. There is no end-state check: Terminal-Bench''s own tests
+    run in a separate verifier image.'
+  provider_errors:
+  - Create and transport errors, and a sandbox that stops answering.
+  - A script that ends before its last step with no exit-code mismatch.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - A fetched session set that differs from the pinned set; no command is sent and its trials are missed.
+  - A failure of the benchmark's own script.
+  exclusions:
+  - A step whose exit code differs from the recorded one is excluded on that provider as "does not replay
+    here", with the step and both codes.
+  - A step that runs its full 600 s is excluded the same way.
+  - An error shown not to be the provider's.
+source:
+  name: '{name:test.terminal-bench-4-0} (harbor-framework/terminal-bench) leaderboard sessions'
+  version: v4.0.0, commit 452bf305c6daa62fc59061d22133a7cbc7c1572e
+  ids:
+  - trace set sha256:8b44d766027082f43fbf62b72f5cb7815b568f64402071c5761de7d0b746f610
+  - '10 tasks: atrx-vep-crispr, batched-eval-parity, cargo-flight-dispatch, coq-block-bound, freecad-impeller,
+    glycan-ms2-elucidation, mvcc-lsm-compaction, production-planning, roy-polymorph-cn, session-window-debug'
+  - '10 sessions: Claude Code with Claude Opus 5.5 max, the earliest eligible session per task (303 steps),
+    chosen from 40 eligible sessions of four configurations; trial ids and image digests are in the parameters''
+    workloads.json'
+  licence: unknown
+  venue_terms:
+  - '{name:test.terminal-bench-4-0}'
+execution:
+  mode: trace_replay
+  inference: false
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Commands run back to back, so the page cache is warm as in an agent session, from an image prepared
+      ahead; no earlier trial's files are present. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

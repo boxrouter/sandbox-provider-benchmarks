@@ -1,0 +1,11 @@
+metrics:
+- stressor: link
+  bogo-ops: 125
+  bogo-ops-per-second-usr-sys-time: 5.495001
+  bogo-ops-per-second-real-time: 4.163375
+  wall-clock-time: 30.023716
+  user-time: 3.243303
+  system-time: 19.504647
+  cpu-usage-per-instance: 75.766604
+  max-rss: 1812
+  links-createdremoved-per-sec: 34115.071353

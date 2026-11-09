@@ -1,0 +1,42 @@
+[
+  {
+    "data": {
+      "rows": {
+        "cpu-7zip-1t": {
+          "command": "./7zzs b -mmt{threads}",
+          "threads": 1,
+          "tool": "7zip"
+        },
+        "cpu-7zip-mt": {
+          "command": "./7zzs b -mmt{threads}",
+          "threads": "requested",
+          "tool": "7zip"
+        },
+        "stream-triad": {
+          "command": "OMP_NUM_THREADS={threads} ./stream",
+          "threads": "requested",
+          "tool": "stream"
+        }
+      },
+      "stream_array_bytes": 640000000,
+      "stream_passes": 20,
+      "tools": [
+        {
+          "asset": "7zzs-25.01-linux-x64-static",
+          "name": "7zzs",
+          "sha256": "5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422",
+          "version": ""
+        },
+        {
+          "asset": "stream-5.10-80m-linux-x86_64-static",
+          "name": "stream",
+          "sha256": "26b6dd2daf8a6f61eaeaebd9bc0c5cece91ec2d425069327034b7be1dbfc35d3",
+          "version": null
+        }
+      ]
+    },
+    "id": "standard",
+    "label": "7-Zip 25.01 benchmark and STREAM 5.10, threads = requested vCPU",
+    "version": "sha256:b8ef646273effcaf"
+  }
+]

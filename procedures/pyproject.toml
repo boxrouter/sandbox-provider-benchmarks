@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: LicenseRef-PolyForm-Shield-1.0.0
+# Component scope for the mirrored benchmark procedures: check_licenses matches
+# each source file's SPDX identifier against this project's license.
+[project]
+name = "sandbox-benchmarks-procedures"
+version = "0.0.0"
+description = "Benchmark procedure implementations mirrored into this repository"
+requires-python = ">=3.11"
+license = "LicenseRef-PolyForm-Shield-1.0.0"

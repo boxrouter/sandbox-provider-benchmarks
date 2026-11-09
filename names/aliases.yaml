@@ -1,0 +1,164 @@
+# The one reference registry: id aliases.
+# Id alias rows are only added. Every target is a canonical id from names.yaml; an old id is never a
+# canonical id of its own kind and a target is never itself an old id (no chains). Read old
+# records only through sandbox_benchmark_verifier.names.resolve; do not copy this table into another repository.
+schema: boxrouter.bench.aliases/1
+
+document:
+  index.speed_score: time-score
+  index.provider_score: provider-score
+  index.cost_score: cost-score
+  github-actions: ci-jobs
+  reliability.provider_failures: reliability
+
+# Page test ids and stored record benchmark ids.
+test:
+  github-actions: ci-jobs
+  start-time: sequential-tti
+  burst: burst-tti
+  "true": exec-latency
+  true-per-100-calls: exec-latency-per-100-calls
+  file-list: list
+  file-write-4kib: write-4kib
+  file-read-4kib: read-4kib
+  resume-after-wait: delayed-resume
+  snapshot: snapshot-and-restore
+  snapshot-fork: fork
+  image-build-2x4: image-build-2vcpu-4gib
+  cpu-7zip-1t: 7-zip-1-thread
+  cpu-7zip-mt: 7-zip-all-vcpus
+  disk-seq-read-1m: sequential-read
+  disk-seq-write-1m: sequential-write
+  disk-rand-read-4k: random-read
+  disk-rand-write-4k: random-write
+  hardlink: hard-links
+  install: package-registries
+  deep-swe: deepswe
+  terminal-bench: terminal-bench-4-0
+  rl-rollouts: r2e-gym
+
+# Page test ids that were one test plus a variant.
+test_variant:
+  start-time-python3: [sequential-tti, python3]
+  start-time-node: [sequential-tti, node]
+  start-time-git: [sequential-tti, git]
+
+# Stored benchmark identifiers (record benchmark.id).
+task:
+  primitives: files
+  disk-fio: disk
+  deep-swe: deepswe
+  terminal-bench: terminal-bench-4-0
+  rl-rollouts: r2e-gym
+  start-time: sequential-tti
+  burst: burst-tti
+  "true": exec-latency
+  resume-after-wait: delayed-resume
+  snapshot: snapshot-and-restore
+  snapshot-fork: fork
+  hardlink: hard-links
+  install: package-registries
+
+# Old variant and job ids, scoped by the canonical test that owns them.
+variant:
+  deepswe:
+    claude_opus_5_high: claude-opus-5-high
+    claude_sonnet_5_high: claude-sonnet-5-high
+    deepseek_v4_flash_max: deepseek-v4-flash-max
+    glm_5_3_flash_max: glm-5-3-flash-max
+    gpt_5_6_sol_low: gpt-5-6-sol-low
+  terminal-bench-4-0:
+    claude_opus_5_high: claude-opus-5-high
+    claude_opus_5_5_max: claude-opus-5-5-max
+    claude_sonnet_5_max: claude-sonnet-5-max
+    glm_5_3_flash: glm-5-3-flash
+  r2e-gym:
+    numpy_0a476002600c: numpy-0a476002600c
+    numpy_dda20349d172: numpy-dda20349d172
+    numpy_61640a849557: numpy-61640a849557
+    numpy_171a3e5811e4: numpy-171a3e5811e4
+    numpy_bb46a495ee52: numpy-bb46a495ee52
+    numpy_504b287bdf47: numpy-504b287bdf47
+    numpy_3c0b4db0b51e: numpy-3c0b4db0b51e
+    coveragepy_89f44c12465b: coveragepy-89f44c12465b
+    numpy_6b8d55e66e53: numpy-6b8d55e66e53
+    numpy_ad48eaa76403: numpy-ad48eaa76403
+  ci-jobs:
+    spotify_player: spotify-player
+  pause-resume:
+    memory_1gib: memory-1gib
+    storage_1gib: storage-1gib
+    storage_2gib: storage-2gib
+    storage_4gib: storage-4gib
+  delayed-resume:
+    wait_0s: wait-0s
+    wait_60s: wait-60s
+    wait_15min: wait-15min
+  image-build-2vcpu-4gib:
+    data_science: data-science
+
+# Old stage (group) ids, scoped by the canonical test or tab that shows them.
+stage:
+  r2e-gym:
+    restore: create-from-snapshot
+    tool: tool-calls
+    cleanup: destroy
+  pause-resume:
+    sleep: pause
+    wake: resume
+    data: read
+  snapshots:
+    restore: create-from-snapshot
+    command: load-runtimes
+  cpu:
+    compress: compression
+    decompress: decompression
+
+# Old tab, panel and index ids.
+tab:
+  start-time: create
+  "true": exec
+  snapshot: snapshots
+  machine-speed: cpu
+  cpu-memory: cpu
+  hardlink: filesystem
+  install: network
+  package-registries: network
+  speed-index: time-index
+  speed-vs-cost: time-vs-cost
+  execution-time-index: time-index
+  typical-workload-time: time-index
+  execution-cost-index: cost-index
+  typical-workload-cost: cost-index
+  execution-time-vs-cost: time-vs-cost
+  typical-workload-time-vs-cost: time-vs-cost
+
+view:
+  frontier: time-vs-cost
+  execution-time-vs-cost: time-vs-cost
+  typical-workload-time-vs-cost: time-vs-cost
+
+section:
+  index: overview
+  indexes: overview
+  operations: sandbox-operations
+  machine: machine-performance
+  primitives: sandbox-operations
+
+subsection:
+  coding: coding-workloads
+  ci: ci-workloads
+  rl: rl-workloads
+
+# Retired ids: old records keep them, but no canonical test replaces them (decision D2).
+retired:
+  - machine.disk.fio
+  - start-time-exec
+  - image-build-4vcpu-8gib
+  - image-build-4x8
+  - sandbox.image_build.size_4x8
+
+# What a retired document is called where an immutable older version of a composite still names it as an input
+# (the page has no test row to read it from).
+retired_names:
+  sandbox.image_build.size_4x8: Image Build (4 vCPU / 8 GiB)

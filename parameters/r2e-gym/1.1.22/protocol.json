@@ -1,0 +1,257 @@
+{
+  "environment": {
+    "DEBIAN_FRONTEND": "noninteractive",
+    "PATH": "/root/.venv/bin:/root/.local/bin:/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "VIRTUAL_ENV": "/testbed/.venv"
+  },
+  "patch": "timeout 120 git add -A && git diff --cached ",
+  "reset": [
+    "timeout 120 ln -s /testbed/.venv /root/.venv ",
+    "timeout 120 ln -s /testbed/.venv/bin/python /root/.local/bin/python ",
+    "timeout 120 ln -s /testbed/.venv/bin/python /root/.local/bin/python3 ",
+    "timeout 120 find /testbed/.venv/bin -type f -executable -exec ln -sf {} /root/.local/bin/ \\; ",
+    "timeout 120 uv pip install chardet==5.2.0 ",
+    "timeout 120 find . -name '*.pyc' -delete ",
+    "timeout 120 find . -name '__pycache__' -exec rm -rf {} + ",
+    "timeout 120 find /r2e_tests -name '*.pyc' -delete ",
+    "timeout 120 find /r2e_tests -name '__pycache__' -exec rm -rf {} + ",
+    "timeout 120 mv /testbed/run_tests.sh /root/run_tests.sh ",
+    "timeout 120 mv /testbed/r2e_tests /root/r2e_tests ",
+    "timeout 120 mv /r2e_tests /root/r2e_tests ",
+    "timeout 120 ln -s /root/r2e_tests /testbed/r2e_tests ",
+    "timeout 120 chmod +x /usr/local/bin/file_editor ",
+    "timeout 120 chmod +x /usr/local/bin/search ",
+    "timeout 120 chmod +x /usr/local/bin/execute_bash ",
+    "timeout 120 chmod +x /usr/local/bin/finish "
+  ],
+  "reward": "timeout 300 bash /root/run_tests.sh ",
+  "rollout_set_sha256": "c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635",
+  "rollouts": {
+    "coveragepy-89f44c12465b-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 3009825,
+      "offset": 11484256
+    },
+    "coveragepy-89f44c12465b-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 14737541,
+      "offset": 170365408
+    },
+    "coveragepy-89f44c12465b-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 3516761,
+      "offset": 117187177
+    },
+    "coveragepy-89f44c12465b-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 15921954,
+      "offset": 536109257
+    },
+    "numpy-0a476002600c-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 5958399,
+      "offset": 318259181
+    },
+    "numpy-0a476002600c-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 3804139,
+      "offset": 1191892117
+    },
+    "numpy-0a476002600c-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 8665054,
+      "offset": 200087658
+    },
+    "numpy-0a476002600c-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 8494090,
+      "offset": 317700055
+    },
+    "numpy-171a3e5811e4-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 15590585,
+      "offset": 1933090503
+    },
+    "numpy-171a3e5811e4-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 20281228,
+      "offset": 2241479713
+    },
+    "numpy-171a3e5811e4-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 5319960,
+      "offset": 1929021902
+    },
+    "numpy-171a3e5811e4-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 3961112,
+      "offset": 1885708762
+    },
+    "numpy-3c0b4db0b51e-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 6784488,
+      "offset": 3967554793
+    },
+    "numpy-3c0b4db0b51e-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 14397851,
+      "offset": 3801294470
+    },
+    "numpy-3c0b4db0b51e-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 16759650,
+      "offset": 4031926652
+    },
+    "numpy-3c0b4db0b51e-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 1338835,
+      "offset": 3622951548
+    },
+    "numpy-504b287bdf47-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 12821525,
+      "offset": 1067385380
+    },
+    "numpy-504b287bdf47-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 7733926,
+      "offset": 816496343
+    },
+    "numpy-504b287bdf47-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 7012511,
+      "offset": 299092920
+    },
+    "numpy-504b287bdf47-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 3847153,
+      "offset": 631625053
+    },
+    "numpy-61640a849557-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 21997423,
+      "offset": 3525410287
+    },
+    "numpy-61640a849557-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 14775401,
+      "offset": 3416978802
+    },
+    "numpy-61640a849557-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 10687145,
+      "offset": 3070247524
+    },
+    "numpy-61640a849557-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 7346018,
+      "offset": 3405957472
+    },
+    "numpy-6b8d55e66e53-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 6938754,
+      "offset": 1404219742
+    },
+    "numpy-6b8d55e66e53-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 15657022,
+      "offset": 1750005222
+    },
+    "numpy-6b8d55e66e53-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 4489608,
+      "offset": 1673670922
+    },
+    "numpy-6b8d55e66e53-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 7840343,
+      "offset": 1606729092
+    },
+    "numpy-ad48eaa76403-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 8957836,
+      "offset": 1767677662
+    },
+    "numpy-ad48eaa76403-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 3713005,
+      "offset": 1506155875
+    },
+    "numpy-ad48eaa76403-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 6417866,
+      "offset": 1827117786
+    },
+    "numpy-ad48eaa76403-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 3585973,
+      "offset": 1507741490
+    },
+    "numpy-bb46a495ee52-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 17811046,
+      "offset": 1948681088
+    },
+    "numpy-bb46a495ee52-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 10881241,
+      "offset": 2130365295
+    },
+    "numpy-bb46a495ee52-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 5795976,
+      "offset": 1821321810
+    },
+    "numpy-bb46a495ee52-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 10120100,
+      "offset": 1817076473
+    },
+    "numpy-dda20349d172-run1": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run1.jsonl",
+      "length": 9894644,
+      "offset": 2736046006
+    },
+    "numpy-dda20349d172-run2": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run2.jsonl",
+      "length": 10313116,
+      "offset": 2931308198
+    },
+    "numpy-dda20349d172-run3": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run3.jsonl",
+      "length": 12631522,
+      "offset": 2470269061
+    },
+    "numpy-dda20349d172-run4": {
+      "file": "r2egym-qwen3-32b-rl-step200-chunk_01-run4.jsonl",
+      "length": 5466283,
+      "offset": 2494682965
+    }
+  },
+  "schema": "boxrouter.bench.rl-rollouts.protocol/1",
+  "source": {
+    "dataset": "AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories",
+    "harness": "https://github.com/R2E-Gym/R2E-Gym/tree/9a3c2495ab69a3ca1e85f395c308bc6f72d4161f",
+    "revision": "e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e",
+    "rows": "https://huggingface.co/datasets/AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories/resolve/{revision}/{file}"
+  },
+  "tools": {
+    "execute_bash": {
+      "sha256": "01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32",
+      "url": "https://raw.githubusercontent.com/R2E-Gym/R2E-Gym/9a3c2495ab69a3ca1e85f395c308bc6f72d4161f/src/r2egym/agenthub/tools/execute_bash.py"
+    },
+    "file_editor": {
+      "sha256": "d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596",
+      "url": "https://raw.githubusercontent.com/R2E-Gym/R2E-Gym/9a3c2495ab69a3ca1e85f395c308bc6f72d4161f/src/r2egym/agenthub/tools/file_editor.py"
+    },
+    "finish": {
+      "sha256": "fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff",
+      "url": "https://raw.githubusercontent.com/R2E-Gym/R2E-Gym/9a3c2495ab69a3ca1e85f395c308bc6f72d4161f/src/r2egym/agenthub/tools/finish.py"
+    },
+    "search": {
+      "sha256": "45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c",
+      "url": "https://raw.githubusercontent.com/R2E-Gym/R2E-Gym/9a3c2495ab69a3ca1e85f395c308bc6f72d4161f/src/r2egym/agenthub/tools/search.py"
+    }
+  },
+  "version": 3
+}

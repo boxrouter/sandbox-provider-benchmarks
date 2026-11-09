@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/benchmark-reader-1.json",
+  "title": "Current reader copy of every test and index",
+  "description": "Reader wording only. A method's metrics, procedure, statistics, parameters, inherited documents, execution, timing, failure and cost policies, and measured conditions are scientific records: they are refused here, and a statement of fact reads the measured definition through {param:measured.<path>}.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "methods"],
+  "properties": {
+    "schema": {"const": "boxrouter.bench.reader/1"},
+    "common": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Shared wording only; measured conditions resolve from the exact bound definition and its inherited common.",
+      "properties": {
+        "blocks": {
+          "type": "object",
+          "description": "Text several tests share, written once at the narrowest scope that covers all its users: scope id, then block id. The scope is `common` (every test), a section id or a tab id. A test's field reads a block of its own tab, section or common with {param:reader.common.blocks.<scope>.<block>}; a block's {param:measured.<path>} reads the measured definition of the test that reads it.",
+          "propertyNames": {"pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "additionalProperties": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {"pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"},
+            "additionalProperties": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "methods": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z0-9]+([-_][a-z0-9]+)*$"},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "headline": {"type": "string", "minLength": 1},
+          "tables": {
+            "type": "object",
+            "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+            "additionalProperties": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "step_notes": {
+            "type": "object",
+            "propertyNames": {"pattern": "^[a-z0-9][a-z0-9_-]*$"},
+            "minProperties": 1,
+            "additionalProperties": {"type": "string", "minLength": 1}
+          },
+          "headline_steps": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "notes": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "introduction": {"type": "string", "minLength": 1},
+              "page_headline": {"type": "string", "minLength": 1, "description": "A page host's At a Glance Short Name on the page that holds other tests; its headline stays its chart panel's (rule page-host-wording)."},
+              "page_introduction": {"type": "string", "minLength": 1, "description": "A page host's subtitle on the page that holds other tests; its introduction stays its chart panel's (rule page-host-wording)."},
+              "setup": {"type": "string", "minLength": 1},
+              "trial_steps": {"type": "string", "minLength": 1},
+              "limitations": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+              "opening": {"type": "string", "minLength": 1},
+              "environment": {"type": "string", "minLength": 1},
+              "clocks": {"type": "string", "minLength": 1},
+              "ready_check": {"type": "string", "minLength": 1},
+              "workload": {"type": "string", "minLength": 1},
+              "procedure": {"type": "string", "minLength": 1},
+              "metrics": {"type": "string", "minLength": 1},
+              "metric": {"type": "string", "minLength": 1},
+              "calculation": {"type": "string", "minLength": 1},
+              "independence": {"type": "string", "minLength": 1},
+              "statistics_rules": {"type": "string", "minLength": 1},
+              "median_rule": {"type": "string", "minLength": 1},
+              "percentile_rule": {"type": "string", "minLength": 1},
+              "interval_rule": {"type": "string", "minLength": 1},
+              "workload_value": {"type": "string", "minLength": 1},
+              "stage_rule": {"type": "string", "minLength": 1},
+              "failure_policy": {"type": "string", "minLength": 1},
+              "cost": {"type": "string", "minLength": 1},
+              "how_to_read": {"type": "string", "minLength": 1},
+              "cost_summary": {"type": "string", "minLength": 1},
+              "cost_how_to_read": {"type": "string", "minLength": 1}
+            }
+          },
+          "panel": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command"],
+            "properties": {
+              "command": {"type": "string", "minLength": 1, "description": "A display shorthand for the command; the executable command stays in the pinned workload parameters."}
+            }
+          },
+          "hash_marks": {
+            "type": "object",
+            "description": "A definition field whose text writes a SHA-256 (its path) and the word in front of the hash: the reader view draws that word as the link that copies the hash.",
+            "additionalProperties": {"type": "string", "pattern": "^[A-Za-z0-9-]+$"}
+          },
+          "variant_commits": {
+            "type": "object",
+            "description": "Variants whose parameter `field` names an image and a Git commit (<image>:<commit>): the repository of each image. Each variant's name on the page links to its commit, and the notes table `table` lists them.",
+            "additionalProperties": false,
+            "required": ["field", "table", "repositories"],
+            "properties": {
+              "field": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+              "table": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+              "repositories": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": {"type": "string", "pattern": "^[\\w.-]+/[\\w.-]+$"}
+              }
+            }
+          },
+          "clock": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "description": "The clocks the headline number is read from, in the order At a Glance names them: `runner` (the job host's monotonic clock) or `sandbox` (the clock inside the sandbox). A test with stages names only clocks its stages have. A composite times nothing itself and has none.",
+            "items": {"enum": ["runner", "sandbox"]}
+          },
+          "boundary_clock": {
+            "enum": ["runner", "sandbox"],
+            "description": "The clock the document's timing boundaries are read from, the Source of the measure hover. A method with one clock needs none; a method with two names the one its boundaries use."
+          },
+          "stages": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": {"pattern": "^[a-z0-9]+([-_][a-z0-9]+)*$"},
+            "description": "What each legend stage times, as events: the three lines of its hover. A stage names its own request in `start`; `start_after` is the whole Start line of a stage that is not first in its bar, naming what happened before it.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["start", "end", "clock"],
+              "properties": {
+                "start": {"type": "string", "minLength": 1},
+                "start_after": {"type": "string", "minLength": 1},
+                "end": {"type": "string", "minLength": 1},
+                "clock": {"enum": ["runner", "sandbox"]}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

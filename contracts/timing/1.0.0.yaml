@@ -1,0 +1,104 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+schema: sandbox-benchmarks.timing/1
+version: 1.0.0
+sources:
+  common: {id: sbs.common, version: 1.0.18}
+  create: {id: sequential-tti, version: 1.2.18}
+  exec: {id: exec-latency, version: 1.2.12}
+  write: {id: write-4kib, version: 1.1.13}
+  read: {id: read-4kib, version: 1.1.13}
+  list: {id: list, version: 1.1.13}
+  pause: {id: pause-resume, version: 1.2.16}
+  snapshot: {id: snapshot-and-restore, version: 1.1.14}
+  image: {id: image-build-2vcpu-4gib, version: 1.2.14}
+  replay: {id: terminal-bench-4-0, version: 1.1.19}
+  cpu: {id: 7-zip-1-thread, version: 1.1.18}
+intervals:
+  operation:
+    citation: {document: common, pointer: /clocks/operation}
+    clock: host-monotonic
+    start: operation-entry-after-preparation
+    end: operation-return-or-raise-before-bookkeeping
+    excluded: [command-preparation, readiness, report-collection, telemetry-bookkeeping, cleanup-confirmation]
+    outcomes: [returned, raised]
+  guest:
+    citation: {document: exec, pointer: /validity_checks/0}
+    clock: bash-epochrealtime
+    order: [uptime-start, wall-start, command, exit-code-capture, wall-end, uptime-end]
+    excluded: [cwd, environment, transport, output-trailer]
+    agreement:
+      citation: {document: replay, pointer: /validity_checks/2}
+      clock: proc-uptime
+      resolution_ns: 10000000
+      tolerance_ns: 20000000
+      inclusive: true
+      reject: [missing-uptime, negative-wall-span, negative-uptime-span, disagreement]
+      rejected_runtime: null
+operations:
+  create: {interval: operation, citation: {document: create, pointer: /procedure/steps/1}}
+  first-command: {record: commands.run, interval: operation, citation: {document: create, pointer: /timing_boundaries}}
+  exec: {record: commands.run, interval: operation, citation: {document: exec, pointer: /timing_boundaries}}
+  files.write: {interval: operation, citation: {document: write, pointer: /timing_boundaries}}
+  files.read: {interval: operation, citation: {document: read, pointer: /timing_boundaries}}
+  files.list: {interval: operation, citation: {document: list, pointer: /timing_boundaries}}
+  pause: {interval: operation, citation: {document: pause, pointer: /procedure/steps}}
+  resume: {interval: operation, citation: {document: pause, pointer: /timing_boundaries}}
+  snapshots.create: {interval: operation, citation: {document: snapshot, pointer: /timing_boundaries}}
+  create-from-snapshot: {record: restore, interval: operation, citation: {document: snapshot, pointer: /procedure/steps/4}}
+  image.prepare: {interval: operation, citation: {document: image, pointer: /timing_boundaries}}
+  destroy: {interval: operation, citation: {document: common, pointer: /failure_policy/success}}
+derivations:
+  create-to-first-command:
+    citation: {document: create, pointer: /timing_boundaries}
+    start: create.start
+    end: first-command.end
+    readiness: skip
+  ready-diagnostic:
+    citation: {document: common, pointer: /ready_check}
+    start: create.end
+    end: ready-command.end
+    published: false
+readiness:
+  citation: {document: common, pointer: /ready_check}
+  policy: {document: common, pointer: /ready_check}
+  clock_reads: false
+  wait_after: every-transient-failure-including-final
+  status_lookup: [error, native-error]
+  connection_lookup: cause-or-context-chain-cycle-safe
+  nonzero_exit: provider-failure
+  exhausted: provider-failure
+  other_failure: preserve-owner
+  deadline_grace_seconds: 5.0
+retries:
+  citation: {document: common, pointer: /failure_policy/retries}
+  measured_call_attempts: 1
+replay:
+  citation: {document: replay, pointer: /procedure/steps}
+  interval: guest
+  clock_gate_scope: whole-script
+  command_start: before-timeout-shell-launch
+  command_end: after-exit-code-capture-before-log-write
+  excluded: [upload, cwd-change, environment-setup, polling, archive, output-download]
+  poll_seconds: 10.0
+  timeout_evaluation: after-running-status
+  terminal_status_precedes_timeout: true
+  sleep: full-poll-interval
+  status_observation_timeout_ms: 30000
+  status_dispatch_timeout_seconds: 35.0
+  kill_after_seconds: 10
+  timeout_exit_code: 124
+  stop_on: unexpected-exit-code
+  missing_begin_or_end: unknown-runtime-for-all-commands
+  missing_command: not-reached
+  successful_script_exit_proves_commands_succeeded: false
+  tool_owned_clock: {document: cpu, pointer: /timing_boundaries}
+trial:
+  citation: {document: common, pointer: /failure_policy}
+  success_requires: [checks-pass, resources-confirmed-deleted]
+  unknown_owner: provider
+  excluded_owners: [core, account, script, external, trace]
+  retained: [failed-trial, excluded-trial,reason, operation-edges]
+  interrupted: uncertain
+  cleanup_failure_overrides_excluded_owner: provider
+  observation_failure_changes_outcome: false

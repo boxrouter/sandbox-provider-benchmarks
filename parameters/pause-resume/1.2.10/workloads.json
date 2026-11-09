@@ -1,0 +1,55 @@
+[
+  {
+    "data": {
+      "bytes": 4096,
+      "kind": "empty",
+      "seed": 20261004
+    },
+    "id": "empty",
+    "label": "Empty",
+    "version": "sha256:f431302a992dacd8"
+  },
+  {
+    "capabilities": [
+      "pause_keeps_memory"
+    ],
+    "data": {
+      "bytes": 1073741824,
+      "kind": "memory",
+      "seed": 20261004
+    },
+    "id": "memory-1gib",
+    "label": "1 GiB in memory",
+    "version": "sha256:ea944b511947a5a3"
+  },
+  {
+    "data": {
+      "bytes": 1073741824,
+      "kind": "storage",
+      "seed": 20261004
+    },
+    "id": "storage-1gib",
+    "label": "1 GiB on disk",
+    "version": "sha256:dc223fe77775e638"
+  },
+  {
+    "data": {
+      "bytes": 2147483648,
+      "kind": "storage",
+      "seed": 20261004
+    },
+    "id": "storage-2gib",
+    "label": "2 GiB on disk",
+    "version": "sha256:01b1c0b73cbbf055"
+  },
+  {
+    "data": {
+      "bytes": 4294967296,
+      "kind": "storage",
+      "seed": 20261004
+    },
+    "id": "storage-4gib",
+    "label": "4 GiB on disk",
+    "version": "sha256:a120e67ae400cf3d"
+  }
+]

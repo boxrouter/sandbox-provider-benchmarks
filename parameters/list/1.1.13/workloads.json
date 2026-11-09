@@ -1,0 +1,35 @@
+[
+  {
+    "data": {
+      "file-list": {
+        "count": 200,
+        "names": "f%03d",
+        "path": "/workspace/prim/list",
+        "repetitions": 100
+      },
+      "file-read-4kib": {
+        "payload": "file-4kib",
+        "repetitions": 100
+      },
+      "file-write-4kib": {
+        "payload": "file-4kib",
+        "repetitions": 100
+      },
+      "payloads": {
+        "file-4kib": {
+          "bytes": 4096,
+          "path": "/workspace/prim/file-4kib.bin",
+          "seed": "boxrouter-primitives/file-4kib/v1",
+          "sha256": "4e55ae0a74113b512e38db4100858f0bc5b5a38538fc11ce6293b0fc907a4450"
+        }
+      },
+      "setup": {
+        "command": "mkdir -p /workspace/prim/list && cd /workspace/prim/list && touch $(seq -f 'f%03g' 0 199)",
+        "timeout_s": 60
+      }
+    },
+    "id": "shared-trial",
+    "label": "Files, back to back in one sandbox",
+    "version": "sha256:d3864095125f1d38"
+  }
+]

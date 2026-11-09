@@ -1,0 +1,4 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+metric: {document: sequential-tti, version: 1.2.18, name: time_to_interactive}
+label: {form: long, target: test}

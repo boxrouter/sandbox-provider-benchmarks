@@ -1,0 +1,1290 @@
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../schemas/methodology.schema.json
+id: image-build-2vcpu-4gib
+version: 1.2.1
+effective: '2026-10-26'
+name: Image Build (2 vCPU, 4 GiB)
+category: sandbox_operation
+notes:
+  what_this_measures: Time for the provider to prepare each pinned base image with one new layer, at a
+    requested size of 2 vCPU and 4 GiB RAM.
+  how_to_read: Each provider's median is shown in milliseconds. Lower is better.
+  summary: Time to prepare each of ten pinned base images with one new layer at 2 vCPU, 4 GiB.
+  how_it_is_measured: A job-host monotonic clock times image preparation from request dispatch until the
+    provider call returns. Each trial uses one of the same ten pinned base images with one new layer at
+    2 vCPU, 4 GiB.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: image_build_time
+  unit: ms
+  direction: lower_is_better
+  description: Time from image preparation request dispatch until the provider call returns.
+  formula: total(build)
+  quantity: time
+  per: image
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: See the selected variant's pinned base image digest.
+    modification: One new image layer is added to the selected base image before preparation.
+  network: unknown
+procedure:
+  mode: single
+  trials: 5
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Each trial prepares an image derived from the selected pinned base image with a new layer.
+    cold: First preparation of the newly modified image.
+    warm: Not measured.
+  variants:
+  - id: standard
+    label: Standard
+    parameters:
+      base_image: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+    description: Uses the pinned standard image as the base image.
+    notes:
+      summary: Time to prepare the pinned standard image with one new layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned standard image and adds one new layer. The requested
+        size is 2 vCPU, 4 GiB.
+  - id: python
+    label: Python
+    parameters:
+      base_image: docker.io/library/python@sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+    description: Uses the pinned Python image as the base image.
+    notes:
+      summary: Time to prepare the pinned Python image with one new layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned Python image and adds one new layer. The requested
+        size is 2 vCPU, 4 GiB.
+  - id: node
+    label: Node.js
+    parameters:
+      base_image: docker.io/library/node@sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+    description: Uses the pinned Node.js image as the base image.
+    notes:
+      summary: Time to prepare the pinned Node.js image with one new layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned Node.js image and adds one new layer. The requested
+        size is 2 vCPU, 4 GiB.
+  - id: go
+    label: Go
+    parameters:
+      base_image: docker.io/library/golang@sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+    description: Uses the pinned Go image as the base image.
+    notes:
+      summary: Time to prepare the pinned Go image with one new layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned Go image and adds one new layer. The requested
+        size is 2 vCPU, 4 GiB.
+  - id: rust
+    label: Rust
+    parameters:
+      base_image: docker.io/library/rust@sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+    description: Uses the pinned Rust image as the base image.
+    notes:
+      summary: Time to prepare the pinned Rust image with one new layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned Rust image and adds one new layer. The requested
+        size is 2 vCPU, 4 GiB.
+  - id: java
+    label: Java
+    parameters:
+      base_image: docker.io/library/eclipse-temurin@sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+    description: Uses the pinned Java image as the base image.
+    notes:
+      summary: Time to prepare the pinned Java image with one new layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned Java image and adds one new layer. The requested
+        size is 2 vCPU, 4 GiB.
+  - id: data-science
+    label: Data Science
+    parameters:
+      base_image: quay.io/jupyter/datascience-notebook@sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+    description: Uses the pinned data-science image as the base image.
+    notes:
+      summary: Time to prepare the pinned data-science image with one new layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned data-science image and adds one new layer. The
+        requested size is 2 vCPU, 4 GiB.
+  - id: igel
+    label: igel (Python)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+    description: Uses the pinned igel repository image with DeepSWE dependencies as the base image.
+    notes:
+      summary: Time to prepare the pinned igel repository image with DeepSWE dependencies with one new
+        layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned igel repository image with DeepSWE dependencies
+        and adds one new layer. The requested size is 2 vCPU, 4 GiB.
+  - id: yjs
+    label: Yjs (Node/TS)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+    description: Uses the pinned Yjs repository image with DeepSWE dependencies as the base image.
+    notes:
+      summary: Time to prepare the pinned Yjs repository image with DeepSWE dependencies with one new
+        layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned Yjs repository image with DeepSWE dependencies
+        and adds one new layer. The requested size is 2 vCPU, 4 GiB.
+  - id: dasel
+    label: dasel (Go)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+    description: Uses the pinned dasel repository image with DeepSWE dependencies as the base image.
+    notes:
+      summary: Time to prepare the pinned dasel repository image with DeepSWE dependencies with one new
+        layer at 2 vCPU, 4 GiB.
+      what_this_measures: This variant uses the pinned dasel repository image with DeepSWE dependencies
+        and adds one new layer. The requested size is 2 vCPU, 4 GiB.
+  steps:
+  - id: build
+    name: Prepare image
+    action: Prepare the selected new-layer image with the provider.
+    timer:
+      start_event: The image preparation request is dispatched.
+      stop_event: The image preparation call returns.
+    timeout_seconds: 1800
+    record_steps:
+    - build
+  cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
+timing_boundaries:
+  start: The image preparation request is dispatched.
+  stop: The image preparation call returns.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; no trimming.
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 3
+cost:
+  method: not_published
+  notes:
+  - The benchmark records image preparation only; no cost metric is published.
+failure_policy:
+  timeout_seconds:
+    build: 1800
+  retries: No preparation request is retried; first failure ends the trial.
+  success: The selected image preparation call returns successfully.
+  provider_errors:
+  - An image preparation or transport error
+  - or preparation timeout.
+  benchmark_errors:
+  - A malformed timing record or benchmark-side build specification failure.
+  exclusions:
+  - A failure shown not to be the provider's; retain the trial with its reason.
+parameters:
+  path: parameters/image-build-2vcpu-4gib/1.2.1/
+  sha256: 290cfaa37e9026ea176e7a002df38ddc7ee28e5d51b30b8020bcd1bfff42c214
+interpretation:
+  what_to_do: Compare how build time grows with the image a team brings, from the standard image to large
+    data-science and repository images.
+  informs: How long a provider takes to prepare a new image made from a common base. Ten bases show how
+    build time grows with the image a team brings.
+  limits:
+  - Each image differs from its pinned base by one small layer; provider layer caching remains part of
+    the result.
+  - Image preparation includes the provider's polling interval.
+  - The largest base is 2.4 GB compressed and 7.2 GB unpacked.
+  caveats:
+  - There are no sandboxes in this test; one trial runs at a time per provider.
+  - Each trial records its base's compressed and uncompressed size, layer count and file count, measured
+    once when the base was pinned, and whether the provider's copy is tied to the requested size.
+validity_checks:
+- id: image_new_per_trial
+  threat: A provider could have seen the image before.
+  check: Each trial appends a file holding its unique trial id to its base image, pinned by digest, and
+    pushes the result, so no provider has seen it before.
+- id: copy_returned
+  threat: A request that returns nothing is not a build.
+  check: A successful trial requires the preparation request to return a copy; the copy and registry tag
+    are removed afterward.
+source:
+  name: pinned base-image build workloads
+  version: unknown
+  ids:
+  - image-build/standard
+  - image-build/python
+  - image-build/node
+  - image-build/go
+  - image-build/rust
+  - image-build/java
+  - image-build/data-science
+  - image-build/igel
+  - image-build/yjs
+  - image-build/dasel
+  - standard sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  - python sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+  - node sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+  - go sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+  - rust sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+  - java sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+  - data-science sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+  - igel sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+  - yjs sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+  - dasel sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+  licence: unknown
+execution:
+  mode: script
+  inference: false
+
+---
+id: image-build-2vcpu-4gib
+version: 1.2.8
+effective: '2026-11-01'
+name: '{name:test.image-build-2vcpu-4gib}'
+category: sandbox_operation
+notes:
+  what_this_measures: The result measures the provider’s preparation of a pinned base image with a new
+    layer at the requested size.
+  how_to_read: The {param:image-build-2vcpu-4gib.1.2.1.statistics.primary} is shown in {unit:image_build_time};
+    {direction:image_build_time}.
+  summary: Pinned base images are prepared with one new layer at the selected machine size.
+  how_it_is_measured: A job-host monotonic clock times image preparation from dispatch until the provider
+    call returns. Each trial uses a pinned base image with a new layer.
+inherits:
+  id: sbs.common
+  version: 1.0.10
+metrics:
+- name: image_build_time
+  unit: ms
+  direction: lower_is_better
+  description: Time from image preparation request dispatch until the provider call returns.
+  formula: total(build)
+  quantity: time
+  per: image
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: See the selected variant's pinned base image digest.
+    modification: One new image layer is added to the selected base image before preparation.
+  network: unknown
+procedure:
+  mode: single
+  trials: 20
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Each trial prepares an image derived from the selected pinned base image with a new layer.
+    cold: First preparation of the newly modified image.
+    warm: Not measured.
+  variants:
+  - id: standard
+    label: Standard
+    parameters:
+      base_image: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.0.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: python
+    label: Python
+    parameters:
+      base_image: docker.io/library/python@sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.1.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: node
+    label: Node.js
+    parameters:
+      base_image: docker.io/library/node@sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.2.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: go
+    label: Go
+    parameters:
+      base_image: docker.io/library/golang@sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.3.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: rust
+    label: Rust
+    parameters:
+      base_image: docker.io/library/rust@sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.4.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: java
+    label: Java
+    parameters:
+      base_image: docker.io/library/eclipse-temurin@sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.5.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: data-science
+    label: Data Science
+    parameters:
+      base_image: quay.io/jupyter/datascience-notebook@sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.6.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: igel
+    label: igel (Python)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.7.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: yjs
+    label: Yjs (Node/TS)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.8.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: dasel
+    label: dasel (Go)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.9.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  steps:
+  - id: build
+    name: Prepare image
+    action: Prepare the selected new-layer image with the provider.
+    timer:
+      start_event: The image preparation request is dispatched.
+      stop_event: The image preparation call returns.
+    timeout_seconds: 1800
+    record_steps:
+    - build
+  cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
+timing_boundaries:
+  start: The image preparation request is dispatched.
+  stop: The image preparation call returns.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; no trimming.
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 12
+cost:
+  method: not_published
+  notes:
+  - The benchmark records image preparation only; no cost metric is published.
+failure_policy:
+  timeout_seconds:
+    build: 1800
+  retries: No preparation request is retried; first failure ends the trial.
+  success: The selected image preparation call returns successfully.
+  provider_errors:
+  - An image preparation or transport error
+  - or preparation timeout.
+  benchmark_errors:
+  - A malformed timing record or benchmark-side build specification failure.
+  exclusions:
+  - A failure shown not to be the provider's; retain the trial with its reason.
+parameters:
+  path: parameters/image-build-2vcpu-4gib/1.2.8/
+  sha256: 290cfaa37e9026ea176e7a002df38ddc7ee28e5d51b30b8020bcd1bfff42c214
+interpretation:
+  what_to_do: Compare how build time grows with the image a team brings, from the standard image to large
+    data-science and repository images.
+  informs: How long a provider takes to prepare a new image made from a common base. Ten bases show how
+    build time grows with the image a team brings.
+  limits:
+  - Each image differs from its pinned base by one small layer; provider layer caching remains part of
+    the result.
+  - Image preparation includes the provider's polling interval.
+  - The pinned base images span different compressed and unpacked sizes.
+  caveats:
+  - There are no sandboxes in this test; one trial runs at a time per provider.
+  - Each trial records its base's compressed and uncompressed size, layer count and file count, measured
+    once when the base was pinned, and whether the provider's copy is tied to the requested size.
+validity_checks:
+- id: image_new_per_trial
+  threat: A provider could have seen the image before.
+  check: Each trial appends a file holding its unique trial id to its base image, pinned by digest, and
+    pushes the result, so no provider has seen it before.
+- id: copy_returned
+  threat: A request that returns nothing is not a build.
+  check: A successful trial requires the preparation request to return a copy; the copy and registry tag
+    are removed afterward.
+source:
+  name: pinned base-image build workloads
+  version: unknown
+  ids:
+  - image-build/standard
+  - image-build/python
+  - image-build/node
+  - image-build/go
+  - image-build/rust
+  - image-build/java
+  - image-build/data-science
+  - image-build/igel
+  - image-build/yjs
+  - image-build/dasel
+  - standard sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  - python sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+  - node sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+  - go sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+  - rust sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+  - java sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+  - data-science sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+  - igel sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+  - yjs sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+  - dasel sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+  licence: unknown
+execution:
+  mode: script
+  inference: false
+independence_answers:
+  fresh_sandbox:
+    status: exception
+    text: No sandbox runs in this test; each trial builds its own new image layer and nothing is shared
+      between trials.
+  equal_concurrency:
+    status: exception
+    text: One build runs at a time per provider, so no other build shares the job host's network or the
+      provider's builders while one is timed.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Provider layer caching of the base stays on, as customers get it; each trial's new layer is
+      unique, so no earlier trial's build is reused.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: exception
+    text: One build runs at a time per provider, so no other trial of the batch is in flight.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: exception
+    text: No sandbox runs, so no sandbox host facts exist; the job host's load over each trial's window
+      is recorded.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+---
+id: image-build-2vcpu-4gib
+version: 1.2.2
+effective: '2026-10-27'
+name: Image Build (2 vCPU, 4 GiB)
+category: sandbox_operation
+notes:
+  what_this_measures: "The result measures the provider\u2019s preparation of a pinned base image with\
+    \ a new layer at the requested size."
+  how_to_read: The {param:image-build-2vcpu-4gib.1.2.1.statistics.primary} is shown in {unit:image_build_time};
+    {direction:image_build_time}.
+  summary: Pinned base images are prepared with one new layer at the selected machine size.
+  how_it_is_measured: A job-host monotonic clock times image preparation from dispatch until the provider
+    call returns. Each trial uses a pinned base image with a new layer.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: image_build_time
+  unit: ms
+  direction: lower_is_better
+  description: Time from image preparation request dispatch until the provider call returns.
+  formula: total(build)
+  quantity: time
+  per: image
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: See the selected variant's pinned base image digest.
+    modification: One new image layer is added to the selected base image before preparation.
+  network: unknown
+procedure:
+  mode: single
+  trials: 5
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Each trial prepares an image derived from the selected pinned base image with a new layer.
+    cold: First preparation of the newly modified image.
+    warm: Not measured.
+  variants:
+  - id: standard
+    label: Standard
+    parameters:
+      base_image: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.0.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: python
+    label: Python
+    parameters:
+      base_image: docker.io/library/python@sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.1.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: node
+    label: Node.js
+    parameters:
+      base_image: docker.io/library/node@sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.2.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: go
+    label: Go
+    parameters:
+      base_image: docker.io/library/golang@sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.3.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: rust
+    label: Rust
+    parameters:
+      base_image: docker.io/library/rust@sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.4.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: java
+    label: Java
+    parameters:
+      base_image: docker.io/library/eclipse-temurin@sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.5.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: data-science
+    label: Data Science
+    parameters:
+      base_image: quay.io/jupyter/datascience-notebook@sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.6.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: igel
+    label: igel (Python)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.7.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: yjs
+    label: Yjs (Node/TS)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.8.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: dasel
+    label: dasel (Go)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.9.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  steps:
+  - id: build
+    name: Prepare image
+    action: Prepare the selected new-layer image with the provider.
+    timer:
+      start_event: The image preparation request is dispatched.
+      stop_event: The image preparation call returns.
+    timeout_seconds: 1800
+    record_steps:
+    - build
+  cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
+timing_boundaries:
+  start: The image preparation request is dispatched.
+  stop: The image preparation call returns.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; no trimming.
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 3
+cost:
+  method: not_published
+  notes:
+  - The benchmark records image preparation only; no cost metric is published.
+failure_policy:
+  timeout_seconds:
+    build: 1800
+  retries: No preparation request is retried; first failure ends the trial.
+  success: The selected image preparation call returns successfully.
+  provider_errors:
+  - An image preparation or transport error
+  - or preparation timeout.
+  benchmark_errors:
+  - A malformed timing record or benchmark-side build specification failure.
+  exclusions:
+  - A failure shown not to be the provider's; retain the trial with its reason.
+parameters:
+  path: parameters/image-build-2vcpu-4gib/1.2.1/
+  sha256: 290cfaa37e9026ea176e7a002df38ddc7ee28e5d51b30b8020bcd1bfff42c214
+interpretation:
+  what_to_do: Compare how build time grows with the image a team brings, from the standard image to
+    large data-science and repository images.
+  informs: How long a provider takes to prepare a new image made from a common base. Ten bases show
+    how build time grows with the image a team brings.
+  limits:
+  - Each image differs from its pinned base by one small layer; provider layer caching remains part
+    of the result.
+  - Image preparation includes the provider's polling interval.
+  - The pinned base images span different compressed and unpacked sizes.
+  caveats:
+  - There are no sandboxes in this test; one trial runs at a time per provider.
+  - Each trial records its base's compressed and uncompressed size, layer count and file count, measured
+    once when the base was pinned, and whether the provider's copy is tied to the requested size.
+validity_checks:
+- id: image_new_per_trial
+  threat: A provider could have seen the image before.
+  check: Each trial appends a file holding its unique trial id to its base image, pinned by digest,
+    and pushes the result, so no provider has seen it before.
+- id: copy_returned
+  threat: A request that returns nothing is not a build.
+  check: A successful trial requires the preparation request to return a copy; the copy and registry
+    tag are removed afterward.
+source:
+  name: pinned base-image build workloads
+  version: unknown
+  ids:
+  - image-build/standard
+  - image-build/python
+  - image-build/node
+  - image-build/go
+  - image-build/rust
+  - image-build/java
+  - image-build/data-science
+  - image-build/igel
+  - image-build/yjs
+  - image-build/dasel
+  - standard sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  - python sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+  - node sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+  - go sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+  - rust sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+  - java sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+  - data-science sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+  - igel sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+  - yjs sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+  - dasel sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+  licence: unknown
+execution:
+  mode: script
+  inference: false
+
+---
+id: image-build-2vcpu-4gib
+version: 1.2.13
+effective: '2026-11-07'
+name: '{name:test.image-build-2vcpu-4gib}'
+category: sandbox_operation
+notes:
+  what_this_measures: The result measures the provider’s preparation of a pinned base image with a new
+    layer at the requested size.
+  how_to_read: The {param:image-build-2vcpu-4gib.1.2.1.statistics.primary} is shown in {unit:image_build_time};
+    {direction:image_build_time}.
+  summary: Pinned base images are prepared with one new layer at the selected machine size.
+  how_it_is_measured: A job-host monotonic clock times image preparation from dispatch until the provider
+    call returns. Each trial uses a pinned base image with a new layer.
+inherits:
+  id: sbs.common
+  version: 1.0.17
+metrics:
+- name: image_build_time
+  unit: ms
+  direction: lower_is_better
+  description: Time from image preparation request dispatch until the provider call returns.
+  formula: total(build)
+  quantity: time
+  per: image
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: See the selected variant's pinned base image digest.
+    modification: One new image layer is added to the selected base image before preparation.
+  network: unknown
+procedure:
+  mode: single
+  trials: 20
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Each trial prepares an image derived from the selected pinned base image with a new layer.
+    cold: First preparation of the newly modified image.
+    warm: Not measured.
+  variants:
+  - id: standard
+    label: Standard
+    parameters:
+      base_image: ghcr.io/boxrouter/standard-image@sha256:1cb7f85ec988a9dcf66c47f953f8e7984d88c987fec964aa327afafb63cc9a0b
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.0.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+      how_to_read: 'For the standard image, files counts merged regular-file paths, including hardlink paths; directories, symlinks and whiteouts are excluded. Byte counts sum layer archives. Custom-image file counts are retained from prior definitions; their counting convention has not been reverified.'
+  - id: python
+    label: Python
+    parameters:
+      base_image: docker.io/library/python@sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.1.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: node
+    label: Node.js
+    parameters:
+      base_image: docker.io/library/node@sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.2.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: go
+    label: Go
+    parameters:
+      base_image: docker.io/library/golang@sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.3.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: rust
+    label: Rust
+    parameters:
+      base_image: docker.io/library/rust@sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.4.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: java
+    label: Java
+    parameters:
+      base_image: docker.io/library/eclipse-temurin@sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.5.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: data-science
+    label: Data Science
+    parameters:
+      base_image: quay.io/jupyter/datascience-notebook@sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.6.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: igel
+    label: igel (Python)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.7.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: yjs
+    label: Yjs (Node/TS)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.8.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  - id: dasel
+    label: dasel (Go)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.2.procedure.variants.9.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.2.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.2.notes.what_this_measures}'
+  steps:
+  - id: build
+    name: Prepare image
+    action: Prepare the selected new-layer image with the provider.
+    timer:
+      start_event: The image preparation request is dispatched.
+      stop_event: The image preparation call returns.
+    timeout_seconds: 1800
+    record_steps:
+    - build
+  cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
+timing_boundaries:
+  start: The image preparation request is dispatched.
+  stop: The image preparation call returns.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; no trimming.
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 12
+cost:
+  method: not_published
+  notes:
+  - The benchmark records image preparation only; no cost metric is published.
+failure_policy:
+  timeout_seconds:
+    build: 1800
+  retries: No preparation request is retried; first failure ends the trial.
+  success: The selected image preparation call returns successfully.
+  provider_errors:
+  - An image preparation or transport error
+  - or preparation timeout.
+  benchmark_errors:
+  - A malformed timing record or benchmark-side build specification failure.
+  exclusions:
+  - A failure shown not to be the provider's; retain the trial with its reason.
+parameters:
+  path: parameters/image-build-2vcpu-4gib/1.2.13/
+  sha256: 1b8c561522abf76f8673fea010cbf37de4fdddc680e207d4cf7350d97924e1de
+interpretation:
+  what_to_do: Compare how build time grows with the image a team brings, from the standard image to large
+    data-science and repository images.
+  informs: How long a provider takes to prepare a new image made from a common base. Ten bases show how
+    build time grows with the image a team brings.
+  limits:
+  - Each image differs from its pinned base by one small layer; provider layer caching remains part of
+    the result.
+  - Image preparation includes the provider's polling interval.
+  - The pinned base images span different compressed and unpacked sizes.
+  caveats:
+  - There are no sandboxes in this test; one trial runs at a time per provider.
+  - Each trial records its base's compressed and uncompressed size, layer count and file count, measured
+    once when the base was pinned, and whether the provider's copy is tied to the requested size.
+validity_checks:
+- id: image_new_per_trial
+  threat: A provider could have seen the image before.
+  check: Each trial appends a file holding its unique trial id to its base image, pinned by digest, and
+    pushes the result, so no provider has seen it before.
+- id: copy_returned
+  threat: A request that returns nothing is not a build.
+  check: A successful trial requires the preparation request to return a copy; the copy and registry tag
+    are removed afterward.
+source:
+  name: pinned base-image build workloads
+  version: unknown
+  ids:
+  - image-build/standard
+  - image-build/python
+  - image-build/node
+  - image-build/go
+  - image-build/rust
+  - image-build/java
+  - image-build/data-science
+  - image-build/igel
+  - image-build/yjs
+  - image-build/dasel
+  - standard sha256:1cb7f85ec988a9dcf66c47f953f8e7984d88c987fec964aa327afafb63cc9a0b
+  - python sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+  - node sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+  - go sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+  - rust sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+  - java sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+  - data-science sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+  - igel sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+  - yjs sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+  - dasel sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+  licence: unknown
+execution:
+  mode: script
+  inference: false
+independence_answers:
+  fresh_sandbox:
+    status: exception
+    text: No sandbox runs in this test; each trial builds its own new image layer and nothing is shared
+      between trials.
+  equal_concurrency:
+    status: exception
+    text: One build runs at a time per provider, so no other build shares the job host's network or the
+      provider's builders while one is timed.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Provider layer caching of the base stays on, as customers get it; each trial's new layer is
+      unique, so no earlier trial's build is reused.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: exception
+    text: One build runs at a time per provider, so no other trial of the batch is in flight.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: exception
+    text: No sandbox runs, so no sandbox host facts exist; the job host's load over each trial's window
+      is recorded.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+---
+id: image-build-2vcpu-4gib
+version: 1.2.14
+effective: '2026-11-08'
+name: '{name:test.image-build-2vcpu-4gib}'
+category: sandbox_operation
+notes:
+  what_this_measures: The result measures the provider’s preparation of a pinned base image with a new
+    layer at the requested size.
+  how_to_read: The {param:image-build-2vcpu-4gib.1.2.14.statistics.primary} is shown in {unit:image_build_time};
+    {direction:image_build_time}.
+  summary: Pinned base images are prepared with one new layer at the selected machine size.
+  how_it_is_measured: A job-host monotonic clock times image preparation from dispatch until the provider
+    call returns. Each trial uses a pinned base image with a new layer.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: image_build_time
+  unit: ms
+  direction: lower_is_better
+  description: Time from image preparation request dispatch until the provider call returns.
+  formula: total(build)
+  quantity: time
+  per: image
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: See the selected variant's pinned base image digest.
+    modification: One new image layer is added to the selected base image before preparation.
+  network: unknown
+procedure:
+  mode: single
+  trials: 20
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: Each trial prepares an image derived from the selected pinned base image with a new layer.
+    cold: First preparation of the newly modified image.
+    warm: Not measured.
+  variants:
+  - id: standard
+    label: Standard
+    parameters:
+      base_image: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.0.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      how_to_read: 'For the standard image, files counts merged regular-file paths, including hardlink paths; directories, symlinks and whiteouts are excluded. Byte counts sum layer archives. Custom-image file counts are retained from prior definitions; their counting convention has not been reverified.'
+  - id: python
+    label: Python
+    parameters:
+      base_image: docker.io/library/python@sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.1.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  - id: node
+    label: Node.js
+    parameters:
+      base_image: docker.io/library/node@sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.2.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  - id: go
+    label: Go
+    parameters:
+      base_image: docker.io/library/golang@sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.3.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  - id: rust
+    label: Rust
+    parameters:
+      base_image: docker.io/library/rust@sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.4.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  - id: java
+    label: Java
+    parameters:
+      base_image: docker.io/library/eclipse-temurin@sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.5.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  - id: data-science
+    label: Data Science
+    parameters:
+      base_image: quay.io/jupyter/datascience-notebook@sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.6.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  - id: igel
+    label: igel (Python)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.7.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  - id: yjs
+    label: Yjs (Node/TS)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.8.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  - id: dasel
+    label: dasel (Go)
+    parameters:
+      base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.9.label}
+      configuration.
+    notes:
+      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+  steps:
+  - id: build
+    name: Prepare image
+    action: Prepare the selected new-layer image with the provider.
+    timer:
+      start_event: The image preparation request is dispatched.
+      stop_event: The image preparation call returns.
+    timeout_seconds: 1800
+    record_steps:
+    - build
+  cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
+timing_boundaries:
+  start: The image preparation request is dispatched.
+  stop: The image preparation call returns.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; no trimming.
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 12
+cost:
+  method: not_published
+  notes:
+  - The benchmark records image preparation only; no cost metric is published.
+failure_policy:
+  timeout_seconds:
+    build: 1800
+  retries: No preparation request is retried; first failure ends the trial.
+  success: The selected image preparation call returns successfully.
+  provider_errors:
+  - An image preparation or transport error
+  - or preparation timeout.
+  benchmark_errors:
+  - A malformed timing record or benchmark-side build specification failure.
+  exclusions:
+  - A failure shown not to be the provider's; retain the trial with its reason.
+parameters:
+  path: parameters/image-build-2vcpu-4gib/1.2.14/
+  sha256: 0c26227ffc5437b848c709874be13e9795588ae1fdaf49c50a36f1af03295d62
+interpretation:
+  what_to_do: Compare how build time grows with the image a team brings, from the standard image to large
+    data-science and repository images.
+  informs: How long a provider takes to prepare a new image made from a common base. Ten bases show how
+    build time grows with the image a team brings.
+  limits:
+  - Each image differs from its pinned base by one small layer; provider layer caching remains part of
+    the result.
+  - Image preparation includes the provider's polling interval.
+  - The pinned base images span different compressed and unpacked sizes.
+  caveats:
+  - There are no sandboxes in this test; one trial runs at a time per provider.
+  - Each trial records its base's compressed and uncompressed size, layer count and file count, measured
+    once when the base was pinned, and whether the provider's copy is tied to the requested size.
+validity_checks:
+- id: image_new_per_trial
+  threat: A provider could have seen the image before.
+  check: Each trial appends a file holding its unique trial id to its base image, pinned by digest, and
+    pushes the result, so no provider has seen it before.
+- id: copy_returned
+  threat: A request that returns nothing is not a build.
+  check: A successful trial requires the preparation request to return a copy; the copy and registry tag
+    are removed afterward.
+source:
+  name: pinned base-image build workloads
+  version: unknown
+  ids:
+  - image-build/standard
+  - image-build/python
+  - image-build/node
+  - image-build/go
+  - image-build/rust
+  - image-build/java
+  - image-build/data-science
+  - image-build/igel
+  - image-build/yjs
+  - image-build/dasel
+  - standard sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
+  - python sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
+  - node sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
+  - go sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
+  - rust sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
+  - java sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
+  - data-science sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
+  - igel sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
+  - yjs sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
+  - dasel sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
+  licence: unknown
+execution:
+  mode: script
+  inference: false
+independence_answers:
+  fresh_sandbox:
+    status: exception
+    text: No sandbox runs in this test; each trial builds its own new image layer and nothing is shared
+      between trials.
+  equal_concurrency:
+    status: exception
+    text: One build runs at a time per provider, so no other build shares the job host's network or the
+      provider's builders while one is timed.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Provider layer caching of the base stays on, as customers get it; each trial's new layer is
+      unique, so no earlier trial's build is reused.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: exception
+    text: One build runs at a time per provider, so no other trial of the batch is in flight.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: exception
+    text: No sandbox runs, so no sandbox host facts exist; the job host's load over each trial's window
+      is recorded.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

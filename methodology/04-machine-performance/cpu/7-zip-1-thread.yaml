@@ -1,0 +1,1184 @@
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+# yaml-language-server: $schema=../../../schemas/methodology.schema.json
+id: 7-zip-1-thread
+version: 1.1.8
+effective: '2026-10-31'
+name: '{name:test.7-zip-1-thread}'
+category: machine_performance
+panel:
+  command: 7zzs b -mmt1
+  quantities: compression and decompression speed
+notes:
+  what_this_measures: The result is the compression and decompression rating from one sandbox CPU thread.
+  how_it_is_measured: The compression and decompression tool runs in the sandbox and reports its own rating
+    using its own clock.
+  how_to_read: The {param:7-zip-1-thread.1.1.2.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:total_mips}.
+  cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.9
+metrics:
+- name: total_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's total rating over compression and decompression, from its own output.
+  quantity: rating
+  per: trial
+- name: compress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's compression rating.
+  quantity: rating
+  per: trial
+- name: decompress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's decompression rating.
+  quantity: rating
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 5
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial from the standard image, prepared in the account before the run.
+      Nothing is warmed up. A provider's sandboxes can land on different CPU models; each trial records
+      its model so a spread can be traced to it.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: 7-zip-1-thread
+    name: '{name:test.7-zip-1-thread}'
+    action: Run `./7zzs b -mmt1` as a background script that the harness polls. The three CPU and memory
+      rows of this trial (7-Zip at one thread, 7-Zip at all requested vCPUs and {name:test.stream-triad})
+      run in an order shuffled per trial, each after the untimed CPU facts and tool check or the row before
+      it. Compress and decompress ratings, CPU usage and 7-Zip's own frequency estimate are recorded too.
+    timer:
+      start_event: 7-Zip's benchmark begins.
+      stop_event: 7zzs b -mmt1 exits; its rating is 7-Zip's own total MIPS over compress and decompress,
+        by its own clock.
+    timeout_seconds: 300
+    record_steps:
+    - cpu-7zip-1t
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: 7-Zip's benchmark begins in the sandbox.
+  stop: 7-Zip exits and prints its totals. The figure is 7-Zip's own, by its own clock; the job host times
+    nothing.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  counted_sandboxes: Each of the unit's five sandboxes.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    7-zip-1-thread: 300
+    destroy: 300
+  retries: None; the first failed step ends the trial.
+  success: 7-Zip exits 0 and prints a rating, and the sandbox is confirmed deleted.
+  provider_errors:
+  - A benchmark row that does not exit 0.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - Output the benchmark cannot read after 7-Zip exited 0.
+  exclusions:
+  - An error shown not to be the provider's.
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`, and its result
+    is kept.
+source:
+  name: 7-Zip
+  version: '25.01'
+  ids:
+  - 7zzs-25.01-linux-x64-static
+  - sha256:5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422
+  licence: LGPL-2.1-or-later
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/7-zip-1-thread/1.1.8/
+  sha256: c9d086aa748c5ecacf3f1455936cf1336d249dee619ae731a93a51cdb62eddbf
+interpretation:
+  informs: 'How fast a sandbox computes: agents that build, test, compress or crunch data wait on the
+    CPU, and two providers that sell the same 2 vCPU / 4 GiB can differ, for example by the CPU model
+    a sandbox lands on.'
+  limits:
+  - The tool rates integer work such as compression, branching and cache access; it does not measure floating-point
+    or vector speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`, and its result
+    is kept.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - Each result is the tool's own figure by its own clock; the job host times nothing.
+  - The 7-Zip rating covers integer work such as compression, branching, and cache access; it does not
+    measure floating-point or vector speed.
+validity_checks:
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
+    as `threads_differ` and the result is kept.
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 5 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded, and
+      the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Nothing is warmed up and the work runs from memory and CPU, so page and package caches do not enter
+      the result. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 4 other trials of the pair's batch may be in flight on the provider's hosts; the number in
+      flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system, any
+      provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+---
+id: 7-zip-1-thread
+version: 1.1.0
+effective: '2026-10-26'
+name: 7-Zip, 1 Thread
+category: machine_performance
+description: >-
+  How fast one thread of a sandbox's CPU compresses and decompresses, by 7-Zip's own benchmark. Agents
+  that build, test, compress or crunch data wait on the CPU; two providers that sell the same 2 vCPU /
+  4 GiB can differ, for example by the CPU model a sandbox lands on. Run the standalone [CPU reference
+  test](../../../reference-tests/cpu/) to reproduce the machine measurement.
+notes:
+  what_this_measures: >-
+    How fast one thread of a sandbox's CPU compresses and decompresses, by 7-Zip's own benchmark.
+  how_to_read: >-
+    Each provider's median is shown in MIPS. Higher is better. The tail is the 95th percentile once at
+    least 20 trials have succeeded; below that the lowest trial is shown instead.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: total_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's total rating over compression and decompression, from its own output.
+- name: compress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's compression rating.
+- name: decompress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's decompression rating.
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: >-
+      ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: >-
+      A fresh sandbox per trial from the standard image, prepared in the account before the run. Nothing
+      is warmed up. A provider's sandboxes can land on different CPU models; each trial records its model
+      so a spread can be traced to it.
+  steps:
+  - id: create
+    name: Create
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: >-
+      Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size, the
+      cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: >-
+      Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned STREAM
+      5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the sandbox
+      and check each by its SHA-256.
+    timer: null
+  - id: 7-zip-1-thread
+    name: 7-Zip, 1 Thread
+    action: >-
+      Run `./7zzs b -mmt1` as a background script that the harness polls. The three CPU and memory rows
+      of this trial (7-Zip at one thread, 7-Zip at all requested vCPUs and STREAM Triad) run in an order
+      shuffled per trial, each after the untimed CPU facts and tool check or the row before it. Compress
+      and decompress ratings, CPU usage and 7-Zip's own frequency estimate are recorded too.
+    timer:
+      start_event: 7-Zip's benchmark begins.
+      stop_event: >-
+        7zzs b -mmt1 exits; its rating is 7-Zip's own total MIPS over compress and decompress, by its
+        own clock.
+    timeout_seconds: 300
+    record_steps:
+    - cpu-7zip-1t
+  - id: destroy
+    name: Destroy
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: 7-Zip's benchmark begins in the sandbox.
+  stop: >-
+    7-Zip exits and prints its totals. The figure is 7-Zip's own, by its own clock; the job host times
+    nothing.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy, about three to five minutes.
+  per_success: >-
+    Cost of the successful attempts divided by their number; failed attempts' cost is not included.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    7-zip-1-thread: 300
+    destroy: 300
+  retries: None; the first failed step ends the trial.
+  success: 7-Zip exits 0 and prints a rating, and the sandbox is confirmed deleted.
+  provider_errors:
+  - A benchmark row that does not exit 0.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - Output the benchmark cannot read after 7-Zip exited 0.
+  exclusions:
+  - An error shown not to be the provider's.
+  - >-
+    A sandbox that shows another CPU count than requested is recorded as `threads_differ`, and its result
+    is kept.
+source:
+  name: 7-Zip
+  version: '25.01'
+  ids:
+  - 7zzs-25.01-linux-x64-static
+  - sha256:5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422
+  licence: LGPL-2.1-or-later
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/7-zip-1-thread/1.1.0/
+  sha256: c9d086aa748c5ecacf3f1455936cf1336d249dee619ae731a93a51cdb62eddbf
+interpretation:
+  informs: >-
+    How fast a sandbox computes: agents that build, test, compress or crunch data wait on the CPU, and
+    two providers that sell the same 2 vCPU / 4 GiB can differ, for example by the CPU model a sandbox
+    lands on.
+  limits:
+  - >-
+    7-Zip's rating stands for integer work such as compression, branching and cache access; it does not
+    measure floating point or vector speed.
+  caveats:
+  - >-
+    A sandbox that shows another CPU count than requested is recorded as `threads_differ`, and its result
+    is kept.
+  - >-
+    A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - Each result is the tool's own figure by its own clock; the job host times nothing.
+validity_checks:
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: >-
+    The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
+    as `threads_differ` and the result is kept.
+
+
+---
+id: 7-zip-1-thread
+version: 1.1.2
+effective: '2026-10-26'
+name: 7-Zip, 1 Thread
+category: machine_performance
+notes:
+  summary: How fast one thread compresses and decompresses by 7-Zip's own benchmark.
+  what_this_measures: How fast one thread of a sandbox's CPU compresses and decompresses, by 7-Zip's own
+    benchmark.
+  how_it_is_measured: The 7-Zip benchmark starts in the sandbox and rates compression and decompression
+    by its own clock; the job host does not time it.
+  how_to_read: Each provider's median is shown in MIPS. Higher is better. The tail is the 95th percentile
+    once at least 20 trials have succeeded; below that the lowest trial is shown instead.
+  cost_summary: Cost over the measured billing span per successful trial.
+  cost_how_to_read: Cost of the successful attempts divided by their number; failed attempts' cost is
+    not included. Lower is better.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: total_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's total rating over compression and decompression, from its own output.
+  quantity: rating
+  per: trial
+- name: compress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's compression rating.
+  quantity: rating
+  per: trial
+- name: decompress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's decompression rating.
+  quantity: rating
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial from the standard image, prepared in the account before the run.
+      Nothing is warmed up. A provider's sandboxes can land on different CPU models; each trial records
+      its model so a spread can be traced to it.
+  steps:
+  - id: create
+    name: Create
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: 7-zip-1-thread
+    name: 7-Zip, 1 Thread
+    action: Run `./7zzs b -mmt1` as a background script that the harness polls. The three CPU and memory
+      rows of this trial (7-Zip at one thread, 7-Zip at all requested vCPUs and STREAM Triad) run in an
+      order shuffled per trial, each after the untimed CPU facts and tool check or the row before it.
+      Compress and decompress ratings, CPU usage and 7-Zip's own frequency estimate are recorded too.
+    timer:
+      start_event: 7-Zip's benchmark begins.
+      stop_event: 7zzs b -mmt1 exits; its rating is 7-Zip's own total MIPS over compress and decompress,
+        by its own clock.
+    timeout_seconds: 300
+    record_steps:
+    - cpu-7zip-1t
+  - id: destroy
+    name: Destroy
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: 7-Zip's benchmark begins in the sandbox.
+  stop: 7-Zip exits and prints its totals. The figure is 7-Zip's own, by its own clock; the job host times
+    nothing.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy, about three to five minutes.
+  per_success: Cost of the successful attempts divided by their number; failed attempts' cost is not included.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    7-zip-1-thread: 300
+    destroy: 300
+  retries: None; the first failed step ends the trial.
+  success: 7-Zip exits 0 and prints a rating, and the sandbox is confirmed deleted.
+  provider_errors:
+  - A benchmark row that does not exit 0.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - Output the benchmark cannot read after 7-Zip exited 0.
+  exclusions:
+  - An error shown not to be the provider's.
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`, and its result
+    is kept.
+source:
+  name: 7-Zip
+  version: '25.01'
+  ids:
+  - 7zzs-25.01-linux-x64-static
+  - sha256:5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422
+  licence: LGPL-2.1-or-later
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/7-zip-1-thread/1.1.2/
+  sha256: c9d086aa748c5ecacf3f1455936cf1336d249dee619ae731a93a51cdb62eddbf
+interpretation:
+  informs: 'How fast a sandbox computes: agents that build, test, compress or crunch data wait on the
+    CPU, and two providers that sell the same 2 vCPU / 4 GiB can differ, for example by the CPU model
+    a sandbox lands on.'
+  limits:
+  - The 7-Zip rating covers integer work such as compression, branching, and cache access; it does not
+    measure floating-point or vector speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`, and its result
+    is kept.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - Each result is the tool's own figure by its own clock; the job host times nothing.
+validity_checks:
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
+    as `threads_differ` and the result is kept.
+
+---
+id: 7-zip-1-thread
+version: 1.1.10
+effective: '2026-11-01'
+name: '{name:test.7-zip-1-thread}'
+category: machine_performance
+panel:
+  command: 7zzs b -mmt1
+  quantities: compression and decompression speed
+notes:
+  what_this_measures: The result is the compression and decompression rating from one sandbox CPU thread.
+  how_it_is_measured: The compression and decompression tool runs in the sandbox and reports its own rating
+    using its own clock.
+  how_to_read: The {param:7-zip-1-thread.1.1.2.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:total_mips}.
+  cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.10
+metrics:
+- name: total_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's total rating over compression and decompression, from its own output.
+  quantity: rating
+  per: trial
+- name: compress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's compression rating.
+  quantity: rating
+  per: trial
+- name: decompress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's decompression rating.
+  quantity: rating
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 40
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial from the standard image, prepared in the account before the run.
+      Nothing is warmed up. A provider's sandboxes can land on different CPU models; each trial records
+      its model so a spread can be traced to it.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: 7-zip-1-thread
+    name: '{name:test.7-zip-1-thread}'
+    action: Run `./7zzs b -mmt1` as a background script that the harness polls. The three CPU and memory
+      rows of this trial (7-Zip at one thread, 7-Zip at all requested vCPUs and {name:test.stream-triad})
+      run in an order shuffled per trial, each after the untimed CPU facts and tool check or the row before
+      it. Compress and decompress ratings, CPU usage and 7-Zip's own frequency estimate are recorded too.
+    timer:
+      start_event: 7-Zip's benchmark begins.
+      stop_event: 7zzs b -mmt1 exits; its rating is 7-Zip's own total MIPS over compress and decompress,
+        by its own clock.
+    timeout_seconds: 300
+    record_steps:
+    - cpu-7zip-1t
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: 7-Zip's benchmark begins in the sandbox.
+  stop: 7-Zip exits and prints its totals. The figure is 7-Zip's own, by its own clock; the job host times
+    nothing.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  counted_sandboxes: Each of the unit's five sandboxes.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    7-zip-1-thread: 300
+    destroy: 300
+  retries: None; the first failed step ends the trial.
+  success: 7-Zip exits 0 and prints a rating, and the sandbox is confirmed deleted.
+  provider_errors:
+  - A benchmark row that does not exit 0.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - Output the benchmark cannot read after 7-Zip exited 0.
+  exclusions:
+  - An error shown not to be the provider's.
+  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch, and its result
+    is kept.
+source:
+  name: 7-Zip
+  version: '25.01'
+  ids:
+  - 7zzs-25.01-linux-x64-static
+  - sha256:5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422
+  licence: LGPL-2.1-or-later
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/7-zip-1-thread/1.1.10/
+  sha256: c9d086aa748c5ecacf3f1455936cf1336d249dee619ae731a93a51cdb62eddbf
+interpretation:
+  informs: 'How fast a sandbox computes: agents that build, test, compress or crunch data wait on the
+    CPU, and two providers that sell the same 2 vCPU / 4 GiB can differ, for example by the CPU model
+    a sandbox lands on.'
+  limits:
+  - The tool rates integer work such as compression, branching and cache access; it does not measure floating-point
+    or vector speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch, and its result
+    is kept.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - Each result is the tool's own figure by its own clock; the job host times nothing.
+  - The 7-Zip rating covers integer work such as compression, branching, and cache access; it does not
+    measure floating-point or vector speed.
+validity_checks:
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
+    as a CPU count mismatch and the result is kept.
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Nothing is warmed up and the work runs from memory and CPU, so page and package caches do not
+      enter the result. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      any provider host identifier and the job host's load over its window.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+
+
+---
+id: 7-zip-1-thread
+version: 1.1.4
+effective: '2026-10-29'
+name: '{name:test.7-zip-1-thread}'
+category: machine_performance
+panel:
+  command: 7zzs b -mmt1
+  quantities: compression and decompression speed
+notes:
+  what_this_measures: The result is the compression and decompression rating from one sandbox CPU thread.
+  how_it_is_measured: The compression and decompression tool runs in the sandbox and reports its own
+    rating using its own clock.
+  how_to_read: The {param:7-zip-1-thread.1.1.2.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:total_mips}.
+  cost_summary: The cost covers the measured billing span per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.1
+metrics:
+- name: total_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's total rating over compression and decompression, from its own output.
+  quantity: rating
+  per: trial
+- name: compress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's compression rating.
+  quantity: rating
+  per: trial
+- name: decompress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's decompression rating.
+  quantity: rating
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:1f77271b6d589cc77ebbc2ce00a9d33a866980b05a0b37eb234f66a1bd09bc61
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 10
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 1
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial from the standard image, prepared in the account before the run.
+      Nothing is warmed up. A provider's sandboxes can land on different CPU models; each trial records
+      its model so a spread can be traced to it.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: 7-zip-1-thread
+    name: '{name:test.7-zip-1-thread}'
+    action: Run `./7zzs b -mmt1` as a background script that the harness polls. The three CPU and memory
+      rows of this trial (7-Zip at one thread, 7-Zip at all requested vCPUs and {name:test.stream-triad}) run in
+      an order shuffled per trial, each after the untimed CPU facts and tool check or the row before
+      it. Compress and decompress ratings, CPU usage and 7-Zip's own frequency estimate are recorded
+      too.
+    timer:
+      start_event: 7-Zip's benchmark begins.
+      stop_event: 7zzs b -mmt1 exits; its rating is 7-Zip's own total MIPS over compress and decompress,
+        by its own clock.
+    timeout_seconds: 300
+    record_steps:
+    - cpu-7zip-1t
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: 7-Zip's benchmark begins in the sandbox.
+  stop: 7-Zip exits and prints its totals. The figure is 7-Zip's own, by its own clock; the job host
+    times nothing.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  pricing_reference:
+    repository: sandbox-provider-pricing
+    function: price()
+    price_sheet_version: recorded in the run manifest
+  billed_span: From the create request to the confirmed destroy, about three to five minutes.
+  per_success: Cost of the successful attempts divided by their number; failed attempts' cost is not
+    included.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    7-zip-1-thread: 300
+    destroy: 300
+  retries: None; the first failed step ends the trial.
+  success: 7-Zip exits 0 and prints a rating, and the sandbox is confirmed deleted.
+  provider_errors:
+  - A benchmark row that does not exit 0.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - Output the benchmark cannot read after 7-Zip exited 0.
+  exclusions:
+  - An error shown not to be the provider's.
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`, and its result
+    is kept.
+source:
+  name: 7-Zip
+  version: '25.01'
+  ids:
+  - 7zzs-25.01-linux-x64-static
+  - sha256:5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422
+  licence: LGPL-2.1-or-later
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/7-zip-1-thread/1.1.2/
+  sha256: c9d086aa748c5ecacf3f1455936cf1336d249dee619ae731a93a51cdb62eddbf
+interpretation:
+  informs: 'How fast a sandbox computes: agents that build, test, compress or crunch data wait on the
+    CPU, and two providers that sell the same 2 vCPU / 4 GiB can differ, for example by the CPU model
+    a sandbox lands on.'
+  limits:
+  - The tool rates integer work such as compression, branching and cache access; it does not measure
+    floating-point or vector speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as `threads_differ`, and its result
+    is kept.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - Each result is the tool's own figure by its own clock; the job host times nothing.
+  - The 7-Zip rating covers integer work such as compression, branching, and cache access; it does not
+    measure floating-point or vector speed.
+validity_checks:
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is
+    recorded as `threads_differ` and the result is kept.
+
+
+---
+id: 7-zip-1-thread
+version: 1.1.18
+effective: '2026-11-08'
+name: '{name:test.7-zip-1-thread}'
+category: machine_performance
+panel:
+  command: 7zzs b -mmt1
+  quantities: compression and decompression speed
+notes:
+  what_this_measures: The result is the compression and decompression rating from one sandbox CPU thread.
+  how_it_is_measured: The compression and decompression tool runs in the sandbox and reports its own rating
+    using its own clock.
+  how_to_read: The {param:7-zip-1-thread.1.1.18.statistics.primary} summarizes successful trials in the
+    axis unit; {direction:total_mips}.
+  cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+inherits:
+  id: sbs.common
+  version: 1.0.18
+metrics:
+- name: total_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's total rating over compression and decompression, from its own output.
+  quantity: rating
+  per: trial
+- name: compress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's compression rating.
+  quantity: rating
+  per: trial
+- name: decompress_mips
+  unit: MIPS
+  direction: higher_is_better
+  description: 7-Zip's decompression rating.
+  quantity: rating
+  per: trial
+environment:
+  size:
+    vcpu: 2
+    memory_gib: 4
+  image:
+    reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
+  network: unknown
+  lifetime_seconds: 1200
+procedure:
+  mode: single
+  trials: 40
+  sandboxes_per_trial: 1
+  concurrency:
+    trials_in_parallel: 10
+    sandboxes_at_once: 1
+  warm_cold_policy:
+    policy: A fresh sandbox per trial from the standard image, prepared in the account before the run.
+      Nothing is warmed up. A provider's sandboxes can land on different CPU models; each trial records
+      its model so a spread can be traced to it.
+  steps:
+  - id: create
+    name: '{name:stage.create}'
+    action: Start a new sandbox from the standard image.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - create
+  - id: cpu-facts
+    name: CPU facts
+    action: Untimed, record nproc, the CPU model, the sha_ni, avx2 and avx512f flags, the L3 cache size,
+      the cgroup's cpu.max and the memory size.
+    timer: null
+    timeout_seconds: 30
+  - id: install-tools
+    name: Install tools
+    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
+      sandbox and check each by its SHA-256.
+    timer: null
+  - id: 7-zip-1-thread
+    name: '{name:test.7-zip-1-thread}'
+    action: Run `./7zzs b -mmt1` as a background script that the harness polls. The three CPU and memory
+      rows of this trial (7-Zip at one thread, 7-Zip at all requested vCPUs and {name:test.stream-triad})
+      run in an order shuffled per trial, each after the untimed CPU facts and tool check or the row before
+      it. Compress and decompress ratings, CPU usage and 7-Zip's own frequency estimate are recorded too.
+    timer:
+      start_event: 7-Zip's benchmark begins.
+      stop_event: 7zzs b -mmt1 exits; its rating is 7-Zip's own total MIPS over compress and decompress,
+        by its own clock.
+    timeout_seconds: 300
+    record_steps:
+    - cpu-7zip-1t
+  - id: destroy
+    name: '{name:stage.destroy}'
+    action: Destroy the sandbox and confirm it is gone.
+    timer: null
+    timeout_seconds: 300
+    record_steps:
+    - destroy
+  cadence: Manual.
+timing_boundaries:
+  start: 7-Zip's benchmark begins in the sandbox.
+  stop: 7-Zip exits and prints its totals. The figure is 7-Zip's own; the job host times
+    nothing.
+statistics:
+  primary: median
+  secondary:
+  - mean
+  percentile_method: Nearest rank over successful trials; nothing trimmed.
+  tail:
+    worse_side_percentile: 95
+    min_successes: 20
+  interval:
+    type: bootstrap_percentile
+    confidence: 0.95
+    resamples: 10000
+    seed: 0
+    applies_to:
+    - median
+  ranking:
+    ranked: true
+    min_successes: 5
+cost:
+  method: provider_reported_or_priced
+  counted_sandboxes: Each of the unit's five sandboxes.
+failure_policy:
+  timeout_seconds:
+    create: 300
+    7-zip-1-thread: 300
+    destroy: 300
+  retries: None; the first failed step ends the trial.
+  success: 7-Zip exits 0 and prints a rating, and the sandbox is confirmed deleted.
+  provider_errors:
+  - A benchmark row that does not exit 0.
+  - A failure whose owner is uncertain.
+  benchmark_errors:
+  - Output the benchmark cannot read after 7-Zip exited 0.
+  exclusions:
+  - An error shown not to be the provider's.
+  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch, and its
+    result is kept.
+source:
+  name: 7-Zip
+  version: '25.01'
+  ids:
+  - 7zzs-25.01-linux-x64-static
+  - sha256:5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422
+  licence: LGPL-2.1-or-later
+execution:
+  mode: script
+  inference: false
+parameters:
+  path: parameters/7-zip-1-thread/1.1.18/
+  sha256: b6a9d141646941719ab5319e7cde3cafb54ebdd2a81189c672654f2a6705db69
+interpretation:
+  informs: 'How fast a sandbox computes: agents that build, test, compress or crunch data wait on the
+    CPU, and two providers that sell the same 2 vCPU / 4 GiB can differ, for example by the CPU model
+    a sandbox lands on.'
+  limits:
+  - The tool rates integer work such as compression, branching and cache access; it does not measure floating-point
+    or vector speed.
+  caveats:
+  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch, and its
+    result is kept.
+  - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
+    in results can be traced to it.
+  - Each result is the tool's own figure by its own clock; the job host times nothing.
+  - The 7-Zip rating covers integer work such as compression, branching, and cache access; it does not
+    measure floating-point or vector speed.
+validity_checks:
+- id: threads-differ
+  threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
+    as a CPU count mismatch and the result is kept.
+independence_answers:
+  fresh_sandbox:
+    status: meets
+    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
+  equal_concurrency:
+    status: meets
+    text: Up to 10 trials at once for every provider, the same number for each.
+  shuffled_order:
+    status: meets
+    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
+      and the pair's trials run in 4 rounds.
+  caches:
+    status: meets
+    text: Nothing is warmed up and the work runs from memory and CPU, so page and package caches do not
+      enter the result. The provider's image caches stay on.
+  job_host:
+    status: meets
+    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
+      own clock; the job host serves one provider only.
+  shared_provider_hosts:
+    status: meets
+    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
+      in flight is recorded for each trial.
+  empty_account:
+    status: meets
+    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
+      is recorded at each batch's start and end.
+  placement_facts:
+    status: exception
+    text: >-
+      Guest CPU model/count, kernel and working-directory device/filesystem are probed outside
+      timing on a best-effort basis; unavailable readings remain unknown. Native host/zone
+      identifiers are not collected. Missing facts leave the affected independence checks
+      unassessed.
+  run_check:
+    status: meets
+    text: The run's independence check covers the pair on its main metric with the common thresholds.
+  outliers:
+    status: meets
+    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

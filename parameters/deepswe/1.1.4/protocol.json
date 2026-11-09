@@ -1,0 +1,372 @@
+{
+  "environment": {
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "user.useConfigOnly",
+    "GIT_CONFIG_VALUE_0": "true",
+    "LESS": "-R",
+    "MANPAGER": "cat",
+    "PAGER": "cat",
+    "PIP_PROGRESS_BAR": "off",
+    "TERM": "xterm",
+    "TQDM_DISABLE": "1"
+  },
+  "groups": {
+    "heredoc": "<<-?\\s*(['\\\"]?)(\\w+)\\1[^\\n]*\\n.*?\\n\\s*\\2\\s*(?=\\n|$)",
+    "otherwise": "read",
+    "rules": [
+      {
+        "group": "test",
+        "pattern": "\\b(go test|pytest|py\\.test|unittest|vitest|jest|mocha|node --test|deno test|bun test|(npm|pnpm|yarn)( run)? test|npx (vitest|jest|mocha)|tox|nox|make test|test\\.sh)\\b"
+      },
+      {
+        "group": "install",
+        "pattern": "\\b(pip3? install|python3? -m pip install|uv pip install|uv sync|(npm|pnpm|yarn) install|npm ci|go mod download|go get)\\b"
+      },
+      {
+        "group": "build",
+        "pattern": "\\b(go (build|vet|run|generate|install|mod)|gofmt|goimports|staticcheck|golangci-lint|tsc|esbuild|rollup|webpack|vite build|(npm|pnpm|yarn)( run)? (build|lint|typecheck|check|format)|eslint|prettier|biome|deno (check|lint|fmt)|ruff|mypy|pyright|flake8|black|isort|uv run|python3? -m (compileall|py_compile|build|pip)|make\\b)"
+      },
+      {
+        "group": "write",
+        "pattern": "(sed -i|perl -pi|(?<![0-9&>])>>?\\s*(?!&|/dev/null)[\\w./~-]+|\\btee\\b|\\bpatch\\b|git (apply|commit|add|checkout|stash|reset|restore|rm|mv)\\b|<<|\\bmv\\b|\\bcp\\b|\\brm\\b|\\bmkdir\\b|\\btouch\\b|\\bchmod\\b)"
+      }
+    ]
+  },
+  "schema": "boxrouter.bench.deep-swe.protocol/1",
+  "source": {
+    "commit": "3cda4081fed96103a6395de39c85e9b20275e307",
+    "patch": "https://d3ujjcmjq6o8v6.cloudfront.net/v1.1/trial-artifacts/{trial}/artifacts/model.patch",
+    "pre_artifacts": "https://raw.githubusercontent.com/datacurve-ai/deep-swe/3cda4081fed96103a6395de39c85e9b20275e307/tasks/{task}/pre_artifacts.sh",
+    "tasks": "https://github.com/datacurve-ai/deep-swe/tree/3cda4081fed96103a6395de39c85e9b20275e307/tasks",
+    "trajectory": "https://d3ujjcmjq6o8v6.cloudfront.net/v1.1/trial-artifacts/{trial}/agent/trajectory.json"
+  },
+  "tasks": {
+    "abs-stepped-slices": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/go/bin:/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "go",
+      "pre_artifacts_sha256": "1cdb1f6ab2348b52153b77e95115adcfdf679aaaf81f797f5dbd23b1cfeefdbb",
+      "start_commit": "cb1b3b671d0ee9fa9da9f7b02f86967953ffd10a"
+    },
+    "aiomonitor-task-snapshots-diff": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12",
+        "SETUPTOOLS_SCM_PRETEND_VERSION": "0.7.1"
+      },
+      "language": "python",
+      "pre_artifacts_sha256": "a9f35eb002d2d4a3033bab3cf1eb677d0e68095f0631e4c5b738c4259cfe01a4",
+      "start_commit": "b73fea2e0682803bda7531c93cd1dfb360839175"
+    },
+    "bandit-interprocedural-taint-checks": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "python",
+      "pre_artifacts_sha256": "ad9137290f25b83e28f2ae7cb99390709da57e82c732d957ddcb401c7f7c51dd",
+      "start_commit": "b46fa3a2723635aa29cc012538df4867ac2ac006"
+    },
+    "clack-async-autocomplete-options": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "development",
+        "NPM_CONFIG_PRODUCTION": "false",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "typescript",
+      "pre_artifacts_sha256": "39b9186d29b0bba7d502b4cd18b24dbb49088dd16778cce7326899b9d0b7a054",
+      "start_commit": "8a96e2dcd7f821d1250b58cf71c327679f94de25"
+    },
+    "cliffy-config-file-parsing": {
+      "env": {
+        "DENO_DIR": "/deno-cache",
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "typescript",
+      "pre_artifacts_sha256": "180500cb7862656aa350947dd491d5aefb726b68364a301a0f0fc3354ada545c",
+      "start_commit": "132a437c40cffbdfbe474ca808c8debde59e2633"
+    },
+    "dasel-html-document-format": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/go/bin:/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "go",
+      "pre_artifacts_sha256": "a05b6440cb34f8a124007a1b6097ff407f3d98617366ee31796d755051665203",
+      "start_commit": "0dd6132e0c58edbd9b1a5f7ffd00dfab1e6085ad"
+    },
+    "gql-incremental-graphql-delivery": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "python",
+      "pre_artifacts_sha256": "6cfb13c60d9aa9450a3e5118add7b011356bf29e8e47c6eb4f605e32b23a392a",
+      "start_commit": "f07c89f8f065010a36b4263eded209b2b1d37063"
+    },
+    "igel-persist-feature-schema": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/opt/venv/bin:/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONPATH": "/app",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12",
+        "VIRTUAL_ENV": "/opt/venv"
+      },
+      "language": "python",
+      "pre_artifacts_sha256": "dfdc1f0bfef40ac01f7fae801509ea32537cc5c6067488c65ffd1034c5177557",
+      "start_commit": "bf4544d6c86ab4ace21254cb38a011ce3e845700"
+    },
+    "koota-deferred-mutation-buffer": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "development",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "typescript",
+      "pre_artifacts_sha256": "fa14e81fc6fe722784e7bb310d858663299aa871f472103fde5b2dcfbcf993d2",
+      "start_commit": "31cbe9a1a26b3822a6c82ad50132508087cd24bc"
+    },
+    "koota-pair-relation-tracking": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "development",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "typescript",
+      "pre_artifacts_sha256": "c9b42e6b1df8b24468de21b1a2f68cfe0d41b5e51dc0afed0d32aac26dde38f9",
+      "start_commit": "9c434858b2b522002f8c5eb4a554fa8836a7cf3c"
+    },
+    "mobly-grouped-test-barriers": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "python",
+      "pre_artifacts_sha256": "bf621991f187d814bf999a4e499936daaa59e0f43c73acc6dd7d16083ead3b5d",
+      "start_commit": "ec052921917ef201e73cc8e275dc91c5706b345f"
+    },
+    "obsidian-linter-auto-table-of-contents": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "development",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "typescript",
+      "pre_artifacts_sha256": "15895b736b0bd7a5967ae6365098955589d38a6ddb71b1087362494c2eb55dc9",
+      "start_commit": "6393b3ab32a2ace1fc24d4b0f5e0f13a179c874f"
+    },
+    "ofetch-per-origin-circuit-breaker": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "typescript",
+      "pre_artifacts_sha256": "c22e3965c4827f75fd3f970bbbd1e8ed7910409a9f15535ecff03751c26d520c",
+      "start_commit": "dfbe3ca4ef8a22fc023fca5a5ef530e525f5e523"
+    },
+    "participle-grammar-conflict-analysis": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/go/bin:/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "go",
+      "pre_artifacts_sha256": "f3a1daa76c3163fa644d986a16801963345094cae06479aaac5d97b036b326e3",
+      "start_commit": "1051d4767b5a469936daf5f1cebb63da6c9fb776"
+    },
+    "sqlfmt-create-table-ddl-formatting": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "python",
+      "pre_artifacts_sha256": "72f336a2d1db2eea1b605c591c4866e8c6ea30e6138e66926e1cfdde71b83280",
+      "start_commit": "da140993a4547170ef85dc5ce7ce1c270f4322b3"
+    },
+    "sqlite-utils-safe-import-checkpoints": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "python",
+      "pre_artifacts_sha256": "7ad3dd67716dedcc56c09c1f8ee68ac71621bf5f01cad1c1d5cbb0433864f9af",
+      "start_commit": "8d74ffc93292c604d5827e2b44fffedca0c28c19"
+    },
+    "tengo-destructuring-bindings": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/go/bin:/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "go",
+      "pre_artifacts_sha256": "283221db376f343ac5350682a53a1d2b2886b4e61d7f7ed16cd3e8015a532800",
+      "start_commit": "3cad0da7a51b1206c6f01e3f4fbb44b976d5275c"
+    },
+    "true-myth-iterable-collection-combinators": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "typescript",
+      "pre_artifacts_sha256": "312049a4a6e56242a8d11c0dab850b12de24c715773b2a5eb4168ed72165ff19",
+      "start_commit": "d8fbebc75de4991a32354518beff1abf628d0b07"
+    },
+    "yjs-map-conflict-detection": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "javascript",
+      "pre_artifacts_sha256": "a34f3fbbbf8176c14aec6525d5764aadc6cd6047d814042f5e7a2d54fd550044",
+      "start_commit": "7795050a749bd1111cbbdd9d0219b27226a8e710"
+    },
+    "ytt-jsonpath-query-api": {
+      "env": {
+        "GPG_KEY": "7169605F62C751356D054A26A821E680E5FA6305",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "NODE_ENV": "production",
+        "PATH": "/root/go/bin:/root/.cargo/bin:/root/.local/bin:/root/.rye/shims:/root/.bun/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PIP_BREAK_SYSTEM_PACKAGES": "1",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHON_SHA256": "fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4",
+        "PYTHON_VERSION": "3.12.12"
+      },
+      "language": "go",
+      "pre_artifacts_sha256": "ad01ad7e75198c7480123bdab13faeb1aae402dc2b00473a756fd26340da3bc2",
+      "start_commit": "452382821dd9dae7cc36995960656bb94dc47212"
+    }
+  },
+  "trace_set_sha256": "eb26ca731ace712215afca9395df673f8f49a66c234f61b09e656a9bb791dd68",
+  "version": 19
+}

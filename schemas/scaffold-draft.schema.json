@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/sbs/0.1/scaffold-draft.schema.json",
+  "title": "SBS scaffold draft",
+  "description": "What only a new benchmark's author can write. `sandbox-benchmark-verify scaffold --shape` derives every other field from the block's shape; the methodology schema checks each field's content once the document is composed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "notes", "metrics", "interpretation", "validity_checks", "source", "failure_policy", "workloads"],
+  "properties": {
+    "name": {"type": "string", "minLength": 1, "description": "The benchmark's name."},
+    "notes": {"type": "object", "description": "The reader-text drafts: the methodology document's `notes`."},
+    "metrics": {"type": "array", "minItems": 1, "items": {"type": "object"}, "description": "The methodology document's `metrics`."},
+    "interpretation": {"type": "object", "description": "The methodology document's `interpretation`, with `informs` and `what_to_do`."},
+    "validity_checks": {"type": "array", "minItems": 1, "items": {"type": "object"}, "description": "The methodology document's `validity_checks`."},
+    "source": {"type": "object", "description": "The methodology document's `source`, with its `licence`."},
+    "failure_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["success", "provider_errors", "benchmark_errors"],
+      "description": "The parts of `failure_policy` the author writes; the scaffold adds the timeouts, retries and exclusions.",
+      "properties": {
+        "success": {"type": "string", "minLength": 1},
+        "provider_errors": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "benchmark_errors": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The rows of `workloads.json`; each `data` has exactly the keys the shape reads.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "data"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "label": {"type": "string", "minLength": 1},
+          "data": {"type": "object"},
+          "image": {"type": "string", "pattern": "^[^\\s]+@sha256:[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "steps": {
+      "type": "object",
+      "description": "Per shape step id, a `name` or `action` that replaces the derived one.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "action": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

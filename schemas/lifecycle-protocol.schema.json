@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lifecycle workload protocol",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "section",
+    "step",
+    "measurement"
+  ],
+  "properties": {
+    "schema": {
+      "const": "sandbox-benchmark.lifecycle-protocol/1"
+    },
+    "section": {
+      "type": "string",
+      "minLength": 1
+    },
+    "step": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "measurement": {
+      "enum": [
+        "command",
+        "startup"
+      ]
+    }
+  }
+}
