@@ -33,6 +33,7 @@ from sandbox_benchmark_verifier.name_row_checks import (
     common_section_errors,
     common_subsection_errors,
     numbered_errors,
+    off_errors,
     page_errors,
     presentation_errors,
     reads_as_errors,
@@ -532,6 +533,7 @@ def _row_errors(rows: list[dict[str, Any]], documents: set[str]) -> list[str]:
         errors.extend(page_errors(row, rows, where))
         errors.extend(common_section_errors(row, where))
         errors.extend(common_subsection_errors(row, rows, where))
+        errors.extend(off_errors(row, where))
         errors.extend(reads_as_errors(row, rows, where))
         if "shows_cost" in row and row["kind"] != "section":
             errors.append(f"{where}: shows_cost belongs on a section row")

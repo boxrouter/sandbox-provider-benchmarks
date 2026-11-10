@@ -253,7 +253,7 @@ names:
   - {row: 41, kind: "variant", id: "python3", name: "python3 -c import", parent: "sequential-tti", workload: "python3"}
   - {row: 41, kind: "variant", id: "node", name: "node -e require", parent: "sequential-tti", workload: "node"}
   - {row: 41, kind: "variant", id: "git", name: "git --version", parent: "sequential-tti", workload: "git"}
-  - {row: 42, kind: "test", id: "burst-tti", name: "Burst TTI", parent: "create", document: "burst-tti", selector: {label: "Parallel Sandboxes", mode: chooses}, rejected_labels: [Startup Time, Cold Startup Time, Cold Start], presentation: {panel: "burst-start"}}
+  - {row: 42, kind: "test", id: "burst-tti", name: "Burst TTI", status: "off", parent: "create", document: "burst-tti", selector: {label: "Parallel Sandboxes", mode: chooses}, rejected_labels: [Startup Time, Cold Startup Time, Cold Start], presentation: {panel: "burst-start"}}
   - {row: 43, kind: "variant", id: "n5", name: "5 sandboxes", parent: "burst-tti", workload: "n5"}
   - {row: 43, kind: "variant", id: "n10", name: "10 sandboxes", parent: "burst-tti", workload: "n10"}
   - {row: 43, kind: "variant", id: "n20", name: "20 sandboxes", parent: "burst-tti", workload: "n20"}
@@ -291,7 +291,7 @@ names:
   - {row: 58, kind: "stage", id: "create-from-snapshot", name: "Create from Snapshot", parent: "snapshots"}
   - {row: 58, kind: "stage", id: "load-runtimes", name: "Load Runtimes", parent: "snapshots"}
   - {row: 59, kind: "tab", id: "image-build", name: "Image Build", parent: "sandbox-operations", presentation: {panel: "image-build"}}
-  - {row: 60, kind: "test", id: "image-build-2vcpu-4gib", name: "Image Build (2 vCPU / 4 GiB)", parent: "image-build", document: "image-build-2vcpu-4gib", selector: {label: "Image", mode: chooses}}
+  - {row: 60, kind: "test", id: "image-build-2vcpu-4gib", name: "Image Build (2 vCPU / 4 GiB)", status: "off", parent: "image-build", document: "image-build-2vcpu-4gib", selector: {label: "Image", mode: chooses}}
   - {row: 62, kind: "variant", id: "standard", name: "Standard", parent: "image-build-2vcpu-4gib", workload: "standard"}
   - {row: 62, kind: "variant", id: "python", name: "Python", parent: "image-build-2vcpu-4gib", workload: "python"}
   - {row: 62, kind: "variant", id: "node", name: "Node.js", parent: "image-build-2vcpu-4gib", workload: "node"}

@@ -260,6 +260,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `catalog_selection.region_country_policy.exceptions[].label` | Shown beside the provider's results. |  |  |
 | `catalog_selection.region_country_policy.exceptions[].network_note` | The note beside ranking_status_footer.network_marker on the provider's results for tests that include the job host's round trip; web fills {provider}. |  |  |
 | `names[].kind` | Name row kind, including `hero` and `page`. |  | `"hero"` |
+| `names[].status` | `off` on a test row turns that benchmark off everywhere: it is not planned or run, not built into a page and not listed in the methodology or the benchmarks page. Its rows below it go with it; nothing is deleted. Remove the field to turn it back on. |  |  |
 | `names[].shows_cost` | On a section row: no test under it shows a cost anywhere (cost-scope). Absent means its tests may. |  |  |
 | `names[].intro` | One-sentence introduction for a section or sub-section. Optional. |  |  |
 | `names[].measure` | The measure word a machine tab's panel title ends with, before the tool in parentheses. Optional. |  | `"Speed"` |

@@ -23,7 +23,7 @@ from sandbox_benchmark_verifier import (
 )
 from sandbox_benchmark_verifier.catalog import retired_ids
 from sandbox_benchmark_verifier.lock import read_lock
-from sandbox_benchmark_verifier.name_row_checks import common_subsection_errors
+from sandbox_benchmark_verifier.name_row_checks import common_subsection_errors, off_documents
 from sandbox_benchmark_verifier.names import (
     _all_variant_errors,
     _row_errors,
@@ -847,3 +847,19 @@ def test_the_common_methodology_name_has_one_owner() -> None:
         if row["name"] in path.read_text(encoding="utf-8")
     ]
     assert typed == []
+
+
+def test_off_documents_are_the_tests_marked_off() -> None:
+    rows = [
+        {"kind": "test", "id": "a", "document": "doc-a", "status": "off"},
+        {"kind": "test", "id": "b", "status": "off"},
+        {"kind": "test", "id": "c", "document": "doc-c"},
+        {"kind": "test", "id": "d", "document": "doc-d", "status": "live"},
+    ]
+    assert off_documents(rows) == {"doc-a", "b"}
+    assert off_documents(load_tables().names) == {"burst-tti", "image-build-2vcpu-4gib"}
+
+
+def test_status_off_belongs_on_a_test_row() -> None:
+    rows = [{"row": 1, "kind": "tab", "id": "t", "name": "T", "status": "off"}]
+    assert any("status off belongs on a test row" in error for error in _row_errors(rows, set()))

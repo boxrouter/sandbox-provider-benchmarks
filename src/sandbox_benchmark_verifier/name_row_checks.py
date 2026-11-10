@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Checks on one names-table row: sentence form, presentation, numbered and per-unit words, page."""
 
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 
@@ -186,3 +187,24 @@ def with_page_titles(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         else row
         for row in rows
     ]
+
+
+def off_documents(rows: Iterable[Mapping[str, Any]]) -> frozenset[str]:
+    """The methodology documents of the tests turned off (`status: off` on a test row).
+
+    The one owner of "this benchmark is off": the runner does not plan, run or page it and web
+    does not list it. A test's variants go with it; nothing is deleted. Removing the status
+    turns the benchmark on.
+    """
+    return frozenset(
+        str(row.get("document", row["id"]))
+        for row in rows
+        if row["kind"] == "test" and row.get("status") == "off"
+    )
+
+
+def off_errors(row: dict[str, Any], where: str) -> list[str]:
+    """`status: off` belongs to a test row, which names the benchmark it turns off."""
+    if row.get("status") == "off" and row["kind"] != "test":
+        return [f"{where}: status off belongs on a test row"]
+    return []

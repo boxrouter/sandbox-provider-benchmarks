@@ -69,7 +69,7 @@
           },
           "id": {"type": "string", "pattern": "^[a-z0-9]+([-_][a-z0-9]+)*$"},
           "name": {"type": "string", "minLength": 1},
-          "status": {"enum": ["live", "coming_soon"]},
+          "status": {"enum": ["live", "coming_soon", "off"], "description": "`off` on a test row turns that benchmark off everywhere: it is not planned or run, not built into a page and not listed in the methodology or the benchmarks page. Its rows below it go with it; nothing is deleted. Remove the field to turn it back on."},
           "shows_cost": {"const": false, "description": "On a section row: no test under it shows a cost anywhere (cost-scope). Absent means its tests may."},
           "metric": {"$ref": "#/$defs/metric"},
           "label": {"$ref": "#/$defs/label"},
