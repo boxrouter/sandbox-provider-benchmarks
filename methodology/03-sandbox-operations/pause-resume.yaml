@@ -23,6 +23,7 @@ metrics:
   description: Time from explicit resume request or first post-wait read until the marker returns.
   quantity: time
   per: round
+  formula: end(data-back) - start(resume|data-back)
 environment:
   size:
     vcpu: 2

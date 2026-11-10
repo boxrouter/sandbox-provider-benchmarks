@@ -24,12 +24,14 @@ metrics:
   description: Sum of one rollout's replayed tool calls' runtimes, each by the sandbox's own clock.
   quantity: Tool-call runtime
   per: rollout
+  formula: sum(runtime(cmd))
 - name: reward_time
   unit: ms
   direction: lower_is_better
   description: Runtime of {name:test.r2e-gym}'s reward command for one rollout.
   quantity: Reward-command runtime
   per: rollout
+  formula: runtime(reward)
 environment:
   size:
     vcpu: 2

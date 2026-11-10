@@ -24,6 +24,7 @@ metrics:
   description: Runtime of the selected install command by the sandbox clock.
   quantity: time
   per: install
+  formula: runtime(install)
 environment:
   size:
     vcpu: 2

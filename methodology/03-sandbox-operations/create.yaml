@@ -28,6 +28,7 @@ metrics:
     only when all N sandboxes answered.
   quantity: time
   per: burst
+  formula: max(end(ready)) - min(start(create))
 - name: answered_count
   unit: count
   direction: higher_is_better

@@ -14,6 +14,7 @@ from urllib.parse import quote
 
 from sandbox_benchmark_verifier import catalog, procedures, reader_style
 from sandbox_benchmark_verifier.catalog import _assets
+from sandbox_benchmark_verifier.clocks import includes_network_latency
 from sandbox_benchmark_verifier.content import (
     content_criteria,
     criteria_errors,
@@ -374,6 +375,12 @@ def _optional_presentation(root: Path) -> dict[str, Any] | None:
     return None
 
 
+def _region_exceptions(names_doc: Any) -> list[Any]:
+    """The providers the region policy lets run outside the US, as names.yaml lists them."""
+    selection = names_doc.get("catalog_selection", {}) if isinstance(names_doc, Mapping) else {}
+    return list((selection.get("region_country_policy") or {}).get("exceptions", []))
+
+
 def build_text_bundle(root: Path) -> dict[str, Any]:
     """Return deterministic slot text for every methodology version and name row."""
     with compiler_tables_cache(root, DIGEST_ALGORITHMS):
@@ -425,6 +432,7 @@ def _build_text_bundle(root: Path) -> dict[str, Any]:
                 references=name_replacements,
                 directions=_direction_labels(tables),
             ),
+            "includes_network_latency": includes_network_latency(method),
             "timed_steps": sorted(
                 {
                     record
@@ -472,6 +480,7 @@ def _build_text_bundle(root: Path) -> dict[str, Any]:
         if isinstance(names_doc, Mapping)
         else None,
         **catalog.selection_projection(root, methods),
+        "region_exceptions": _region_exceptions(names_doc),
         "methodologies": indexed_methods,
         "reader": _reader_bundle(
             root, tables, documents, canonical_names, name_replacements, parameters

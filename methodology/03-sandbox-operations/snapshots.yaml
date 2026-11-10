@@ -23,12 +23,14 @@ metrics:
   description: Median create-from-snapshot duration for each of four sequential forks.
   quantity: time
   per: sandbox
+  formula: total(create-from-snapshot)
 - name: first_command_time
   unit: ms
   direction: lower_is_better
   description: Median time for the first Python, Node and git commands in each fork.
   quantity: time
   per: sandbox
+  formula: total(exec)
 environment:
   size:
     vcpu: 2
@@ -275,18 +277,21 @@ metrics:
   description: Time from snapshot request dispatch until the snapshot call returns.
   quantity: time
   per: sandbox
+  formula: total(snapshot)
 - name: restore_time
   unit: ms
   direction: lower_is_better
   description: Time from create-from-snapshot request dispatch until the new sandbox is created.
   quantity: time
   per: sandbox
+  formula: total(create-from-snapshot)
 - name: first_command_time
   unit: ms
   direction: lower_is_better
   description: Time for the first Python, Node and git commands to return from the restored sandbox.
   quantity: time
   per: sandbox
+  formula: total(exec)
 environment:
   size:
     vcpu: 2

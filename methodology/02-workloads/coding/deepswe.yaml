@@ -24,6 +24,7 @@ metrics:
   description: Sum of the replayed commands' runtimes for one trace, each by the sandbox's own clock.
   quantity: Command runtime
   per: trace
+  formula: sum(runtime(cmd))
 - name: tool_time_set_total
   unit: ms
   direction: lower_is_better
@@ -31,6 +32,7 @@ metrics:
     provider; defined only when every trace of the set has a successful replay.
   quantity: Total command runtime
   per: trace set
+  formula: sum(median(sum(runtime(cmd))))
 environment:
   size:
     vcpu: 4

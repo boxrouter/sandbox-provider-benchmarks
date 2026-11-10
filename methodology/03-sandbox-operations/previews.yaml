@@ -31,6 +31,7 @@ metrics:
   description: Time inside the sandbox from server launch until localhost returns the expected response.
   quantity: time
   per: server start
+  formula: runtime(server-listening)
 - name: url_reachable
   unit: ms
   direction: lower_is_better
@@ -44,6 +45,7 @@ metrics:
   description: Time to first byte for each successful GET over the preview's reused keep-alive connection.
   quantity: time
   per: request
+  formula: total(request)
 - name: websocket_success
   unit: count
   direction: higher_is_better

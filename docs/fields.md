@@ -100,7 +100,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `metrics[].phase` | Optional reference to one source-owned stage or phase name. |  |  |
 | `metrics[].statistic` | Optional source statistic id when this metric uses a different statistic from the document. |  |  |
 | `metrics[].description` | What this metric is, in one sentence. |  | `"Create request start to first command exit code returned."` |
-| `metrics[].formula` | How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`) or `latency(<record step>)`, joined by `+` and `-`, with `median(...)` over the sandboxes or runs of a trial. |  | `"median(latency(first-true)) + start"` |
+| `metrics[].formula` | How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`, or alternatives, as `start(resume|data-back)`: the first the trial recorded) or `latency(<record step>)`, joined by `+` and `-`, folded by `median(...)`, `sum(...)`, `max(...)` or `min(...)` over a step's runs, a trial's sandboxes or a set's traces. |  | `"median(latency(first-true)) + start"` |
 | `environment` | What the sandbox and its surroundings must be. Never names a date or provider; the sandbox's region is a run's, and only the job host's region is stated here. |  |  |
 | `environment.size` | Requested machine size. |  |  |
 | `environment.size.vcpu` | Requested virtual CPUs. | vCPU | `2` |

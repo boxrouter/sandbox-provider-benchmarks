@@ -25,6 +25,7 @@ metrics:
   description: Sum of the replayed steps' runtimes for one session, each by the sandbox's own clock.
   quantity: Command and file-edit runtime
   per: session
+  formula: sum(runtime(cmd))
 environment:
   size:
     vcpu: 2

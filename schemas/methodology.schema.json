@@ -446,7 +446,7 @@
           },
           "formula": {
             "type": "string",
-            "description": "How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`) or `latency(<record step>)`, joined by `+` and `-`, with `median(...)` over the sandboxes or runs of a trial.",
+            "description": "How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`, or alternatives, as `start(resume|data-back)`: the first the trial recorded) or `latency(<record step>)`, joined by `+` and `-`, folded by `median(...)`, `sum(...)`, `max(...)` or `min(...)` over a step's runs, a trial's sandboxes or a set's traces.",
             "examples": [
               "median(latency(first-true)) + start"
             ]

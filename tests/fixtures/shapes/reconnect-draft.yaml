@@ -16,6 +16,7 @@ metrics:
   description: Time from attach request dispatch until the attach call returns.
   quantity: time
   per: sandbox
+  formula: total(attach)
 interpretation:
   informs: How long a new process takes to reach a sandbox that is already running.
   what_to_do: Compare how quickly an agent that restarts can reach its sandbox again.

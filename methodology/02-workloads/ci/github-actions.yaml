@@ -64,6 +64,7 @@ metrics:
   per: job
   quantity: Job-step runtime
   unit: ms
+  formula: sum(runtime(cmd))
 name: '{name:test.ci-jobs}'
 notes:
   cost_how_to_read: Only successful trials contribute to the cost value.

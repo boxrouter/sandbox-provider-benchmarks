@@ -16,6 +16,7 @@ metrics:
   description: Time from resume request dispatch until the resume call returns.
   quantity: time
   per: sandbox
+  formula: total(resume)
 interpretation:
   informs: How long a sandbox takes to pause and to come back.
   what_to_do: Compare how quickly an agent can park a sandbox and pick it up again.
