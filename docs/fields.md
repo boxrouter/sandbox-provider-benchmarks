@@ -128,7 +128,8 @@ One row per described property of the methodology schemas and canonical names ta
 | `ready_check.deadline_seconds` | No attempt starts later than this after the first attempt was sent; a check that reaches it without a ready answer fails the trial as the provider's. | s | `10` |
 | `ready_check.attempt_timeout_seconds` | Timeout of one attempt. | s | `30` |
 | `ready_check.published` | Whether the time spent in the check is part of any published number. |  | `false` |
-| `ready_check.skipped_by_benchmarks[]` | Methodology ids that do not run the check because their first command is the thing measured. |  | `["sandbox.create.sequential_tti"]` |
+| `ready_check.skipped_by_benchmarks[]` | Methodology ids that do not run the check because their first command is the thing measured. |  | `["sequential-tti", "burst-tti"]` |
+| `ready_check.skipped_on_restore_by_benchmarks[]` | Methodology ids whose sandboxes restored from a snapshot do not run the check; the sandbox the snapshot is taken from runs it. |  | `["snapshot-and-restore", "fork"]` |
 | `procedure` | How a trial runs. |  |  |
 | `procedure.sweep` | One declared varying dimension; workload records are generated from these values, never separate methodology definitions. |  |  |
 | `procedure.mode` | How the trial's sandboxes or commands are scheduled: one after another, all at once, or one sandbox with one pass. |  | `"sequential"` |

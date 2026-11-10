@@ -41,7 +41,12 @@ ready_check:
   attempt_timeout_seconds: 30
   published: false
   skipped_by_benchmarks:
-  - sandbox.create.sequential_tti
+  - sequential-tti
+  - burst-tti
+  skipped_on_restore_by_benchmarks:
+  - snapshot-and-restore
+  - fork
+  - r2e-gym
 statistics:
   primary: median
   secondary:

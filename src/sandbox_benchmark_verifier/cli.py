@@ -236,6 +236,29 @@ def _method_errors(root: Path, documents: Sequence[tuple[Path, Any]]) -> list[st
     ]
 
 
+READY_CHECK_SKIP_LISTS = ("skipped_by_benchmarks", "skipped_on_restore_by_benchmarks")
+
+
+def ready_check_skip_errors(
+    root: Path, documents: Sequence[tuple[Path, Any]], methods: Mapping[str, set[str]]
+) -> list[str]:
+    """Every id a ready check names as skipping it is a methodology document's id."""
+    errors: list[str] = []
+    for path, document in documents:
+        if not path.is_relative_to(root / "methodology") or not isinstance(document, Mapping):
+            continue
+        ready_check = document.get("ready_check")
+        if not isinstance(ready_check, Mapping):
+            continue
+        for field in READY_CHECK_SKIP_LISTS:
+            errors.extend(
+                f"{path}: ready_check.{field} names {identifier}, which is no methodology id"
+                for identifier in ready_check.get(field, [])
+                if identifier not in methods
+            )
+    return errors
+
+
 def validate(root: Path = ROOT) -> list[str]:
     """Validate every present document and cross-reference methodology versions."""
     schemas, errors = read_schemas(root)
@@ -243,6 +266,7 @@ def validate(root: Path = ROOT) -> list[str]:
     errors.extend(read_errors)
     methods, method_errors = methodology_index(root, documents)
     errors.extend(method_errors)
+    errors.extend(ready_check_skip_errors(root, documents, methods))
     identity_allowlists = run_identity_allowlists(root, documents)
     for path, document in documents:
         errors.extend(

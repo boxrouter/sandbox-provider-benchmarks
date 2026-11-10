@@ -56,6 +56,27 @@ def test_run_methodology_map_citations_are_checked(tmp_path: Path) -> None:
     assert validate(tmp_path) == [f"{manifest}: unknown methodology version cpu 2.0.0"]
 
 
+def test_ready_check_skip_lists_name_existing_methodology_ids(tmp_path: Path) -> None:
+    (tmp_path / "methodology").mkdir()
+    common = tmp_path / "methodology" / "common.yaml"
+    common.write_text(
+        "id: sbs.common\nversion: 1.0.0\nready_check:\n"
+        "  skipped_by_benchmarks: [sbs.common]\n  skipped_on_restore_by_benchmarks: [sbs.common]\n"
+    )
+    assert validate(tmp_path) == []
+    common.write_text(
+        "id: sbs.common\nversion: 1.0.0\nready_check:\n"
+        "  skipped_by_benchmarks: [sandbox.create.sequential_tti]\n"
+        "  skipped_on_restore_by_benchmarks: [fork]\n"
+    )
+    assert validate(tmp_path) == [
+        f"{common}: ready_check.skipped_by_benchmarks names sandbox.create.sequential_tti, "
+        "which is no methodology id",
+        f"{common}: ready_check.skipped_on_restore_by_benchmarks names fork, "
+        "which is no methodology id",
+    ]
+
+
 def test_reproduce_detects_wrong_median(tmp_path: Path) -> None:
     (tmp_path / "data" / "run-a" / "raw").mkdir(parents=True)
     (tmp_path / "data" / "run-a" / "aggregates").mkdir()

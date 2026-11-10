@@ -450,6 +450,7 @@
     "shared_trial": "Shared Trial",
     "size": "Size",
     "skipped_by_benchmarks": "Skipped by Benchmarks",
+    "skipped_on_restore_by_benchmarks": "Skipped on Restore by Benchmarks",
     "snapshot": "{name:stage.snapshot}",
     "snapshot_deletable": "Snapshot Can Be Deleted",
     "source": "Source",

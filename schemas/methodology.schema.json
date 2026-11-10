@@ -652,7 +652,13 @@
           "type": "array",
           "items": { "$ref": "#/$defs/methodology_id" },
           "description": "Methodology ids that do not run the check because their first command is the thing measured.",
-          "examples": [["sandbox.create.sequential_tti"]]
+          "examples": [["sequential-tti", "burst-tti"]]
+        },
+        "skipped_on_restore_by_benchmarks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/methodology_id" },
+          "description": "Methodology ids whose sandboxes restored from a snapshot do not run the check; the sandbox the snapshot is taken from runs it.",
+          "examples": [["snapshot-and-restore", "fork"]]
         }
       }
     },
