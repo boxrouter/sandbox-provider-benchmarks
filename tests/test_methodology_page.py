@@ -362,6 +362,7 @@ def test_every_page_lists_the_metrics_of_each_test_of_its_tab_and_their_formulas
         "read-4kib",
         "sequential-read",
         "7-zip-1-thread",
+        "hard-links",
     }
     for host in hosts:
         parent = next(r["parent"] for r in rows if r["id"] == host and r["kind"] == "test")

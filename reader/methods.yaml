@@ -1223,4 +1223,3 @@ methods:
     clock: [sandbox]
     notes:
       introduction: "Measures the rate at which one `stress-ng` worker creates and removes hard links in `/workspace/hardlink` on the stressor's own clock."
-      setup: "{param:measured.notes.how_it_is_measured}"

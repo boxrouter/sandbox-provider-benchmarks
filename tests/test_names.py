@@ -255,6 +255,24 @@ def test_the_only_page_of_a_tab_is_titled_by_the_tab_and_other_pages_by_their_te
         assert published[row["id"]] == (tabs[row["parent"]] if single else row["name"]), row["id"]
 
 
+# Ids of `-2vcpu-8gib` tests that deliberately keep a methodology page of their own.
+OWN_PAGE_2VCPU_8GIB: set[str] = set()
+
+
+def test_a_2vcpu_8gib_variant_joins_its_parents_page() -> None:
+    """Every `-2vcpu-8gib` test is a variant of a test and is drawn on that test's methodology
+    page, so the rail has no third level for it (Hard Links had its own page until 2026-11-10)."""
+    document = yaml.safe_load((ROOT / "names" / "names.yaml").read_text())
+    variants = [
+        row
+        for row in document["names"]
+        if row["kind"] == "test" and row["id"].endswith("-2vcpu-8gib")
+    ]
+    assert variants
+    own_page = {row["id"] for row in variants if "page" not in row}
+    assert own_page <= OWN_PAGE_2VCPU_8GIB, sorted(own_page - OWN_PAGE_2VCPU_8GIB)
+
+
 def test_composite_statistics_selectors_only_own_their_options() -> None:
     document = yaml.safe_load((ROOT / "names" / "names.yaml").read_text())
     selectors = [row["selector"] for row in document["names"] if row["kind"] == "index"]

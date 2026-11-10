@@ -326,7 +326,7 @@ names:
   - {row: 76, kind: "variant", id: "fio-1g", name: "1 GiB file", parent: "random-write", workload: "fio-1g"}
   - {row: 77, kind: "tab", id: "filesystem", name: "Filesystem", measure: "Hard-Link Speed", parent: "machine-performance"}
   - {row: 78, kind: "test", id: "hard-links", name: "Hard Links", parent: "filesystem", document: "hard-links"}
-  - {row: 132, kind: "test", id: "hard-links-2vcpu-8gib", name: "Hard Links (2 vCPU / 8 GiB)", parent: "filesystem", document: "hard-links-2vcpu-8gib"}
+  - {row: 132, kind: "test", id: "hard-links-2vcpu-8gib", name: "Hard Links (2 vCPU / 8 GiB)", parent: "filesystem", document: "hard-links-2vcpu-8gib", page: "hard-links"}
   - {row: 79, kind: "tab", id: "network", name: "Network", parent: "machine-performance"}
   - {row: 80, kind: "test", id: "package-registries", name: "Package Registries", parent: "network", document: "package-registries", selector: {label: "Install", mode: chooses}}
   - {row: 81, kind: "variant", id: "git-clone", name: "git clone", parent: "package-registries", workload: "git-clone"}
