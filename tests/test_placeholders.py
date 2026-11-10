@@ -12,6 +12,7 @@ from sandbox_benchmark_verifier.placeholders import (
     PlaceholderError,
     fio_size_bytes,
     parse_placeholders,
+    percent_text,
     resolve_template,
     seconds_text,
     size_text,
@@ -195,7 +196,13 @@ CALLS: dict[str, Mapping[str, Any]] = {
         "procedure": {
             "trials": 100,
             "variants": [{"id": "a"}, {"id": "b"}, {"id": "c"}],
-            "parameters": {"calls": 100, "wait_seconds": 900, "payload_bytes": 4096, "unit": "ms"},
+            "parameters": {
+                "calls": 100,
+                "wait_seconds": 900,
+                "payload_bytes": 4096,
+                "jitter": 0.2,
+                "unit": "ms",
+            },
         }
     }
 }
@@ -247,6 +254,20 @@ def test_product_multiplies_whole_number_parameters_with_thousands_separators() 
 )
 def test_size_follows_the_one_binary_unit_rule(size: int, text: str) -> None:
     assert size_text(size) == text
+
+
+@pytest.mark.parametrize(
+    ("fraction", "text"),
+    [(0.2, "20%"), (0.075, "7.5%"), (1, "100%"), (0, "0%"), (0.1 + 0.2, "30%")],
+)
+def test_percent_reads_a_fraction_as_a_percentage(fraction: float, text: str) -> None:
+    assert percent_text(fraction) == text
+
+
+def test_percent_reads_a_fraction_parameter() -> None:
+    assert _resolve("±{percent:demo.1.0.0.procedure.parameters.jitter} jitter") == "±20% jitter"
+    with pytest.raises(PlaceholderError, match="is not a number"):
+        _resolve("{percent:demo.1.0.0.procedure.parameters.unit}")
 
 
 def test_size_reads_a_byte_count_parameter() -> None:

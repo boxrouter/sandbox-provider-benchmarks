@@ -574,7 +574,7 @@ details:
     heading: Composite
     sentence_source: reader.common.blocks.common.all_view_aggregation
     term: workload value
-    term_href: /benchmarks/methodology/sbs.common#workload-value
+    term_href: /benchmarks/methodology/common#workload-value
     unit_headings:
       details.setup: Per-{Unit} Setup
       details.trial-steps: Per-{Unit} Steps
@@ -1023,7 +1023,7 @@ methodology_style:
     - '[\d.]+:\S+'
     - 'node_modules'
   - id: methodology-style.paragraph-shape
-    text: A reader paragraph is at most about 400 characters as the page draws it, every placeholder resolved, and breaks at each change of topic; an enumeration of three or more items that each carry detail is a list, with a "- " line for each item (a "1. " line where the order means something) as a block of its own, and a list item is at most 1200 characters.
+    text: A reader paragraph is at most about 400 characters as the page draws it, every placeholder resolved, and breaks at each change of topic; an enumeration of three or more items that each carry detail is a list, with a "- " line for each item (a "1. " line where the order means something) as a block of its own, and a list item is at most 1200 characters and may hold a second level of indented "- " lines (never a third).
     check: paragraph-shape
     deferred_fields:
     - metrics

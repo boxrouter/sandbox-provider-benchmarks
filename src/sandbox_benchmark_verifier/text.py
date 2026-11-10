@@ -297,9 +297,16 @@ def _metric_statistics(
     ]
 
 
-def _public_method_url(identifier: str, aliases: Mapping[str, Any]) -> str:
-    canonical_id = str(aliases.get("document", {}).get(identifier, identifier))
-    return f"/benchmarks/methodology/{quote(canonical_id, safe='')}"
+def _public_method_url(identifier: str, tables: Any) -> str:
+    """The page address of a document: its page row's id in the names table when it has one
+    (``common`` for ``sbs.common``), else the document id."""
+    canonical_id = str(tables.aliases.get("document", {}).get(identifier, identifier))
+    page_ids = {
+        str(row["document"]): str(row["id"])
+        for row in tables.names
+        if row["kind"] == "page" and "document" in row
+    }
+    return f"/benchmarks/methodology/{quote(page_ids.get(canonical_id, canonical_id), safe='')}"
 
 
 def _direction_labels(tables: Any) -> Mapping[str, str]:
@@ -413,7 +420,7 @@ def _build_text_bundle(root: Path) -> dict[str, Any]:
         identifier = str(method["id"])
         version = str(method["version"])
         indexed_methods.setdefault(identifier, {})[version] = {
-            "owner": {"public_method_url": _public_method_url(identifier, tables.aliases)},
+            "owner": {"public_method_url": _public_method_url(identifier, tables)},
             "semantic_digest": semantic_digest(method, canonical_names),
             "cost": inherited_cost(method, documents) if "cost" in method else {},
             "reader_definition": resolve_name_references(

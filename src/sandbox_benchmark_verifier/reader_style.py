@@ -522,14 +522,29 @@ def _code_marks(rule: Mapping[str, Any], items: Sequence[Item], _: Context) -> l
 
 
 def list_block(markers: Mapping[str, str], block: str) -> str | None:
-    """The kind of list a block is ("bullet" or "numbered"), else None: every line of a list block
-    starts with the same marker. The web renderer reads the same markers from the conventions
-    (``methodology_style.list_markers``)."""
+    """The kind of list a block is ("bullet" or "numbered"), else None: every top-level line of a
+    list block starts with the same marker. An indented marked line under an item is that item's
+    second level (a bullet list under a numbered step); every second-level line has the same
+    indent, and there is no third level. The web renderer reads the same markers from the
+    conventions (``methodology_style.list_markers``)."""
     lines = block.split("\n")
     for kind, marker in markers.items():
-        if all(re.match(marker, line) for line in lines):
+        if re.match(marker, lines[0]) and _list_lines_fit(markers, marker, lines):
             return str(kind)
     return None
+
+
+def _list_lines_fit(markers: Mapping[str, str], marker: str, lines: Sequence[str]) -> bool:
+    """Whether every line is a top-level item of this marker or a second-level line under one."""
+    nested = re.compile(rf" +(?:{'|'.join(markers.values())})")
+    indents: set[int] = set()
+    for line in lines:
+        if re.match(marker, line):
+            continue
+        if not nested.match(line):
+            return False
+        indents.add(len(line) - len(line.lstrip(" ")))
+    return len(indents) <= 1
 
 
 def _block_problem(rule: Mapping[str, Any], markers: Mapping[str, str], block: str) -> str | None:
@@ -539,8 +554,11 @@ def _block_problem(rule: Mapping[str, Any], markers: Mapping[str, str], block: s
     text = _ANY_PLACEHOLDER.sub("x", LINK_MARK.sub(r"\1", block)).replace("`", "")
     kind = list_block(markers, block)
     if kind is None:
-        if any(re.match(marker, line) for line in block.split("\n") for marker in markers.values()):
+        lines = block.split("\n")
+        if any(re.match(marker, line) for line in lines for marker in markers.values()):
             return "a list is its own block"
+        if any(re.match(f" +{marker}", line) for line in lines for marker in markers.values()):
+            return "a list has two levels at most, the second indented alike under a top-level item"
         if len(text) > rule["max_length"]:
             return f"a paragraph of {len(text)} characters"
         return _parallel_sentences(rule, text)

@@ -75,7 +75,7 @@ INDEX_PANEL_NOTES = {"setup", "trial_steps", "how_to_read", "cost_summary", "cos
 # A page hosting other tests keeps its own Short Name and subtitle.
 PAGE_NOTES = {"page_headline", "page_introduction"}
 _MEASURED = re.compile(
-    r"\{(param|commit|hash|count|countword|version|duration|size|imagesize|machine|product):([^{}]*)\}"
+    r"\{(param|commit|hash|count|countword|version|duration|percent|size|imagesize|machine|product):([^{}]*)\}"
 )
 SLOT_CHECKED_NOTES = (
     "trial_steps",
@@ -101,7 +101,7 @@ VERSIONED_NOTES = ("independence",)
 # A reference to another document version pins a fact the reader cannot follow to the result.
 _WORKLOAD = re.compile(r"\{(?:param:|hash:[^|{}]*\|)measured\.parameters\.workload\.")
 _VERSIONED = re.compile(
-    r"\{(?:param:(?!measured\.|content\.|reader\.)|(?:count|countword|version|duration|size|imagesize|machine|product):(?!measured\.|content\.)"
+    r"\{(?:param:(?!measured\.|content\.|reader\.)|(?:count|countword|version|duration|percent|size|imagesize|machine|product):(?!measured\.|content\.)"
     r"|hash:[^|{}]*\|(?!measured\.)"
     r"|commit:(?:[^|{}]*\|)*(?!measured\.|[0-9a-f]{40}\}|(?:[a-z]+:)?[\w.-]+/[\w.-]+\||[A-Za-z0-9-]+\|))[^{}]*\}"
 )

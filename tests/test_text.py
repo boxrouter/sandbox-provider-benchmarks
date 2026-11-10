@@ -16,6 +16,7 @@ from jsonschema import Draft202012Validator
 from pytest_mock import MockerFixture
 
 from sandbox_benchmark_verifier.cli import main
+from sandbox_benchmark_verifier.content import content_criteria
 from sandbox_benchmark_verifier.methodology_page import omit_paths
 from sandbox_benchmark_verifier.metric_labels import metric_id
 from sandbox_benchmark_verifier.name_refs import projection_references, resolve_name_references
@@ -26,6 +27,7 @@ from sandbox_benchmark_verifier.placeholders import PlaceholderError, resolve_te
 from sandbox_benchmark_verifier.stage_hovers import stage_hovers
 from sandbox_benchmark_verifier.text import (
     _methodologies,
+    _public_method_url,
     _warn_sentence,
     export_text_bundle,
     semantic_digest,
@@ -275,6 +277,13 @@ def test_text_bundle_rejects_unknown_index_name_reference(
     path.write_text("\n---\n".join(yaml.safe_dump(item, sort_keys=False) for item in documents))
     with pytest.raises(PlaceholderError, match="unknown canonical name"):
         build_text_bundle(root)
+
+
+def test_a_methodology_address_carries_the_page_id_never_the_document_id() -> None:
+    tables = load_tables(ROOT)
+    assert _public_method_url("sbs.common", tables) == "/benchmarks/methodology/common"
+    assert _public_method_url("time-index", tables) == "/benchmarks/methodology/time-index"
+    assert "/benchmarks/methodology/sbs." not in json.dumps(content_criteria())
 
 
 def test_text_bundle_contains_all_slot_sources_and_is_stable(

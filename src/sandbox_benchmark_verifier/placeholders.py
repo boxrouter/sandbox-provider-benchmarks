@@ -36,6 +36,7 @@ _TARGETS = {
     "countword": _PARAM_TARGET,
     "version": _PARAM_TARGET,
     "duration": _PARAM_TARGET,
+    "percent": _PARAM_TARGET,
     "size": _PARAM_TARGET,
     "imagesize": _PARAM_TARGET,
     "machine": _PARAM_TARGET,
@@ -215,6 +216,11 @@ def seconds_text(seconds: int | float) -> str:
     if whole != seconds or whole <= 60 or whole % 60:
         return f"{seconds:g} s"
     return f"{whole // 3600} h" if whole % 3600 == 0 else f"{whole // 60} min"
+
+
+def percent_text(fraction: int | float) -> str:
+    """A fraction as a percentage in reader text ("0.2" is "20%", "0.075" is "7.5%")."""
+    return f"{round(fraction * 100, 6):g}%"
 
 
 def size_text(size: int | float) -> str:
@@ -434,6 +440,7 @@ def _placeholder_value(
         "countword": lambda: count_word(target, documents),
         "version": lambda: version_text(target, documents),
         "duration": lambda: seconds_text(_number(target, documents)),
+        "percent": lambda: percent_text(_number(target, documents)),
         "size": lambda: size_text(_number(target, documents)),
         "imagesize": lambda: byte_size_text(int(_number(target, documents))),
         "machine": lambda: machine_text(target, documents),

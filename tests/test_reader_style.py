@@ -636,6 +636,15 @@ def test_a_list_is_a_block_of_its_own() -> None:
     assert _shape("1. first step\n2. second step") == []
 
 
+def test_a_list_item_holds_a_second_level_of_one_indent_and_no_third() -> None:
+    assert _shape("1. first step:\n   - one\n   - two\n2. second step") == []
+    assert _shape("- first\n  - nested by two spaces\n- second") == []
+    assert _shape("1. first step:\n   - one\n      - too deep") == ["deepswe.procedure"]
+    assert _shape("1. first step:\n   - one\n  - indented differently") == ["deepswe.procedure"]
+    assert _shape("Prose first:\n   - indented item") == ["deepswe.procedure"]
+    assert _shape("1. first step:\n   - " + _varied(20)) == ["deepswe.procedure"]
+
+
 def test_three_parallel_detailed_sentences_are_written_as_a_list() -> None:
     parallel = (
         "A success passes every step of the trial and holds the guest clock gate. "
