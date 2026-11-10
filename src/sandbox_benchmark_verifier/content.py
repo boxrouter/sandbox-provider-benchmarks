@@ -58,6 +58,7 @@ from sandbox_benchmark_verifier.subtitles import (
     workload_subtitles,
 )
 from sandbox_benchmark_verifier.text_predicates import lookup
+from sandbox_benchmark_verifier.timing import load_timing_contract
 from sandbox_benchmark_verifier.versions import newest
 
 # A clock belongs to a step's timer, which the stage hover renders; keyed text never restates it.
@@ -117,6 +118,8 @@ def content_criteria() -> dict[str, Any]:
         (_assets() / "contracts/text/methodology-page.json").read_text(encoding="utf-8")
     )
     _standard_image_size(result["methodology_page"])
+    # The executable timing rules the runner reads, so reader text can read their values.
+    result["timing"] = load_timing_contract()
     documents: dict[str, Mapping[str, Any]] = dict(newest(_template_documents(_assets()).values()))
     tables = load_tables()
     canonical_names = canonical_name_map(tables)

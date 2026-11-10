@@ -76,6 +76,10 @@ def test_a_fact_may_only_read_the_measured_definition(monkeypatch: pytest.Monkey
     )
     monkeypatch.setattr(reader, "load_reader", lambda _root: source)
     assert any("pins a document version" in error for error in reader.reader_errors(ROOT))
+    source["methods"]["sequential-read"]["notes"]["how_to_read"] = (
+        "Polled every {duration:content.timing.replay.poll_seconds}."
+    )
+    assert not any("pins a document version" in error for error in reader.reader_errors(ROOT))
 
 
 def _measured(identifier: str, version: str) -> dict[str, Any]:

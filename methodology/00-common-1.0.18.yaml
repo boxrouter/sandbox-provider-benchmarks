@@ -33,8 +33,11 @@ ready_check:
   - HTTP 504
   - connection refused
   - connection reset
-  interval_ms: 100
-  max_attempts: 40
+  initial_backoff_ms: 20
+  backoff_multiplier: 1.5
+  max_backoff_ms: 200
+  jitter_fraction: 0.2
+  deadline_seconds: 10
   attempt_timeout_seconds: 30
   published: false
   skipped_by_benchmarks:
@@ -79,7 +82,7 @@ failure_policy:
   provider_errors:
   - Create and transport errors, and a sandbox that stops answering.
   - A failure whose owner is uncertain.
-  - Forty not-ready answers to the ready check, or any other failure of it.
+  - A ready check that reaches its deadline without a ready answer, or any other failure of it.
   benchmark_errors:
   - A failure of the benchmark's own script, such as output it cannot parse after a command exited 0.
   exclusions:

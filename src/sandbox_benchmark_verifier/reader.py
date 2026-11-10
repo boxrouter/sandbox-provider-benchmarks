@@ -101,7 +101,7 @@ VERSIONED_NOTES = ("independence",)
 # A reference to another document version pins a fact the reader cannot follow to the result.
 _WORKLOAD = re.compile(r"\{(?:param:|hash:[^|{}]*\|)measured\.parameters\.workload\.")
 _VERSIONED = re.compile(
-    r"\{(?:param:(?!measured\.|content\.|reader\.)|(?:count|countword|version|duration|size|imagesize|machine|product):(?!measured\.)"
+    r"\{(?:param:(?!measured\.|content\.|reader\.)|(?:count|countword|version|duration|size|imagesize|machine|product):(?!measured\.|content\.)"
     r"|hash:[^|{}]*\|(?!measured\.)"
     r"|commit:(?:[^|{}]*\|)*(?!measured\.|[0-9a-f]{40}\}|(?:[a-z]+:)?[\w.-]+/[\w.-]+\||[A-Za-z0-9-]+\|))[^{}]*\}"
 )

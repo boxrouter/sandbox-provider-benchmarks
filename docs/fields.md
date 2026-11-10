@@ -121,8 +121,11 @@ One row per described property of the methodology schemas and canonical names ta
 | `ready_check` | Untimed wait that runs right after a create returns, before the trial uses the sandbox. |  |  |
 | `ready_check.command` | Command sent until the sandbox answers. |  | `"true"` |
 | `ready_check.retry_on[]` | Answers treated as not ready and retried; any other failure ends the trial. |  | `["HTTP 502", "HTTP 503", "HTTP 504", "connection refused", "connection reset"]` |
-| `ready_check.interval_ms` | Pause after a not-ready answer returns before the next attempt. | ms | `100` |
-| `ready_check.max_attempts` | Attempts before the trial fails as the provider's. | attempts | `40` |
+| `ready_check.initial_backoff_ms` | Wait after the first not-ready answer, before jitter. The wait after not-ready answer k (counting from 0) is min(max_backoff_ms, initial_backoff_ms × backoff_multiplier^k) times a factor drawn uniformly from 1 − jitter_fraction to 1 + jitter_fraction. | ms | `20` |
+| `ready_check.backoff_multiplier` | Factor by which the wait before jitter grows after each not-ready answer. |  | `1.5` |
+| `ready_check.max_backoff_ms` | Largest wait before jitter. | ms | `200` |
+| `ready_check.jitter_fraction` | How far each wait may move either side of its value before jitter, as a fraction of that value; the factor is drawn uniformly. | fraction (0 to 1) | `0.2` |
+| `ready_check.deadline_seconds` | No attempt starts later than this after the first attempt was sent; a check that reaches it without a ready answer fails the trial as the provider's. | s | `10` |
 | `ready_check.attempt_timeout_seconds` | Timeout of one attempt. | s | `30` |
 | `ready_check.published` | Whether the time spent in the check is part of any published number. |  | `false` |
 | `ready_check.skipped_by_benchmarks[]` | Methodology ids that do not run the check because their first command is the thing measured. |  | `["sandbox.create.sequential_tti"]` |

@@ -578,7 +578,16 @@
     "ready_check": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["command", "retry_on", "interval_ms", "max_attempts", "attempt_timeout_seconds"],
+      "required": [
+        "command",
+        "retry_on",
+        "initial_backoff_ms",
+        "backoff_multiplier",
+        "max_backoff_ms",
+        "jitter_fraction",
+        "deadline_seconds",
+        "attempt_timeout_seconds"
+      ],
       "description": "Untimed wait that runs right after a create returns, before the trial uses the sandbox.",
       "properties": {
         "command": {
@@ -592,19 +601,40 @@
           "description": "Answers treated as not ready and retried; any other failure ends the trial.",
           "examples": [["HTTP 502", "HTTP 503", "HTTP 504", "connection refused", "connection reset"]]
         },
-        "interval_ms": {
-          "type": "integer",
-          "minimum": 0,
-          "x-unit": "ms",
-          "description": "Pause after a not-ready answer returns before the next attempt.",
-          "examples": [100]
-        },
-        "max_attempts": {
+        "initial_backoff_ms": {
           "type": "integer",
           "minimum": 1,
-          "x-unit": "attempts",
-          "description": "Attempts before the trial fails as the provider's.",
-          "examples": [40]
+          "x-unit": "ms",
+          "description": "Wait after the first not-ready answer, before jitter. The wait after not-ready answer k (counting from 0) is min(max_backoff_ms, initial_backoff_ms × backoff_multiplier^k) times a factor drawn uniformly from 1 − jitter_fraction to 1 + jitter_fraction.",
+          "examples": [20]
+        },
+        "backoff_multiplier": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Factor by which the wait before jitter grows after each not-ready answer.",
+          "examples": [1.5]
+        },
+        "max_backoff_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "x-unit": "ms",
+          "description": "Largest wait before jitter.",
+          "examples": [200]
+        },
+        "jitter_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 1,
+          "x-unit": "fraction (0 to 1)",
+          "description": "How far each wait may move either side of its value before jitter, as a fraction of that value; the factor is drawn uniformly.",
+          "examples": [0.2]
+        },
+        "deadline_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "x-unit": "s",
+          "description": "No attempt starts later than this after the first attempt was sent; a check that reaches it without a ready answer fails the trial as the provider's.",
+          "examples": [10]
         },
         "attempt_timeout_seconds": {
           "type": "integer",
