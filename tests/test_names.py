@@ -797,6 +797,24 @@ def test_every_methodology_page_has_a_subtitle_to_draw(checkout: Path) -> None:
         notes[note] = wording
 
 
+def test_a_test_on_a_combined_page_explains_itself_under_metrics(checkout: Path) -> None:
+    """The Metrics section draws each test of a combined page as a subsection: its name, then its
+    metric paragraph. A member (folded 8 GiB variant, All vCPUs) or a host without one would leave
+    a heading with nothing under it (hard-links-2vcpu-8gib on 2026-11-10)."""
+    root = checkout
+    assert reader_errors(root) == []
+    path = root / "reader" / "methods.yaml"
+    source = yaml.safe_load(path.read_text())
+    for identifier in ("hard-links-2vcpu-8gib", "read-4kib", "7-zip-all-vcpus"):
+        notes = source["methods"][identifier]["notes"]
+        wording = notes.pop("metric")
+        path.write_text(yaml.safe_dump(source, sort_keys=False))
+        errors = reader_errors(root)
+        assert len(errors) == 1, errors
+        assert identifier in errors[0] and "notes.metric" in errors[0]
+        notes["metric"] = wording
+
+
 def test_the_legacy_combined_disk_document_is_retired_and_has_no_page(
     bundle: dict[str, Any],
 ) -> None:

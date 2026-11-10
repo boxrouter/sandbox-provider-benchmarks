@@ -647,16 +647,6 @@ def test_three_parallel_detailed_sentences_are_written_as_a_list() -> None:
     assert _shape(parallel.replace(". A", ".\n\nA")) == []
 
 
-NO_METRICS_PARAGRAPH = {
-    "7-zip-all-vcpus",
-    "exec-latency-2vcpu-8gib",
-    "hard-links-2vcpu-8gib",
-    "list-2vcpu-8gib",
-    "read-4kib-2vcpu-8gib",
-    "write-4kib-2vcpu-8gib",
-}
-
-
 def test_every_rendered_metric_paragraph_starts_with_its_name_and_the_old_note_is_gone(
     bundle: dict[str, Any],
 ) -> None:
@@ -669,13 +659,13 @@ def test_every_rendered_metric_paragraph_starts_with_its_name_and_the_old_note_i
         if "metric" in entry["text"]["notes"]
     }
     names = {row["id"]: row["name"] for row in bundle["names"] if row["kind"] in {"test", "index"}}
-    # Every test and index row has a Metrics paragraph except these. The list only shrinks: an
-    # entry that has gained a paragraph fails here until it is deleted.
-    assert set(names) - set(held) == NO_METRICS_PARAGRAPH
+    # Every test and index row has a Metrics paragraph.
+    assert set(names) - set(held) == set()
     for identifier, notes in held.items():
         lead = re.split(r" \(|,", names[identifier], maxsplit=1)[0]
         text = notes["metric"]
-        assert text.startswith(f"{lead} is the "), identifier
+        # A variant of another test (its size) starts with its full name, as the source rule allows.
+        assert text.startswith((f"{lead} is the ", f"{names[identifier]} is the ")), identifier
         # The first paragraph is the metric's one sentence shape; a list of its parts may follow.
         assert "\n" not in text.split("\n\n")[0] and "{" not in text, identifier
         assert "metrics" not in notes, identifier  # no second copy

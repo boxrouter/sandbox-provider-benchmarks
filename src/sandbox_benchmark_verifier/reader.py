@@ -264,6 +264,15 @@ def reader_errors(root: Path) -> list[str]:
         for note in ["page_introduction" if identifier in hosts else "introduction"]
         if identifier in methods and note not in methods[identifier].get("notes", {})
     )
+    # A combined page's Metrics draws each of its tests as a subsection (its name, then its metric
+    # paragraph), so a test on such a page without one leaves a heading with nothing under it.
+    errors.extend(
+        f"{READER_PATH}: {identifier}: its methodology page draws it as a Metrics subsection "
+        "with no sentence under it; give it notes.metric"
+        for identifier, row in tests.items()
+        if row.get("document") and (row.get("page") or identifier in hosts)
+        if identifier in methods and "metric" not in methods[identifier].get("notes", {})
+    )
     blocks = source.get("common", {}).get("blocks", {})
     errors.extend(
         f"{READER_PATH}: common.blocks.{scope}: names no tab, section or common"

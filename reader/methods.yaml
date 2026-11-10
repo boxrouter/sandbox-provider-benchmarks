@@ -1047,6 +1047,7 @@ methods:
     headline_steps: [7-zip-all-vcpus]
     notes:
       introduction: 'Measures multi-core integer compute speed using 7-Zip''s built-in benchmark with one thread per requested vCPU (`-mmt{param:measured.environment.size.vcpu}` on a {param:measured.environment.size.vcpu} vCPU sandbox).'
+      metric: '{name:test.7-zip-all-vcpus} is the same measurement as {name:test.7-zip-1-thread}, run with one thread per vCPU ({param:measured.environment.size.vcpu} threads).'
   stream-triad:
     clock: [sandbox]
     panel:
@@ -1208,23 +1209,28 @@ methods:
     clock: [runner]
     notes:
       introduction: "Times each `true` command call on the job host from dispatch until the exit code and the sandbox clock readings return."
+      metric: '{name:test.exec-latency-2vcpu-8gib} is the same measurement as {name:test.exec-latency}, taken in a {machine:measured.environment.size} sandbox.'
   list-2vcpu-8gib:
     headline_steps: [list]
     clock: [runner]
     notes:
       introduction: "Times each directory-list request on the job host from dispatch until the sorted file names of the prepared directory return."
+      metric: '{name:test.list-2vcpu-8gib} is the same measurement as {name:test.list}, taken in a {machine:measured.environment.size} sandbox.'
   write-4kib-2vcpu-8gib:
     headline_steps: [write]
     clock: [runner]
     notes:
       introduction: "Times each file-write request on the job host from dispatch until the write call returns after staging and copying the payload into place."
+      metric: '{name:test.write-4kib-2vcpu-8gib} is the same measurement as {name:test.write-4kib}, taken in a {machine:measured.environment.size} sandbox.'
   read-4kib-2vcpu-8gib:
     headline_steps: [read]
     clock: [runner]
     notes:
       introduction: "Times each file-read request on the job host from dispatch until the complete file payload returns."
+      metric: '{name:test.read-4kib-2vcpu-8gib} is the same measurement as {name:test.read-4kib}, taken in a {machine:measured.environment.size} sandbox.'
   hard-links-2vcpu-8gib:
     headline_steps: [hard-links]
     clock: [sandbox]
     notes:
       introduction: "Measures the rate at which one `stress-ng` worker creates and removes hard links in `/workspace/hardlink` on the stressor's own clock."
+      metric: '{name:test.hard-links-2vcpu-8gib} is the same measurement as {name:test.hard-links}, taken in a {machine:measured.environment.size} sandbox.'
