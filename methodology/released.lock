@@ -1,7 +1,7 @@
 # Current methodology documents: id@version sha256 (document + parameters tree).
 7-zip-1-thread@1.1.18 d36eb3a0fd97de5ca542ba9b065e803e1c31e2ddba7fdabf07625f2d2413c201
 7-zip-all-vcpus@1.1.18 fd79dcbd9791c7476d32b43dba50d7d8f9f1fa0773b942e078eb471e94b94e52
-burst-tti@1.2.15 2861fbbde2e6e5848ca8d6b0d9bcc1e9fcbd9d974bef5d3a62f5992209625ce6
+burst-tti@1.2.15 d2b161745120a44304ab647a2897551a040bb9a5d0fdbe0adff731a83862bfea
 cost-index@1.1.27 a05948107ca5f3150cc47ddb5ad4ea93773b60c69e467a571f412ff6faba2408
 deepswe@1.1.22 9b619626244a75fee522005f0f0372b0af13e3938b2368dfcd596ea514a6eb3c
 delayed-resume@1.2.16 a669bc5a841094369295aadd52d48078a43086c4d0caa0884e5ac881f91aff88

@@ -239,6 +239,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `failure_policy.provider_errors[]` | What counts as the provider's failure. An uncertain owner counts against the provider. |  | `["A create or transport error.", "A sandbox that never answers."]` |
 | `failure_policy.benchmark_errors[]` | What counts as a failure of the benchmark itself rather than the provider. |  | `["Output the benchmark cannot parse after a command exited 0."]` |
 | `failure_policy.exclusions[]` | What is left out of a result. An excluded trial is kept in the data with its reason. |  | `["A failure shown not to be the provider's."]` |
+| `failure_policy.exclusion_limits` | A limit on a value of a trial's own record above which the trial was not run as specified: the trial is the benchmark's, excluded and replaced by a new trial. Keyed by the value's name, which ends in its unit. Optional. |  | `{"launch_spread_ms": 1000}` |
 | `failure_policy.success` | What makes a trial succeed. |  | `"Every check passes and every resource the trial created is confirmed deleted."` |
 | `source` | The workload or tool the benchmark runs, where it comes from. |  |  |
 | `source.name` | Name of the workload or tool. |  | `"7-Zip"` |

@@ -659,6 +659,8 @@ methods:
         {param:reader.common.blocks.common.failures_citation}
 
         If a burst size exceeds the concurrency limit of BoxRouter's account with the provider, that variant is marked {param:content.ranking_statuses.account_limit.label} rather than failed. A trial succeeds only when all N sandboxes in the burst complete `create` and `true` within timeout and all N sandboxes are confirmed destroyed; if any single sandbox in the wave fails or times out, the entire burst trial fails.
+
+        A trial whose N create requests were sent over more than {param:measured.failure_policy.exclusion_limits.launch_spread_ms} ms was not launched together; it is excluded as BoxRouter's own failure and replaced by a new trial.
     stages:
       create:
         start: Create requests are sent together

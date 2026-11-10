@@ -494,6 +494,17 @@ def test_a_concurrency_cap_reads_the_account_limit_status(tmp_path: Path) -> Non
         " {param:content.ranking_statuses.account_limit.label}.\n",
         encoding="utf-8",
     )
+    (tmp_path / "methodology").mkdir()
+    (tmp_path / "methodology/create.yaml").write_text(
+        "failure_policy:\n"
+        "  exclusions:\n"
+        "  - A burst size above what the plan runs at once is shown as not offered.\n"
+        "  - A burst above the account's concurrency stays not_offered.\n"
+        "  - A pause the provider lacks is not offered.\n",
+        encoding="utf-8",
+    )
     assert [error.split(":")[0] for error in concurrency_cap_status_errors(tmp_path)] == [
-        "reader/methods.yaml.[0].methods.burst-tti.limitations[0]"
+        "methodology/create.yaml.[0].failure_policy.exclusions[0]",
+        "methodology/create.yaml.[0].failure_policy.exclusions[1]",
+        "reader/methods.yaml.[0].methods.burst-tti.limitations[0]",
     ]

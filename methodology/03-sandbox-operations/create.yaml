@@ -195,9 +195,11 @@ failure_policy:
   - A failure of the benchmark's own script.
   exclusions:
   - An error shown not to be the provider's.
-  - A burst size above what the account's plan runs at once is not run and is shown as not offered on
-    that plan.
+  - A burst size above what BoxRouter's account with the provider runs at once is not run and is shown
+    as that account's limit.
   - Image build is recorded but excluded from the burst time.
+  exclusion_limits:
+    launch_spread_ms: 1000
 parameters:
   path: parameters/burst-tti/1.2.15/
   sha256: 877884a1cb072043e6533c0251ea50e82ed979fe415081378d8a7316aa236d36
@@ -283,8 +285,10 @@ independence_answers:
     status: meets
     text: The run's independence check covers the pair on its main metric with the common thresholds.
   outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
+    status: exception
+    text: Besides the common outlier and physical-limit rule, a burst whose create requests were sent over
+      more than its launch-spread limit (exclusion_limits) is excluded as the benchmark's own, with the
+      reason recorded, and topped off.
 
 ---
 id: sequential-tti

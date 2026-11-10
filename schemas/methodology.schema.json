@@ -1440,6 +1440,13 @@
           "description": "What is left out of a result. An excluded trial is kept in the data with its reason.",
           "examples": [["A failure shown not to be the provider's."]]
         },
+        "exclusion_limits": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_(ms|s)$" },
+          "additionalProperties": { "type": "number", "exclusiveMinimum": 0 },
+          "description": "A limit on a value of a trial's own record above which the trial was not run as specified: the trial is the benchmark's, excluded and replaced by a new trial. Keyed by the value's name, which ends in its unit. Optional.",
+          "examples": [{ "launch_spread_ms": 1000 }]
+        },
         "success": {
           "type": "string",
           "description": "What makes a trial succeed.",
