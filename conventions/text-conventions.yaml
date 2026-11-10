@@ -591,6 +591,11 @@ axis:
 # A table column whose values share a unit names it once in its header, and its cells hold the number only (web rule units-in-header;
 table:
   unit_header: "{name} ({unit})"
+  # A table's column headings that name what its rows are: a drill-down row named after its test, a start's row, a price's source link.
+  columns:
+    test: Test
+    start: Start
+    source: Source
 subtitle:
   template: '{description} {direction}'
   separator: ' '
