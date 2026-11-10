@@ -456,7 +456,8 @@
   "statistics_selector": {
     "label": "Statistics",
     "template": "{label}: {value}",
-    "p95_unavailable": "Fewer than {param:sbs.common.statistics.tail.min_successes} trials"
+    "p95_unavailable": "Fewer than {param:sbs.common.statistics.tail.min_successes} trials",
+    "ci_unavailable": "No interval for a sum of steps"
   },
   "dots_selector": {
     "label": "Dots for",
