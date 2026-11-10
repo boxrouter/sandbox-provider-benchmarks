@@ -300,8 +300,49 @@ def test_country_admission_refuses_unknown_or_conflicting_facts_without_changing
 
 def test_country_argument_is_required_and_has_no_enable_switch() -> None:
     parameters = signature(catalog.region_country_errors).parameters
-    assert list(parameters) == ["document", "documents", "countries"]
+    assert list(parameters) == ["document", "documents", "countries", "provider"]
     assert parameters["countries"].default is Parameter.empty
+    assert parameters["provider"].kind is Parameter.KEYWORD_ONLY
+
+
+def test_region_exceptions_are_exactly_the_named_providers_each_with_a_reason(
+    country_documents: list[dict[str, Any]],
+) -> None:
+    """Only the providers listed run outside the US; adding one is a visible change here."""
+    names = load_yaml((ROOT / "names/names.yaml").read_text())
+    exceptions = names["catalog_selection"]["region_country_policy"]["exceptions"]
+    assert {entry["provider"]: entry["countries"] for entry in exceptions} == {
+        "boat": ["DE", "FI", "FR"]
+    }
+    policy = region_policy(country_leaf(), country_documents)
+    for entry in exceptions:
+        assert entry["reason"].strip()
+        assert entry["provider"].capitalize() in policy, "the region policy text names it"
+
+
+@pytest.mark.parametrize(
+    ("provider", "countries", "admitted"),
+    [
+        ("boat", {"DE", "FI", "FR"}, True),
+        ("boat", {"FI"}, True),
+        ("boat", {"US"}, True),
+        ("boat", {"SE"}, False),
+        ("boat", None, False),
+        ("other", {"DE"}, False),
+        (None, {"FR"}, False),
+        ("other", {"US"}, True),
+    ],
+)
+def test_only_a_named_exception_admits_countries_outside_the_us(
+    country_documents: list[dict[str, Any]],
+    provider: str | None,
+    countries: Any,
+    admitted: bool,
+) -> None:
+    errors = catalog.region_country_errors(
+        country_leaf(), country_documents, countries, provider=provider
+    )
+    assert (errors == []) is admitted
 
 
 def test_country_admission_accepts_the_complete_real_owner_catalog_without_mutating_it(

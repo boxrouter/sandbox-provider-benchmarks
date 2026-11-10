@@ -7,6 +7,14 @@ catalog_selection:
     source: {id: sbs.common, version: 1.0.18}
     equivalents: [{id: sbs.common, version: 1.0.18}]
     countries: [US]
+    # A provider with no US region runs where its entry says, for the stated reason. Each entry
+    # is named in the common's region_policy text; nothing else may run outside the US.
+    exceptions:
+    - provider: boat
+      countries: [DE, FI, FR]
+      reason: Boat has no US region and no region choice; its sandboxes run only in the EU, on machines
+        in Germany, Finland and France (https://docs.boat.dev/compliance.md, read 2026-11-05), and its
+        create request has no region field (https://docs.boat.dev/api/reference/sandboxes/create-sandbox.md).
 # The label of a workload's all-units variant: its unit plural in Title Case.
 all_variant_template: "All {Units}"
 metric_label_grammar:

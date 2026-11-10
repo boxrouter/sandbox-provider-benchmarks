@@ -244,7 +244,7 @@ def region_request_errors(
 
 def _region_country_binding(
     documents: Sequence[Mapping[str, Any]],
-) -> tuple[frozenset[str], frozenset[str]]:
+) -> tuple[frozenset[str], frozenset[str], dict[str, frozenset[str]]]:
     assets = _assets()
     names = load_yaml((assets / "names/names.yaml").read_text())
     selection = names.get("catalog_selection", {}) if isinstance(names, Mapping) else {}
@@ -268,17 +268,28 @@ def _region_country_binding(
         if not isinstance(policy, str) or not policy:
             raise ValueError("region country policy equivalent needs a whole policy value")
         approved.add(policy)
-    return frozenset(approved), frozenset(binding["countries"])
+    exceptions = binding.get("exceptions", [])
+    providers = [entry["provider"] for entry in exceptions]
+    if len(set(providers)) != len(providers):
+        raise ValueError("region country policy binding names a provider twice")
+    return (
+        frozenset(approved),
+        frozenset(binding["countries"]),
+        {entry["provider"]: frozenset(entry["countries"]) for entry in exceptions},
+    )
 
 
 def region_country_errors(
     document: Mapping[str, Any],
     documents: Sequence[Mapping[str, Any]],
     countries: Collection[str] | None,
+    *,
+    provider: str | None = None,
 ) -> list[str]:
     """Check declared requested-country evidence, separately from the raw request checker.
 
-    `documents` is the complete owner catalogue, including the exact policy anchor.
+    `documents` is the complete owner catalogue, including the exact policy anchor. A
+    `provider` the binding's `exceptions` names may also run in that entry's countries.
     Callers compose this with region_request_errors on the unchanged final resource mapping.
     Required evidence is not observed placement; None/empty never satisfies a country policy.
     """
@@ -297,7 +308,7 @@ def region_country_errors(
     policy = region_policy(document, documents)
     if policy == {"selection": "no_portable_region_request"}:
         return []
-    approved, allowed = _region_country_binding(documents)
+    approved, allowed, exceptions = _region_country_binding(documents)
     if not isinstance(policy, str) or policy not in approved:
         return ["region policy has no country admission interpretation"]
     if (
@@ -310,7 +321,7 @@ def region_country_errors(
         return ["requested placement countries are missing or unproved"]
     return (
         []
-        if frozenset(countries) <= allowed
+        if frozenset(countries) <= allowed | exceptions.get(provider or "", frozenset())
         else ["requested placement countries conflict with region policy"]
     )
 

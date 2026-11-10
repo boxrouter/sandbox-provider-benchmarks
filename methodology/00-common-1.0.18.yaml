@@ -9,8 +9,9 @@ environment:
     memory_gib: 4
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
-  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
-    tuned per provider. Results are never aggregated across job-host regions; each job-host region is
+  region_policy: The provider's US region, never a narrower one, with one named exception. Boat has no
+    US region and no region choice, so it runs in the EU. Ordinary self-serve product, nothing tuned per
+    provider. Results are never aggregated across job-host regions; each job-host region is
     its own series.
   connection_idle_seconds: 300
   job_host: Every provider is timed from its own cloud job host, the same kind of host for every provider,
