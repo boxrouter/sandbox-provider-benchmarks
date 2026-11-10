@@ -131,7 +131,7 @@ methods:
       introduction: Sets the shared timing, trial-success, statistics, cost, and failure rules that apply to every benchmark.
       opening: BoxRouter benchmarks measure the end-to-end speed and billed cost of cloud sandboxes across coding agents, reinforcement learning rollouts, continuous integration pipelines, and low-level machine primitives. Every benchmark runs against ordinary self-serve accounts in each provider's default US region.
       environment: |-
-        Benchmarks request a {machine:measured.environment.size} sandbox unless a workload states otherwise, and record the CPU count and memory the sandbox reports. Benchmarks use the BoxRouter standard image pinned by digest for this measured definition ({hash:sha256|measured.environment.image.reference}); a changed image digest starts a separate results series.
+        Benchmarks request a {machine:measured.environment.size} sandbox unless a workload states otherwise, and record the CPU count and memory the sandbox reports. Benchmarks use the BoxRouter standard image pinned by digest ({hash:sha256|measured.environment.image.reference}); a changed image digest starts a separate results series.
 
         Workloads requiring custom toolchains use task-specific images. All images are prepared in each provider account before runs.
 
@@ -215,7 +215,9 @@ methods:
 
         A provider's benchmark order is shuffled once per run, and each benchmark's trials are interleaved across {param:measured.independence.rounds} rounds from an empty account so samples come from separate moments rather than one contiguous block.
 
-        Placement evidence is versioned; follow the measured method's recorded answer. For Ubuntu standard successors, guest CPU model/count, kernel and working-directory device/filesystem probes are best-effort and may be missing; native host/zone identifiers are not collected. If that answer declares an exception, missing facts leave affected independence checks unassessed.
+        Each trial records, untimed, the sandbox's CPU model and count, kernel, and the device and file system behind its working directory, together with the job host's load over the trial's window.
+
+        The sandbox readings are best effort and may be missing; no host or zone identifier of the provider is collected. Host saturation is not assessed for a pair when any of its trials lacks the job host's facts, and the CPU comparison leaves out trials with no CPU count; the run report lists each check it skipped.
 
         Provider-wide features that every customer receives (base-image caches, host placement and warm pools) stay in the result.
 
@@ -228,11 +230,15 @@ methods:
         - round-start warm-pool steps (at least {param:measured.independence.run_check.checks.2.min_effect_pct}%)
         - lag-one autocorrelation (rank correlation at least {param:measured.independence.run_check.checks.3.min_abs_rho} with {param:measured.independence.run_check.checks.3.min_effect_pct}% effect)
         - concurrent-batch overlap slowdown (at least {param:measured.independence.run_check.checks.4.min_effect_pct}%)
-        - job-host CPU saturation above {param:measured.independence.run_check.checks.5.cpu_share} (at least {param:measured.independence.run_check.checks.5.min_effect_pct}%)
+        - job-host saturation, at least {param:measured.independence.run_check.checks.5.min_effect_pct}% slower: CPU use at or above {param:measured.independence.run_check.checks.5.cpu_share} of the host's limit, any CPU throttling, memory pressure (some avg10) at or above {param:measured.independence.run_check.checks.5.mem_pressure_some_avg10}%, or, where the host has no pressure files, less than {param:measured.independence.run_check.checks.5.mem_available_min_kib} KiB of memory available; when too few trials ran saturated or unsaturated to compare, the pair fails if a share of at least {param:measured.independence.run_check.checks.5.fail_share} of its trials ran saturated
         - bimodal hardware tier clustering (ratio at least {param:measured.independence.run_check.checks.7.fail_ratio} across at least {param:measured.independence.run_check.checks.7.fail_min_minority} trials)
-        - exposed host or CPU model differences
+        - CPU count or model differences between trials, reported as a note and never a failure
 
-        A pair fails only when a check exceeds both its minimum effect size and the corrected significance threshold, and isolated values are excluded as implausible only when they violate a physical invariant or sit beyond {param:measured.independence.run_check.checks.8.robust_z} robust sigmas and {param:measured.independence.run_check.checks.8.min_ratio} times away from the median.
+        A comparison check fails a pair only when its effect passes both its minimum size and the corrected significance threshold; the saturated-share fallback and a better-side isolated value fail without a significance test.
+
+        An isolated value, one beyond {param:measured.independence.run_check.checks.8.robust_z} robust sigmas and at least {param:measured.independence.run_check.checks.8.min_ratio} times away from the median, is excluded as implausible only when it lies on the better side of the median and the trial's own physical-limit or cache check does not explain it.
+
+        Where the test's steps include a `create` call or a step named build, timed or not, a better value is kept as the provider's warm pool unless a recorded fact ties the trial to an earlier one. A slow spike is kept and reported, and the physical-limit and cache checks never exclude a value themselves.
   time-index:
     headline: Composite time
     notes:

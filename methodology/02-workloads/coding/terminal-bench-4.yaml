@@ -264,7 +264,7 @@ independence_answers:
   placement_facts:
     status: meets
     text: Each trial records its CPU model and count, kernel, working-directory device and file system,
-      any provider host identifier and the job host's load over its window.
+      and the job host's load over its window.
   run_check:
     status: meets
     text: The run's independence check covers the pair on its main metric with the common thresholds.

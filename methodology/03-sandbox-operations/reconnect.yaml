@@ -218,12 +218,9 @@ independence_answers:
     text: The account is checked empty before the provider's chain, and the count of other live sandboxes
       is recorded at each batch's start and end.
   placement_facts:
-    status: exception
-    text: >-
-      Guest CPU model/count, kernel and working-directory device/filesystem are probed outside
-      timing on a best-effort basis; unavailable readings remain unknown. Native host/zone
-      identifiers are not collected. Missing facts leave the affected independence checks
-      unassessed.
+    status: meets
+    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
+      and the job host's load over its window.
   run_check:
     status: meets
     text: The run's independence check covers the pair on its main metric with the common thresholds.

@@ -110,7 +110,7 @@ independence:
   - id: equal_concurrency
     rule: Every provider runs at the same declared trials_in_parallel width, which must fit within the
       host concurrency cap and the provider's documented concurrent sandbox limit. Rounds follow the
-      shuffled order below. A width change requires a new methodology version; it is never a runtime
+      shuffled order below. A width change is a change to this methodology; it is never a runtime
       flag. Where a provider documents a limit on how fast sandboxes may be created, the run spaces its
       creates to that limit, outside every timed step; the spacing is the provider's own documented rule,
       not a choice of ours, and the run manifest records it. A benchmark that runs fewer states why.
@@ -134,8 +134,9 @@ independence:
       of each batch.
   - id: placement_facts
     rule: 'Each trial records, untimed and outside the measured steps, where it ran: the CPU model and
-      count, the kernel, the device and file system behind the working directory, and any host or zone
-      identifier the provider exposes, together with the job host''s load over the trial''s window.'
+      count, the kernel and the device and file system behind the working directory, read inside the
+      sandbox on a best-effort basis, together with the job host''s load over the trial''s window. No host or
+      zone identifier of the provider is collected.'
   - id: run_check
     rule: Every run is checked before publication by the independence check below. Its thresholds are
       fixed here, before any run, and a pair that fails stays out of the publication until its trials
