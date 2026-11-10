@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sandbox-benchmark-verifier"
-version = "0.4.360"
+version = "0.4.361"
 description = "Public benchmark methodology and dataset verifier"
 readme = "README.md"
 license = "Apache-2.0"

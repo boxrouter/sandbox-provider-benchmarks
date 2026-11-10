@@ -263,6 +263,8 @@ One row per described property of the methodology schemas and canonical names ta
 | --- | --- | --- | --- |
 | `schema` | Names table schema version. |  | `"boxrouter.bench.names/2"` |
 | `catalog_selection.region_country_policy.exceptions[]` | Providers with no US region, each with the countries it runs in and why. |  |  |
+| `catalog_selection.region_country_policy.exceptions[].label` | Shown beside the provider's results. |  |  |
+| `catalog_selection.region_country_policy.exceptions[].network_note` | The note beside ranking_status_footer.network_marker on the provider's results for tests that include the job host's round trip; web fills {provider}. |  |  |
 | `names[].kind` | Name row kind, including `hero` and `page`. |  | `"hero"` |
 | `names[].shows_cost` | On a section row: no test under it shows a cost anywhere (cost-scope). Absent means its tests may. |  |  |
 | `names[].intro` | One-sentence introduction for a section or sub-section. Optional. |  |  |

@@ -108,3 +108,8 @@ def test_the_text_bundle_carries_each_flag_and_the_region_exceptions(
         entry = bundle["methodologies"][identifier][reference["version"]]
         assert entry["includes_network_latency"] is (identifier in INCLUDES_NETWORK_LATENCY)
     assert [entry["provider"] for entry in bundle["region_exceptions"]] == ["boat"]
+    for entry in bundle["region_exceptions"]:
+        assert entry["label"].strip() and "{provider}" in entry["network_note"]
+    markers = bundle["content_criteria"]["ranking_status_footer"]
+    named = [markers[key] for key in markers if key.endswith("_marker")]
+    assert markers["network_marker"] in named and len(set(named)) == len(named)

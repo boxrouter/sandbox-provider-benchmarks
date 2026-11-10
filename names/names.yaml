@@ -8,13 +8,18 @@ catalog_selection:
     equivalents: [{id: sbs.common, version: 1.0.18}]
     countries: [US]
     # A provider with no US region runs where its entry says, for the stated reason. Each entry
-    # is named in the common's region_policy text; nothing else may run outside the US.
+    # is named in the common's region_policy text; nothing else may run outside the US. `label`
+    # marks the provider's results; `network_note` goes with ranking_status_footer.network_marker
+    # on its results for tests whose time includes the job host's round trip
+    # (includes_network_latency). Web fills {provider}.
     exceptions:
     - provider: boat
       countries: [DE, FI, FR]
       reason: Boat has no US region and no region choice; its sandboxes run only in the EU, on machines
         in Germany, Finland and France (https://docs.boat.dev/compliance.md, read 2026-11-05), and its
         create request has no region field (https://docs.boat.dev/api/reference/sandboxes/create-sandbox.md).
+      label: Runs in the EU
+      network_note: Includes the network round trip between our US job host and {provider}'s machines in the EU.
 # The label of a workload's all-units variant: its unit plural in Title Case.
 all_variant_template: "All {Units}"
 metric_label_grammar:

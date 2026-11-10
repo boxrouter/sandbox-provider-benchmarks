@@ -435,6 +435,7 @@
     "incomplete_marker": "†",
     "substituted_marker": "‡",
     "worst_trial_marker": "§",
+    "network_marker": "*",
     "incomplete_footer_template": "{marker} {label}: {providers}{open_hint}",
     "open_hint": ". Click provider to see details.",
     "group_clause": "own_label_lowercase",
