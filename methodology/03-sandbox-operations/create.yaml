@@ -118,9 +118,9 @@ procedure:
     - create
   - id: ready
     name: First command
-    action: Send true as soon as that sandbox's create returns, and again 100 ms after each not-ready
-      answer (HTTP 502, 503 or 504, or a refused or reset connection), at most 40 times with 30 seconds
-      each. Every attempt is recorded.
+    action: Send true as soon as that sandbox's create returns, and again after each not-ready answer
+      (HTTP 502, 503 or 504, or a refused or reset connection), with the waits, deadline and attempt timeout
+      of the common ready check (ready_check). Every attempt is recorded.
     timer:
       from: the return of that sandbox's create call
       until: the first attempt of `true` that exits 0 returns
