@@ -8,7 +8,11 @@ from typing import Any
 import pytest
 
 from sandbox_benchmark_verifier.catalog import default_context, load_methodology, ordinary_documents
-from sandbox_benchmark_verifier.clocks import formula_terms, includes_network_latency
+from sandbox_benchmark_verifier.clocks import (
+    derived_term_kinds,
+    formula_terms,
+    includes_network_latency,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -28,6 +32,7 @@ INCLUDES_NETWORK_LATENCY = {
     "list-2vcpu-8gib",
     "pause-resume",
     "previews",
+    "r2e-gym",
     "read-4kib",
     "read-4kib-2vcpu-8gib",
     "reconnect",
@@ -64,6 +69,18 @@ def test_job_host_terms_include_network_latency_and_runtime_does_not(
 
 def test_a_step_named_like_a_term_is_not_read_as_one() -> None:
     assert formula_terms("runtime(total) + sum(runtime(end))") == {"runtime", "sum"}
+
+
+def test_a_derived_pipeline_time_with_job_host_calls_includes_network_latency() -> None:
+    """r2e-gym's own metrics are sandbox runtimes, but the pipeline time its charts rank adds the
+    create, snapshot, restore and destroy calls, which the job host times."""
+    documents = [row.document for row in load_methodology(ROOT)]
+    document = ordinary_documents(documents, common=default_context(ROOT))["r2e-gym"]
+    assert all(
+        "runtime(" in m["formula"] and "total(" not in m["formula"] for m in document["metrics"]
+    )
+    assert "request-elapsed" in derived_term_kinds(document)
+    assert includes_network_latency(document) is True
 
 
 def test_rates_and_counts_never_include_network_latency() -> None:
