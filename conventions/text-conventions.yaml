@@ -318,7 +318,7 @@ slots:
     required: false
     casing: title
     order: 99
-    generated: publication+notes.not_ranked
+    generated: publication+ranking_statuses
   empty-state:
     purpose: State which required evidence is missing and how a result qualifies.
     form: sentence

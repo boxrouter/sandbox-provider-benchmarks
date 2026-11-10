@@ -29,12 +29,6 @@ One row per described property of the methodology schemas and canonical names ta
 | `notes.statistics.typical` | Tooltip for the typical statistic. Optional. |  |  |
 | `notes.stage_medians` | Shared explanation of stage medians on stacked charts. Optional. |  |  |
 | `notes.time_between_stages` | Shared explanation of time between stages on stacked charts. Optional. |  |  |
-| `notes.not_ranked` | Reasons shown when a provider is not ranked. Optional. |  |  |
-| `notes.not_ranked.not_offered` | Tooltip for a capability the provider does not offer. Optional. |  |  |
-| `notes.not_ranked.in_development` | Tooltip for a capability in development. Optional. |  |  |
-| `notes.not_ranked.too_few_runs` | Tooltip for too few successful runs. Optional. |  |  |
-| `notes.not_ranked.failing_often` | Tooltip for a provider that fails often. Optional. |  |  |
-| `notes.not_ranked.not_measured` | Tooltip for a result that was not measured. Optional. |  |  |
 | `notes.what_this_measures` | What the chart's number is, in one or two plain sentences. |  | `"Time from the start of a sandbox create request until the first command returns successfully."` |
 | `notes.how_to_read` | How to read the chart: the statistic shown, its unit and which direction is better. |  | `"Each provider's median is shown in milliseconds. Lower is better."` |
 | `description` | What the benchmark measures and what a reader can decide from the result, in plain words. |  | `"Time from asking for a new sandbox until its first command returns."` |

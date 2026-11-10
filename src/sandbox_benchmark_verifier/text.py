@@ -784,10 +784,6 @@ def _common_warnings(warnings: list[str], document: Mapping[str, Any]) -> None:
         _warn_slot(warnings, f"{identifier}.notes.statistics.{field}", value)
     for field in ("stage_medians", "time_between_stages"):
         _warn_slot(warnings, f"{identifier}.notes.{field}", notes.get(field))
-    not_ranked = notes.get("not_ranked", {})
-    for field in ("not_offered", "in_development", "too_few_runs", "not_measured"):
-        value = not_ranked.get(field) if isinstance(not_ranked, Mapping) else None
-        _warn_slot(warnings, f"{identifier}.notes.not_ranked.{field}", value)
 
 
 def _venue_warnings(

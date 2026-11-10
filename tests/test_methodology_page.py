@@ -242,12 +242,10 @@ def test_reader_projection_hides_retired_failure_ranking_without_changing_eviden
     document = {
         "id": "example",
         "statistics": {"ranking": {"failing_often": "Historical threshold", "min_successes": 10}},
-        "notes": {"not_ranked": {"failing_often": "Historical explanation"}},
     }
     original = deepcopy(document)
     result = reader_definition(document, {}, policy)
     assert result["statistics"]["ranking"] == {"min_successes": 10}
-    assert result["notes"]["not_ranked"] == {}
     assert document == original
 
 

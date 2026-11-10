@@ -295,11 +295,13 @@
     },
     "too_few_runs": {
       "label": "Not Ranked",
+      "definition": "The workload is not ranked because it has not reached its declared number of successful trials.",
       "footer": true,
       "reason": false
     },
     "not_offered": {
       "label": "Not Offered",
+      "definition": "This option is not offered by the provider on its plan.",
       "footer": true,
       "footer_group": "not_displayed",
       "details": false
@@ -313,12 +315,14 @@
     },
     "in_development": {
       "label": "Not Supported",
+      "definition": "BoxRouter does not run this benchmark on this provider yet: a capability it needs is not supported through BoxRouter, or a known fault holds the test back.",
       "footer": true,
       "footer_group": "not_displayed",
       "details": false
     },
     "not_measured": {
       "label": "Not Measured",
+      "definition": "No result was measured for this provider.",
       "footer": true,
       "footer_group": "not_displayed"
     },

@@ -760,7 +760,6 @@
     "validity_checks",
     "statistics.percentile_method",
     "statistics.ranking.failing_often",
-    "notes.not_ranked",
     "independence",
     "independence_answers",
     "reader_sources",
@@ -1441,8 +1440,7 @@
   },
   "private_evidence_paths": [
     "source",
-    "statistics.ranking.failing_often",
-    "notes.not_ranked.failing_often"
+    "statistics.ranking.failing_often"
   ],
   "retired_reader_paths": [
     "notes.statistics.typical"

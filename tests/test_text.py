@@ -80,16 +80,6 @@ def test_all_additive_methodology_fields_validate() -> None:
         },
         "stage_medians": "Stages show separate medians.",
         "time_between_stages": "Intervals can occur between stages.",
-        "not_ranked": {
-            key: "Reason tooltip."
-            for key in (
-                "not_offered",
-                "in_development",
-                "too_few_runs",
-                "failing_often",
-                "not_measured",
-            )
-        },
     }
     common["metrics"] = [
         {

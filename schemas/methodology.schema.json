@@ -100,17 +100,6 @@
         },
         "stage_medians": {"type": "string", "minLength": 1, "maxLength": 300, "description": "Shared explanation of stage medians on stacked charts. Optional."},
         "time_between_stages": {"type": "string", "minLength": 1, "maxLength": 300, "description": "Shared explanation of time between stages on stacked charts. Optional."},
-        "not_ranked": {
-          "type": "object", "additionalProperties": false,
-          "description": "Reasons shown when a provider is not ranked. Optional.",
-          "properties": {
-            "not_offered": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a capability the provider does not offer. Optional."},
-            "in_development": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a capability in development. Optional."},
-            "too_few_runs": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for too few successful runs. Optional."},
-            "failing_often": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a provider that fails often. Optional."},
-            "not_measured": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a result that was not measured. Optional."}
-          }
-        },
         "what_this_measures": {
           "type": "string",
           "minLength": 1,
