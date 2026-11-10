@@ -29,12 +29,6 @@ One row per described property of the methodology schemas and canonical names ta
 | `notes.statistics.typical` | Tooltip for the typical statistic. Optional. |  |  |
 | `notes.stage_medians` | Shared explanation of stage medians on stacked charts. Optional. |  |  |
 | `notes.time_between_stages` | Shared explanation of time between stages on stacked charts. Optional. |  |  |
-| `notes.not_ranked` | Reasons shown when a provider is not ranked. Optional. |  |  |
-| `notes.not_ranked.not_offered` | Tooltip for a capability the provider does not offer. Optional. |  |  |
-| `notes.not_ranked.in_development` | Tooltip for a capability in development. Optional. |  |  |
-| `notes.not_ranked.too_few_runs` | Tooltip for too few successful runs. Optional. |  |  |
-| `notes.not_ranked.failing_often` | Tooltip for a provider that fails often. Optional. |  |  |
-| `notes.not_ranked.not_measured` | Tooltip for a result that was not measured. Optional. |  |  |
 | `notes.what_this_measures` | What the chart's number is, in one or two plain sentences. |  | `"Time from the start of a sandbox create request until the first command returns successfully."` |
 | `notes.how_to_read` | How to read the chart: the statistic shown, its unit and which direction is better. |  | `"Each provider's median is shown in milliseconds. Lower is better."` |
 | `description` | What the benchmark measures and what a reader can decide from the result, in plain words. |  | `"Time from asking for a new sandbox until its first command returns."` |
@@ -45,8 +39,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `capability_source.use` | How the benchmark page uses declarations. |  |  |
 | `status` | `planned` marks a benchmark the page lists as Coming Soon: the document records its definition so far, publishes no number, and may omit the procedure, timing, environment and statistics sections. Absent means active. |  | `"planned"` |
 | `composition` | For an index: the benchmarks it combines and how. An index has no trials of its own; its value is computed from the aggregates of the cited benchmarks. |  |  |
-| `composition.input_selection` | How the exact immutable inputs below are selected. Omitted means the newest version in force on this index's effective date. retrospective_exact permits an older exact version only when it was already effective then and inherits the same sbs.common. This does not change the index's effective date, the input measurements, or compatibility. |  |  |
-| `composition.inputs[]` | The complete exact input vector, cited by canonical id and immutable version. |  |  |
+| `composition.inputs[]` | The complete exact input vector: each input's canonical id and its version in force on this index's effective date. |  |  |
 | `composition.inputs[].id` | Id of the input methodology. |  | `"workload.coding.deepswe"` |
 | `composition.inputs[].version` | Version of the input methodology. |  | `"1.0.0"` |
 | `composition.inputs[].quantity` | The value taken from that benchmark's result, in plain words. |  | `"Typical time per trace."` |
@@ -101,7 +94,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `metrics[].phase` | Optional reference to one source-owned stage or phase name. |  |  |
 | `metrics[].statistic` | Optional source statistic id when this metric uses a different statistic from the document. |  |  |
 | `metrics[].description` | What this metric is, in one sentence. |  | `"Create request start to first command exit code returned."` |
-| `metrics[].formula` | How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`) or `latency(<record step>)`, joined by `+` and `-`, with `median(...)` over the sandboxes or runs of a trial. |  | `"median(latency(first-true)) + start"` |
+| `metrics[].formula` | How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`, or alternatives, as `start(resume|data-back)`: the first the trial recorded) or `latency(<record step>)`, joined by `+` and `-`, folded by `median(...)`, `sum(...)`, `max(...)` or `min(...)` over a step's runs, a trial's sandboxes or a set's traces. |  | `"median(latency(first-true)) + start"` |
 | `environment` | What the sandbox and its surroundings must be. Never names a date or provider; the sandbox's region is a run's, and only the job host's region is stated here. |  |  |
 | `environment.size` | Requested machine size. |  |  |
 | `environment.size.vcpu` | Requested virtual CPUs. | vCPU | `2` |
@@ -122,11 +115,15 @@ One row per described property of the methodology schemas and canonical names ta
 | `ready_check` | Untimed wait that runs right after a create returns, before the trial uses the sandbox. |  |  |
 | `ready_check.command` | Command sent until the sandbox answers. |  | `"true"` |
 | `ready_check.retry_on[]` | Answers treated as not ready and retried; any other failure ends the trial. |  | `["HTTP 502", "HTTP 503", "HTTP 504", "connection refused", "connection reset"]` |
-| `ready_check.interval_ms` | Pause after a not-ready answer returns before the next attempt. | ms | `100` |
-| `ready_check.max_attempts` | Attempts before the trial fails as the provider's. | attempts | `40` |
+| `ready_check.initial_backoff_ms` | Wait after the first not-ready answer, before jitter. The wait after not-ready answer k (counting from 0) is min(max_backoff_ms, initial_backoff_ms × backoff_multiplier^k) times a factor drawn uniformly from 1 − jitter_fraction to 1 + jitter_fraction. | ms | `20` |
+| `ready_check.backoff_multiplier` | Factor by which the wait before jitter grows after each not-ready answer. |  | `1.5` |
+| `ready_check.max_backoff_ms` | Largest wait before jitter. | ms | `200` |
+| `ready_check.jitter_fraction` | How far each wait may move either side of its value before jitter, as a fraction of that value; the factor is drawn uniformly. | fraction (0 to 1) | `0.2` |
+| `ready_check.deadline_seconds` | No attempt starts later than this after the first attempt was sent; a check that reaches it without a ready answer fails the trial as the provider's. | s | `10` |
 | `ready_check.attempt_timeout_seconds` | Timeout of one attempt. | s | `30` |
 | `ready_check.published` | Whether the time spent in the check is part of any published number. |  | `false` |
-| `ready_check.skipped_by_benchmarks[]` | Methodology ids that do not run the check because their first command is the thing measured. |  | `["sandbox.create.sequential_tti"]` |
+| `ready_check.skipped_by_benchmarks[]` | Methodology ids that do not run the check because their first command is the thing measured. |  | `["sequential-tti", "burst-tti"]` |
+| `ready_check.skipped_on_restore_by_benchmarks[]` | Methodology ids whose sandboxes restored from a snapshot do not run the check; the sandbox the snapshot is taken from runs it. |  | `["snapshot-and-restore", "fork"]` |
 | `procedure` | How a trial runs. |  |  |
 | `procedure.sweep` | One declared varying dimension; workload records are generated from these values, never separate methodology definitions. |  |  |
 | `procedure.mode` | How the trial's sandboxes or commands are scheduled: one after another, all at once, or one sandbox with one pass. |  | `"sequential"` |
@@ -240,6 +237,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `failure_policy.provider_errors[]` | What counts as the provider's failure. An uncertain owner counts against the provider. |  | `["A create or transport error.", "A sandbox that never answers."]` |
 | `failure_policy.benchmark_errors[]` | What counts as a failure of the benchmark itself rather than the provider. |  | `["Output the benchmark cannot parse after a command exited 0."]` |
 | `failure_policy.exclusions[]` | What is left out of a result. An excluded trial is kept in the data with its reason. |  | `["A failure shown not to be the provider's."]` |
+| `failure_policy.exclusion_limits` | A limit on a value of a trial's own record above which the trial was not run as specified: the trial is the benchmark's, excluded and replaced by a new trial. Keyed by the value's name, which ends in its unit. Optional. |  | `{"launch_spread_ms": 1000}` |
 | `failure_policy.success` | What makes a trial succeed. |  | `"Every check passes and every resource the trial created is confirmed deleted."` |
 | `source` | The workload or tool the benchmark runs, where it comes from. |  |  |
 | `source.name` | Name of the workload or tool. |  | `"7-Zip"` |
@@ -258,6 +256,9 @@ One row per described property of the methodology schemas and canonical names ta
 | Property | Meaning | Unit | Example |
 | --- | --- | --- | --- |
 | `schema` | Names table schema version. |  | `"boxrouter.bench.names/2"` |
+| `catalog_selection.region_country_policy.exceptions[]` | Providers with no US region, each with the countries it runs in and why. |  |  |
+| `catalog_selection.region_country_policy.exceptions[].label` | Shown beside the provider's results. |  |  |
+| `catalog_selection.region_country_policy.exceptions[].network_note` | The note beside ranking_status_footer.network_marker on the provider's results for tests that include the job host's round trip; web fills {provider}. |  |  |
 | `names[].kind` | Name row kind, including `hero` and `page`. |  | `"hero"` |
 | `names[].shows_cost` | On a section row: no test under it shows a cost anywhere (cost-scope). Absent means its tests may. |  |  |
 | `names[].intro` | One-sentence introduction for a section or sub-section. Optional. |  |  |

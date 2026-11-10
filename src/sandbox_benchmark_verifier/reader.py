@@ -101,7 +101,7 @@ VERSIONED_NOTES = ("independence",)
 # A reference to another document version pins a fact the reader cannot follow to the result.
 _WORKLOAD = re.compile(r"\{(?:param:|hash:[^|{}]*\|)measured\.parameters\.workload\.")
 _VERSIONED = re.compile(
-    r"\{(?:param:(?!measured\.|content\.|reader\.)|(?:count|countword|version|duration|size|imagesize|machine|product):(?!measured\.)"
+    r"\{(?:param:(?!measured\.|content\.|reader\.)|(?:count|countword|version|duration|size|imagesize|machine|product):(?!measured\.|content\.)"
     r"|hash:[^|{}]*\|(?!measured\.)"
     r"|commit:(?:[^|{}]*\|)*(?!measured\.|[0-9a-f]{40}\}|(?:[a-z]+:)?[\w.-]+/[\w.-]+\||[A-Za-z0-9-]+\|))[^{}]*\}"
 )
@@ -253,6 +253,16 @@ def reader_errors(root: Path) -> list[str]:
         for identifier, entry in source.get("methods", {}).items()
         if identifier not in hosts
         if (page_notes := sorted(set(entry.get("notes", {})) & PAGE_NOTES))
+    )
+    # A methodology page draws its subtitle from its test's introduction, or from page_introduction
+    # when its page holds other tests (the web page reads nothing else), so each one has it.
+    methods = source.get("methods", {})
+    errors.extend(
+        f"{READER_PATH}: {identifier}: its methodology page has no subtitle; give it notes.{note}"
+        for identifier, row in tests.items()
+        if row.get("document") and not row.get("page")
+        for note in ["page_introduction" if identifier in hosts else "introduction"]
+        if identifier in methods and note not in methods[identifier].get("notes", {})
     )
     blocks = source.get("common", {}).get("blocks", {})
     errors.extend(

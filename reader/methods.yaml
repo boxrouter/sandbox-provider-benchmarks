@@ -110,7 +110,7 @@ common:
       shared_failures: |-
         Outcome classifications, top-up rounds, and outlier rules follow {name:page.common}; the first failed step ends the trial without in-trial retries.
 
-        A sandbox whose `/workspace` rejects `O_DIRECT` reads or writes or has fewer than {size:measured.parameters.workload.free_bytes} free is recorded as not supported rather than failed.
+        A sandbox whose `/workspace` rejects `O_DIRECT` reads or writes or has fewer than {size:measured.parameters.workload.free_bytes} free is recorded as a missed trial, not a failure.
 
         A trial fails as a provider error if `fio` exits non-zero or runs for less than {duration:measured.parameters.workload.min_interval_seconds} of its {duration:measured.parameters.workload.runtime_seconds} measured window, and as a benchmark error if the `fio` binary digest mismatches or if `data.bin` contains duplicate four-kilobyte blocks or compresses below {param:measured.parameters.workload.min_zlib_ratio}.
 
@@ -131,7 +131,7 @@ methods:
       introduction: Sets the shared timing, trial-success, statistics, cost, and failure rules that apply to every benchmark.
       opening: BoxRouter benchmarks measure the end-to-end speed and billed cost of cloud sandboxes across coding agents, reinforcement learning rollouts, continuous integration pipelines, and low-level machine primitives. Every benchmark runs against ordinary self-serve accounts in each provider's default US region.
       environment: |-
-        Benchmarks request a {machine:measured.environment.size} sandbox unless a workload states otherwise, and record the CPU count and memory the sandbox reports. Benchmarks use the BoxRouter standard image pinned by digest for this measured definition ({hash:sha256|measured.environment.image.reference}); a changed image digest starts a separate results series.
+        Benchmarks request a {machine:measured.environment.size} sandbox unless a workload states otherwise, and record the CPU count and memory the sandbox reports. Benchmarks use the BoxRouter standard image pinned by digest ({hash:sha256|measured.environment.image.reference}); a changed image digest starts a separate results series.
 
         Workloads requiring custom toolchains use task-specific images. All images are prepared in each provider account before runs.
 
@@ -154,13 +154,13 @@ methods:
         Every trial follows a four-step lifecycle.
 
         1. Create a fresh sandbox for the trial, with the machine and image in the test environment unless the test's page names others; the create has a time limit.
-        2. Then run an untimed ready check. Some providers return from a `create` call before the container's internal daemon can accept commands, returning HTTP 502, 503 or 504 or resetting connections on immediate requests. Unless a benchmark directly measures cold-start time to first command ({name:test.sequential-tti} and {name:test.burst-tti}) or restores from a snapshot, the benchmark script runs an untimed readiness check immediately after `create` returns. It sends `true` through BoxRouter with a {duration:measured.ready_check.attempt_timeout_seconds} timeout and no guest clock wrappers; if the call fails with HTTP 502, 503, 504, connection refused, or connection reset, it waits {param:measured.ready_check.interval_ms} ms after the error returns and retries, up to {param:measured.ready_check.max_attempts} attempts. It records every attempt and the time to interactive in private evidence; if all {param:measured.ready_check.max_attempts} attempts fail or any non-transient error occurs, the trial aborts as a provider failure.
+        2. Then run an untimed ready check. Some providers return from a `create` call before the container's internal daemon can accept commands, returning HTTP 502, 503 or 504 or resetting connections on immediate requests. Unless a benchmark directly measures cold-start time to first command ({name:test.sequential-tti} and {name:test.burst-tti}) or restores from a snapshot, the benchmark script runs an untimed readiness check immediately after `create` returns. It sends `true` through BoxRouter with a {duration:measured.ready_check.attempt_timeout_seconds} timeout and no guest clock wrappers. If the call fails with HTTP 502, 503, 504, connection refused, or connection reset, the script waits after the error returns and tries again. The first wait is {param:measured.ready_check.initial_backoff_ms} ms, and each later not-ready answer multiplies it by {param:measured.ready_check.backoff_multiplier}, up to {param:measured.ready_check.max_backoff_ms} ms; each wait is then multiplied by a random factor drawn uniformly from 1 minus {param:measured.ready_check.jitter_fraction} to 1 plus {param:measured.ready_check.jitter_fraction}. No attempt starts later than {duration:measured.ready_check.deadline_seconds} after the first was sent. It records every attempt and the time to interactive in private evidence. A check that reaches that deadline without a ready answer, or any non-transient error, aborts the trial as a provider failure.
         3. Then run the benchmark's timed procedure; the first failed step ends the trial without in-trial retries.
         4. Last, delete every sandbox, snapshot, and image for the trial and confirm it gone, with a time limit per destroy; destroy time is recorded but not charted, and each sandbox carries a label with its batch and a lifetime that the provider enforces to confirm crashed trials aren't left running.
 
         Each step's time limit sits above the slowest normal time seen on any provider, with a margin, so a slow provider is measured rather than cut off and a hung call cannot stall the batch.
 
-        A command that can run for tens of seconds or more (a data load, a fio row, an install, a replay script) is started in the background, and the benchmark script reads its status every ten seconds until it exits, because a call that waits more than about 120 s can be cut by a provider's gateway.
+        A command that can run for tens of seconds or more (a data load, a fio row, an install, a replay script) is started in the background, and the benchmark script reads its status every {duration:content.timing.replay.poll_seconds} until it exits, because a call that waits more than about 120 s can be cut by a provider's gateway.
 
         The command's start and end come from the sandbox's clock, so the polling adds nothing to the measured time.
       failure_policy: |-
@@ -169,13 +169,17 @@ methods:
         Every trial ends in one of four classifications.
 
         - A success passes every step and post-run integrity check, holds the guest clock gate, and has every sandbox, snapshot, and temporary image created by the trial confirmed deleted.
-        - A provider failure is any create, snapshot, restore, destroy, or transport error; a readiness check that exhausts {param:measured.ready_check.max_attempts} attempts; a replay script that terminates early without logging a command mismatch; or a failure with uncertain ownership.
-        - A benchmark script error is a failure of our own benchmark script (such as output it cannot parse after a command exited 0); we fix the script and re-run the trial without charging the failure to the provider.
+        - A provider failure is any create, snapshot, restore, destroy, or transport error; a readiness check that reaches its {duration:measured.ready_check.deadline_seconds} deadline without a ready answer; a replay script that terminates early without logging a command mismatch; or a failure with uncertain ownership.
+        - A benchmark script error is a failure of our own benchmark script (such as output it cannot parse after a command exited 0); we stop that unit on that provider, fix the script and run the unit again in a later run, without charging the failure to the provider.
         - An excluded trial ("does not replay here") is one where a deterministic trace diverges on a provider: a command returns an unexpected exit code, a final git patch hash mismatches, or a step hits its timeout (exit 124) while the sandbox still answers a post-timeout check; the trial is excluded rather than counted against the provider, because a live agent would have reacted to the output and taken another path.
 
-        A top-up run refills every missed, excluded or failed slot, whoever owned the failure, until every provider reaches the scheduled number of successful trials N; each failed trial stays in the data with its owner and cause.
+        A top-up run refills every missed, excluded or failed slot until every provider reaches the scheduled number of successful trials N; each failed trial stays in the data with its owner and cause.
 
-        A full run stops refilling when a round leaves the same shortfall with identical failures, when a failure cannot be replaced (the account's spend limit, an uncertain trial, cleanup that could not be verified, a batch that stopped early), or when the run budget is exhausted. A blocked result is shown as {param:content.ranking_statuses.too_few_runs.label}.
+        A failure of our own benchmark script or of BoxRouter's software stops that unit on that provider instead: the unit is not run again in that run, so the defect is fixed rather than repeated. A missed trial, such as one whose sandbox fails a disk check before the test, is neither a success nor a failure; its slot is refilled.
+
+        A full run stops refilling when two refill rounds in a row add no successful trial, when more re-runs than N would be needed, when its time limit for refills runs out, when a failure cannot be replaced (the account's spend limit, a trial cut short so that its outcome is unknown, cleanup that could not be verified, a batch that stopped early), or when the run budget is exhausted.
+
+        A blocked result is shown as {param:content.ranking_statuses.too_few_runs.label}.
       statistics_rules: Every test reports these statistics for each unit unless its page names an exception. We compute every statistic per provider and per unit over untrimmed successful trials.
       median_rule: The median is the smallest value with at least half of the successful trials at or below it; with {param:measured.statistics.tail.min_successes} successful trials, the median is the tenth fastest trial.
       percentile_rule: |-
@@ -215,7 +219,9 @@ methods:
 
         A provider's benchmark order is shuffled once per run, and each benchmark's trials are interleaved across {param:measured.independence.rounds} rounds from an empty account so samples come from separate moments rather than one contiguous block.
 
-        Placement evidence is versioned; follow the measured method's recorded answer. For Ubuntu standard successors, guest CPU model/count, kernel and working-directory device/filesystem probes are best-effort and may be missing; native host/zone identifiers are not collected. If that answer declares an exception, missing facts leave affected independence checks unassessed.
+        Each trial records, untimed, the sandbox's CPU model and count, kernel, and the device and file system behind its working directory, together with the job host's load over the trial's window.
+
+        The sandbox readings are best effort and may be missing; no host or zone identifier of the provider is collected. Host saturation is not assessed for a pair when any of its trials lacks the job host's facts, and the CPU comparison leaves out trials with no CPU count; the run report lists each check it skipped.
 
         Provider-wide features that every customer receives (base-image caches, host placement and warm pools) stay in the result.
 
@@ -228,11 +234,15 @@ methods:
         - round-start warm-pool steps (at least {param:measured.independence.run_check.checks.2.min_effect_pct}%)
         - lag-one autocorrelation (rank correlation at least {param:measured.independence.run_check.checks.3.min_abs_rho} with {param:measured.independence.run_check.checks.3.min_effect_pct}% effect)
         - concurrent-batch overlap slowdown (at least {param:measured.independence.run_check.checks.4.min_effect_pct}%)
-        - job-host CPU saturation above {param:measured.independence.run_check.checks.5.cpu_share} (at least {param:measured.independence.run_check.checks.5.min_effect_pct}%)
+        - job-host saturation, at least {param:measured.independence.run_check.checks.5.min_effect_pct}% slower: CPU use at or above {param:measured.independence.run_check.checks.5.cpu_share} of the host's limit, any CPU throttling, memory pressure (some avg10) at or above {param:measured.independence.run_check.checks.5.mem_pressure_some_avg10}%, or, where the host has no pressure files, less than {param:measured.independence.run_check.checks.5.mem_available_min_kib} KiB of memory available; when too few trials ran saturated or unsaturated to compare, the pair fails if a share of at least {param:measured.independence.run_check.checks.5.fail_share} of its trials ran saturated
         - bimodal hardware tier clustering (ratio at least {param:measured.independence.run_check.checks.7.fail_ratio} across at least {param:measured.independence.run_check.checks.7.fail_min_minority} trials)
-        - exposed host or CPU model differences
+        - CPU count or model differences between trials, reported as a note and never a failure
 
-        A pair fails only when a check exceeds both its minimum effect size and the corrected significance threshold, and isolated values are excluded as implausible only when they violate a physical invariant or sit beyond {param:measured.independence.run_check.checks.8.robust_z} robust sigmas and {param:measured.independence.run_check.checks.8.min_ratio} times away from the median.
+        A comparison check fails a pair only when its effect passes both its minimum size and the corrected significance threshold; the saturated-share fallback and a better-side isolated value fail without a significance test.
+
+        An isolated value, one beyond {param:measured.independence.run_check.checks.8.robust_z} robust sigmas and at least {param:measured.independence.run_check.checks.8.min_ratio} times away from the median, is excluded as implausible only when it lies on the better side of the median and the trial's own physical-limit or cache check does not explain it.
+
+        Where the test's steps include a `create` call or a step named build, timed or not, a better value is kept as the provider's warm pool unless a recorded fact ties the trial to an earlier one. A slow spike is kept and reported, and the physical-limit and cache checks never exclude a value themselves.
   time-index:
     headline: Composite time
     notes:
@@ -601,7 +611,7 @@ methods:
     headline: Create to first command
     headline_steps: [create, first_command]
     step_notes:
-      first_command: Retrying transient not-ready errors (502, 503, 504, connection refused, or connection reset) every 100 ms up to a {duration:measured.failure_policy.timeout_seconds.first_command_from_create_start} total window from the start of `create`.
+      first_command: Sent once by the benchmark script, as soon as `create` returns, with no ready check before it and no retry. A not-ready answer (HTTP 502, 503 or 504, or a refused or reset connection) ends the trial like any other error.
     notes:
       opening: '{param:reader.common.blocks.create.opening}'
       introduction: 'Times each sandbox from its create request until its first command returns.'
@@ -636,16 +646,23 @@ methods:
         clock: runner
   burst-tti:
     step_notes:
-      ready: "As each individual `create` call returns, its coroutine immediately sends `true` ({duration:measured.failure_policy.timeout_seconds.ready_attempt} per-attempt timeout)."
+      create: "{name:stage.create} in a burst runs from the first `create` request sent to the last `create` call returned."
+      ready: "{param:measured.procedure.stages.1.name} is measured as the time from the last `create` call returned to the last sandbox's first successful `true`. {name:stage.create} and {param:measured.procedure.stages.1.name} add up to the burst time. As each individual `create` call returns, its coroutine immediately sends `true` ({duration:measured.failure_policy.timeout_seconds.ready_attempt} per-attempt timeout)."
     headline_steps: [create, ready]
     clock: [runner]
     notes:
       opening: '{param:reader.common.blocks.create.opening}'
       introduction: 'Times each burst from the first dispatched create request until every sandbox''s first command returns.'
-      metric: '{name:test.burst-tti} is the duration of an N-sandbox wave from the first dispatched `create` request until every sandbox completes both `create` and its first `true` command, computed as max(end_i) - min(start_i) across the N sandboxes.'
+      metric: |-
+        {name:test.burst-tti} is the duration of an N-sandbox wave from the first dispatched `create` request until every sandbox completes both `create` and its first `true` command, computed as max(end_i) - min(start_i) across the N sandboxes. The burst time is the sum of two parts:
+
+        - {name:stage.create}: from the first `create` request sent to the last `create` call returned.
+        - {param:measured.procedure.stages.1.name}: from the last `create` call returned to the last sandbox's first successful `true`.
+
+        Each sandbox's own times are reported beside the burst and are not parts of it. A sandbox's create time is its own `create` call, its ready time runs from its own `create` call returning to its first successful `true` (retries included), and its TTI runs from its own `create` request to that `true`. Each of these per-sandbox times is summarized per burst as the median, the slowest and, when at least {param:measured.statistics.tail.min_successes} sandboxes answered, the p95; across trials the result is the median of the medians, the slowest of the slowests and the median of the p95s.
       setup: |-
         Each trial creates N sandboxes at once from BoxRouter's pinned standard image. A provider's bursts run one at a time, so only one burst's N sandboxes are in flight.
-      trial_steps: '[[steps: build]]Push a unique trial image layer, prepare the image, and initialize N provider creation contexts (untimed); then [[steps: create]]send N asynchronous `create` calls at once ({name:stage.create}); then [[steps: ready]]as each `create` returns, send `true` and retry transient not-ready errors every 100 ms up to 40 times (First command); then [[steps: size_probe]]probe sizes (untimed) [[steps: destroy]]and destroy all N sandboxes together.'
+      trial_steps: '[[steps: build]]Push a unique trial image layer, prepare the image, and initialize N provider creation contexts (untimed); then [[steps: create]]send N asynchronous `create` calls at once ({name:stage.create}); then [[steps: ready]]as each `create` returns, send `true` and retry transient not-ready errors with the waits and deadline of the ready check in {name:page.common} (First command); then [[steps: size_probe]]probe sizes (untimed) [[steps: destroy]]and destroy all N sandboxes together.'
       limitations:
       - The N sandboxes in a burst contend with one another by design and are not comparable to sequential starts; burst sizes above the concurrency limit of BoxRouter's account with a provider are not run and show as {param:content.ranking_statuses.account_limit.label}.
       - '{param:reader.common.blocks.create.limit_layer}'
@@ -653,11 +670,13 @@ methods:
       statistics_rules: |-
         {param:reader.common.blocks.common.statistics_citation}
 
-        Each N-sandbox wave produces a single burst-time observation (up to {param:measured.procedure.trials} observations per burst-size variant). A provider is ranked on a burst size only when all {param:measured.procedure.trials} scheduled trials succeed (at least {param:measured.statistics.ranking.min_successes} successes with zero failed bursts) and the provider reports a cost.
+        Each N-sandbox wave produces a single burst-time observation (up to {param:measured.procedure.trials} observations per burst-size variant). A provider is ranked on a burst size when at least {param:measured.statistics.ranking.min_successes} of its bursts succeed.
       failure_policy: |-
         {param:reader.common.blocks.common.failures_citation}
 
         If a burst size exceeds the concurrency limit of BoxRouter's account with the provider, that variant is marked {param:content.ranking_statuses.account_limit.label} rather than failed. A trial succeeds only when all N sandboxes in the burst complete `create` and `true` within timeout and all N sandboxes are confirmed destroyed; if any single sandbox in the wave fails or times out, the entire burst trial fails.
+
+        A trial whose N create requests were sent over more than {param:measured.failure_policy.exclusion_limits.launch_spread_ms} ms was not launched together; it is excluded as BoxRouter's own failure and replaced by a new trial.
     stages:
       create:
         start: Create requests are sent together
@@ -673,6 +692,7 @@ methods:
     clock: [runner]
     notes:
       opening: '{param:reader.common.blocks.exec.opening}'
+      page_introduction: 'Times calls to a command with almost no runtime, one call alone and {param:measured.procedure.variants.0.parameters.calls} calls in a row.'
       introduction: 'Times {param:measured.procedure.variants.0.parameters.calls} calls in a row to a command with almost no runtime and adds up their times.'
       metric: '{name:test.exec-latency-per-100-calls} is the sum of the {param:measured.procedure.variants.0.parameters.calls} sequential `true` call durations inside a single sandbox trial, measuring the cumulative command-dispatch overhead a chatty external agent pays over a {param:measured.procedure.variants.0.parameters.calls}-step session.'
       setup: '{param:reader.common.blocks.common.sandbox}.'
@@ -710,6 +730,7 @@ methods:
     clock: [runner]
     notes:
       opening: '{param:reader.common.blocks.files.opening}'
+      page_introduction: 'Times the job-host round trip for BoxRouter to list a directory and to read and write a {size:measured.procedure.variants.0.parameters.bytes} incompressible file in a sandbox.'
       introduction: 'Times the job-host round trip for BoxRouter to read a {size:measured.procedure.variants.0.parameters.bytes} incompressible file from the sandbox and return its contents.'
       metric: '{name:test.read-4kib} is the round-trip duration of a single `files.read` call reading the {size:measured.procedure.variants.0.parameters.bytes} incompressible file `/workspace/prim/file-4kib.bin`, pooled across {param:measured.procedure.variants.0.parameters.repetitions} sequential reads per trial and {param:measured.procedure.trials} trials ({product:measured.procedure.trials*measured.procedure.variants.0.parameters.repetitions} reads total).'
       setup: |-
@@ -997,6 +1018,7 @@ methods:
     headline_steps: [7-zip-1-thread]
     notes:
       opening: '{param:reader.common.blocks.cpu.opening}'
+      page_introduction: "Measures integer compute speed with 7-Zip's built-in compression and decompression benchmark, on one thread and on every vCPU."
       introduction: 'Measures single-core integer compute speed with 7-Zip''s built-in compression and decompression benchmark on one thread.'
       metric: '7-Zip is the combined compression and decompression Tot rating of single-core integer compute speed on 7-Zip''s internal LZMA benchmark scale, reported on the Avr summary line of `./7zzs b -mmt{param:measured.parameters.workload.rows.cpu-7zip-1t.threads}`.'
       calculation: '7-Zip runs its built-in LZMA dictionary compression and decompression passes in memory and prints Avr: ratings for compression (CompMIPS), decompression (DecompMIPS), and their combined total (Tot:), which we record directly as the total rating. With `-mmt{param:measured.parameters.workload.rows.cpu-7zip-1t.threads}` it runs on a single thread; with `-mmt{param:measured.environment.size.vcpu}` it spawns {param:measured.environment.size.vcpu} worker threads, sized to the requested vCPU count rather than `nproc`.'
@@ -1064,6 +1086,7 @@ methods:
     headline_steps: [sequential-read]
     notes:
       opening: '{param:reader.common.blocks.disk.opening}'
+      page_introduction: "Measures uncached sequential and random read and write speed of the sandbox's disk with `fio`, using direct I/O (`O_DIRECT`)."
       introduction: 'Measures uncached 1 MiB sequential read throughput from a {size:measured.parameters.workload.file_bytes} file in `/workspace/fio` using direct I/O (`O_DIRECT`) over a {duration:measured.parameters.workload.runtime_seconds} measured window.'
       metric: '{name:test.sequential-read} is the sustained uncached 1 MiB sequential read throughput across the {size:measured.parameters.workload.file_bytes} file `/workspace/fio/data.bin` using direct I/O (`O_DIRECT`), reported by `fio` (`rw={param:measured.parameters.workload.rows.disk-seq-read-1m.rw}`, `bs={param:measured.parameters.workload.rows.disk-seq-read-1m.bs}`) in binary mebibytes per second (2^20 = 1,048,576 bytes/s).'
       calculation: After the {duration:measured.parameters.workload.ramp_seconds} ramp-up finishes, `fio` sums the bytes read or written across the {duration:measured.parameters.workload.runtime_seconds} measured window and reports bytes per second in its JSON output, which we divide by 1,048,576 (2^20) to report `MiB/s` for the sequential tests. For the random tests, `fio` counts completed {size:measured.parameters.workload.rows.disk-rand-read-4k.bs} read or write operations across the same window and reports iops directly.
@@ -1124,6 +1147,7 @@ methods:
         Because creating and removing hard links never transfers file data blocks, its speed is governed by the metadata system-call path inside the sandbox: the guest kernel's filesystem and its locking, any overlay filesystem, any layer that intercepts system calls, and single-core CPU speed.
 
         The Filesystem tab measures that metadata rate in `/workspace/hardlink` using `stress-ng`'s {name:test.hard-links} stressor.
+      page_introduction: "Measures the rate at which `stress-ng` creates and removes hard links in `/workspace/hardlink`."
       introduction: 'Measures the rate of hard links created per second in `/workspace/hardlink` over a 30-second `stress-ng` run, with link removal time included.'
       metric: '{name:test.hard-links} is the rate of hard links created per second in `/workspace/hardlink` over an elapsed denominator of both `link()` creation and `unlink()` removal time, reported by `stress-ng`''s `link` stressor (links-createdremoved-per-sec in `out.yaml`).'
       calculation: In each round, a single `stress-ng` worker creates up to 8,192 hard links to a seed inode in `/workspace/hardlink` and then unlinks all of them; at the end of the 30 s run, `stress-ng` divides the total count of successfully created hard links across all rounds by the total elapsed run time (creation plus removal) to report links-createdremoved-per-sec.
@@ -1143,7 +1167,7 @@ methods:
       failure_policy: |-
         {param:reader.common.blocks.common.failures_citation}
 
-        A sandbox with fewer than {size:measured.parameters.workload.free_bytes} free in `/workspace/hardlink` is recorded as not supported. A trial succeeds only when `stress-ng` exits 0, runs for at least 29 s of its 30 s window, writes a positive links-createdremoved-per-sec value to `out.yaml`, passes the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
+        A sandbox with fewer than {size:measured.parameters.workload.free_bytes} free in `/workspace/hardlink` is recorded as a missed trial, not a failure. A trial succeeds only when `stress-ng` exits 0, runs for at least 29 s of its 30 s window, writes a positive links-createdremoved-per-sec value to `out.yaml`, passes the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
   package-registries:
     step_notes:
       create: "Each trial uploads the pinned lockfiles (`axios-package.json`, `axios-package-lock.json`, or `fastapi-requirements.txt`) to `/tmp`."
@@ -1204,4 +1228,3 @@ methods:
     clock: [sandbox]
     notes:
       introduction: "Measures the rate at which one `stress-ng` worker creates and removes hard links in `/workspace/hardlink` on the stressor's own clock."
-      setup: "{param:measured.notes.how_it_is_measured}"

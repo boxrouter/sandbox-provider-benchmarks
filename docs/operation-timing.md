@@ -13,9 +13,11 @@ methodology differ, the methodology wins.
 - **Clock:** the monotonic clock of the machine that calls the SDK, read around each call
   (`clocks.operation`). A duration is the clock after the call returns minus the clock before it is sent.
   Never use timestamps the provider reports.
-- **Ready check, not timed:** after create returns, run `true` until it succeeds, retrying on HTTP 502,
-  503, 504, connection refused and connection reset, every 100 ms, at most 40 attempts of at most 30 s
-  each (`ready_check`). Time starts only after it passes, except in the create benchmark, which skips it.
+- **Ready check, not timed:** after create returns, run `true` until it succeeds, retrying on the answers
+  in `ready_check.retry_on` with the waits, jitter, deadline and attempt timeout the rest of
+  `ready_check` sets in the common methodology. Time starts only after it passes. The benchmarks
+  in `ready_check.skipped_by_benchmarks` skip it, and so do the restored sandboxes of those in
+  `ready_check.skipped_on_restore_by_benchmarks`.
 - **Concurrency:** the methodology's `procedure.concurrency.trials_in_parallel` trials at once and one
   sandbox at a time inside a trial.
 - **Failures:** a call that errors or times out is a record with `success: false` and `value: null`.

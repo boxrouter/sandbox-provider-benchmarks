@@ -4,12 +4,18 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
 
 from sandbox_benchmark_verifier.cli import validate
-from sandbox_benchmark_verifier.parameters import formula_errors, tree_digest, workload_version
+from sandbox_benchmark_verifier.parameters import (
+    document_errors,
+    formula_errors,
+    tree_digest,
+    workload_version,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -102,6 +108,10 @@ def test_measurement_variant_must_be_a_parameter_workload(tmp_path: Path) -> Non
         "latency(a)+end",
         "end(first-true) - start(create)",
         "median(total(true)) + median(runtime(true))",
+        "sum(runtime(cmd))",
+        "max(end(ready)) - min(start(create))",
+        "sum(median(sum(runtime(cmd))))",
+        "end(data-back) - start(resume|data-back)",
     ],
 )
 def test_formulas_in_the_grammar_pass(formula: str) -> None:
@@ -109,7 +119,19 @@ def test_formulas_in_the_grammar_pass(formula: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "formula", ["", "start +", "median(start", "bogus", "latency()", "a b", "end()", "end(a"]
+    "formula",
+    [
+        "",
+        "start +",
+        "median(start",
+        "bogus",
+        "latency()",
+        "a b",
+        "end()",
+        "end(a",
+        "sum",
+        "max(end",
+    ],
 )
 def test_formulas_outside_the_grammar_fail(formula: str) -> None:
     assert list(formula_errors(formula, frozenset()))
@@ -122,6 +144,8 @@ def test_formula_step_names_are_checked_when_steps_are_declared() -> None:
 def test_start_and_end_steps_are_checked_when_steps_are_declared() -> None:
     assert list(formula_errors("end(x) - start(y)", frozenset({"x", "y"}))) == []
     assert list(formula_errors("end(x) - start(z)", frozenset({"x", "y"})))
+    assert list(formula_errors("end(x) - start(y|x)", frozenset({"x", "y"}))) == []
+    assert list(formula_errors("end(x) - start(y|z)", frozenset({"x", "y"})))
 
 
 def test_text_revision_reuses_only_the_same_scientific_parameter_tree(tmp_path: Path) -> None:
@@ -134,3 +158,19 @@ def test_text_revision_reuses_only_the_same_scientific_parameter_tree(tmp_path: 
     revision["metrics"] = [{"name": "different", "unit": "ms"}]
     path.write_text(yaml.safe_dump_all([original, revision]))
     assert any("parameters.path must be" in error for error in validate(tmp_path))
+
+
+def test_a_time_metric_of_a_procedure_needs_a_formula(tmp_path: Path) -> None:
+    """Every millisecond metric says how it comes from recorded steps, so its clock is known."""
+    document: dict[str, Any] = {
+        "id": "demo",
+        "version": "1.0.0",
+        "procedure": {"steps": [{"id": "create", "record_steps": ["create"]}]},
+        "metrics": [{"name": "create_time", "unit": "ms"}, {"name": "rate", "unit": "MIPS"}],
+    }
+    path = tmp_path / "demo.yaml"
+    assert list(document_errors(tmp_path, path, document, {})) == [
+        f"{path}: metric create_time: a time metric needs a formula"
+    ]
+    document["metrics"][0]["formula"] = "total(create)"
+    assert list(document_errors(tmp_path, path, document, {})) == []

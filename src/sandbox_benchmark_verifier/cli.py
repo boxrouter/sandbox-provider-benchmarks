@@ -27,7 +27,6 @@ from sandbox_benchmark_verifier.compare import (
     render,
     summary_source,
 )
-from sandbox_benchmark_verifier.composites import RETROSPECTIVE_EXACT, composition_input_errors
 from sandbox_benchmark_verifier.content import (
     content_criteria,
     reader_literal_errors,
@@ -40,7 +39,6 @@ from sandbox_benchmark_verifier.machine_panels import panel_errors
 from sandbox_benchmark_verifier.names import name_errors
 from sandbox_benchmark_verifier.new_benchmark import new_benchmark_errors
 from sandbox_benchmark_verifier.parameters import document_errors, variant_errors
-from sandbox_benchmark_verifier.retained import retained_errors
 from sandbox_benchmark_verifier.safety import check_record
 from sandbox_benchmark_verifier.scaffold import BenchmarkDraft, add, add_from_shape
 from sandbox_benchmark_verifier.stats import bootstrap_ci, nearest_rank, numeric
@@ -223,19 +221,6 @@ def parameter_errors(
     return errors
 
 
-def _composition_errors(method_documents: Sequence[dict[str, Any]]) -> list[str]:
-    """Validate explicit retrospective selections across methodology documents."""
-    errors: list[str] = []
-    for document in method_documents:
-        composition = document.get("composition")
-        if (
-            isinstance(composition, Mapping)
-            and composition.get("input_selection") == RETROSPECTIVE_EXACT
-        ):
-            errors.extend(composition_input_errors(document, method_documents))
-    return errors
-
-
 def _method_errors(root: Path, documents: Sequence[tuple[Path, Any]]) -> list[str]:
     """The checks that read every methodology document with an id."""
     method_documents = [
@@ -246,10 +231,32 @@ def _method_errors(root: Path, documents: Sequence[tuple[Path, Any]]) -> list[st
         and "id" in document
     ]
     return [
-        *_composition_errors(method_documents),
         *parameter_errors(root, documents, method_documents),
         *panel_errors(root, method_documents),
     ]
+
+
+READY_CHECK_SKIP_LISTS = ("skipped_by_benchmarks", "skipped_on_restore_by_benchmarks")
+
+
+def ready_check_skip_errors(
+    root: Path, documents: Sequence[tuple[Path, Any]], methods: Mapping[str, set[str]]
+) -> list[str]:
+    """Every id a ready check names as skipping it is a methodology document's id."""
+    errors: list[str] = []
+    for path, document in documents:
+        if not path.is_relative_to(root / "methodology") or not isinstance(document, Mapping):
+            continue
+        ready_check = document.get("ready_check")
+        if not isinstance(ready_check, Mapping):
+            continue
+        for field in READY_CHECK_SKIP_LISTS:
+            errors.extend(
+                f"{path}: ready_check.{field} names {identifier}, which is no methodology id"
+                for identifier in ready_check.get(field, [])
+                if identifier not in methods
+            )
+    return errors
 
 
 def validate(root: Path = ROOT) -> list[str]:
@@ -259,6 +266,7 @@ def validate(root: Path = ROOT) -> list[str]:
     errors.extend(read_errors)
     methods, method_errors = methodology_index(root, documents)
     errors.extend(method_errors)
+    errors.extend(ready_check_skip_errors(root, documents, methods))
     identity_allowlists = run_identity_allowlists(root, documents)
     for path, document in documents:
         errors.extend(
@@ -289,7 +297,6 @@ def validate(root: Path = ROOT) -> list[str]:
     errors.extend(_method_errors(root, documents))
     errors.extend(independence_errors(root, documents))
     errors.extend(name_errors(root))
-    errors.extend(retained_errors(root))
     errors.extend(new_benchmark_errors(root))
     errors.extend(image_fact_errors(root))
     errors.extend(timing_errors(root))

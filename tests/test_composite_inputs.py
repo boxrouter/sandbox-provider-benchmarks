@@ -29,16 +29,16 @@ COMPOSITES = (
 
 @pytest.mark.parametrize("identifier", COMPOSITES)
 def test_the_newest_composite_cites_the_inputs_in_force_under_their_common(
-    identifier: str, methodology_root: Path
+    identifier: str,
 ) -> None:
     """bench-planner, 2026-11-05: a composite combines its inputs' results, so it stands on the
     common they were measured under. argon-land, 2026-11-05: it pins each input's newest version
     not after its own effective date, as a test page binds its members; an input released later,
     often for text only, does not force a new composite version. Both are the validator's rules
-    (``composition_input_errors``), which ``validate`` runs only for retrospective composites."""
-    composite = newest(_methodology_documents(methodology_root))[identifier]
+    (``composition_input_errors``)."""
+    composite = newest(_methodology_documents(ROOT))[identifier]
     assert composite["composition"]["inputs"]
-    documents = list(_methodology_documents(methodology_root))
+    documents = list(_methodology_documents(ROOT))
     assert composition_input_errors(composite, documents) == [], identifier
 
 
@@ -80,12 +80,9 @@ def _index(
     inputs: list[dict[str, Any]],
     *,
     effective: str = "2026-01-01",
-    mode: str | None = None,
     common_version: str = "1.0.10",
 ) -> dict[str, Any]:
     composition: dict[str, Any] = {"inputs": inputs}
-    if mode is not None:
-        composition["input_selection"] = mode
     return {
         "id": "synthetic.index",
         "version": "1.0.0",
@@ -106,18 +103,6 @@ def test_omitted_selection_requires_the_latest_input_as_of_the_index_date() -> N
     assert composition_input_errors(index, documents) == [
         "input is not latest as of index effective date: synthetic.leaf@1.0.0"
     ]
-
-
-def test_retrospective_selection_accepts_an_exact_older_input_without_mutating_the_vector() -> None:
-    documents = [
-        _input("synthetic.leaf", "1.0.0", "2024-01-01"),
-        _input("synthetic.leaf", "1.1.0", "2025-01-01"),
-    ]
-    inputs = [{"id": "synthetic.leaf", "version": "1.0.0", "quantity": "Value"}]
-    index = _index(deepcopy(inputs), mode="retrospective_exact")
-
-    assert composition_input_errors(index, documents) == []
-    assert index["composition"]["inputs"] == inputs
 
 
 @pytest.mark.parametrize(
@@ -196,12 +181,12 @@ def test_two_inputs_must_inherit_the_same_exact_common_as_the_index() -> None:
             {"id": "synthetic.first", "version": "1.0.0", "quantity": "Value"},
             {"id": "synthetic.second", "version": "1.0.0", "quantity": "Value"},
         ],
-        mode="retrospective_exact",
         common_version="1.0.11",
     )
 
     assert composition_input_errors(index, documents) == [
-        "input common mismatch: synthetic.first@1.0.0"
+        "input common mismatch: synthetic.first@1.0.0",
+        "no input version is effective by index date: synthetic.first",
     ]
 
 
@@ -211,46 +196,36 @@ def test_two_inputs_must_inherit_the_same_exact_common_as_the_index() -> None:
         (
             _index(
                 [{"id": "synthetic.leaf", "version": "1.0.0", "quantity": "Value"}],
-                mode="retrospective_exact",
             ),
             [_input("synthetic.leaf", "1.0.0", "2027-01-01")],
-            "input is effective after index effective date: synthetic.leaf@1.0.0",
+            [
+                "input is effective after index effective date: synthetic.leaf@1.0.0",
+                "no input version is effective by index date: synthetic.leaf",
+            ],
         ),
         (
             _index(
                 [{"id": "synthetic.leaf", "version": "9.9.9", "quantity": "Value"}],
-                mode="retrospective_exact",
             ),
             [_input("synthetic.leaf", "1.0.0", "2024-01-01")],
-            "unknown exact input: synthetic.leaf@9.9.9",
+            ["unknown exact input: synthetic.leaf@9.9.9"],
         ),
         (
-            _index([{"id": "synthetic.leaf", "quantity": "Value"}], mode="retrospective_exact"),
+            _index([{"id": "synthetic.leaf", "quantity": "Value"}]),
             [_input("synthetic.leaf", "1.0.0", "2024-01-01")],
-            "input synthetic.leaf has no version",
-        ),
-        (
-            _index(
-                [{"id": "synthetic.leaf", "version": "1.0.0", "quantity": "Value"}],
-                mode="unknown",
-            ),
-            [_input("synthetic.leaf", "1.0.0", "2024-01-01")],
-            "unknown input selection",
+            ["input synthetic.leaf has no version"],
         ),
     ],
 )
 def test_composition_input_errors_refuses_invalid_selections(
-    index: dict[str, Any], documents: list[dict[str, Any]], expected: str
+    index: dict[str, Any], documents: list[dict[str, Any]], expected: list[str]
 ) -> None:
-    assert composition_input_errors(index, documents) == [expected]
+    assert composition_input_errors(index, documents) == expected
 
 
 def _cli_documents(
     *,
-    mode: str | None = None,
     missing_version: bool = False,
-    mixed_common: bool = False,
-    future_input: bool = False,
     stale_default: bool = False,
     own_procedure: bool = False,
 ) -> list[dict[str, Any]]:
@@ -274,14 +249,6 @@ def _cli_documents(
     ]
     if missing_version:
         index["composition"]["inputs"][0].pop("version")
-    if mode is None:
-        index["composition"].pop("input_selection", None)
-    else:
-        index["composition"]["input_selection"] = mode
-    if mixed_common:
-        second["inherits"]["version"] = "1.0.11"
-    if future_input:
-        first["effective"] = "2027-01-01"
     if own_procedure:
         index["procedure"] = deepcopy(source_input["procedure"])
     documents = [first, second, index]
@@ -292,7 +259,7 @@ def _cli_documents(
     return documents
 
 
-def _cli_non_index_documents(*, mode: str | None = None) -> list[dict[str, Any]]:
+def _cli_non_index_documents() -> list[dict[str, Any]]:
     latest = newest(_methodology_documents(ROOT))
     source_id = latest["time-index"]["composition"]["inputs"][0]["id"]
     source = deepcopy(latest[source_id])
@@ -305,8 +272,6 @@ def _cli_non_index_documents(*, mode: str | None = None) -> list[dict[str, Any]]
         "weighting": "Equal weight per input.",
         "inclusion": "Only providers with a value in every input.",
     }
-    if mode is not None:
-        composition["input_selection"] = mode
     owner["composition"] = composition
     return [source, owner]
 
@@ -347,22 +312,13 @@ def _run_validation_cli(
     ("documents", "expected_exit", "expected_output"),
     [
         (_cli_documents(), 0, "validate: ok"),
-        (_cli_documents(mode="retrospective_exact", stale_default=True), 0, "validate: ok"),
-        (
-            _cli_documents(mode="retrospective_exact", missing_version=True),
-            1,
-            "schema validation failed",
-        ),
-        (_cli_documents(mode="retrospective_exact", mixed_common=True), 1, "input common mismatch"),
-        (_cli_documents(mode="unknown"), 1, "schema validation failed"),
-        (_cli_documents(mode="retrospective_exact", future_input=True), 1, "effective after"),
+        (_cli_documents(missing_version=True), 1, "schema validation failed"),
         (_cli_documents(stale_default=True), 0, "validate: ok"),
         (_cli_documents(own_procedure=True), 1, "schema validation failed"),
         (_cli_non_index_documents(), 0, "validate: ok"),
-        (_cli_non_index_documents(mode="retrospective_exact"), 1, "schema validation failed"),
     ],
 )
-def test_validation_cli_checks_schema_and_composite_input_selection(
+def test_validation_cli_checks_the_composite_schema(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     tmp_path: Path,
@@ -376,73 +332,58 @@ def test_validation_cli_checks_schema_and_composite_input_selection(
     assert expected_output in output
 
 
-def test_exact_retrospective_selection_does_not_shadow_ordinary_or_validate_unused_graph() -> None:
+def test_exact_output_selection_reads_only_the_requested_graph() -> None:
     common = {"id": "sbs.common", "version": "1.0.10", "effective": "2024-01-01"}
-    old = _input("example", "1.0.0", "2024-01-01")
-    new = _input("example", "1.1.0", "2025-01-01")
-    # The existing fixture helpers describe schema-valid relationship fields.
+    leaf = _input("example", "1.1.0", "2025-01-01")
     index = {
         "id": "example-index",
         "version": "1.0.0",
         "effective": "2025-02-01",
         "category": "index",
-        "inherits": old["inherits"],
+        "inherits": leaf["inherits"],
         "composition": {"inputs": [{"id": "example", "version": "1.1.0"}]},
-    }
-    retro = deepcopy(index)
-    retro.update(version="2.0.0", effective="2026-01-01")
-    retro["composition"] = {
-        "input_selection": "retrospective_exact",
-        "inputs": [{"id": "example", "version": "1.0.0"}],
     }
     unrelated = {
         **index,
         "id": "unused",
         "composition": {"inputs": [{"id": "missing", "version": "1.0.0"}]},
     }
-    docs = [common, old, new, index, retro, unrelated]
-    assert ordinary_documents(docs, common=old["inherits"])["example-index"] is index
-    exact = select_composite_outputs(
-        docs, common=old["inherits"], outputs=[{"id": "example-index", "version": "2.0.0"}]
+    docs = [common, leaf, index, unrelated]
+    assert ordinary_documents(docs, common=leaf["inherits"])["example-index"] is index
+    selected = select_composite_outputs(
+        docs, common=leaf["inherits"], outputs=[{"id": "example-index", "version": "1.0.0"}]
     )
-    assert exact["example"] is old
-    assert "unused" not in exact
-    ordinary = select_composite_outputs(
-        docs, common=old["inherits"], outputs=[{"id": "example-index", "version": "1.0.0"}]
-    )
-    assert ordinary["example"] is new
+    assert selected["example"] is leaf
+    assert "unused" not in selected
     with pytest.raises(ValueError, match="common mismatch"):
         select_composite_outputs(
             [*docs, {"id": "sbs.common", "version": "1.0.13"}],
             common={"id": "sbs.common", "version": "1.0.13"},
-            outputs=[{"id": "example-index", "version": "2.0.0"}],
+            outputs=[{"id": "example-index", "version": "1.0.0"}],
         )
     with pytest.raises(ValueError, match="exact reference"):
-        select_composite_outputs(docs, common=old["inherits"], outputs=[{"id": "example-index"}])
+        select_composite_outputs(docs, common=leaf["inherits"], outputs=[{"id": "example-index"}])
     with pytest.raises(ValueError, match="owner scope"):
         select_composite_outputs(
             docs,
-            common=old["inherits"],
-            outputs=[{"id": "example-index", "version": "2.0.0", "scope": "invented"}],
+            common=leaf["inherits"],
+            outputs=[{"id": "example-index", "version": "1.0.0", "scope": "invented"}],
         )
 
 
-@pytest.mark.parametrize("case", ["mixed", "future", "mode", "missing-version", "duplicate"])
+@pytest.mark.parametrize("case", ["mixed", "future", "missing-version", "duplicate"])
 def test_exact_output_entrypoint_refuses_invalid_two_input_closure(case: str) -> None:
     common = {"id": "sbs.common", "version": "1.0.10"}
     a = _input("a", "1.0.0", "2024-01-01")
     b = _input("b", "1.0.0", "2024-01-01")
     index = _index(
         [{"id": "a", "version": "1.0.0"}, {"id": "b", "version": "1.0.0"}],
-        mode="retrospective_exact",
     )
     docs = [common, a, b, index]
     if case == "mixed":
         b["inherits"]["version"] = "1.0.13"
     elif case == "future":
         b["effective"] = "2027-01-01"
-    elif case == "mode":
-        index["composition"]["input_selection"] = "unknown"
     elif case == "missing-version":
         del index["composition"]["inputs"][1]["version"]
     else:
@@ -461,7 +402,7 @@ def test_exact_graph_refuses_leaf_policy_mixing_inside_no_region_common() -> Non
     }
     leaf = _input("a", "1.0.0", "2024-01-01")
     leaf["environment"] = {"region_policy": "Existing US leaf override."}
-    index = _index([{"id": "a", "version": "1.0.0"}], mode="retrospective_exact")
+    index = _index([{"id": "a", "version": "1.0.0"}])
     assert composition_input_errors(index, [common, leaf, index]) == [
         "leaf region policy conflicts with bound common selector"
     ]

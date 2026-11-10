@@ -196,9 +196,19 @@
     "table": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["unit_header"],
+      "required": ["unit_header", "columns"],
       "properties": {
-        "unit_header": { "type": "string", "pattern": "\\{name\\}.*\\{unit\\}" }
+        "unit_header": { "type": "string", "pattern": "\\{name\\}.*\\{unit\\}" },
+        "columns": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["test", "start", "source"],
+          "properties": {
+            "test": { "type": "string", "minLength": 1 },
+            "start": { "type": "string", "minLength": 1 },
+            "source": { "type": "string", "minLength": 1 }
+          }
+        }
       }
     },
     "subtitle": {

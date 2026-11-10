@@ -61,11 +61,18 @@ def test_parameters_tree_is_part_of_the_hash(repo: Path) -> None:
 
 
 @pytest.mark.unit
-def test_update_only_appends(repo: Path) -> None:
+def test_update_rewrites_the_lock_to_the_current_documents(repo: Path) -> None:
     assert lock.update(repo)
     first = (repo / lock.LOCK_PATH).read_text()
     assert lock.update(repo) == []
     assert (repo / lock.LOCK_PATH).read_text() == first
+    target = repo / "methodology" / "03-sandbox-operations" / "exec.yaml"
+    target.write_text(target.read_text() + "\nextra_field: 1\n")
+    assert lock.update(repo)
+    assert lock.check(repo, require_complete=True) == []
+    target.unlink()
+    assert lock.update(repo)
+    assert lock.check(repo, require_complete=True) == []
 
 
 @pytest.mark.unit

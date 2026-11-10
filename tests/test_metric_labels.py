@@ -19,7 +19,6 @@ from sandbox_benchmark_verifier.metric_labels import (
     label_for_chart,
 )
 from sandbox_benchmark_verifier.names import load_tables
-from sandbox_benchmark_verifier.retained import retained_versions
 from sandbox_benchmark_verifier.versions import version_key
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -415,11 +414,7 @@ def test_every_version_resolves_the_labels_of_its_own_entry(
     monkeypatch.setattr(metric_labels, "group_metrics", capture)
     catalog = compile_metric_labels(deepcopy(bundle), load_tables(ROOT).aliases)
     assert expand_metric_labels(catalog) == entries
-    kept = {f"{identifier}@{version}" for identifier, version in retained_versions(ROOT)}
-    assert all(
-        len([version for version in versions if f"{identifier}@{version}" not in kept]) == 1
-        for identifier, versions in bundle["methodologies"].items()
-    )
+    assert all(len(versions) == 1 for versions in bundle["methodologies"].values())
     cases = [
         (identity, form, {"target": target, **({"statistic": statistic} if statistic else {})})
         for identity, entry in entries.items()

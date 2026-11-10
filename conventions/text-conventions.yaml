@@ -318,7 +318,7 @@ slots:
     required: false
     casing: title
     order: 99
-    generated: publication+notes.not_ranked
+    generated: publication+ranking_statuses
   empty-state:
     purpose: State which required evidence is missing and how a result qualifies.
     form: sentence
@@ -591,6 +591,11 @@ axis:
 # A table column whose values share a unit names it once in its header, and its cells hold the number only (web rule units-in-header;
 table:
   unit_header: "{name} ({unit})"
+  # A table's column headings that name what its rows are: a drill-down row named after its test, a start's row, a price's source link.
+  columns:
+    test: Test
+    start: Start
+    source: Source
 subtitle:
   template: '{description} {direction}'
   separator: ' '
@@ -977,7 +982,7 @@ methodology_style:
     - ms
     direction_pattern: '\b(?:lower|higher)\s+is\s+better\b'
   - id: methodology-style.metric-paragraph
-    text: A Metrics paragraph is one paragraph per metric, kept in the test's reader field metric. It starts with the metric's name and "is the", never with a verb, in one sentence shape for every test; it replaces both the Introduction and the old metrics note in the Metrics section, since the Introduction is already the subtitle. A test holds no metrics note beside it.
+    text: A Metrics paragraph is one paragraph per metric, kept in the test's reader field metric. It starts with the metric's name and "is the", never with a verb, in one sentence shape for every test. A metric that is the sum of timed parts follows its paragraph with a "- " list of those parts, one line each, and may then add one paragraph on the values reported beside it (Andre, 2026-11-10, for Burst TTI's whole time, Create and First command); it replaces both the Introduction and the old metrics note in the Metrics section, since the Introduction is already the subtitle. A test holds no metrics note beside it.
     check: metric-paragraph
   - id: methodology-style.status-labels
     text: A ranking status label exists once, at its owner content.ranking_statuses, in Title Case ("Not Ranked", "Provider Failures"), and every field label, enum label, heading, footer, drill-down row, rank cell and reader sentence reads it there through a param placeholder. Reader text, the page contracts and these conventions never type one, in any casing or with its colon, nor a retired one. The label rule (founder, 2026-11-08) covers every short label, not only a status; each catalog in naming.label_catalogs is Title Case, and a sentence-case label fails the names check.
@@ -2054,7 +2059,7 @@ presentation:
       - presentation.methodology-page
     target: scope
   - id: page-host-wording
-    text: A methodology page that holds several tests draws its host test's reader notes page_headline as At a Glance's Short Name and page_introduction as its subtitle, when the host has them; with no page_introduction it has no subtitle. The host's headline and introduction stay its chart panel's.
+    text: A methodology page that holds several tests draws its host test's reader notes page_headline as At a Glance's Short Name and page_introduction as its subtitle. Every host has a page_introduction, and every other methodology page draws its test's introduction as its subtitle, so no page has none (the reader check fails a page without its subtitle). The host's headline and introduction stay its chart panel's.
     severity: error
     predicate:
       kind: schema
@@ -3354,6 +3359,23 @@ presentation:
       slots:
       - presentation.page
       - presentation.provider-page
+    target: record
+    severity: error
+  - id: no-count-facts
+    text: No drill-down fact, table column, hover or filter shows a count as n of m, such as trials that
+      succeeded or failed, units reproduced or providers shown; a fact true in only some trials says so in
+      words.
+    predicate:
+      kind: forbidden_pattern
+      value:
+      - \b\d[\d,]* of \d[\d,]*\b
+      evidence_required: true
+      checked_by: web
+    applies_to:
+      slots:
+      - presentation.fact-list
+      - presentation.panel
+      - presentation.page
     target: record
     severity: error
 panels:

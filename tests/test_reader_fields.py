@@ -115,59 +115,6 @@ def test_apinned_workload_exposes_the_whole_parameter_file(tmp_path: Path) -> No
     assert pinned["options"] == {"link": "1"}
 
 
-def _versions(tmp_path: Path, data_by_version: dict[str, dict[str, Any]]) -> dict[Any, Any]:
-    """Documents `demo` at each version, each with a parameter file holding the given data."""
-    documents = {}
-    for version, data in data_by_version.items():
-        directory = tmp_path / "parameters" / "demo" / version
-        directory.mkdir(parents=True)
-        workload = [{"data": data, "id": "w", "label": "L", "version": "x"}]
-        (directory / "workloads.json").write_text(json.dumps(workload), encoding="utf-8")
-        documents[("demo", version)] = {
-            "id": "demo",
-            "version": version,
-            "parameters": {"path": f"parameters/demo/{version}/"},
-        }
-    return documents
-
-
-def test_a_parameter_an_older_version_lacks_comes_from_the_oldest_later_version_with_it(
-    tmp_path: Path,
-) -> None:
-    documents = _versions(
-        tmp_path,
-        {
-            "1.0.0": {"free_bytes": 100, "job_file_sha256": "a"},
-            "1.0.1": {"free_bytes": 100, "job_file_sha256": "a"},
-            "1.0.2": {"free_bytes": 100, "job_file_sha256": "b", "file_bytes": 7},
-            "1.0.3": {"free_bytes": 100, "job_file_sha256": "b", "file_bytes": 7, "extra": 1},
-        },
-    )
-    old = pinned_workload(tmp_path, documents[("demo", "1.0.0")], documents)
-    assert (old["file_bytes"], old["job_file_sha256"]) == (7, "a")
-    assert "extra" in pinned_workload(tmp_path, documents[("demo", "1.0.1")], documents)
-    assert pinned_workload(tmp_path, documents[("demo", "1.0.3")], documents)["extra"] == 1
-
-
-def test_an_older_version_whose_own_parameter_differs_from_the_later_one_is_an_error(
-    tmp_path: Path,
-) -> None:
-    documents = _versions(
-        tmp_path,
-        {"1.0.0": {"free_bytes": 100}, "1.0.1": {"free_bytes": 200, "file_bytes": 7}},
-    )
-    with pytest.raises(ValueError, match=r"demo@1\.0\.0 and demo@1\.0\.1 differ"):
-        pinned_workload(tmp_path, documents[("demo", "1.0.0")], documents)
-
-
-def test_a_later_version_that_differs_in_anything_but_added_keys_supplies_nothing(
-    tmp_path: Path,
-) -> None:
-    documents = _versions(tmp_path, {"1.0.0": {"free_bytes": 100}, "1.0.1": {"file_bytes": 7}})
-    with pytest.raises(ValueError, match="differ in more than added parameters"):
-        pinned_workload(tmp_path, documents[("demo", "1.0.0")], documents)
-
-
 def test_the_style_rules_read_the_pinned_workload_of_a_document(
     tmp_path: Path, declare_common: Callable[[Path], dict[str, str]]
 ) -> None:

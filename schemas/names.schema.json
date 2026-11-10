@@ -28,6 +28,21 @@
             "countries": {
               "type": "array", "minItems": 1, "uniqueItems": true,
               "items": {"type": "string", "pattern": "^[A-Z]{2}$"}
+            },
+            "exceptions": {
+              "description": "Providers with no US region, each with the countries it runs in and why.",
+              "type": "array", "minItems": 1,
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["provider", "countries", "reason", "label", "network_note"],
+                "properties": {
+                  "provider": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+                  "countries": {"$ref": "#/properties/catalog_selection/properties/region_country_policy/properties/countries"},
+                  "reason": {"type": "string", "minLength": 1},
+                  "label": {"type": "string", "minLength": 1, "description": "Shown beside the provider's results."},
+                  "network_note": {"type": "string", "minLength": 1, "pattern": "\\{provider\\}", "description": "The note beside ranking_status_footer.network_marker on the provider's results for tests that include the job host's round trip; web fills {provider}."}
+                }
+              }
             }
           }
         }

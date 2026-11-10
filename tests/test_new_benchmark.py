@@ -13,7 +13,6 @@ import pytest
 import yaml
 from jsonschema import Draft202012Validator
 
-from sandbox_benchmark_verifier.catalog import load_methodology
 from sandbox_benchmark_verifier.new_benchmark import (
     OPERATIONS,
     PRE_TEMPLATE_IDS,
@@ -125,7 +124,7 @@ def _tree(tmp_path: Path, document: dict[str, Any], exempt: list[str]) -> Path:
     (tmp_path / "methodology/fixture.yaml").write_text(yaml.safe_dump(document))
     (tmp_path / "contracts").mkdir()
     shutil.copy(ROOT / OPERATIONS, tmp_path / OPERATIONS)
-    (tmp_path / PRE_TEMPLATE_IDS).write_text(json.dumps({"date": "2026-11-09", "ids": exempt}))
+    (tmp_path / PRE_TEMPLATE_IDS).write_text(json.dumps({"ids": exempt}))
     return tmp_path
 
 
@@ -155,14 +154,14 @@ def test_a_listed_id_no_longer_in_the_catalog_fails(tmp_path: Path) -> None:
     ]
 
 
+# Never add an id; when ids are removed, lower this number.
+PRE_TEMPLATE_COUNT = 40
+
+
 def test_the_pre_template_list_cannot_grow() -> None:
-    listed = pre_template_ids(ROOT)
-    earliest: dict[str, str] = {}
-    for item in load_methodology(ROOT):
-        identifier, effective = str(item.document["id"]), str(item.document["effective"])
-        earliest[identifier] = min(effective, earliest.get(identifier, effective))
-    assert listed["ids"] == sorted(listed["ids"])
-    assert [i for i in listed["ids"] if earliest[i] > listed["date"]] == []
+    listed = pre_template_ids(ROOT)["ids"]
+    assert listed == sorted(listed)
+    assert len(listed) <= PRE_TEMPLATE_COUNT
 
 
 def test_operations_give_a_timeout_action_timer_and_gate() -> None:

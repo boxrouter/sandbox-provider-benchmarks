@@ -30,7 +30,6 @@ from sandbox_benchmark_verifier.catalog import (
     region_request_errors,
 )
 from sandbox_benchmark_verifier.cli import close, reproduce
-from sandbox_benchmark_verifier.retained import retained_versions
 from sandbox_benchmark_verifier.yaml_load import load_yaml
 
 pytestmark = pytest.mark.unit
@@ -185,17 +184,12 @@ def test_bound_context_precedes_version_order_and_preserves_exact_archive() -> N
         "inherits": leaf["inherits"],
         "composition": {},
     }
-    retro: dict[str, Any] = {
-        **index,
-        "version": "2.0.0",
-        "composition": {"input_selection": "retrospective_exact"},
-    }
-    docs = [us, other, leaf, higher, index, retro]
+    docs = [us, other, leaf, higher, index]
     selected = ordinary_documents(docs, common=leaf["inherits"])
     assert selected["example"] is leaf
     assert selected["example-index"] is index
     assert ordinary_documents(docs, common=higher["inherits"])["example"] is higher
-    assert len(docs) == 6  # The exact archive is not filtered or relabelled.
+    assert len(docs) == 5  # The exact archive is not filtered or relabelled.
     with pytest.raises(ValueError, match="missing or ambiguous"):
         ordinary_documents(docs, common={"id": "sbs.common", "version": "9.0.0"})
 
@@ -284,12 +278,7 @@ def test_no_region_context_refuses_legacy_leaf_override_and_merged_null_region()
 
 @pytest.fixture
 def country_documents() -> list[dict[str, Any]]:
-    kept = retained_versions(ROOT)  # old versions that served data cites predate the country rule
-    return [
-        row.document
-        for row in load_methodology(ROOT)
-        if (str(row.document["id"]), str(row.document["version"])) not in kept
-    ]
+    return [row.document for row in load_methodology(ROOT)]
 
 
 def country_leaf(version: str = "1.0.18") -> dict[str, Any]:
@@ -311,8 +300,49 @@ def test_country_admission_refuses_unknown_or_conflicting_facts_without_changing
 
 def test_country_argument_is_required_and_has_no_enable_switch() -> None:
     parameters = signature(catalog.region_country_errors).parameters
-    assert list(parameters) == ["document", "documents", "countries"]
+    assert list(parameters) == ["document", "documents", "countries", "provider"]
     assert parameters["countries"].default is Parameter.empty
+    assert parameters["provider"].kind is Parameter.KEYWORD_ONLY
+
+
+def test_region_exceptions_are_exactly_the_named_providers_each_with_a_reason(
+    country_documents: list[dict[str, Any]],
+) -> None:
+    """Only the providers listed run outside the US; adding one is a visible change here."""
+    names = load_yaml((ROOT / "names/names.yaml").read_text())
+    exceptions = names["catalog_selection"]["region_country_policy"]["exceptions"]
+    assert {entry["provider"]: entry["countries"] for entry in exceptions} == {
+        "boat": ["DE", "FI", "FR"]
+    }
+    policy = region_policy(country_leaf(), country_documents)
+    for entry in exceptions:
+        assert entry["reason"].strip()
+        assert entry["provider"].capitalize() in policy, "the region policy text names it"
+
+
+@pytest.mark.parametrize(
+    ("provider", "countries", "admitted"),
+    [
+        ("boat", {"DE", "FI", "FR"}, True),
+        ("boat", {"FI"}, True),
+        ("boat", {"US"}, True),
+        ("boat", {"SE"}, False),
+        ("boat", None, False),
+        ("other", {"DE"}, False),
+        (None, {"FR"}, False),
+        ("other", {"US"}, True),
+    ],
+)
+def test_only_a_named_exception_admits_countries_outside_the_us(
+    country_documents: list[dict[str, Any]],
+    provider: str | None,
+    countries: Any,
+    admitted: bool,
+) -> None:
+    errors = catalog.region_country_errors(
+        country_leaf(), country_documents, countries, provider=provider
+    )
+    assert (errors == []) is admitted
 
 
 def test_country_admission_accepts_the_complete_real_owner_catalog_without_mutating_it(

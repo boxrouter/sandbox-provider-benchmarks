@@ -34,7 +34,7 @@ def operations(root: Path) -> dict[str, dict[str, Any]]:
 
 
 def pre_template_ids(root: Path) -> dict[str, Any]:
-    """The ``{date, ids}`` list of documents that predate the requirements."""
+    """The ``{ids}`` list of documents that predate the requirements."""
     data: dict[str, Any] = json.loads((root / PRE_TEMPLATE_IDS).read_text(encoding="utf-8"))
     return data
 

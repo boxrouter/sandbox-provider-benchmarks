@@ -17,6 +17,7 @@ from jsonschema import Draft202012Validator
 
 from sandbox_benchmark_verifier.catalog import common_document, default_context, load_methodology
 from sandbox_benchmark_verifier.lifecycle_profile import SCHEMA
+from sandbox_benchmark_verifier.lock import update as update_lock
 from sandbox_benchmark_verifier.name_refs import canonical_name_map, name_reference_errors
 from sandbox_benchmark_verifier.names import load_tables
 from sandbox_benchmark_verifier.new_benchmark import operations
@@ -115,7 +116,7 @@ def _workloads(request: BenchmarkDraft) -> list[dict[str, Any]]:
 def add(root: Path, request: BenchmarkDraft) -> Path:
     """Create a complete, independently expressible timed-command methodology.
 
-    Only new files are written. Existing identities and versions are never edited.
+    Only new files are written; an existing identity, name or file is refused.
     Publication permission is intentionally outside this scientific document.
     """
     if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", request.identifier):
@@ -138,7 +139,7 @@ def add(root: Path, request: BenchmarkDraft) -> Path:
     path = root / "methodology" / request.identifier / f"{request.version}.yaml"
     directory = root / "parameters" / request.identifier / request.version
     if path.exists() or directory.exists():
-        raise ValueError("scaffold destination exists; existing versions are immutable")
+        raise ValueError("scaffold destination exists; edit the existing document in place")
     schema = json.loads((root / "schemas/methodology.schema.json").read_text())
     if request.sweep is not None:
         Draft202012Validator(
@@ -426,6 +427,7 @@ def _steps(
                 "action": override.get("action", operation["action"]),
                 "timer": dict(operation["timer"]) if step["timed"] else None,
                 "timeout_seconds": operation["timeout_seconds"],
+                **({"repeats": True} if step.get("repeats") else {}),
                 "record_steps": [step["id"]],
                 **_in_sandboxes(step["sandbox"], sandboxes),
             }
@@ -453,7 +455,8 @@ def add_from_shape(  # pylint: disable=too-many-locals
 ) -> Path:
     """Write a new benchmark at version 1.0.0 from a runner block's shape and the author's draft.
 
-    Only new files are written: ``methodology/<folder>/<id>.yaml`` and its parameter tree.
+    Only new files are written: ``methodology/<folder>/<id>.yaml`` and its parameter tree. Then
+    the lock update rewrites ``methodology/released.lock`` so the new document has its row.
     """
     if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", identifier):
         raise ValueError("new benchmark identity must be a lowercase record id")
@@ -466,7 +469,7 @@ def add_from_shape(  # pylint: disable=too-many-locals
     path = root / "methodology" / folder / f"{identifier}.yaml"
     directory = root / "parameters" / identifier / "1.0.0"
     if path.exists() or directory.exists():
-        raise ValueError("scaffold destination exists; existing versions are immutable")
+        raise ValueError("scaffold destination exists; edit the existing document in place")
     category = _category(root, folder)
     workloads = _workloads_from_draft(shape, draft)
     sandboxes = _sandboxes(shape, workloads)
@@ -532,4 +535,5 @@ def add_from_shape(  # pylint: disable=too-many-locals
         },
     }
     _write(root, path, directory, document, {"workloads.json": workloads})
+    update_lock(root)
     return path

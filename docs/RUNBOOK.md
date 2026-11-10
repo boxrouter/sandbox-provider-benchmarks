@@ -29,10 +29,11 @@ step with its operation, timer draft and timeout, the stages, the sandboxes per 
 with 10 in parallel and 20 to rank, the 2 vCPU / 4 GiB size, the common image, the required
 capabilities and the independence answers. It writes the new file
 `methodology/<category>/<id>.yaml` and `parameters/<id>/1.0.0/workloads.json`, prints the
-methodology path and adds no names row; graduation adds it.
+methodology path and adds no names row; graduation adds it. It then runs the lock update
+(`python -m sandbox_benchmark_verifier.lock update`), so `methodology/released.lock` holds the new
+document's row.
 
 Run `sandbox-benchmark-verify validate` and `sandbox-benchmark-verify text`, then `make check`.
 CI generates a temporary definition with the scaffold and checks the current schema,
 parameter digests, names and conventions. The generated samples are never added to the
-methodology collection. A released definition is immutable; changed science needs a new
-version and new evidence.
+methodology collection. A changed definition is edited in place and needs new evidence.

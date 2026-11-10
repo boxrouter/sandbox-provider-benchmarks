@@ -13,7 +13,12 @@ from sandbox_benchmark_verifier.text import semantic_digest
 
 RECORD_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FORMULA_NAMES = frozenset({"start", "end", "total", "runtime"})
-TOKEN = re.compile(r"\s*([A-Za-z_][A-Za-z0-9_-]*|[()+-])")
+AGGREGATES = frozenset({"median", "sum", "max", "min"})
+"""Each takes one expression in parentheses and folds it over a step's runs, a trial's
+sandboxes or a set's traces: the middle value, their sum, the largest or the smallest."""
+TOKEN = re.compile(r"\s*([A-Za-z_][A-Za-z0-9_-]*(?:\|[A-Za-z_][A-Za-z0-9_-]*)*|[()+-])")
+"""A step argument may list alternatives, `start(resume|data-back)`: the first of them the trial
+recorded."""
 
 
 def tree_digest(directory: Path) -> str:
@@ -120,13 +125,13 @@ def formula_errors(formula: str, steps: frozenset[str]) -> Iterator[str]:
             problems.append("formula expects a term")
             return
         cursor += 1
-        if name == "median":
+        if name in AGGREGATES:
             if not expect("("):
-                problems.append("median needs parentheses")
+                problems.append(f"{name} needs parentheses")
                 return
             expression()
             if not expect(")"):
-                problems.append("median is not closed")
+                problems.append(f"{name} is not closed")
         elif name == "latency" or name in FORMULA_NAMES:
             step_argument(name, required=name == "latency")
         else:
@@ -143,8 +148,8 @@ def formula_errors(formula: str, steps: frozenset[str]) -> Iterator[str]:
             problems.append(f"{name} needs a step")
             return
         cursor += 1
-        if steps and step not in steps:
-            problems.append(f"{name} names unknown step {step}")
+        if steps and (unknown := sorted(set(step.split("|")) - steps)):
+            problems.append(f"{name} names unknown step {unknown[0]}")
         if not expect(")"):
             problems.append(f"{name} is not closed")
 
@@ -209,12 +214,23 @@ def document_errors(
         for name in [step.get("id"), *step.get("record_steps", [])]
         if isinstance(name, str)
     )
-    for metric in document.get("metrics", []) if isinstance(document.get("metrics"), list) else []:
-        if isinstance(metric, Mapping) and isinstance(metric.get("formula"), str):
-            yield from (
-                f"{path}: metric {metric.get('name')}: {issue}"
-                for issue in formula_errors(metric["formula"], names)
-            )
+    metrics = document.get("metrics")
+    yield from _metric_errors(path, metrics if isinstance(metrics, list) else [], names)
+
+
+def _metric_errors(path: Path, metrics: Sequence[Any], names: frozenset[str]) -> Iterator[str]:
+    """A procedure's time metrics each have a formula, and every formula is in the grammar."""
+    for metric in metrics:
+        if not isinstance(metric, Mapping):
+            continue
+        if not isinstance(metric.get("formula"), str):
+            if names and metric.get("unit") == "ms":
+                yield f"{path}: metric {metric.get('name')}: a time metric needs a formula"
+            continue
+        yield from (
+            f"{path}: metric {metric.get('name')}: {issue}"
+            for issue in formula_errors(metric["formula"], names)
+        )
 
 
 def allowed_variants(

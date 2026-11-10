@@ -63,7 +63,6 @@ readiness:
   citation: {document: common, pointer: /ready_check}
   policy: {document: common, pointer: /ready_check}
   clock_reads: false
-  wait_after: every-transient-failure-including-final
   status_lookup: [error, native-error]
   connection_lookup: cause-or-context-chain-cycle-safe
   nonzero_exit: provider-failure

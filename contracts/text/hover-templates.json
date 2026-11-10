@@ -316,10 +316,9 @@
     },
     "chart_failures": {
       "owner": "methodology",
-      "template": "{failed} of {counted} trials failed ({causes}).",
+      "template": "{failed} trials failed ({causes}).",
       "runtime_fields": [
         "failed",
-        "counted",
         "causes"
       ],
       "form": "sentence",

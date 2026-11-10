@@ -1,10 +1,11 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""Immutability lock for released methodology versions.
+"""Lock of the current methodology documents.
 
 ``methodology/released.lock`` maps ``id@version`` to a sha256 over the parsed document and its
-``parameters/<id>/<version>/`` tree. A locked entry must keep its hash; versions are never
-edited in place. ``update`` only appends entries; it never rewrites or removes one.
+``parameters/<id>/<version>/`` tree. Each document has one current version, edited in place;
+``check`` reports a document that changed or vanished since the lock was written, and ``update``
+rewrites the lock to the current documents, so a deliberate edit lands with its new hash.
 """
 
 import argparse
@@ -62,29 +63,28 @@ def read_lock(root: Path) -> dict[str, str]:
 
 
 def check(root: Path, require_complete: bool = False) -> list[str]:
-    """Report locked versions that changed or vanished; optionally also unlocked ones."""
+    """Report locked documents that changed or vanished; optionally also unlocked ones."""
     lock, now = read_lock(root), current_hashes(root)
     errors = []
     for key, digest in lock.items():
         if key not in now:
-            errors.append(f"{key}: released version was removed; versions are immutable")
+            errors.append(f"{key}: removed since it was locked; run lock update")
         elif now[key] != digest:
-            errors.append(f"{key}: released version changed; publish a new version instead")
+            errors.append(f"{key}: changed since it was locked; run lock update")
     if require_complete:
         errors.extend(f"{key}: not in {LOCK_PATH}; run update" for key in now if key not in lock)
     return errors
 
 
 def update(root: Path) -> list[str]:
-    """Append entries for versions not yet locked; return the keys added."""
+    """Rewrite the lock to the current documents; return the keys added, changed or removed."""
     lock, now = read_lock(root), current_hashes(root)
-    added = [key for key in now if key not in lock]
-    lock.update({key: now[key] for key in added})
-    header = "# Released methodology versions: id@version sha256 (document + parameters tree).\n"
+    changed = sorted(key for key in lock.keys() | now.keys() if lock.get(key) != now.get(key))
+    header = "# Current methodology documents: id@version sha256 (document + parameters tree).\n"
     (root / LOCK_PATH).write_text(
-        header + "".join(f"{key} {lock[key]}\n" for key in sorted(lock)), encoding="utf-8"
+        header + "".join(f"{key} {now[key]}\n" for key in sorted(now)), encoding="utf-8"
     )
-    return added
+    return changed
 
 
 def main() -> int:
@@ -95,7 +95,7 @@ def main() -> int:
     args = parser.parse_args()
     root = Path.cwd()
     if args.command == "update":
-        print("locked: " + (", ".join(update(root)) or "nothing new"))
+        print("locked: " + (", ".join(update(root)) or "nothing changed"))
         return 0
     errors = check(root, args.require_complete)
     for error in errors:

@@ -17,6 +17,7 @@ metrics:
   description: Time from snapshot request dispatch until the snapshot call returns.
   quantity: time
   per: sandbox
+  formula: total(snapshot)
 interpretation:
   informs: How long a sandbox takes to save as a snapshot and how long a new sandbox takes to start from it.
   what_to_do: Compare the steps an agent takes to save a prepared environment and start again from it.

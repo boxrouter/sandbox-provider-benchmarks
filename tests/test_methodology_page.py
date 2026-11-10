@@ -242,12 +242,10 @@ def test_reader_projection_hides_retired_failure_ranking_without_changing_eviden
     document = {
         "id": "example",
         "statistics": {"ranking": {"failing_often": "Historical threshold", "min_successes": 10}},
-        "notes": {"not_ranked": {"failing_often": "Historical explanation"}},
     }
     original = deepcopy(document)
     result = reader_definition(document, {}, policy)
     assert result["statistics"]["ranking"] == {"min_successes": 10}
-    assert result["notes"]["not_ranked"] == {}
     assert document == original
 
 
@@ -264,6 +262,9 @@ def test_success_only_public_status_and_selector_contract() -> None:
     unavailable = criteria["statistics_selector"]["p95_unavailable"]
     assert str(floor) in unavailable
     assert "{" not in unavailable
+    # Steps on with no published interval (a sum, a cost share): the 95% CI switch is greyed.
+    assert criteria["statistics_selector"]["ci_unavailable"]
+    assert "{" not in criteria["statistics_selector"]["ci_unavailable"]
 
 
 def test_public_failure_presentation_cannot_be_reintroduced() -> None:
@@ -361,6 +362,7 @@ def test_every_page_lists_the_metrics_of_each_test_of_its_tab_and_their_formulas
         "read-4kib",
         "sequential-read",
         "7-zip-1-thread",
+        "hard-links",
     }
     for host in hosts:
         parent = next(r["parent"] for r in rows if r["id"] == host and r["kind"] == "test")
@@ -451,10 +453,6 @@ def test_page_members_keep_the_measured_hosts_common_and_effective_date(
     other.update(version="9.0.0", inherits={"id": "sbs.common", "version": "1.0.999"})
     other["metrics"][0]["unit"] = "wrong-cohort"
     documents[("member-doc", "9.0.0")] = other
-    retro = deepcopy(documents[("member-doc", "1.0.1")])
-    retro.update(version="9.1.0", composition={"input_selection": "retrospective_exact"})
-    retro["metrics"][0]["unit"] = "retrospective"
-    documents[("member-doc", "9.1.0")] = retro
     result = reader_definition(
         host, documents, content_criteria()["methodology_page"], "host", rows, {}
     )
@@ -498,6 +496,17 @@ def test_a_concurrency_cap_reads_the_account_limit_status(tmp_path: Path) -> Non
         " {param:content.ranking_statuses.account_limit.label}.\n",
         encoding="utf-8",
     )
+    (tmp_path / "methodology").mkdir()
+    (tmp_path / "methodology/create.yaml").write_text(
+        "failure_policy:\n"
+        "  exclusions:\n"
+        "  - A burst size above what the plan runs at once is shown as not offered.\n"
+        "  - A burst above the account's concurrency stays not_offered.\n"
+        "  - A pause the provider lacks is not offered.\n",
+        encoding="utf-8",
+    )
     assert [error.split(":")[0] for error in concurrency_cap_status_errors(tmp_path)] == [
-        "reader/methods.yaml.[0].methods.burst-tti.limitations[0]"
+        "methodology/create.yaml.[0].failure_policy.exclusions[0]",
+        "methodology/create.yaml.[0].failure_policy.exclusions[1]",
+        "reader/methods.yaml.[0].methods.burst-tti.limitations[0]",
     ]

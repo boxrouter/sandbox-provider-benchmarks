@@ -70,3 +70,39 @@ def test_hover_templates_keep_retired_templates_out() -> None:
     assert "chart_trial_count_one" not in templates
     assert "deepswe_segment_tooltip_time" not in templates
     assert not any(code.startswith("segment_hover_suffix") for code in templates)
+
+
+# Rule no-count-facts (Andre, 2026-11-10, NC-both): the page states no count as n of m. The
+# failures hover says how many trials failed and why, not out of how many. The texts below still
+# read "{k} of {n}": a score's rank (rule score-rank), and three that are open with Andre: a dot's
+# position ("Trial 3 of 20"), a provider page's capability count ("12 of 20 supported") and the
+# runner's burst failure cause ("3 of 10 sandboxes ready"). A new one fails here.
+N_OF_M = re.compile(r"\{[^{}]+\} of \{[^{}]+\}|\b\d[\d,]* of \d[\d,]*\b")
+N_OF_M_KEPT = {
+    "methodology_page.pages.rank",
+    "hover_templates.chart_trial_of",
+    "provider_capabilities.count",
+    "reasons.burst_failure_k_of_n",
+}
+
+
+def _strings(value: object, path: tuple[str, ...] = ()) -> list[tuple[tuple[str, ...], str]]:
+    if isinstance(value, dict):
+        return [item for key, child in value.items() for item in _strings(child, (*path, str(key)))]
+    if isinstance(value, list):
+        return [item for child in value for item in _strings(child, path)]
+    return [(path, value)] if isinstance(value, str) else []
+
+
+def test_no_page_text_states_a_count_as_n_of_m() -> None:
+    criteria = content_criteria()
+    assert (
+        criteria["hover_templates"]["chart_failures"]["template"]
+        == "{failed} trials failed ({causes})."
+    )
+    found = {
+        ".".join(path[:3] if path[0] == "methodology_page" else path[:2])
+        for path, text in _strings({k: v for k, v in criteria.items() if k != "conventions"})
+        if N_OF_M.search(text)
+    }
+    assert found == N_OF_M_KEPT

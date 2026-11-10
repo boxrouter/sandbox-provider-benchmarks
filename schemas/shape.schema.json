@@ -59,6 +59,11 @@
             "default": false,
             "description": "A command step that reads the sandbox clock."
           },
+          "repeats": {
+            "type": "boolean",
+            "default": false,
+            "description": "A timed step a trial makes more than once, once per round or request."
+          },
           "ready_check": {
             "type": "boolean",
             "description": "Only on create and restore steps: whether an untimed ready check follows. Defaults to true for create and false for restore."

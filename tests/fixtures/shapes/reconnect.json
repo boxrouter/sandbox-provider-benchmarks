@@ -1,0 +1,12 @@
+{
+  "schema": "sandbox-benchmarks.shape/1",
+  "block": "reconnect",
+  "launch": "single",
+  "reads": ["command", "rounds"],
+  "steps": [
+    {"id": "create", "operation": "create", "sandbox": "every", "timed": true, "ready_check": true},
+    {"id": "attach", "operation": "attach", "sandbox": "every", "timed": true, "repeats": true},
+    {"id": "true", "operation": "commands.run", "sandbox": "every", "timed": true, "clock_reads": true, "repeats": true},
+    {"id": "destroy", "operation": "destroy", "sandbox": "every", "timed": true}
+  ]
+}

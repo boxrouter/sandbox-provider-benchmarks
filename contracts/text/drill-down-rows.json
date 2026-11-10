@@ -1,5 +1,4 @@
 {
-  "fact_succeeded": "every_result",
   "fact_interval_of_median": "every_result",
   "asked_vs_measured_asked": "every_result",
   "fact_setup_size": "every_result",
@@ -26,6 +25,5 @@
   "fact_image_uncompressed": "every_result",
   "fact_image_layers": "every_result",
   "fact_image_files": "every_result",
-  "details_units_reproduced": "every_result",
   "reason": "when_present"
 }

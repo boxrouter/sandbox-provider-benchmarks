@@ -91,11 +91,12 @@
     "statisticsSelector": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["label", "template", "p95_unavailable"],
+      "required": ["label", "template", "p95_unavailable", "ci_unavailable"],
       "properties": {
         "label": {"type": "string", "minLength": 1},
         "template": {"type": "string", "minLength": 1},
-        "p95_unavailable": {"type": "string", "minLength": 1}
+        "p95_unavailable": {"type": "string", "minLength": 1},
+        "ci_unavailable": {"type": "string", "minLength": 1}
       }
     },
     "ruleBase": {

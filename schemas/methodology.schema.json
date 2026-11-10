@@ -100,17 +100,6 @@
         },
         "stage_medians": {"type": "string", "minLength": 1, "maxLength": 300, "description": "Shared explanation of stage medians on stacked charts. Optional."},
         "time_between_stages": {"type": "string", "minLength": 1, "maxLength": 300, "description": "Shared explanation of time between stages on stacked charts. Optional."},
-        "not_ranked": {
-          "type": "object", "additionalProperties": false,
-          "description": "Reasons shown when a provider is not ranked. Optional.",
-          "properties": {
-            "not_offered": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a capability the provider does not offer. Optional."},
-            "in_development": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a capability in development. Optional."},
-            "too_few_runs": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for too few successful runs. Optional."},
-            "failing_often": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a provider that fails often. Optional."},
-            "not_measured": {"type": "string", "minLength": 1, "maxLength": 160, "description": "Tooltip for a result that was not measured. Optional."}
-          }
-        },
         "what_this_measures": {
           "type": "string",
           "minLength": 1,
@@ -157,15 +146,10 @@
       "required": ["inputs", "aggregation", "weighting", "inclusion"],
       "description": "For an index: the benchmarks it combines and how. An index has no trials of its own; its value is computed from the aggregates of the cited benchmarks.",
       "properties": {
-        "input_selection": {
-          "enum": ["latest_as_of_effective", "retrospective_exact"],
-          "default": "latest_as_of_effective",
-          "description": "How the exact immutable inputs below are selected. Omitted means the newest version in force on this index's effective date. retrospective_exact permits an older exact version only when it was already effective then and inherits the same sbs.common. This does not change the index's effective date, the input measurements, or compatibility."
-        },
         "inputs": {
           "type": "array",
           "minItems": 1,
-          "description": "The complete exact input vector, cited by canonical id and immutable version.",
+          "description": "The complete exact input vector: each input's canonical id and its version in force on this index's effective date.",
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -451,7 +435,7 @@
           },
           "formula": {
             "type": "string",
-            "description": "How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`) or `latency(<record step>)`, joined by `+` and `-`, with `median(...)` over the sandboxes or runs of a trial.",
+            "description": "How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`, or alternatives, as `start(resume|data-back)`: the first the trial recorded) or `latency(<record step>)`, joined by `+` and `-`, folded by `median(...)`, `sum(...)`, `max(...)` or `min(...)` over a step's runs, a trial's sandboxes or a set's traces.",
             "examples": [
               "median(latency(first-true)) + start"
             ]
@@ -583,7 +567,16 @@
     "ready_check": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["command", "retry_on", "interval_ms", "max_attempts", "attempt_timeout_seconds"],
+      "required": [
+        "command",
+        "retry_on",
+        "initial_backoff_ms",
+        "backoff_multiplier",
+        "max_backoff_ms",
+        "jitter_fraction",
+        "deadline_seconds",
+        "attempt_timeout_seconds"
+      ],
       "description": "Untimed wait that runs right after a create returns, before the trial uses the sandbox.",
       "properties": {
         "command": {
@@ -597,19 +590,40 @@
           "description": "Answers treated as not ready and retried; any other failure ends the trial.",
           "examples": [["HTTP 502", "HTTP 503", "HTTP 504", "connection refused", "connection reset"]]
         },
-        "interval_ms": {
-          "type": "integer",
-          "minimum": 0,
-          "x-unit": "ms",
-          "description": "Pause after a not-ready answer returns before the next attempt.",
-          "examples": [100]
-        },
-        "max_attempts": {
+        "initial_backoff_ms": {
           "type": "integer",
           "minimum": 1,
-          "x-unit": "attempts",
-          "description": "Attempts before the trial fails as the provider's.",
-          "examples": [40]
+          "x-unit": "ms",
+          "description": "Wait after the first not-ready answer, before jitter. The wait after not-ready answer k (counting from 0) is min(max_backoff_ms, initial_backoff_ms × backoff_multiplier^k) times a factor drawn uniformly from 1 − jitter_fraction to 1 + jitter_fraction.",
+          "examples": [20]
+        },
+        "backoff_multiplier": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Factor by which the wait before jitter grows after each not-ready answer.",
+          "examples": [1.5]
+        },
+        "max_backoff_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "x-unit": "ms",
+          "description": "Largest wait before jitter.",
+          "examples": [200]
+        },
+        "jitter_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 1,
+          "x-unit": "fraction (0 to 1)",
+          "description": "How far each wait may move either side of its value before jitter, as a fraction of that value; the factor is drawn uniformly.",
+          "examples": [0.2]
+        },
+        "deadline_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "x-unit": "s",
+          "description": "No attempt starts later than this after the first attempt was sent; a check that reaches it without a ready answer fails the trial as the provider's.",
+          "examples": [10]
         },
         "attempt_timeout_seconds": {
           "type": "integer",
@@ -627,7 +641,13 @@
           "type": "array",
           "items": { "$ref": "#/$defs/methodology_id" },
           "description": "Methodology ids that do not run the check because their first command is the thing measured.",
-          "examples": [["sandbox.create.sequential_tti"]]
+          "examples": [["sequential-tti", "burst-tti"]]
+        },
+        "skipped_on_restore_by_benchmarks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/methodology_id" },
+          "description": "Methodology ids whose sandboxes restored from a snapshot do not run the check; the sandbox the snapshot is taken from runs it.",
+          "examples": [["snapshot-and-restore", "fork"]]
         }
       }
     },
@@ -1445,6 +1465,13 @@
           "description": "What is left out of a result. An excluded trial is kept in the data with its reason.",
           "examples": [["A failure shown not to be the provider's."]]
         },
+        "exclusion_limits": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_(ms|s)$" },
+          "additionalProperties": { "type": "number", "exclusiveMinimum": 0 },
+          "description": "A limit on a value of a trial's own record above which the trial was not run as specified: the trial is the benchmark's, excluded and replaced by a new trial. Keyed by the value's name, which ends in its unit. Optional.",
+          "examples": [{ "launch_spread_ms": 1000 }]
+        },
         "success": {
           "type": "string",
           "description": "What makes a trial succeed.",
@@ -1546,18 +1573,6 @@
       "then": {
         "required": ["inherits", "metrics", "composition", "statistics", "cost"],
         "not": { "required": ["procedure"] }
-      }
-    },
-    {
-      "if": {
-        "required": ["composition"],
-        "properties": {
-          "composition": { "required": ["input_selection"] }
-        }
-      },
-      "then": {
-        "required": ["category"],
-        "properties": { "category": { "const": "index" } }
       }
     },
     {

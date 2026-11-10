@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+name: Fixture Reattach
+notes:
+  summary: A fresh process attaches to a running sandbox and runs a command, round after round.
+  what_this_measures: The result records each attach and the command that follows it.
+  how_it_is_measured: A job-host monotonic clock times each attach and command call from dispatch until it
+    returns.
+  how_to_read: The median is shown in milliseconds; lower is better.
+  cost_summary: The cost is the provider-sourced cost of the sandbox, divided by successful units.
+  cost_how_to_read: Only successful trials contribute to the cost value.
+metrics:
+- name: attach_time
+  unit: ms
+  direction: lower_is_better
+  description: Time from attach request dispatch until the attach call returns.
+  quantity: time
+  per: sandbox
+  formula: total(attach)
+interpretation:
+  informs: How long a new process takes to reach a sandbox that is already running.
+  what_to_do: Compare how quickly an agent that restarts can reach its sandbox again.
+validity_checks:
+- id: fresh_process_each_round
+  threat: An attach that reuses a connection from an earlier round would look fast.
+  check: Each round attaches from a new process, so no connection is reused.
+source:
+  name: standard runtime command
+  version: '1'
+  licence: Apache-2.0
+failure_policy:
+  success: Every attach succeeds and every command exits 0.
+  provider_errors:
+  - An attach or command API failure.
+  benchmark_errors:
+  - A malformed timing record or benchmark-side workload failure.
+workloads:
+- id: attach-true
+  label: Ten rounds of attach and `true`
+  data:
+    command: 'true'
+    rounds: 10

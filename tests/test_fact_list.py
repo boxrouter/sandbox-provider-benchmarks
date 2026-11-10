@@ -20,10 +20,10 @@ def test_fact_list_keeps_retired_facts_and_concepts_out() -> None:
 
 def test_fact_list_rejects_missing_labels_and_undeclared_template_fields() -> None:
     criteria = content_criteria()
-    criteria["fact_list"]["details_units_reproduced"] = " "
+    criteria["fact_list"]["fact_received"] = " "
     criteria["fact_explanations"]["asked_vs_measured_asked"]["runtime_fields"] = ["invented"]
     errors = criteria_errors(criteria)
-    assert "details_units_reproduced: missing fact-list label" in errors
+    assert "fact_received: missing fact-list label" in errors
     assert "asked_vs_measured_asked: template fields must match declared runtime fields" in errors
 
 

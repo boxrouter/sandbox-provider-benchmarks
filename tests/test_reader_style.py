@@ -381,10 +381,15 @@ def test_a_metric_paragraph_starts_with_its_name_and_is_the() -> None:
         "The sum of command runtimes is the time.",
         "{name:test.deepswe} sums the command runtimes.",
         "{name:test.deepswe} is the sum.\n\nA second paragraph.",
+        "{name:test.deepswe} is the sum of two parts:\n\n- A: one.\n- B: two.\n\nBeside it."
+        "\n\nAnd more.",
+        "{name:test.deepswe} is the sum.\n\nA paragraph.\n\n- A: one.",
     ):
         assert _rules([_item("deepswe.metric", text)], "metric-paragraph") == ["deepswe.metric"], (
             text
         )
+    parts = "{name:test.deepswe} is the sum of two parts:\n\n- A: one.\n- B: two.\n\nBeside it."
+    assert _rules([_item("deepswe.metric", parts)], "metric-paragraph") == []
     both = [good, _item("deepswe.metrics", "{name:test.deepswe} is the sum.")]
     assert _rules(both, "metric-paragraph") == ["deepswe.metrics"]
     # A test's name may be shortened to the part before its size or variant.
@@ -671,7 +676,8 @@ def test_every_rendered_metric_paragraph_starts_with_its_name_and_the_old_note_i
         lead = re.split(r" \(|,", names[identifier], maxsplit=1)[0]
         text = notes["metric"]
         assert text.startswith(f"{lead} is the "), identifier
-        assert "\n" not in text and "{" not in text, identifier
+        # The first paragraph is the metric's one sentence shape; a list of its parts may follow.
+        assert "\n" not in text.split("\n\n")[0] and "{" not in text, identifier
         assert "metrics" not in notes, identifier  # no second copy
         assert notes["introduction"] not in text, identifier
 

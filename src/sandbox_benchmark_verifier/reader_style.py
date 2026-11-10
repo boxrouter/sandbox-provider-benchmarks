@@ -609,6 +609,19 @@ def _metric_lead(context: Context, method: str) -> str:
     return re.split(r" \(|,", name, maxsplit=1)[0]
 
 
+def _metric_blocks_fit(text: str) -> bool:
+    """One paragraph, or a paragraph, a "- " list of the metric's parts and at most one more
+    paragraph."""
+    blocks = [block.strip() for block in re.split(r"\n\s*\n", text.strip())]
+    if len(blocks) == 1:
+        return True
+    is_list = all(line.startswith("- ") for line in blocks[1].splitlines())
+    rest_is_prose = all(
+        not line.startswith("- ") for block in blocks[2:] for line in block.splitlines()
+    )
+    return is_list and len(blocks) <= 3 and rest_is_prose
+
+
 def _metric_paragraph(
     rule: Mapping[str, Any], items: Sequence[Item], context: Context
 ) -> list[Offense]:
@@ -631,7 +644,7 @@ def _metric_paragraph(
             offenses.append(
                 (rule["id"], item.key, f"does not start with {lead!r} is the: {rule['text']}")
             )
-        if re.search(r"\n\s*\n", item.text.strip()):
+        if not _metric_blocks_fit(item.text):
             offenses.append((rule["id"], item.key, f"more than one paragraph: {rule['text']}"))
     return offenses
 

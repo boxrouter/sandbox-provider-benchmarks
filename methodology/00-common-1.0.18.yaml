@@ -9,8 +9,9 @@ environment:
     memory_gib: 4
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
-  region_policy: The provider's US region, never a narrower one; ordinary self-serve product, nothing
-    tuned per provider. Results are never aggregated across job-host regions; each job-host region is
+  region_policy: The provider's US region, never a narrower one, with one named exception. Boat has no
+    US region and no region choice, so it runs in the EU. Ordinary self-serve product, nothing tuned per
+    provider. Results are never aggregated across job-host regions; each job-host region is
     its own series.
   connection_idle_seconds: 300
   job_host: Every provider is timed from its own cloud job host, the same kind of host for every provider,
@@ -32,12 +33,20 @@ ready_check:
   - HTTP 504
   - connection refused
   - connection reset
-  interval_ms: 100
-  max_attempts: 40
+  initial_backoff_ms: 20
+  backoff_multiplier: 1.5
+  max_backoff_ms: 200
+  jitter_fraction: 0.2
+  deadline_seconds: 10
   attempt_timeout_seconds: 30
   published: false
   skipped_by_benchmarks:
-  - sandbox.create.sequential_tti
+  - sequential-tti
+  - burst-tti
+  skipped_on_restore_by_benchmarks:
+  - snapshot-and-restore
+  - fork
+  - r2e-gym
 statistics:
   primary: median
   secondary:
@@ -69,24 +78,29 @@ cost:
     versions: The price and rules versions recorded in the publication; they select each sandbox's method.
   notes:
   - A unit with a sandbox whose cost is unknown has no cost; it is never zero and never a range.
+  - A sandbox whose stop can't be confirmed, with no provider end time and no maximum lifetime, has no
+    cost; its trial is the provider's failure.
 failure_policy:
   timeout_seconds: {}
   retries: The first failed step ends the trial. Run each workload and primitive benchmark until its intended
-    number of successful trials, re-running missed trials and failures of any owner within the run budget.
-    Independent trials may be topped up; interacting trials require a complete rerun.
+    number of successful trials, re-running missed, excluded and failed trials within the run budget. A
+    failure of BoxRouter's own script or software stops that unit on that provider instead, until the
+    defect is fixed. Independent trials may be topped up; interacting trials require a complete rerun.
   success: Every benchmark-specific check passes and every resource the trial created is confirmed deleted.
   provider_errors:
   - Create and transport errors, and a sandbox that stops answering.
+  - A sandbox whose stop can't be confirmed.
   - A failure whose owner is uncertain.
-  - Forty not-ready answers to the ready check, or any other failure of it.
+  - A ready check that reaches its deadline without a ready answer, or any other failure of it.
   benchmark_errors:
   - A failure of the benchmark's own script, such as output it cannot parse after a command exited 0.
   exclusions:
   - Only successful trials enter public results and downloads. Keep unsuccessful attempts, ownership,
     replacements and costs in private evidence for cleanup and diagnosis.
   - Reliability is a separate future benchmark.
-  blockers: Stop when the same failure repeats on every attempt, when more re-runs than the intended number
-    of successes are needed, or when the run budget is exhausted. Show a blocked result as Not ranked
+  blockers: Stop when two refill rounds in a row add no successful trial, when more re-runs than the intended number
+    of successes are needed, when a failure cannot be replaced (a trial whose outcome is unknown, cleanup
+    that could not be verified), or when the run budget is exhausted. Show a blocked result as Not ranked
     or Not displayed with its reason.
 capability_source:
   repository: https://github.com/boxrouter/sandbox-provider-spec
@@ -106,7 +120,7 @@ independence:
   - id: equal_concurrency
     rule: Every provider runs at the same declared trials_in_parallel width, which must fit within the
       host concurrency cap and the provider's documented concurrent sandbox limit. Rounds follow the
-      shuffled order below. A width change requires a new methodology version; it is never a runtime
+      shuffled order below. A width change is a change to this methodology; it is never a runtime
       flag. Where a provider documents a limit on how fast sandboxes may be created, the run spaces its
       creates to that limit, outside every timed step; the spacing is the provider's own documented rule,
       not a choice of ours, and the run manifest records it. A benchmark that runs fewer states why.
@@ -130,8 +144,9 @@ independence:
       of each batch.
   - id: placement_facts
     rule: 'Each trial records, untimed and outside the measured steps, where it ran: the CPU model and
-      count, the kernel, the device and file system behind the working directory, and any host or zone
-      identifier the provider exposes, together with the job host''s load over the trial''s window.'
+      count, the kernel and the device and file system behind the working directory, read inside the
+      sandbox on a best-effort basis, together with the job host''s load over the trial''s window. No host or
+      zone identifier of the provider is collected.'
   - id: run_check
     rule: Every run is checked before publication by the independence check below. Its thresholds are
       fixed here, before any run, and a pair that fails stays out of the publication until its trials
@@ -285,9 +300,3 @@ notes:
     typical: The typical time is the median across successful trials.
   stage_medians: Each step and the total have separate medians, so the parts may not add up.
   time_between_stages: Step means add to the total, apart from time between steps.
-  not_ranked:
-    not_offered: This option is not offered by the provider on its plan.
-    in_development: The benchmark is still in development for this provider.
-    too_few_runs: The workload is not ranked because it has not reached its declared number of successful
-      trials.
-    not_measured: No result was measured for this provider.

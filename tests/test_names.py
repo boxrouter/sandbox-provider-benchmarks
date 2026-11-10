@@ -255,6 +255,24 @@ def test_the_only_page_of_a_tab_is_titled_by_the_tab_and_other_pages_by_their_te
         assert published[row["id"]] == (tabs[row["parent"]] if single else row["name"]), row["id"]
 
 
+# Ids of `-2vcpu-8gib` tests that deliberately keep a methodology page of their own.
+OWN_PAGE_2VCPU_8GIB: set[str] = set()
+
+
+def test_a_2vcpu_8gib_variant_joins_its_parents_page() -> None:
+    """Every `-2vcpu-8gib` test is a variant of a test and is drawn on that test's methodology
+    page, so the rail has no third level for it (Hard Links had its own page until 2026-11-10)."""
+    document = yaml.safe_load((ROOT / "names" / "names.yaml").read_text())
+    variants = [
+        row
+        for row in document["names"]
+        if row["kind"] == "test" and row["id"].endswith("-2vcpu-8gib")
+    ]
+    assert variants
+    own_page = {row["id"] for row in variants if "page" not in row}
+    assert own_page <= OWN_PAGE_2VCPU_8GIB, sorted(own_page - OWN_PAGE_2VCPU_8GIB)
+
+
 def test_composite_statistics_selectors_only_own_their_options() -> None:
     document = yaml.safe_load((ROOT / "names" / "names.yaml").read_text())
     selectors = [row["selector"] for row in document["names"] if row["kind"] == "index"]
@@ -742,6 +760,25 @@ def test_only_a_page_host_has_page_wording(
     errors = reader_errors(root)
     assert len(errors) == 1
     assert "deepswe" in errors[0] and "page_introduction is a page's wording" in errors[0]
+
+
+def test_every_methodology_page_has_a_subtitle_to_draw(checkout: Path) -> None:
+    """A page draws its test's introduction, or its host's page_introduction when it holds tests."""
+    root = checkout
+    assert reader_errors(root) == []
+    path = root / "reader" / "methods.yaml"
+    source = yaml.safe_load(path.read_text())
+    for identifier, note in (
+        ("sequential-read", "page_introduction"),
+        ("stream-triad", "introduction"),
+    ):
+        notes = source["methods"][identifier]["notes"]
+        wording = notes.pop(note)
+        path.write_text(yaml.safe_dump(source, sort_keys=False))
+        errors = reader_errors(root)
+        assert len(errors) == 1, errors
+        assert identifier in errors[0] and f"notes.{note}" in errors[0]
+        notes[note] = wording
 
 
 def test_the_legacy_combined_disk_document_is_retired_and_has_no_page(

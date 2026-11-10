@@ -17,6 +17,7 @@ from sandbox_benchmark_verifier import lifecycle_profile
 from sandbox_benchmark_verifier.catalog import default_context
 from sandbox_benchmark_verifier.cli import main, validate
 from sandbox_benchmark_verifier.lifecycle_profile import profiles
+from sandbox_benchmark_verifier.lock import check as lock_errors
 from sandbox_benchmark_verifier.name_refs import source_name_errors
 from sandbox_benchmark_verifier.names import load_tables
 from sandbox_benchmark_verifier.scaffold import BenchmarkDraft, add, add_from_shape
@@ -169,9 +170,7 @@ def test_profile_name_is_owned_once_and_reader_mentions_still_require_references
     ]
 
 
-def _profile_successor(
-    tree: Path, source: Path, version: str, common: dict[str, str], *, retrospective: bool = False
-) -> Path:
+def _profile_successor(tree: Path, source: Path, version: str, common: dict[str, str]) -> Path:
     document = yaml.safe_load(source.read_text())
     old = tree / document["parameters"]["path"]
     directory = tree / "parameters" / document["id"] / version
@@ -179,8 +178,6 @@ def _profile_successor(
     document["version"] = version
     document["inherits"] = common
     document["parameters"]["path"] = str(directory.relative_to(tree))
-    if retrospective:
-        document["composition"] = {"input_selection": "retrospective_exact"}
     target = source.with_name(f"{version}.yaml")
     target.write_text(yaml.safe_dump(document))
     return target
@@ -206,7 +203,6 @@ def test_lifecycle_discovery_binds_context_before_version_and_exact_profile_keep
     (tree / "methodology/00-common-1.0.999.yaml").write_text(yaml.safe_dump(future))
     other = {"id": "sbs.common", "version": "1.0.999"}
     _profile_successor(tree, source, "9.0.0", other)
-    _profile_successor(tree, source, "9.1.0", declared, retrospective=True)
     _profile_successor(tree, source, "1.0.1", declared)
     assert [p.method.document["version"] for p in profiles(tree)] == ["1.0.1"]
     assert [p.method.document["version"] for p in profiles(tree, common=other)] == ["9.0.0"]
@@ -304,6 +300,16 @@ def shape_and_draft(block: str) -> tuple[dict[str, Any], dict[str, Any]]:
                 "fresh_sandbox": "meets",
             },
         ),
+        (
+            "reconnect",
+            {
+                "mode": "single",
+                "sandboxes_per_trial": 1,
+                "capabilities": [],
+                "stages": ["attach", "true"],
+                "fresh_sandbox": "meets",
+            },
+        ),
     ],
 )
 def test_a_shape_and_draft_generate_a_valid_new_benchmark(
@@ -336,6 +342,18 @@ def test_a_shape_and_draft_generate_a_valid_new_benchmark(
     assert sorted((tree / f"parameters/{identifier}/1.0.0").iterdir()) == [
         tree / f"parameters/{identifier}/1.0.0/workloads.json"
     ]
+
+
+def test_a_repeated_shape_step_is_a_repeated_methodology_step(tree: Path) -> None:
+    shape, draft = shape_and_draft("reconnect")
+    path = add_from_shape(tree, "fixture-reconnect", "03-sandbox-operations", shape, draft)
+    steps = yaml.safe_load(path.read_text())["procedure"]["steps"]
+    assert {step["id"]: step.get("repeats", False) for step in steps} == {
+        "create": False,
+        "attach": True,
+        "true": True,
+        "destroy": False,
+    }
 
 
 def test_snapshot_steps_take_their_sandboxes_timers_and_overrides(tree: Path) -> None:
@@ -379,6 +397,13 @@ def test_an_existing_id_or_file_is_refused(tree: Path) -> None:
     add_from_shape(tree, "fixture-snapshot", "03-sandbox-operations", shape, draft)
     with pytest.raises(ValueError, match="reuse an existing methodology: fixture-snapshot"):
         add_from_shape(tree, "fixture-snapshot", "03-sandbox-operations", shape, draft)
+
+
+def test_a_shape_benchmark_lands_with_its_lock_row(tree: Path) -> None:
+    shape, draft = shape_and_draft("snapshot")
+    add_from_shape(tree, "fixture-snapshot", "03-sandbox-operations", shape, draft)
+    assert "fixture-snapshot@1.0.0 " in (tree / "methodology/released.lock").read_text()
+    assert lock_errors(tree, require_complete=True) == []
 
 
 def test_cli_writes_a_shape_benchmark_and_prints_its_path(
