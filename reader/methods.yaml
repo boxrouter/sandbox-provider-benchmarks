@@ -664,7 +664,7 @@ methods:
       statistics_rules: |-
         {param:reader.common.blocks.common.statistics_citation}
 
-        Each N-sandbox wave produces a single burst-time observation (up to {param:measured.procedure.trials} observations per burst-size variant). A provider is ranked on a burst size only when all {param:measured.procedure.trials} scheduled trials succeed (at least {param:measured.statistics.ranking.min_successes} successes with zero failed bursts) and the provider reports a cost.
+        Each N-sandbox wave produces a single burst-time observation (up to {param:measured.procedure.trials} observations per burst-size variant). A provider is ranked on a burst size when at least {param:measured.statistics.ranking.min_successes} of its bursts succeed.
       failure_policy: |-
         {param:reader.common.blocks.common.failures_citation}
 
