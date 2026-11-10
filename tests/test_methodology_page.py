@@ -262,7 +262,7 @@ def test_success_only_public_status_and_selector_contract() -> None:
     unavailable = criteria["statistics_selector"]["p95_unavailable"]
     assert str(floor) in unavailable
     assert "{" not in unavailable
-    # Two or more steps added up have no published interval: the 95% CI switch is greyed.
+    # Steps on with no published interval (a sum, a cost share): the 95% CI switch is greyed.
     assert criteria["statistics_selector"]["ci_unavailable"]
     assert "{" not in criteria["statistics_selector"]["ci_unavailable"]
 
