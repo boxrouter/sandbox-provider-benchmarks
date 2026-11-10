@@ -118,8 +118,8 @@ names:
   - {row: 1, kind: "section", id: "overview", name: "Overview", intro: "Sandboxes are evaluated on coding and CI workloads to determine a composite time and cost."}
   - {row: 87, kind: "hero", id: "time-index", name: "{name:time-index}", document: "time-index", rejected_labels: [Execution Speed, Tasks per Hour]}
   - {row: 88, kind: "hero", id: "cost-index", name: "{name:cost-index}", document: "cost-index"}
-  - {row: 141, kind: "hero", id: "time-score", name: "Time Score", document: "index.speed_score", common_section: "time-score", unit: "workload", unit_description: "One workload's value is weighted equally."}
-  - {row: 142, kind: "hero", id: "cost-score", name: "Cost Score", document: "index.cost_score", common_section: "cost-score", unit: "workload", unit_description: "One workload's value is weighted equally."}
+  - {row: 141, kind: "hero", id: "time-score", name: "Time Score", document: "index.speed_score", common_subsection: "provider-scores", unit: "workload", unit_description: "One workload's value is weighted equally."}
+  - {row: 142, kind: "hero", id: "cost-score", name: "Cost Score", document: "index.cost_score", common_subsection: "provider-scores", unit: "workload", unit_description: "One workload's value is weighted equally."}
   - {row: 89, kind: "hero", id: "sequential-tti", name: "Cold Startup Time", document: "sequential-tti"}
   - {row: 90, kind: "page", id: "benchmarks", name: "Sandbox Benchmarks", summary: "Methods and results for comparing sandbox performance across defined workloads."}
   - {row: 156, kind: "page", id: "common", name: "Common Methodology", document: "sbs.common"}

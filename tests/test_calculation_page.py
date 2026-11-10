@@ -21,11 +21,6 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSITES = ("time-index", "cost-index", "time-vs-cost")
 SCORE_DOCUMENTS = ("index.speed_score", "index.cost_score", "index.provider_score")
-SCORES = {
-    "time-score": "time-score",
-    "cost-score": "cost-score",
-    "provider-score": "provider-scores",
-}
 
 
 def _newest(bundle: dict[str, Any], identifier: str) -> dict[str, Any]:
@@ -64,16 +59,24 @@ def test_the_calculation_template_hides_the_sections_it_has_no_facts_for() -> No
     assert set(template["not_inherited"]) <= set(page["inherited_fields"])
 
 
-def test_the_three_scores_are_sections_of_common_and_have_no_page() -> None:
+def test_the_three_scores_are_one_section_of_common_and_have_no_page() -> None:
     page = content_criteria()["methodology_page"]
-    rows = {row["document"]: row for row in load_tables(ROOT).names if "common_section" in row}
-    assert {row["common_section"] for row in rows.values()} == set(SCORES.values())
-    for section in SCORES.values():
-        policy = page["common_sections"][section]
-        assert policy["sources"], section
-        assert "document" not in policy, "the names table owns which document a section draws"
-    assert page["common_sections"]["time-score"]["name"] == "Time Score"
-    assert page["common_sections"]["provider-scores"]["name"] == "Provider Scores"
+    names = load_tables(ROOT).names
+    sections = {row["document"]: row["common_section"] for row in names if "common_section" in row}
+    assert sections == {"index.provider_score": "provider-scores"}
+    drawn = {row["document"] for row in names if row.get("common_subsection") == "provider-scores"}
+    assert drawn == {"index.speed_score", "index.cost_score"}
+    assert set(page["common_sections"]) & {"time-score", "cost-score"} == set()
+    policy = page["common_sections"]["provider-scores"]
+    assert policy["sources"]
+    assert "document" not in policy, "the names table owns which document a section draws"
+    assert policy["name"] == "Provider Scores"
+    # Time Score and Cost Score are subsections of it: the contract lists them (their order and
+    # what each hides); the names table says which hero drew them.
+    subsections = {row["id"] for row in names if row.get("common_subsection") == "provider-scores"}
+    assert [item["id"] for item in policy["subsections"]] == ["time-score", "cost-score"]
+    assert subsections == {item["id"] for item in policy["subsections"]}
+    assert [item["name"] for item in policy["subsections"]] == ["Time Score", "Cost Score"]
 
 
 def test_a_score_section_follows_statistics_in_common() -> None:
@@ -81,5 +84,4 @@ def test_a_score_section_follows_statistics_in_common() -> None:
     order = sorted(
         page["common_sections"], key=lambda key: page["common_sections"][key].get("order", 99)
     )
-    assert order.index("statistics") < order.index("time-score") < order.index("cost-score")
-    assert order.index("cost-score") < order.index("provider-scores") < order.index("independence")
+    assert order.index("statistics") < order.index("provider-scores") < order.index("independence")

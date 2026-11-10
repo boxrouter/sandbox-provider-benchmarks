@@ -31,6 +31,7 @@ from sandbox_benchmark_verifier.lifecycle_profile import name_rows
 from sandbox_benchmark_verifier.name_row_checks import (
     capability_name_errors,
     common_section_errors,
+    common_subsection_errors,
     numbered_errors,
     page_errors,
     presentation_errors,
@@ -530,6 +531,7 @@ def _row_errors(rows: list[dict[str, Any]], documents: set[str]) -> list[str]:
         errors.extend(unit_description_errors(row, where))
         errors.extend(page_errors(row, rows, where))
         errors.extend(common_section_errors(row, where))
+        errors.extend(common_subsection_errors(row, rows, where))
         errors.extend(reads_as_errors(row, rows, where))
         if "shows_cost" in row and row["kind"] != "section":
             errors.append(f"{where}: shows_cost belongs on a section row")

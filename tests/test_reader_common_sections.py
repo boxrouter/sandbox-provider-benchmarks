@@ -101,8 +101,6 @@ def test_common_draws_its_sections_in_the_order_of_a_trials_life() -> None:
         "measurement",
         "failures",
         "statistics",
-        "time-score",
-        "cost-score",
         "provider-scores",
         "independence",
         "cost",

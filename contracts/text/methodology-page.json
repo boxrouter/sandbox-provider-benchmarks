@@ -158,8 +158,8 @@
         "notes.stage_rule"
       ]
     },
-    "time-score": {
-      "name": "{name:hero.time-score}",
+    "provider-scores": {
+      "name": "{name:hero.provider-score}",
       "order": 4,
       "sources": [
         "notes.what_this_measures",
@@ -167,31 +167,21 @@
         "composition",
         "notes.how_to_read"
       ],
-      "hide": [
-        "composition.scopes"
-      ]
-    },
-    "cost-score": {
-      "name": "{name:hero.cost-score}",
-      "order": 5,
-      "sources": [
-        "notes.what_this_measures",
-        "notes.how_it_is_measured",
-        "composition",
-        "notes.how_to_read"
-      ],
-      "hide": [
-        "composition.scopes"
-      ]
-    },
-    "provider-scores": {
-      "name": "{name:hero.provider-score}",
-      "order": 6,
-      "sources": [
-        "notes.what_this_measures",
-        "notes.how_it_is_measured",
-        "composition",
-        "notes.how_to_read"
+      "subsections": [
+        {
+          "id": "time-score",
+          "name": "{name:hero.time-score}",
+          "hide": [
+            "composition.scopes"
+          ]
+        },
+        {
+          "id": "cost-score",
+          "name": "{name:hero.cost-score}",
+          "hide": [
+            "composition.scopes"
+          ]
+        }
       ]
     },
     "independence": {

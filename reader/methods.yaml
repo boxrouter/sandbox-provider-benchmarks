@@ -1057,7 +1057,7 @@ methods:
         Data-science workloads, in-memory analytics, and large language or compiler toolchains frequently bottleneck on how fast the system can stream data between main memory (DRAM) and the CPU rather than on raw clock speed. Two providers that sell the same {machine:measured.environment.size} can differ in memory bandwidth, for example by the CPU model a sandbox lands on.
 
         The Memory tab measures sustainable memory bandwidth using John McCalpin's {name:test.stream-triad} benchmark across arrays sized to bypass CPU caches.
-      introduction: 'Measures sustained main-memory bandwidth across three 610.4 MiB arrays using one OpenMP thread per requested vCPU.'
+      introduction: 'Measures sustained main-memory bandwidth with the {name:test.stream-triad} benchmark across three 610.4 MiB arrays using one OpenMP thread per requested vCPU.'
       metric: '{name:test.stream-triad} is the sustained main-memory bandwidth of the STREAM Triad kernel (`a[i] = b[i] + scalar * c[i]`) across {param:measured.environment.size.vcpu} OpenMP threads, reported in GB/s of 10^9 bytes/s.'
       calculation: |-
         Each Triad pass streams two double arrays of {size:measured.parameters.workload.stream_array_bytes} each (b and c, eighty million elements each) and writes one double array of {size:measured.parameters.workload.stream_array_bytes} (a), transferring 3 * 640,000,000 = 1,920,000,000 bytes (1.92 GB decimal / 1.83 GiB binary) per pass.

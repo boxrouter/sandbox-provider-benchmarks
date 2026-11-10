@@ -23,6 +23,7 @@ from sandbox_benchmark_verifier import (
 )
 from sandbox_benchmark_verifier.catalog import retired_ids
 from sandbox_benchmark_verifier.lock import read_lock
+from sandbox_benchmark_verifier.name_row_checks import common_subsection_errors
 from sandbox_benchmark_verifier.names import (
     _all_variant_errors,
     _row_errors,
@@ -253,6 +254,21 @@ def test_the_only_page_of_a_tab_is_titled_by_the_tab_and_other_pages_by_their_te
         siblings = [other for other in hosts if other.get("parent") == row.get("parent")]
         single = row.get("parent") in tabs and len(siblings) == 1
         assert published[row["id"]] == (tabs[row["parent"]] if single else row["name"]), row["id"]
+
+
+def test_a_subsection_of_the_common_page_is_a_hero_document_of_a_real_section() -> None:
+    rows: list[dict[str, Any]] = [
+        {"kind": "hero", "id": "a", "document": "d.a", "common_section": "scores"},
+        {"kind": "hero", "id": "b", "document": "d.b", "common_subsection": "scores"},
+    ]
+    assert common_subsection_errors(rows[1], rows, "b") == []
+    assert common_subsection_errors(rows[0], rows, "a") == []
+    for broken, expected in (
+        ({**rows[1], "common_subsection": "missing"}, "not a section of the Common page"),
+        ({**rows[1], "kind": "test"}, "only a hero with a document"),
+        ({**rows[1], "common_section": "scores"}, "not both"),
+    ):
+        assert any(expected in error for error in common_subsection_errors(broken, rows, "b"))
 
 
 # Ids of `-2vcpu-8gib` tests that deliberately keep a methodology page of their own.

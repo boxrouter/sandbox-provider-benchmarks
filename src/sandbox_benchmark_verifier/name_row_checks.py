@@ -112,6 +112,24 @@ def common_section_errors(row: dict[str, Any], where: str) -> list[str]:
     return []
 
 
+def common_subsection_errors(
+    row: dict[str, Any], rows: list[dict[str, Any]], where: str
+) -> list[str]:
+    """A hero row's `common_subsection` says its document is drawn as a subsection (headed by the
+    row's name) of that section of the Common methodology page; the section is another hero's
+    `common_section`."""
+    target = row.get("common_subsection")
+    if target is None:
+        return []
+    if row["kind"] != "hero" or "document" not in row:
+        return [f"{where}: only a hero with a document is a subsection of the Common page"]
+    if "common_section" in row:
+        return [f"{where}: a document is a section or a subsection of the Common page, not both"]
+    if not any(r.get("common_section") == target for r in rows):
+        return [f"{where}: common_subsection {target!r} is not a section of the Common page"]
+    return []
+
+
 def page_errors(row: dict[str, Any], rows: list[dict[str, Any]], where: str) -> list[str]:
     """A test's (or index's) `page` names the test (index) of the same tab (section) whose
     methodology page draws it too.
