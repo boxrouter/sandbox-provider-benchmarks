@@ -76,8 +76,9 @@ cost:
 failure_policy:
   timeout_seconds: {}
   retries: The first failed step ends the trial. Run each workload and primitive benchmark until its intended
-    number of successful trials, re-running missed trials and failures of any owner within the run budget.
-    Independent trials may be topped up; interacting trials require a complete rerun.
+    number of successful trials, re-running missed, excluded and failed trials within the run budget. A
+    failure of BoxRouter's own script or software stops that unit on that provider instead, until the
+    defect is fixed. Independent trials may be topped up; interacting trials require a complete rerun.
   success: Every benchmark-specific check passes and every resource the trial created is confirmed deleted.
   provider_errors:
   - Create and transport errors, and a sandbox that stops answering.
@@ -89,8 +90,9 @@ failure_policy:
   - Only successful trials enter public results and downloads. Keep unsuccessful attempts, ownership,
     replacements and costs in private evidence for cleanup and diagnosis.
   - Reliability is a separate future benchmark.
-  blockers: Stop when the same failure repeats on every attempt, when more re-runs than the intended number
-    of successes are needed, or when the run budget is exhausted. Show a blocked result as Not ranked
+  blockers: Stop when two refill rounds in a row add no successful trial, when more re-runs than the intended number
+    of successes are needed, when a failure cannot be replaced (a trial whose outcome is unknown, cleanup
+    that could not be verified), or when the run budget is exhausted. Show a blocked result as Not ranked
     or Not displayed with its reason.
 capability_source:
   repository: https://github.com/boxrouter/sandbox-provider-spec
@@ -292,7 +294,8 @@ notes:
   time_between_stages: Step means add to the total, apart from time between steps.
   not_ranked:
     not_offered: This option is not offered by the provider on its plan.
-    in_development: The benchmark is still in development for this provider.
+    in_development: 'BoxRouter does not run this benchmark on this provider yet: a capability it needs is not
+      supported through BoxRouter, or a known fault holds the test back.'
     too_few_runs: The workload is not ranked because it has not reached its declared number of successful
       trials.
     not_measured: No result was measured for this provider.

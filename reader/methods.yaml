@@ -110,7 +110,7 @@ common:
       shared_failures: |-
         Outcome classifications, top-up rounds, and outlier rules follow {name:page.common}; the first failed step ends the trial without in-trial retries.
 
-        A sandbox whose `/workspace` rejects `O_DIRECT` reads or writes or has fewer than {size:measured.parameters.workload.free_bytes} free is recorded as not supported rather than failed.
+        A sandbox whose `/workspace` rejects `O_DIRECT` reads or writes or has fewer than {size:measured.parameters.workload.free_bytes} free is recorded as a missed trial, not a failure.
 
         A trial fails as a provider error if `fio` exits non-zero or runs for less than {duration:measured.parameters.workload.min_interval_seconds} of its {duration:measured.parameters.workload.runtime_seconds} measured window, and as a benchmark error if the `fio` binary digest mismatches or if `data.bin` contains duplicate four-kilobyte blocks or compresses below {param:measured.parameters.workload.min_zlib_ratio}.
 
@@ -170,12 +170,16 @@ methods:
 
         - A success passes every step and post-run integrity check, holds the guest clock gate, and has every sandbox, snapshot, and temporary image created by the trial confirmed deleted.
         - A provider failure is any create, snapshot, restore, destroy, or transport error; a readiness check that reaches its {duration:measured.ready_check.deadline_seconds} deadline without a ready answer; a replay script that terminates early without logging a command mismatch; or a failure with uncertain ownership.
-        - A benchmark script error is a failure of our own benchmark script (such as output it cannot parse after a command exited 0); we fix the script and re-run the trial without charging the failure to the provider.
+        - A benchmark script error is a failure of our own benchmark script (such as output it cannot parse after a command exited 0); we stop that unit on that provider, fix the script and run the unit again in a later run, without charging the failure to the provider.
         - An excluded trial ("does not replay here") is one where a deterministic trace diverges on a provider: a command returns an unexpected exit code, a final git patch hash mismatches, or a step hits its timeout (exit 124) while the sandbox still answers a post-timeout check; the trial is excluded rather than counted against the provider, because a live agent would have reacted to the output and taken another path.
 
-        A top-up run refills every missed, excluded or failed slot, whoever owned the failure, until every provider reaches the scheduled number of successful trials N; each failed trial stays in the data with its owner and cause.
+        A top-up run refills every missed, excluded or failed slot until every provider reaches the scheduled number of successful trials N; each failed trial stays in the data with its owner and cause.
 
-        A full run stops refilling when a round leaves the same shortfall with identical failures, when a failure cannot be replaced (the account's spend limit, an uncertain trial, cleanup that could not be verified, a batch that stopped early), or when the run budget is exhausted. A blocked result is shown as {param:content.ranking_statuses.too_few_runs.label}.
+        A failure of our own benchmark script or of BoxRouter's software stops that unit on that provider instead: the unit is not run again in that run, so the defect is fixed rather than repeated. A missed trial, such as one whose sandbox fails a disk check before the test, is neither a success nor a failure; its slot is refilled.
+
+        A full run stops refilling when two refill rounds in a row add no successful trial, when more re-runs than N would be needed, when its time limit for refills runs out, when a failure cannot be replaced (the account's spend limit, a trial cut short so that its outcome is unknown, cleanup that could not be verified, a batch that stopped early), or when the run budget is exhausted.
+
+        A blocked result is shown as {param:content.ranking_statuses.too_few_runs.label}.
       statistics_rules: Every test reports these statistics for each unit unless its page names an exception. We compute every statistic per provider and per unit over untrimmed successful trials.
       median_rule: The median is the smallest value with at least half of the successful trials at or below it; with {param:measured.statistics.tail.min_successes} successful trials, the median is the tenth fastest trial.
       percentile_rule: |-
@@ -607,7 +611,7 @@ methods:
     headline: Create to first command
     headline_steps: [create, first_command]
     step_notes:
-      first_command: Retrying transient not-ready errors (502, 503, 504, connection refused, or connection reset) every 100 ms up to a {duration:measured.failure_policy.timeout_seconds.first_command_from_create_start} total window from the start of `create`.
+      first_command: Sent once by the benchmark script, as soon as `create` returns, with no ready check before it and no retry. A not-ready answer (HTTP 502, 503 or 504, or a refused or reset connection) ends the trial like any other error.
     notes:
       opening: '{param:reader.common.blocks.create.opening}'
       introduction: 'Times each sandbox from its create request until its first command returns.'
@@ -1152,7 +1156,7 @@ methods:
       failure_policy: |-
         {param:reader.common.blocks.common.failures_citation}
 
-        A sandbox with fewer than {size:measured.parameters.workload.free_bytes} free in `/workspace/hardlink` is recorded as not supported. A trial succeeds only when `stress-ng` exits 0, runs for at least 29 s of its 30 s window, writes a positive links-createdremoved-per-sec value to `out.yaml`, passes the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
+        A sandbox with fewer than {size:measured.parameters.workload.free_bytes} free in `/workspace/hardlink` is recorded as a missed trial, not a failure. A trial succeeds only when `stress-ng` exits 0, runs for at least 29 s of its 30 s window, writes a positive links-createdremoved-per-sec value to `out.yaml`, passes the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
   package-registries:
     step_notes:
       create: "Each trial uploads the pinned lockfiles (`axios-package.json`, `axios-package-lock.json`, or `fastapi-requirements.txt`) to `/tmp`."
