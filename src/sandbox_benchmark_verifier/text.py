@@ -6,8 +6,8 @@ import copy
 import hashlib
 import json
 import re
-from collections.abc import Iterable, Mapping
-from functools import cache
+from collections.abc import Callable, Iterable, Mapping
+from functools import cache, partial
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -156,14 +156,18 @@ def _name_slot(document: Mapping[str, Any], names: Mapping[str, str]) -> dict[st
     return {}
 
 
-def _slot_text(
+def _slot_text(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     document: Mapping[str, Any],
     documents: Mapping[tuple[str, str], Mapping[str, Any]],
     names: Mapping[str, str],
     directions: Mapping[str, str],
     sources: Mapping[str, Mapping[str, Any]],
+    labels: bool = False,
 ) -> dict[str, Any]:
-    """Project fields that supply visible text, excluding method-only prose and facts."""
+    """Project fields that supply visible text, excluding method-only prose and facts.
+
+    ``labels`` marks the names of timed parts in the notes (conventions ``inline_label``).
+    """
     result: dict[str, Any] = _name_slot(document, names)
     if "headline" in document:
         result["headline"] = document["headline"]
@@ -218,32 +222,28 @@ def _slot_text(
     if isinstance(document.get("source"), Mapping) and "venue_terms" in document["source"]:
         result["venue_terms"] = document["source"]["venue_terms"]
     return {
-        key: _resolve_slot_references(value, sources, names, directions)
+        key: _resolve_slot_references(
+            value,
+            partial(
+                resolve_template,
+                names=names,
+                documents=sources,
+                directions=directions,
+                stage_marks=labels and key == "notes",
+            ),
+        )
         for key, value in result.items()
     }
 
 
-def _resolve_slot_references(
-    value: Any,
-    documents: Mapping[str, Mapping[str, Any]],
-    names: Mapping[str, str],
-    directions: Mapping[str, str],
-) -> Any:
+def _resolve_slot_references(value: Any, resolve: Callable[[str], str]) -> Any:
     """Resolve explicit document/version references with the shared placeholder resolver."""
     if isinstance(value, str):
-        return resolve_template(
-            value,
-            names=names,
-            documents=documents,
-            directions=directions,
-        )
+        return resolve(value)
     if isinstance(value, dict):
-        return {
-            key: _resolve_slot_references(item, documents, names, directions)
-            for key, item in value.items()
-        }
+        return {key: _resolve_slot_references(item, resolve) for key, item in value.items()}
     if isinstance(value, list):
-        return [_resolve_slot_references(item, documents, names, directions) for item in value]
+        return [_resolve_slot_references(item, resolve) for item in value]
     return value
 
 
@@ -284,7 +284,9 @@ def _reader_versions(
 def _named(value: Any, names: Mapping[str, str]) -> Any:
     """A definition with its canonical-name placeholders written out, so a reader revision may
     reference a name instead of repeating it."""
-    return _resolve_slot_references(value, {}, names, {})
+    return _resolve_slot_references(
+        value, partial(resolve_template, names=names, documents={}, directions={})
+    )
 
 
 def _metric_statistics(
@@ -347,19 +349,22 @@ def _reader_bundle(  # pylint: disable=too-many-arguments,too-many-positional-ar
     for identifier in sorted(common_documents):
         document_ids["common"] = identifier
 
-    def project(carrier: Mapping[str, Any]) -> dict[str, Any]:
-        """The reader's slots of one carrier document: its headline, notes and panel."""
+    # A typed stage name stays typed (reader_style rule stage-labels); only a placeholder is marked.
+    typed = {k: v for k, v in replacements.items() if k not in names.values() or "stage." != v[:6]}
+
+    def project(carrier: Mapping[str, Any], *, labels: bool = True) -> dict[str, Any]:
+        """The reader slots of one carrier: headline, notes, panel (no labels in a table cell)."""
         # The carrier holds its pinned workload, so notes read the same rows the panel text does.
         # References to the version's own notes (a variant's notes read them) still resolve.
         own = documents[carrier["id"], str(carrier["version"])].get("notes", {})
         pinned = {**carrier, "notes": {**own, **carrier.get("notes", {})}}
         sources = {**parameters, f"{carrier['id']}.{carrier['version']}": pinned}
-        text = _slot_text(carrier, documents, names, directions, sources)
+        text = _slot_text(carrier, documents, names, directions, sources, labels=labels)
         projected: dict[str, Any] = resolve_name_references(
             {key: text[key] for key in ("headline", "notes", "panel") if key in text},
             documents=parameters,
             names=names,
-            references=replacements,
+            references=typed,
             directions=directions,
         )
         return projected

@@ -415,7 +415,7 @@ methods:
 
         It shows which providers execute terminal tool calls and file edits fastest across scientific and systems workloads. {param:reader.common.blocks.coding-workloads.replay}
       introduction: 'Times the total guest-clock runtime required to execute recorded Claude Code shell commands and file edits across ten terminal tasks, with model inference excluded.'
-      metric: '{name:test.terminal-bench-4-0} is the sum of step runtimes across a replayed session of Claude Code tool calls and `Bash` commands. Each step is assigned to one of four stages: `{name:stage.write}` for `Write` and `Edit` calls (replayed via `base64` and `perl`), `{name:stage.read}` for `Read`, `Glob`, and `Grep` calls, and `{name:stage.test}` -> `{name:stage.build}` -> `{name:stage.write}` -> `{name:stage.read}` in priority order for `Bash` commands.'
+      metric: '{name:test.terminal-bench-4-0} is the sum of step runtimes across a replayed session of Claude Code tool calls and `Bash` commands. Each step is assigned to one of four stages: {name:stage.write} for `Write` and `Edit` calls (replayed via `base64` and `perl`), {name:stage.read} for `Read`, `Glob`, and `Grep` calls, and {name:stage.test} -> {name:stage.build} -> {name:stage.write} -> {name:stage.read} in priority order for `Bash` commands.'
       setup: |-
         Each trial uses a sandbox created from the task's pinned {name:test.terminal-bench-4-0} image plus Harbor's system dependencies, running as root with default open networking.
       workload: |-
@@ -570,7 +570,7 @@ methods:
 
         Every trial downloads its repository checkout, compiler toolchain, system packages, and language dependencies from scratch over the provider's network, so the result captures both the provider's network path to public package registries and its CPU and disk speed during linting, compilation, and testing.
       introduction: 'Times each job as the sum of its step runtimes on the sandbox''s clock; {name:job.all} is the geometric mean of the selected jobs.'
-      metric: '{name:test.ci-jobs} is the sum of step runtimes across a job. Each step is assigned by the parameter file to one of four stages: `{name:stage.install}` (`git clone`, `git checkout`, `apt-get`, toolchains, and `pnpm install`, `uv sync`, `go mod download`, `cargo fetch`, `autoreconf`/`./configure`, or Maven) and `{name:stage.lint}`, `{name:stage.test}`, or `{name:stage.build}` (`pnpm test`, `pytest`, `go test`, `cargo test`, `make check`, or `mvn test`).'
+      metric: '{name:test.ci-jobs} is the sum of step runtimes across a job. Each step is assigned by the parameter file to one of four stages: {name:stage.install} (`git clone`, `git checkout`, `apt-get`, toolchains, and `pnpm install`, `uv sync`, `go mod download`, `cargo fetch`, `autoreconf`/`./configure`, or Maven) and {name:stage.lint}, {name:stage.test}, or {name:stage.build} (`pnpm test`, `pytest`, `go test`, `cargo test`, `make check`, or `mvn test`).'
       setup: |-
         Each trial uses a sandbox created from BoxRouter's pinned standard image (box user with passwordless `sudo`, matching GitHub's ubuntu-latest runner conventions) with open networking and no cached toolchains, packages, builds, or Git state.
       workload: |-
@@ -579,8 +579,8 @@ methods:
       cost_how_to_read: '{param:reader.common.blocks.common.cost_reading} {param:content.fact_list.fact_cost_split_rule}'
       limitations:
       - Every trial starts cold without dependency caches or pre-baked SDK images, and live downloads from GitHub, npm, PyPI, crates.io, and Maven Central include upstream registry variance.
-      - Teams that keep warm dependency caches on network volumes, snapshots or prebuilt custom images wait much less on Install than the cold-start times measured here.
-      - Downloading Go, rustup, uv, Temurin JDK, Maven and `apt` build packages that GitHub's hosted ubuntu-latest image pre-installs makes Install longer here than on a hosted GitHub runner.
+      - Teams that keep warm dependency caches on network volumes, snapshots or prebuilt custom images wait much less on {name:stage.install} than the cold-start times measured here.
+      - Downloading Go, rustup, uv, Temurin JDK, Maven and `apt` build packages that GitHub's hosted ubuntu-latest image pre-installs makes {name:stage.install} longer here than on a hosted GitHub runner.
       - The suite covers one representative workflow per language on Linux x86-64 (`linux/amd64`) only.
       - The gin test suite binds port 8080, which collides with the port Blaxel reserves for its internal sandbox API.
       - Blaxel stores the sandbox filesystem entirely in RAM, and BoxRouter does not yet mount external volumes on Blaxel, which limits disk-heavy Rust builds such as spotify-player.
@@ -620,10 +620,10 @@ methods:
     notes:
       opening: '{param:reader.common.blocks.create.opening}'
       introduction: 'Times each sandbox from its create request until its first command returns.'
-      metric: '{name:test.sequential-tti} is the duration from the start of `create` until the first command inside the sandbox returns its expected output, computed as the sum of Create and First command.'
+      metric: '{name:test.sequential-tti} is the duration from the start of `create` until the first command inside the sandbox returns its expected output, computed as the sum of {name:stage.create} and {param:measured.procedure.stages.1.name}.'
       setup: |-
         Each trial uses {param:measured.procedure.sandboxes_per_trial} sequential sandboxes created from BoxRouter's pinned standard image plus a unique per-trial image layer ({product:measured.procedure.trials*measured.procedure.sandboxes_per_trial} sandboxes per variant per provider).
-      trial_steps: '[[steps: build]]Push a unique trial image layer and prepare it with the provider (untimed); then [[steps: create]]for each of {param:measured.procedure.sandboxes_per_trial} sequential sandboxes, run `create` ({name:stage.create}) [[steps: first_command]]and immediately run the selected first command (First command); then [[steps: uptime]]read `/proc/uptime` and probe size (untimed); then [[steps: destroy]]destroy the sandbox and confirm deletion before starting the next.'
+      trial_steps: '[[steps: build]]Push a unique trial image layer and prepare it with the provider (untimed); then [[steps: create]]for each of {param:measured.procedure.sandboxes_per_trial} sequential sandboxes, run `create` ({name:stage.create}) [[steps: first_command]]and immediately run the selected first command ({param:measured.procedure.stages.1.name}); then [[steps: uptime]]read `/proc/uptime` and probe size (untimed); then [[steps: destroy]]destroy the sandbox and confirm deletion before starting the next.'
       procedure: |-
         The {countword:measured.procedure.variants} first-command variants compare bare container readiness (`true`) against the dynamic-linking and filesystem page-in time of loading a language runtime on first touch.
       limitations:
@@ -667,7 +667,7 @@ methods:
         Each sandbox's own times are reported beside the burst and are not parts of it. A sandbox's create time is its own `create` call, its ready time runs from its own `create` call returning to its first successful `true` (retries included), and its TTI runs from its own `create` request to that `true`. Each of these per-sandbox times is summarized per burst as the median, the slowest and, when at least {param:measured.statistics.tail.min_successes} sandboxes answered, the p95; across trials the result is the median of the medians, the slowest of the slowests and the median of the p95s.
       setup: |-
         Each trial creates N sandboxes at once from BoxRouter's pinned standard image. A provider's bursts run one at a time, so only one burst's N sandboxes are in flight.
-      trial_steps: '[[steps: build]]Push a unique trial image layer, prepare the image, and initialize N provider creation contexts (untimed); then [[steps: create]]send N asynchronous `create` calls at once ({name:stage.create}); then [[steps: ready]]as each `create` returns, send `true` and retry transient not-ready errors with the waits and deadline of the ready check in {name:page.common} (First command); then [[steps: size_probe]]probe sizes (untimed) [[steps: destroy]]and destroy all N sandboxes together.'
+      trial_steps: '[[steps: build]]Push a unique trial image layer, prepare the image, and initialize N provider creation contexts (untimed); then [[steps: create]]send N asynchronous `create` calls at once ({name:stage.create}); then [[steps: ready]]as each `create` returns, send `true` and retry transient not-ready errors with the waits and deadline of the ready check in {name:page.common} ({param:measured.procedure.stages.1.name}); then [[steps: size_probe]]probe sizes (untimed) [[steps: destroy]]and destroy all N sandboxes together.'
       limitations:
       - The N sandboxes in a burst contend with one another by design and are not comparable to sequential starts; burst sizes above the concurrency limit of BoxRouter's account with a provider are not run and show as {param:content.ranking_statuses.account_limit.label}.
       - '{param:reader.common.blocks.create.limit_layer}'

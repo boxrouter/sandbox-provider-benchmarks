@@ -15,6 +15,7 @@
     "table",
     "subtitle",
     "inline_code",
+    "inline_label",
     "vocabulary",
     "banned_patterns",
     "allowed_literals",
@@ -239,6 +240,18 @@
     "inline_code": {
       "type": "object",
       "minProperties": 1
+    },
+    "inline_label": {
+      "type": "object",
+      "required": [
+        "mark"
+      ],
+      "properties": {
+        "mark": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
     "vocabulary": {
       "type": "object",
@@ -585,7 +598,7 @@
         "id": {"type": "string", "pattern": "^methodology-style\\.[a-z][a-z0-9-]+$"},
         "text": {"type": "string", "minLength": 1},
         "check": {
-          "enum": ["phrase-table", "repeated-sentence", "forbidden-pattern", "heading", "definition-digits", "other-workload", "defined-term", "introduction-sentence", "code-marks", "paragraph-shape", "metric-paragraph", "colon-after-noun", "one-numbered-list", "status-label", "recorded-size", "step-note", "none"]
+          "enum": ["phrase-table", "repeated-sentence", "forbidden-pattern", "heading", "definition-digits", "other-workload", "defined-term", "introduction-sentence", "code-marks", "paragraph-shape", "metric-paragraph", "colon-after-noun", "one-numbered-list", "status-label", "recorded-size", "step-note", "stage-labels", "none"]
         },
         "flags": {"enum": ["i"]},
         "raw": {"type": "boolean"},
@@ -623,6 +636,7 @@
         "direction_pattern": {"type": "string", "minLength": 1},
         "defined_term_patterns": {"type": "array", "minItems": 1, "items": {"type": "string"}},
         "deferred_fields": {"type": "array", "items": {"type": "string"}},
+        "ordinary_words": {"type": "array", "items": {"type": "string"}},
         "max_item_length": {"type": "integer", "minimum": 1},
         "min_items": {"type": "integer", "minimum": 2},
         "min_item_length": {"type": "integer", "minimum": 1},
@@ -673,6 +687,7 @@
           "if": {"properties": {"check": {"const": "code-marks"}}},
           "then": {"required": ["deferred_fields", "field_id_pattern", "environment_variables", "value_keys", "plain_words", "commands", "typable_patterns"]}
         },
+        {"if": {"properties": {"check": {"const": "stage-labels"}}}, "then": {"required": ["ordinary_words"]}},
         {
           "if": {"properties": {"check": {"const": "introduction-sentence"}}},
           "then": {"required": ["max_length", "time_verb", "other_verb", "index_verbs", "time_units", "direction_pattern"]}

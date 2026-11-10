@@ -533,7 +533,7 @@ def compile_reader(
     *,
     documents: Mapping[tuple[str, str], Mapping[str, Any]],
     document_ids: Mapping[str, str],
-    project: Callable[[Mapping[str, Any]], dict[str, Any]],
+    project: Callable[..., dict[str, Any]],
 ) -> dict[str, Any] | None:
     """Compile each method's copy against its measured versions.
 
@@ -691,7 +691,7 @@ def _compile_method(  # pylint: disable=too-many-arguments,too-many-positional-a
     identifier: str,
     entry: Mapping[str, Any],
     versions: list[Mapping[str, Any]],
-    project: Callable[[Mapping[str, Any]], dict[str, Any]],
+    project: Callable[..., dict[str, Any]],
     timed_by_members: Callable[[Mapping[str, Any]], Collection[str]] | None = None,
     member_parts: Callable[[Mapping[str, Any]], Sequence[Mapping[str, str]]] | None = None,
     *,
@@ -731,7 +731,7 @@ def _compile_method(  # pylint: disable=too-many-arguments,too-many-positional-a
         if limits := time_limits(steps):
             # Step names may name a stage or a test ({name:stage.create}).
             flat = {f"limit{at}_step": row["step"] for at, row in enumerate(limits)}
-            words = project(_carrier(measured, {"notes": flat}))["notes"]
+            words = project(_carrier(measured, {"notes": flat}), labels=False)["notes"]
             text["notes"] = {
                 **text["notes"],
                 "time_limits": [
@@ -749,7 +749,7 @@ def _compile_method(  # pylint: disable=too-many-arguments,too-many-positional-a
                 for at, row in enumerate(parts)
                 for key, value in row.items()
             }
-            words = project(_carrier(measured, {"notes": flat}))["notes"]
+            words = project(_carrier(measured, {"notes": flat}), labels=False)["notes"]
             text["notes"] = {
                 **text["notes"],
                 "timed_parts": [
@@ -818,7 +818,7 @@ def _timed_by_page_members(  # pylint: disable=too-many-arguments
 
 
 def _resolved_tables(
-    project: Callable[[Mapping[str, Any]], dict[str, Any]],
+    project: Callable[..., dict[str, Any]],
     measured: Mapping[str, Any],
     entry: Mapping[str, Any],
     versions: Sequence[Mapping[str, Any]],
@@ -845,7 +845,7 @@ def _resolved_tables(
         for at, row in enumerate(table)
         for key, value in row.items()
     }
-    words = project(_carrier(measured, {"notes": flat}))["notes"] if flat else {}
+    words = project(_carrier(measured, {"notes": flat}), labels=False)["notes"] if flat else {}
     for name, table in rows.items():
         tables[name] = [
             {key: words[f"{name}{at}_{key}"] for key in row} for at, row in enumerate(table)

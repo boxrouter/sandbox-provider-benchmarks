@@ -760,3 +760,54 @@ def test_an_introduction_does_not_make_the_job_host_the_subject() -> None:
     assert _rules([typed], "introduction-not-the-job-host") == ["fork.introduction"]
     good = _item("fork.introduction", "Times how long a provider takes to create a sandbox.")
     assert _rules([good], "introduction-not-the-job-host") == []
+
+
+def _staged() -> Context:
+    """The test context with two timed parts: a named stage and a measured definition's own."""
+    stage = {"id": "install", "kind": "stage", "name": "Install", "parent": "ci-jobs"}
+    websocket = {"id": "websocket", "kind": "stage", "name": "WebSocket", "parent": "previews"}
+    first = {"id": "first-command", "name": "First command"}
+    documents = {"doc.burst": {"id": "doc.burst", "procedure": {"stages": [first]}}}
+    return replace(_context(), names=[*ROWS.values(), stage, websocket], documents=documents)
+
+
+def _stage_labels(items: list[Item], context: Context | None = None) -> list[str]:
+    context = context or _staged()
+    return [
+        f"{key}: {message.split(':')[0]}"
+        for rule, key, message in style_offenses(items, context)
+        if rule == "methodology-style.stage-labels"
+    ]
+
+
+def test_reader_text_never_types_a_timed_part_name() -> None:
+    for text in (
+        "The sum of Create and First command.",  # a name of two words is typed anywhere
+        "Teams wait less on Install than here.",  # a single word typed mid-sentence
+        "Each of four stages (Install, Lint).",
+    ):
+        assert _stage_labels([_item("ci-jobs.limitations", text)]) != [], text
+    read = "Teams wait less on {name:stage.install} and {param:measured.procedure.stages.1.name}."
+    assert _stage_labels([_item("ci-jobs.limitations", read)]) == []
+    for text in (
+        "Install the toolchain first.",  # a verb that starts a sentence
+        "Create sandbox, then run it.",
+        "[[steps: create]]Install the packages.",
+        "- Install the packages.",
+        "A WebSocket upgrade succeeds.",  # an ordinary word as well as a name
+        "A job runs `Install` and `First command`.",  # a code mark is not prose
+    ):
+        assert _stage_labels([_item("ci-jobs.setup", text)]) == [], text
+
+
+def test_a_timed_part_is_never_typed_as_a_mark_or_inside_a_code_mark() -> None:
+    assert _stage_labels([_item("ci-jobs.metric", "Stages: *Install* and more.")]) != []
+    assert _stage_labels([_item("ci-jobs.metric", "Stages: `{name:stage.install}` run.")]) != []
+    assert _stage_labels([_item("ci-jobs.metric", "Stages: {name:stage.install} run.")]) == []
+
+
+def test_the_compiled_notes_mark_only_timed_part_names() -> None:
+    context = replace(_staged(), rendered={"ci-jobs": {"metric": "Stages *Install* and *Other*."}})
+    assert _stage_labels([], context) == [
+        "ci-jobs.notes.metric: marks 'Other', which is no timed part's name"
+    ]

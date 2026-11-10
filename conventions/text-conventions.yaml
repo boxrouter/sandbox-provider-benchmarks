@@ -629,6 +629,9 @@ title:
   - burst-tti
 inline_code:
   mark: '`'
+# A timed part's name in reader prose, as the compiler writes it ("*Create*"); the page draws it in italics.
+inline_label:
+  mark: '*'
 vocabulary:
   overview: composite
 banned_patterns:
@@ -991,6 +994,11 @@ methodology_style:
     text: A trial step's note says only what its step's sentence does not, and never retells the step; it shares no run of four or more words with the step and gives no timed status other than the step's, which the definition's steps own.
     check: step-note
     min_shared_words: 4
+  - id: methodology-style.stage-labels
+    text: A timed part's name (Create, First command, Read, Install) is a label, not an ordinary word. Reader prose writes it only through its name placeholder (a stage name, or a measured definition's procedure stage name), never typed, so the compiler marks it (inline_label) and the page draws it in italics; the mark is never typed and never sits inside a code mark. A name that is also an ordinary word is checked only where it cannot start a sentence, and a name beside another capitalized word is part of a longer name.
+    check: stage-labels
+    ordinary_words:
+    - WebSocket
   - id: methodology-style.code-marks
     text: A code mark is for a command, a path, a flag, an environment variable or an API call, since those are what a reader could type; the field ids (burst_time, create_from_snapshot) stay in the data and under Data Sources, and a label, a number or a unit is plain text.
     check: code-marks

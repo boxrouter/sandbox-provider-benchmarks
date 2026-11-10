@@ -46,6 +46,8 @@ _TARGETS = {
     "axis": _NAME_TARGET,
 }
 PLACEHOLDER_OPENERS = tuple(f"{{{kind}:" for kind in _TARGETS)
+# A procedure stage's name as a parameter ({param:measured.procedure.stages.1.name}).
+_STAGE_NAME_PARAM = re.compile(r"\.procedure\.stages\.\d+\.name\Z")
 
 
 class PlaceholderError(ValueError):
@@ -413,12 +415,32 @@ def resolve_template(
     names: Mapping[str, str],
     documents: Mapping[str, Mapping[str, Any]],
     directions: Mapping[str, str] | None = None,
+    stage_marks: bool = False,
 ) -> str:
     """Recursively resolve source references; reject unknown targets and cycles.
 
-    Consumers render the resolved release value without re-resolving its template.
+    Consumers render the resolved release value without re-resolving its template. With
+    ``stage_marks`` the name of a timed part (``{name:stage.*}`` or a procedure stage's name) is
+    written between the label marks (conventions ``inline_label``), once, for reader prose that
+    draws it as a label.
     """
-    return _resolve_template(template, names, documents, (), directions or {})
+    return _resolve_template(template, names, documents, (), directions or {}, stage_marks)
+
+
+def is_stage_name(placeholder: Placeholder) -> bool:
+    """Whether a placeholder stands for the name of a timed part (a stage)."""
+    return (placeholder.kind == "name" and placeholder.target.startswith("stage.")) or (
+        placeholder.kind == "param" and _STAGE_NAME_PARAM.search(placeholder.target) is not None
+    )
+
+
+def _labelled(text: str) -> str:
+    """``text`` between the owner's label marks (conventions inline_label), not marked twice when
+    its own value already is."""
+    mark = load_conventions()["inline_label"]["mark"]
+    if len(text) > 2 * len(mark) and text.startswith(mark) and text.endswith(mark):
+        return text
+    return f"{mark}{text}{mark}"
 
 
 def _placeholder_value(
@@ -462,12 +484,13 @@ def _placeholder_value(
     return directions.get(value, value) if kind == "direction" else value
 
 
-def _resolve_template(
+def _resolve_template(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     template: str,
     names: Mapping[str, str],
     documents: Mapping[str, Mapping[str, Any]],
     active: tuple[tuple[str, str], ...],
     directions: Mapping[str, str],
+    stage_marks: bool,
 ) -> str:
     if "{" not in template:  # no placeholder: the template is its own text
         return template
@@ -480,8 +503,11 @@ def _resolve_template(
             chain = " -> ".join(f"{kind}:{target}" for kind, target in (*active, reference))
             raise PlaceholderError(f"cyclic placeholder reference: {chain}")
         value = _placeholder_value(placeholder, names, documents, directions)
+        resolved = _resolve_template(
+            str(value), names, documents, (*active, reference), directions, stage_marks
+        )
         output.append(
-            _resolve_template(str(value), names, documents, (*active, reference), directions)
+            _labelled(resolved) if stage_marks and is_stage_name(placeholder) else resolved
         )
         cursor = placeholder.end
     output.append(template[cursor:])

@@ -802,6 +802,70 @@ def _recorded_size(
     return [(rule["id"], key, f"{text}: {rule['text']}") for (key, _), text in offenses.items()]
 
 
+def stage_names(context: Context) -> list[str]:
+    """Every timed part's name the owner writes: the names table's stages and each measured
+    definition's own procedure stage names (First command), longest first."""
+    names = {str(row["name"]) for row in context.names if row.get("kind") == "stage"}
+    for document in context.documents.values():
+        procedure = document.get("procedure")
+        for stage in procedure.get("stages", []) if isinstance(procedure, Mapping) else []:
+            if isinstance(stage, Mapping) and "{" not in str(stage.get("name", "{")):
+                names.add(str(stage["name"]))
+    return sorted(names, key=lambda name: (-len(name), name))
+
+
+_STAGE_PLACEHOLDER = re.compile(r"\{(?:name:stage\.|param:[^{}]*\.stages\.)")
+# What leaves a capitalized word free to start a sentence, a step or a list item.
+_CLAUSE_START = re.compile(r"(?:^|[.!?:]\s+|\n\s*|\]\]\s*)(?:[-*]\s+|\d+\.\s+)?\Z")
+_CAPITAL_BEFORE = re.compile(r"[A-Z][\w-]*\s+\Z")
+
+
+def _typed_stage_name(rule: Mapping[str, Any], names: Sequence[str], text: str) -> str | None:
+    """The first timed part's name that the text types as plain words, else None."""
+    for name in names:
+        for match in re.finditer(rf"(?<![\w-]){re.escape(name)}(?![\w-])", text):
+            before = text[: match.start()]
+            if " " not in name and (
+                name in rule["ordinary_words"]
+                or _CLAUSE_START.search(before)
+                or _CAPITAL_BEFORE.search(before)
+            ):
+                continue
+            return name
+    return None
+
+
+def _stage_labels(
+    rule: Mapping[str, Any], items: Sequence[Item], context: Context
+) -> list[Offense]:
+    """A timed part's name is a placeholder the compiler marks as a label, never typed words, a
+    typed mark, or a name inside a code mark; the compiled notes mark nothing else."""
+    names = stage_names(context)
+    mark = re.escape(str(context.conventions["inline_label"]["mark"]))
+    labelled = re.compile(rf"(?<![\w{mark}]){mark}([^{mark}\s][^{mark}]*){mark}(?![\w{mark}])")
+    offenses: list[Offense] = []
+    for item in items:
+        plain = _CODE_SPAN.sub(" ", item.prose)
+        if name := _typed_stage_name(rule, names, plain):
+            offenses.append(
+                (rule["id"], item.key, f"types the timed part {name!r}: {rule['text']}")
+            )
+        if labelled.search(plain):
+            offenses.append((rule["id"], item.key, f"types a label mark: {rule['text']}"))
+        if any(_STAGE_PLACEHOLDER.search(span) for span in _CODE_SPAN.findall(item.text)):
+            offenses.append(
+                (rule["id"], item.key, f"puts a timed part in a code mark: {rule['text']}")
+            )
+    for method, notes in (context.rendered or {}).items():
+        for key, text in reader_strings(notes, f"{method}.notes"):
+            marked = set(labelled.findall(_CODE_SPAN.sub(" ", text)))
+            offenses.extend(
+                (rule["id"], key, f"marks {label!r}, which is no timed part's name")
+                for label in sorted(marked - set(names))
+            )
+    return offenses
+
+
 CHECKS: Mapping[str, Callable[[Mapping[str, Any], Sequence[Item], Context], list[Offense]]] = {
     "metric-paragraph": _metric_paragraph,
     "step-note": _step_note_restates,
@@ -817,6 +881,7 @@ CHECKS: Mapping[str, Callable[[Mapping[str, Any], Sequence[Item], Context], list
     "defined-term": _defined_term,
     "introduction-sentence": _introduction_sentence,
     "code-marks": _code_marks,
+    "stage-labels": _stage_labels,
     "paragraph-shape": _paragraph_shape,
     "one-numbered-list": _one_numbered_list,
 }
