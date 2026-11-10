@@ -300,6 +300,16 @@ def shape_and_draft(block: str) -> tuple[dict[str, Any], dict[str, Any]]:
                 "fresh_sandbox": "meets",
             },
         ),
+        (
+            "reconnect",
+            {
+                "mode": "single",
+                "sandboxes_per_trial": 1,
+                "capabilities": [],
+                "stages": ["attach", "true"],
+                "fresh_sandbox": "meets",
+            },
+        ),
     ],
 )
 def test_a_shape_and_draft_generate_a_valid_new_benchmark(
@@ -332,6 +342,18 @@ def test_a_shape_and_draft_generate_a_valid_new_benchmark(
     assert sorted((tree / f"parameters/{identifier}/1.0.0").iterdir()) == [
         tree / f"parameters/{identifier}/1.0.0/workloads.json"
     ]
+
+
+def test_a_repeated_shape_step_is_a_repeated_methodology_step(tree: Path) -> None:
+    shape, draft = shape_and_draft("reconnect")
+    path = add_from_shape(tree, "fixture-reconnect", "03-sandbox-operations", shape, draft)
+    steps = yaml.safe_load(path.read_text())["procedure"]["steps"]
+    assert {step["id"]: step.get("repeats", False) for step in steps} == {
+        "create": False,
+        "attach": True,
+        "true": True,
+        "destroy": False,
+    }
 
 
 def test_snapshot_steps_take_their_sandboxes_timers_and_overrides(tree: Path) -> None:

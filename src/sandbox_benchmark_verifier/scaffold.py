@@ -427,6 +427,7 @@ def _steps(
                 "action": override.get("action", operation["action"]),
                 "timer": dict(operation["timer"]) if step["timed"] else None,
                 "timeout_seconds": operation["timeout_seconds"],
+                **({"repeats": True} if step.get("repeats") else {}),
                 "record_steps": [step["id"]],
                 **_in_sandboxes(step["sandbox"], sandboxes),
             }

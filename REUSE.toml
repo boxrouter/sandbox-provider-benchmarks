@@ -41,6 +41,7 @@ path = [
   "tests/fixtures/reference-tests/network/npm_ci.json",
   "tests/fixtures/reference-tests/network/pip_install.json",
   "tests/fixtures/shapes/pause_resume.json",
+  "tests/fixtures/shapes/reconnect.json",
   "tests/fixtures/shapes/snapshot.json",
   "uv.lock",
 ]
