@@ -574,7 +574,7 @@ details:
     heading: Composite
     sentence_source: reader.common.blocks.common.all_view_aggregation
     term: workload value
-    term_href: /benchmarks/methodology/common#workload-value
+    term_href: /benchmarks/methodology/common#multi-unit-workload-value
     unit_headings:
       details.setup: Per-{Unit} Setup
       details.trial-steps: Per-{Unit} Steps

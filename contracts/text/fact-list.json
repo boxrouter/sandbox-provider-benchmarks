@@ -56,7 +56,7 @@
   "fact_no_result_time": "No successful trial. Substituted with the slowest {statistic} from the providers that completed this {unit}.",
   "fact_no_result_cost": "No successful trial. Substituted with the highest {statistic} cost from the providers that completed this {unit}.",
   "fact_no_result_term": "Substituted",
-  "fact_no_result_href": "/benchmarks/methodology/common#workload-value",
+  "fact_no_result_href": "/benchmarks/methodology/common#multi-unit-workload-value",
   "fact_no_result_not_measured": "{param:content.ranking_statuses.not_measured.label}",
   "fact_not_available": "N/A",
   "fact_tail_floor": "{param:sbs.common.statistics.tail.min_successes}",

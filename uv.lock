@@ -726,7 +726,7 @@ wheels = [
 
 [[package]]
 name = "sandbox-benchmark-verifier"
-version = "0.4.375"
+version = "0.4.376"
 source = { editable = "." }
 dependencies = [
     { name = "jsonschema" },

@@ -162,6 +162,41 @@ def test_every_statistics_block_has_a_heading_to_anchor_to() -> None:
     ]
 
 
+def _common_anchors() -> set[str]:
+    """Every anchor the Common page draws: each section's id and each named block's heading."""
+    page = content_criteria()["methodology_page"]
+    anchors = set(_common_sections())
+    for sources in _common_sections().values():
+        for source in sources:
+            if source.startswith("formula:"):
+                name = page["formulas"][source.removeprefix("formula:")].get("name")
+            else:
+                name = page["field_labels"].get(source)
+            if name:
+                anchors.add(_kebab(name))
+    return anchors
+
+
+def _strings(value: Any) -> list[str]:
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in _strings(item)]
+    if isinstance(value, list):
+        return [text for item in value for text in _strings(item)]
+    return [value] if isinstance(value, str) else []
+
+
+def test_every_link_into_common_names_an_anchor_common_draws() -> None:
+    """A link the text contract makes into Common lands on a section or block that Common draws,
+    so renaming a heading cannot leave a link at the top of the page."""
+    hrefs = [
+        text
+        for text in _strings(content_criteria())
+        for text in re.findall(r"/benchmarks/methodology/common#([a-z0-9-]+)", text)
+    ]
+    assert hrefs
+    assert sorted(set(hrefs) - _common_anchors()) == []
+
+
 def test_statistic_links_point_at_blocks_of_the_statistics_section() -> None:
     """Test pages link the statistics they name to Common's blocks: each link terms list belongs to
     a block anchor, and no term is listed twice."""
