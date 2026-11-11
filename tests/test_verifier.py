@@ -28,9 +28,7 @@ def test_validate_handles_multi_document_methodology(tmp_path: Path) -> None:
         "id: cpu\nversion: 1.0.0\n---\nid: memory\nversion: 1.0.0\n"
     )
     (tmp_path / "runs").mkdir()
-    (tmp_path / "runs" / "sample.yaml").write_text(
-        "methodologies:\n  - methodology_id: cpu\n    methodology_version: '1.0.0'\n"
-    )
+    (tmp_path / "runs" / "sample.yaml").write_text("methodologies:\n  - methodology_id: cpu\n")
     assert validate(tmp_path) == []
 
 
@@ -45,15 +43,16 @@ def test_non_string_keys_are_rejected(tmp_path: Path) -> None:
     ]
 
 
-def test_run_methodology_map_citations_are_checked(tmp_path: Path) -> None:
+def test_run_methodology_citations_are_checked_by_id(tmp_path: Path) -> None:
     (tmp_path / "methodology").mkdir()
-    (tmp_path / "methodology" / "cpu.yaml").write_text("id: cpu\nversion: 1.0.0\n")
+    (tmp_path / "methodology" / "cpu.yaml").write_text("id: cpu\n")
     (tmp_path / "runs").mkdir()
     manifest = tmp_path / "runs" / "sample.yaml"
-    manifest.write_text("methodologies:\n  cpu: '1.0.0'\n")
-    assert validate(tmp_path) == []
-    manifest.write_text("methodologies:\n  cpu: '2.0.0'\n")
-    assert validate(tmp_path) == [f"{manifest}: unknown methodology version cpu 2.0.0"]
+    for cited in ("methodologies:\n  - cpu\n", "methodologies:\n  cpu: '1.0.0'\n"):
+        manifest.write_text(cited)
+        assert validate(tmp_path) == []
+    manifest.write_text("methodologies:\n  - memory\n")
+    assert validate(tmp_path) == [f"{manifest}: unknown methodology memory"]
 
 
 def test_ready_check_skip_lists_name_existing_methodology_ids(tmp_path: Path) -> None:

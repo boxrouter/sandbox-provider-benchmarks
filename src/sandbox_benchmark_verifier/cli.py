@@ -84,25 +84,19 @@ def schema_for(path: Path, root: Path) -> Path | None:
     return schema_path if schema_path.is_file() else None
 
 
-def method_refs(value: Any) -> Iterator[tuple[str, str]]:
-    """Find explicit methodology id/version pairs in nested run and data records."""
+def method_refs(value: Any) -> Iterator[str]:
+    """Find the ids of the methodologies that nested run and data records cite."""
     if isinstance(value, Mapping):
         method = value.get("methodology")
-        if isinstance(method, Mapping):
-            identifier, version = method.get("id"), method.get("version")
-            if isinstance(identifier, str) and isinstance(version, (str, int, float)):
-                yield identifier, str(version)
-        for collection in ("methodologies", "methodology_versions"):
-            citations = value.get(collection)
-            if isinstance(citations, Mapping):
-                for identifier, version in citations.items():
-                    if isinstance(identifier, str) and isinstance(version, (str, int, float)):
-                        yield identifier, str(version)
-            else:
-                yield from citation_refs(citations)
-        identifier, version = value.get("methodology_id"), value.get("methodology_version")
-        if isinstance(identifier, str) and isinstance(version, (str, int, float)):
-            yield identifier, str(version)
+        if isinstance(method, Mapping) and isinstance(method.get("id"), str):
+            yield method["id"]
+        citations = value.get("methodologies")
+        if isinstance(citations, Mapping):
+            yield from (identifier for identifier in citations if isinstance(identifier, str))
+        else:
+            yield from citation_refs(citations)
+        if isinstance(value.get("methodology_id"), str):
+            yield value["methodology_id"]
         for child in value.values():
             yield from method_refs(child)
     elif isinstance(value, list):
@@ -110,16 +104,15 @@ def method_refs(value: Any) -> Iterator[tuple[str, str]]:
             yield from method_refs(child)
 
 
-def citation_refs(value: Any) -> Iterator[tuple[str, str]]:
-    """Extract id/version pairs from a methodology citation list."""
+def citation_refs(value: Any) -> Iterator[str]:
+    """Extract the ids from a methodology citation list: ids, or records with an id."""
     if not isinstance(value, list):
         return
     for citation in value:
-        if not isinstance(citation, Mapping):
-            continue
-        identifier, version = citation.get("id"), citation.get("version")
-        if isinstance(identifier, str) and isinstance(version, (str, int, float)):
-            yield identifier, str(version)
+        if isinstance(citation, str):
+            yield citation
+        elif isinstance(citation, Mapping) and isinstance(citation.get("id"), str):
+            yield citation["id"]
 
 
 def read_schemas(root: Path) -> tuple[dict[Path, Mapping[str, Any]], list[str]]:
@@ -162,22 +155,19 @@ def non_string_keys(value: Any, where: str = "$") -> Iterator[str]:
 
 def methodology_index(
     root: Path, documents: Sequence[tuple[Path, Any]]
-) -> tuple[dict[str, set[str]], list[str]]:
-    """Index methodology versions and report duplicate ID/version pairs."""
-    methods: dict[str, set[str]] = defaultdict(set)
+) -> tuple[set[str], list[str]]:
+    """Index the methodology ids and report duplicate ID/version pairs."""
     counts: dict[tuple[str, str], int] = defaultdict(int)
-    errors: list[str] = []
     for path, document in documents:
-        if not path.is_relative_to(root / "methodology") or not isinstance(document, Mapping):
-            continue
-        identifier, version = document.get("id"), document.get("version")
-        if isinstance(identifier, str) and isinstance(version, (str, int, float)):
-            methods[identifier].add(str(version))
-            counts[(identifier, str(version))] += 1
-    for (identifier, version), count in counts.items():
-        if count > 1:
-            errors.append(f"duplicate methodology id/version: {identifier} {version}")
-    return methods, errors
+        if path.is_relative_to(root / "methodology") and isinstance(document, Mapping):
+            if isinstance(document.get("id"), str):
+                counts[(document["id"], str(document.get("version")))] += 1
+    errors = [
+        f"duplicate methodology id/version: {identifier} {version}"
+        for (identifier, version), count in counts.items()
+        if count > 1
+    ]
+    return {identifier for identifier, _ in counts}, errors
 
 
 def run_identity_allowlists(
@@ -240,7 +230,7 @@ READY_CHECK_SKIP_LISTS = ("skipped_by_benchmarks", "skipped_on_restore_by_benchm
 
 
 def ready_check_skip_errors(
-    root: Path, documents: Sequence[tuple[Path, Any]], methods: Mapping[str, set[str]]
+    root: Path, documents: Sequence[tuple[Path, Any]], methods: set[str]
 ) -> list[str]:
     """Every id a ready check names as skipping it is a methodology document's id."""
     errors: list[str] = []
@@ -260,7 +250,7 @@ def ready_check_skip_errors(
 
 
 def validate(root: Path = ROOT) -> list[str]:
-    """Validate every present document and cross-reference methodology versions."""
+    """Validate every present document and cross-reference the methodologies it cites."""
     schemas, errors = read_schemas(root)
     documents, read_errors = load_documents(root)
     errors.extend(read_errors)
@@ -291,9 +281,9 @@ def validate(root: Path = ROOT) -> list[str]:
     for path, document in documents:
         if path.is_relative_to(root / "methodology"):
             continue
-        for identifier, version in method_refs(document):
-            if version not in methods.get(identifier, set()):
-                errors.append(f"{path}: unknown methodology version {identifier} {version}")
+        for identifier in method_refs(document):
+            if identifier not in methods:
+                errors.append(f"{path}: unknown methodology {identifier}")
     errors.extend(_method_errors(root, documents))
     errors.extend(independence_errors(root, documents))
     errors.extend(name_errors(root))
@@ -435,17 +425,15 @@ def bootstrap_mean_ci(
 
 
 def bootstrap_options(root: Path, citation: Any) -> tuple[int, int, float] | None:
-    """Resolve seed, resamples and confidence from the cited methodology version."""
+    """Resolve seed, resamples and confidence from the cited methodology."""
     if not isinstance(citation, Mapping):
         return None
-    identifier, version = citation.get("id"), citation.get("version")
+    identifier = citation.get("id")
     documents = [document for _, document in records(root / "methodology")]
     selected = [
         document
         for document in documents
-        if isinstance(document, Mapping)
-        and document.get("id") == identifier
-        and str(document.get("version")) == str(version)
+        if isinstance(document, Mapping) and document.get("id") == identifier
     ]
     selected.extend(
         document

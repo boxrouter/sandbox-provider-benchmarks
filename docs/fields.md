@@ -279,7 +279,7 @@ One row per described property of the methodology schemas and canonical names ta
 | Property | Meaning | Unit | Example |
 | --- | --- | --- | --- |
 | `run_id` | Identifier of the run. Measurements and aggregates cite it. |  | `"2026-11-01-a"` |
-| `methodologies` | Methodology versions the run used, as methodology id to semantic version. |  | `{"sandbox.create.sequential_tti": "1.0.0"}` |
+| `methodologies` | Ids of the methodologies the run used. The object form, methodology id to semantic version, is accepted for one release while the runner stops sending versions, and is removed after. |  | `["sandbox.create.sequential_tti"]` |
 | `region` | Region the run requested. An unavailable request is Unknown with its reason; observed placement is recorded on each provider measurement. |  | `{"requested": {"value": "us", "source": "recorded"}}` |
 | `machine_configs[]` | Machine sizes the run requested. |  |  |
 | `machine_configs[].id` | Machine config id used in measurements. |  | `"2x4"` |
@@ -313,7 +313,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `provider` | Provider slug, as in the run manifest. |  | `"e2b"` |
 | `methodology` | Methodology the observation belongs to. |  |  |
 | `methodology.id` | Methodology id. |  | `"sandbox.create.sequential_tti"` |
-| `methodology.version` | Methodology version. |  | `"1.0.0"` |
+| `methodology.version` | Accepted for one release while the runner stops sending it, and ignored; removed after. |  | `"1.0.0"` |
 | `run_id` | Run the observation came from. |  | `"2026-11-01-a"` |
 | `trial` | 1-based trial number within the run, provider and variant. | trial number | `7` |
 | `timestamp` | UTC time the observation was taken. | UTC | `"2026-11-01T09:12:03Z"` |
@@ -335,7 +335,7 @@ One row per described property of the methodology schemas and canonical names ta
 | --- | --- | --- | --- |
 | `methodology` | Methodology the number was computed under. |  |  |
 | `methodology.id` | Methodology id. |  | `"sandbox.create.sequential_tti"` |
-| `methodology.version` | Methodology version. |  | `"1.0.0"` |
+| `methodology.version` | Accepted for one release while the runner stops sending it, and ignored; removed after. |  | `"1.0.0"` |
 | `run_id` | Run the number comes from. |  | `"2026-11-01-a"` |
 | `provider` | Provider slug. |  | `"e2b"` |
 | `variant` | Variant id, where the methodology has variants. |  | `"true"` |

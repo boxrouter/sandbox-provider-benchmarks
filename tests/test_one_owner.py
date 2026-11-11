@@ -20,29 +20,21 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_a_chart_binding_body_is_stated_once_and_expands_per_version() -> None:
+def test_a_chart_binding_is_stated_once_per_document() -> None:
     source = json.loads((ROOT / "contracts/text/chart-bindings.json").read_text(encoding="utf-8"))
     assert len({entry["document"] for entry in source["bindings"]}) == len(source["bindings"])
-    expanded = chart_bindings()["bindings"]
-    listed = sum(len(entry["versions"]) for entry in source["bindings"])
-    assert len(expanded) == listed
-    for entry in expanded:
-        assert {"document", "version", "charts"} <= set(entry)
+    for entry in chart_bindings()["bindings"]:
+        assert {"document", "charts"} <= set(entry)
+        assert "versions" not in entry and "version" not in entry
 
 
-def test_a_version_listed_twice_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_document_bound_twice_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     folder = tmp_path / "contracts/text"
     folder.mkdir(parents=True)
     body: dict[str, dict[str, str]] = {"charts": {}, "derived_metrics": {}}
     (folder / "chart-bindings.json").write_text(
         json.dumps(
-            {
-                "schema": "x",
-                "bindings": [
-                    {"document": "d", "versions": ["1.0.0"], **body},
-                    {"document": "d", "versions": ["1.0.0"], **body},
-                ],
-            }
+            {"schema": "x", "bindings": [{"document": "d", **body}, {"document": "d", **body}]}
         ),
         encoding="utf-8",
     )

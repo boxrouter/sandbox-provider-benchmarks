@@ -1,11 +1,8 @@
 {
- "schema": "boxrouter.bench.chart-bindings/2",
+ "schema": "boxrouter.bench.chart-bindings/3",
  "bindings": [
   {
    "document": "deepswe",
-   "versions": [
-    "1.1.22"
-   ],
    "charts": {
     "time-trace": {
      "metric": "tool_time",
@@ -36,9 +33,6 @@
   },
   {
    "document": "terminal-bench-4-0",
-   "versions": [
-    "1.1.19"
-   ],
    "charts": {
     "cost-session": {
      "metric": "cost_per_success",
@@ -57,9 +51,6 @@
   },
   {
    "document": "r2e-gym",
-   "versions": [
-    "1.1.22"
-   ],
    "charts": {
     "time-rollout-tools": {
      "metric": "tool_time",
@@ -109,9 +100,6 @@
   },
   {
    "document": "github-actions",
-   "versions": [
-    "1.1.16"
-   ],
    "charts": {
     "time-job": {
      "metric": "job_time",

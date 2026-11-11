@@ -34,7 +34,6 @@ def derived_term_kinds(document: Mapping[str, Any]) -> list[str]:
         kind
         for binding in chart_bindings()["bindings"]
         if binding["document"] == document.get("id")
-        and binding["version"] == str(document.get("version"))
         for metric in (binding.get("derived_metrics") or {}).values()
         if metric.get("unit") == "ms"
         for kind in (metric.get("terms") or {}).values()

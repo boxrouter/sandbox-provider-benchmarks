@@ -12,7 +12,6 @@ import pytest
 from sandbox_benchmark_verifier.cli import summary_value
 from sandbox_benchmark_verifier.content import content_criteria
 from sandbox_benchmark_verifier.methodology_page import reader_definition
-from sandbox_benchmark_verifier.metric_labels import expand_metric_labels
 from sandbox_benchmark_verifier.names import load_tables, resolve
 from sandbox_benchmark_verifier.subtitles import score_fact_errors, template_errors
 from sandbox_benchmark_verifier.text import _methodologies
@@ -71,25 +70,16 @@ def test_the_flag_rule_exists_and_is_checked_by_web() -> None:
 
 
 def test_the_score_axis_titles_are_exactly_the_quantity_words(bundle: dict[str, Any]) -> None:
-    metrics = expand_metric_labels(bundle["metric_labels"])
+    metrics = bundle["metric_labels"]["metrics"]
     quantities = {r["id"]: r["name"] for r in load_tables(ROOT).names if r["kind"] == "quantity"}
-    versions = {
-        "time-score": next(iter(bundle["methodologies"]["index.speed_score"])),
-        "cost-score": next(iter(bundle["methodologies"]["index.cost_score"])),
-    }
     for reference, title in (
-        (f"time-score@{versions['time-score']}/typical_time_score", quantities["time-score"]),
-        (f"cost-score@{versions['cost-score']}/typical_cost_score", quantities["cost-score"]),
+        ("time-score/typical_time_score", quantities["time-score"]),
+        ("cost-score/typical_cost_score", quantities["cost-score"]),
     ):
         assert metrics[reference]["labels"]["axis"]["metric"] == title
         assert metrics[reference]["labels"]["axis"]["hero"] == title
     # A unit with a clause still gets it: only the grammar's unitless units drop it.
-    assert (
-        metrics[f"time-index@{next(iter(bundle['methodologies']['time-index']))}/typical_time"][
-            "labels"
-        ]["axis"]["metric"]
-        == "Time ({unit})"
-    )
+    assert metrics["time-index/typical_time"]["labels"]["axis"]["metric"] == "Time ({unit})"
 
 
 def test_a_score_document_is_not_listed_among_another_documents_versions() -> None:

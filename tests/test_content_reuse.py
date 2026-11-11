@@ -120,7 +120,7 @@ def test_text_verification_reuses_bundle_criteria_for_fields_and_documents(
             "demo": {"1.0.0": {"text": {"notes": {"introduction": "A short summary."}}}}
         },
         "reader": {"methods": {}},
-        "metric_labels": {"metric_groups": []},
+        "metric_labels": {"metrics": {}},
         "names": [],
     }
     bundle_builds: list[Path] = []

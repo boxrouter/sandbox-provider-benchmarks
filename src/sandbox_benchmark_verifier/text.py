@@ -29,7 +29,7 @@ from sandbox_benchmark_verifier.methodology_page import (
     omit_paths,
     reader_definition,
 )
-from sandbox_benchmark_verifier.metric_labels import compile_metric_labels, expand_metric_labels
+from sandbox_benchmark_verifier.metric_labels import compile_metric_labels
 from sandbox_benchmark_verifier.name_refs import (
     canonical_name_map,
     projection_references,
@@ -960,7 +960,7 @@ def _text_warnings(root: Path) -> list[str]:
     ).values():
         if document.get("category") == "common" and document.get("id") == "sbs.common":
             _common_warnings(warnings, document)
-    for identity, metric in expand_metric_labels(bundle["metric_labels"]).items():
+    for identity, metric in bundle["metric_labels"]["metrics"].items():
         if not criteria["slots"]["caption"]["enabled"]:
             continue
         for target, caption in metric["labels"].get("caption", {}).items():

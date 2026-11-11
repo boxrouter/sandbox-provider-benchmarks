@@ -268,7 +268,10 @@ def variant_errors(
         method = record.get("methodology")
         if not isinstance(method, Mapping):
             continue
-        document = owners.get((str(method.get("id")), str(method.get("version"))))
+        document = next(
+            (owner for (identifier, _), owner in owners.items() if identifier == method.get("id")),
+            None,
+        )
         if document is None:
             continue  # unknown methodology is reported elsewhere
         if record["variant"] not in allowed_variants(root, document, owners):

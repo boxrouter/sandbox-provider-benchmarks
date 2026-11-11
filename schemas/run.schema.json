@@ -2,11 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://boxrouter.ai/schemas/sbs/0.2/run.schema.json",
   "title": "SBS run manifest",
-  "description": "When, where and against which providers one run executed the cited methodology versions. Methodology says what a benchmark is; the run says what was done.",
+  "description": "When, where and against which providers one run executed the cited methodologies. Methodology says what a benchmark is; the run says what was done.",
   "type": "object",
   "additionalProperties": false,
   "required": ["run_id", "methodologies", "region", "machine_configs", "providers", "price_sheet_version", "started_at", "finished_at", "account_warmth", "publication"],
   "$defs": {
+    "methodology_id": {
+      "type": "string",
+      "pattern": "^([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+|[a-z0-9][a-z0-9-]*)$",
+      "examples": ["sandbox.create.sequential_tti"]
+    },
     "requested_region": {
       "oneOf": [
         {
@@ -39,15 +44,25 @@
       "examples": ["2026-11-01-a"]
     },
     "methodologies": {
-      "type": "object",
-      "minProperties": 1,
-      "propertyNames": { "pattern": "^([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+|[a-z0-9][a-z0-9-]*)$" },
-      "additionalProperties": {
-        "type": "string",
-        "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
-      },
-      "description": "Methodology versions the run used, as methodology id to semantic version.",
-      "examples": [{ "sandbox.create.sequential_tti": "1.0.0" }]
+      "description": "Ids of the methodologies the run used. The object form, methodology id to semantic version, is accepted for one release while the runner stops sending versions, and is removed after.",
+      "examples": [["sandbox.create.sequential_tti"]],
+      "oneOf": [
+        {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/methodology_id" }
+        },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/methodology_id" },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+          }
+        }
+      ]
     },
     "region": {
       "type": "object",

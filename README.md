@@ -33,7 +33,7 @@ src/sandbox_benchmark_verifier/             methodology validation and aggregate
 ```
 
 Each methodology document has a stable ID and one current version, which changes in place; runs and
-observations record the versions they used. Run `sandbox-benchmark-verify validate` to
+observations cite the methodologies they used by ID. Run `sandbox-benchmark-verify validate` to
 check schemas and references and `sandbox-benchmark-verify reproduce` to recompute supported aggregates.
 
 Standalone machine reference tests are linked from their methodologies: [CPU](reference-tests/cpu/),

@@ -358,7 +358,6 @@ def test_text_bundle_contains_all_slot_sources_and_is_stable(
                 {
                     "id": metric_id(
                         tables.aliases.get("document", {}).get(document["id"], document["id"]),
-                        document["version"],
                         metric["name"],
                     ),
                     "name": metric.get("name"),
@@ -478,7 +477,7 @@ def test_metric_text_fixture_roundtrips_with_no_semantic_digest_drift(
     assert entry["semantic_digest"] == before
     assert entry["text"]["metrics"] == [
         {
-            "id": metric_id(document["id"], document["version"], document["metrics"][0]["name"]),
+            "id": metric_id(document["id"], document["metrics"][0]["name"]),
             "name": "time_to_interactive",
             "quantity": "time",
             "phase": None,

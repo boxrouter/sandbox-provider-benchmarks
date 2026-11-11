@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
-import json
 import re
 from collections.abc import Mapping
 from typing import Any
 
 from sandbox_benchmark_verifier.chart_bindings import compile_chart_bindings
+from sandbox_benchmark_verifier.versions import version_key
 
 _SLOT = re.compile(r"\{([\w.]+)(\?)?\}")
 
@@ -37,47 +37,9 @@ def _name(rows: list[dict[str, Any]], reference: Mapping[str, Any]) -> str | Non
     return str(matches[0]["name"]) if len(matches) == 1 else None
 
 
-def metric_id(document_id: str, version: str, name: str) -> str:
-    """The qualified reference, derived from existing immutable source identities."""
-    return f"{document_id}@{version}/{name}"
-
-
-def group_metrics(metrics: Mapping[str, Mapping[str, Any]]) -> list[dict[str, Any]]:
-    """One entry per document metric and run of versions whose entries are equal apart from the
-    version, in the order each first appears: a release adds an entry only where a label changed."""
-    groups: dict[str, dict[str, Any]] = {}
-    for identity, metric in metrics.items():
-        rest = {key: value for key, value in metric.items() if key != "version"}
-        if identity != metric_id(rest["document"], metric["version"], rest["name"]):
-            raise ValueError(f"{identity} does not name its own document, version and metric")
-        key = json.dumps(rest, sort_keys=True)
-        groups.setdefault(key, {**rest, "versions": []})["versions"].append(metric["version"])
-    return list(groups.values())
-
-
-def expand_metric_labels(catalog: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
-    """Every metric entry by its qualified reference, as the groups hold them."""
-    return {
-        metric_id(group["document"], version, group["name"]): {
-            **{key: value for key, value in group.items() if key != "versions"},
-            "version": version,
-        }
-        for group in catalog.get("metric_groups", [])
-        for version in group["versions"]
-    }
-
-
-def metric_entry(catalog: Mapping[str, Any], identity: str) -> dict[str, Any] | None:
-    """The entry of one qualified reference, read from its group."""
-    document, _, rest = identity.partition("@")
-    version, _, name = rest.partition("/")
-    for group in catalog.get("metric_groups", []):
-        if group["document"] == document and group["name"] == name and version in group["versions"]:
-            return {
-                **{key: value for key, value in group.items() if key != "versions"},
-                "version": version,
-            }
-    return None
+def metric_id(document_id: str, name: str) -> str:
+    """The qualified reference: the document's id and the metric's name."""
+    return f"{document_id}/{name}"
 
 
 def _templates(
@@ -190,15 +152,16 @@ def _display_metric(
 
 
 def compile_metric_labels(bundle: Mapping[str, Any], aliases: Mapping[str, Any]) -> dict[str, Any]:
-    """Project immutable document/version metrics into source-owned label templates."""
+    """Project each document's metrics into source-owned label templates."""
     grammar = bundle.get("metric_label_grammar")
     if not isinstance(grammar, Mapping) or "tokens" not in grammar:
-        return {"metric_groups": [], "statistics": {}, "contexts": {}}
+        return {"metrics": {}, "statistics": {}, "contexts": {}}
     rows = list(bundle["names"])
     mapped = aliases.get("document", {})
     quantities = _declared_quantities(bundle, grammar)
     metrics: dict[str, Any] = {}
     for document_id, versions in bundle["methodologies"].items():
+        entry = versions[max(versions, key=version_key)]
         canonical = mapped.get(document_id, document_id)
         identities = {
             str(row["kind"]): str(row["name"])
@@ -207,34 +170,32 @@ def compile_metric_labels(bundle: Mapping[str, Any], aliases: Mapping[str, Any])
             == canonical
             and row["kind"] in ("test", "index", "hero")
         }
-        for version, entry in versions.items():
-            for metric in entry["text"].get("metrics", []):
-                if metric.get("name"):
-                    metric["id"] = metric_id(canonical, version, metric["name"])
-                    display = _display_metric(metric, grammar, rows, quantities)
-                    metrics[metric["id"]] = {
-                        "target": "index" if "index" in identities else "metric",
-                        "document": canonical,
-                        "version": version,
-                        "name": metric["name"],
-                        "quantity": display.get("quantity"),
-                        "unit": metric.get("unit"),
-                        "statistic": metric.get("statistic"),
-                        "labels": _labels(
-                            display,
-                            grammar,
-                            rows,
-                            identities,
-                            bundle.get("content_criteria", {})
-                            .get("index_copy", {})
-                            .get("caption_statistic"),
-                        ),
-                        "direction": grammar["tokens"]["directions"].get(metric.get("direction")),
-                    }
+        for metric in entry["text"].get("metrics", []):
+            if metric.get("name"):
+                metric["id"] = metric_id(canonical, metric["name"])
+                display = _display_metric(metric, grammar, rows, quantities)
+                metrics[metric["id"]] = {
+                    "target": "index" if "index" in identities else "metric",
+                    "document": canonical,
+                    "name": metric["name"],
+                    "quantity": display.get("quantity"),
+                    "unit": metric.get("unit"),
+                    "statistic": metric.get("statistic"),
+                    "labels": _labels(
+                        display,
+                        grammar,
+                        rows,
+                        identities,
+                        bundle.get("content_criteria", {})
+                        .get("index_copy", {})
+                        .get("caption_statistic"),
+                    ),
+                    "direction": grammar["tokens"]["directions"].get(metric.get("direction")),
+                }
     return {
-        # Binding the charts adds their derived metrics, so it runs before the grouping.
+        # Binding the charts adds their derived metrics to `metrics`.
         "chart_bindings": _bind_charts(bundle, aliases, grammar, rows, metrics),
-        "metric_groups": group_metrics(metrics),
+        "metrics": metrics,
         "comparison_template": grammar["forms"]["short"]["comparison_template"],
         "statistics": {
             str(row["id"]): str(row["name"]) for row in rows if row["kind"] == "statistic"
@@ -258,24 +219,30 @@ def _bind_charts(
 ) -> dict[str, dict[str, dict[str, str]]]:
     charts, derived = compile_chart_bindings(bundle, aliases)
     for metric in derived:
-        identity = metric_id(metric["document"], metric["version"], metric["name"])
+        identity = metric_id(metric["document"], metric["name"])
         metrics[identity] = {
             **metric,
             "target": "metric",
             "labels": _labels(metric, grammar, rows, {}),
         }
-    return charts
+    return {
+        document: {
+            chart: {**target, "metric": metric_id(document, target["metric"])}
+            for chart, target in bound.items()
+        }
+        for document, bound in charts.items()
+    }
 
 
 def label_for_chart(
     catalog: Mapping[str, Any],
-    method: tuple[str, str],
+    document: str,
     chart: str,
     form: str,
     context: Mapping[str, str] | None = None,
 ) -> str | None:
     """Use the exact output and aggregate declared for this chart."""
-    binding = catalog.get("chart_bindings", {}).get(f"{method[0]}@{method[1]}", {}).get(chart)
+    binding = catalog.get("chart_bindings", {}).get(document, {}).get(chart)
     if binding is None:
         return None
     selected = dict(context or {})
@@ -289,7 +256,7 @@ def label_for(
 ) -> str | None:
     """Resolve a compiled label without reimplementing grammar in a consumer."""
     selected = dict(context or {})
-    metric = metric_entry(catalog, identity)
+    metric = catalog["metrics"].get(identity)
     if not metric:
         return None
     comparison = selected.get("comparison")
