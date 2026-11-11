@@ -123,6 +123,7 @@ names:
   - {row: 89, kind: "hero", id: "sequential-tti", name: "Cold Startup Time", document: "sequential-tti"}
   - {row: 90, kind: "page", id: "benchmarks", name: "Sandbox Benchmarks", summary: "Methods and results for comparing sandbox performance across defined workloads."}
   - {row: 156, kind: "page", id: "common", name: "Common Methodology", document: "sbs.common"}
+  - {row: 157, kind: "page", id: "pricing", name: "Pricing Methodology", document: "sbs.pricing"}
   - {row: 139, kind: "quantity", id: "time-score", name: "Time Score"}
   - {row: 140, kind: "quantity", id: "cost-score", name: "Cost Score"}
   - {row: 144, kind: "hero", id: "provider-score", name: "Provider Scores", document: "index.provider_score", common_section: "provider-scores"}

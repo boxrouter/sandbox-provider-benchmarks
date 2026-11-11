@@ -15,6 +15,7 @@ from sandbox_benchmark_verifier.catalog import _assets
 from sandbox_benchmark_verifier.glance_clock import glance_clock_errors
 from sandbox_benchmark_verifier.lifecycle_profile import profiles
 from sandbox_benchmark_verifier.lock import read_lock
+from sandbox_benchmark_verifier.name_row_checks import off_documents
 from sandbox_benchmark_verifier.names import Tables, _methodology_documents, load_tables
 from sandbox_benchmark_verifier.placeholders import parse_placeholders, resolve_template
 from sandbox_benchmark_verifier.yaml_load import load_yaml_all, read_mapping
@@ -48,6 +49,13 @@ def canonical_name_map(tables: Tables) -> dict[str, str]:
             for identifier in ids:
                 result[f"unit.{identifier}"] = unit_names[str(row["unit"])]
                 result.setdefault(f"document.{identifier}", str(row["name"]))
+    # A test that is off (names status off) is also named under off.<test id> and
+    # off.<document>, so a list of tests ({tests:...}) leaves it out.
+    off = off_documents(tables.names)
+    for row in tables.names:
+        if row["kind"] == "test" and row.get("document", row["id"]) in off:
+            for identifier in (row["id"], row.get("document", row["id"])):
+                result[f"off.{identifier}"] = str(row["name"])
     return result
 
 

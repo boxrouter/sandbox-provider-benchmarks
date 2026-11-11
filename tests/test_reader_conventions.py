@@ -197,39 +197,13 @@ def test_asked_vs_measured_tooltips_do_not_repeat_their_labels() -> None:
         assert resolved[0].isupper() and resolved.endswith("."), identifier
 
 
-def test_composite_is_outside_the_statistics_glossary() -> None:
-    data = json.loads((ROOT / "contracts/text/shared-concepts.json").read_text())
-    assert "index" not in data["concepts"]
-    for key, concept in data["concepts"].items():
-        searchable = json.dumps(concept, ensure_ascii=False)
-        assert not re.search(r"\btypical\b", searchable, re.I), key
-        assert not re.search(r"\bcomposite\b", searchable, re.I), key
-    assert data["concepts"]["workload-value"]["name"] == "Workload Value"
-    assert "meaning" not in data["concepts"]["median"]
-
-
-def test_a_shared_concept_carries_only_what_the_common_page_draws(bundle: dict[str, Any]) -> None:
-    """A concept stands in the Common section that owns its rule, so it has no reference to the
-    document that defines it (the index glossary that drew one is gone)."""
-    data = json.loads((ROOT / "contracts/text/shared-concepts.json").read_text())
-    for key, concept in data["concepts"].items():
-        assert {"name", "source"} <= set(concept) <= {"name", "meaning", "example", "source"}, key
-        assert ("meaning" in concept) == ("example" in concept), key
-    assert "formal_ref" not in bundle["content_criteria"]["reader_entries"]["required_fields"]
-
-
 def test_reader_contract_slots_begin_with_a_capital(bundle: dict[str, Any]) -> None:
     index_copy = bundle["content_criteria"]["index_copy"]
     reader_copy = {key: value for key, value in index_copy.items() if key != "caption_statistic"}
-    concepts = bundle["content_criteria"]["shared_concepts"]
     asked_vs_measured = json.loads((ROOT / "contracts/text/asked-vs-measured.json").read_text())
     for value in _strings(reader_copy):
         if value.strip():
             assert _capital_start(value.strip()), value
-    for concept in concepts.values():
-        for field in ("name", "meaning"):
-            if field in concept:
-                assert _capital_start(concept[field]), concept[field]
     for item in asked_vs_measured.values():
         for field in ("label", "template"):
             if field not in item:

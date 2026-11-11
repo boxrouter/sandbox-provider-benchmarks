@@ -345,9 +345,15 @@ def _reader_bundle(  # pylint: disable=too-many-arguments,too-many-positional-ar
         for row in tables.names
         if row["kind"] in ("test", "index") and "document" in row
     }
-    # The common methodology has no names row: its reader entry is keyed "common".
-    for identifier in sorted(common_documents):
-        document_ids["common"] = identifier
+    # A shared document (Common, Pricing) has no test or index row: its reader entry is keyed by
+    # the id of its page row in the names table ("common" for sbs.common).
+    document_ids.update(
+        {
+            str(row["id"]): str(row["document"])
+            for row in tables.names
+            if row["kind"] == "page" and row.get("document") in common_documents
+        }
+    )
 
     # A typed stage name stays typed (reader_style rule stage-labels); only a placeholder is marked.
     typed = {k: v for k, v in replacements.items() if k not in names.values() or "stage." != v[:6]}

@@ -32,8 +32,6 @@ _NON_SUCCESS_TAIL = re.compile(
     r"|\bwith \d+ trials\b[^.!?\n]*\b(?:tail|p95|p5)\b",
     re.IGNORECASE,
 )
-# The common methodology's own text says a cost without a provider record is unknown.
-_MAY_SAY_UNKNOWN = frozenset({"common"})
 # Prose fields of a reader definition; they may say "unknown" in a sentence.
 _NOT_FACTS = frozenset({"notes", "headline"})
 
@@ -64,7 +62,11 @@ def reader_claim_errors(bundle: Mapping[str, Any]) -> list[str]:
                         f"{where}: {path} bases a tail on trials without requiring successes; "
                         "statistics.tail.min_successes counts successes"
                     )
-                if method not in _MAY_SAY_UNKNOWN and _UNKNOWN.search(sentence):
+                # A shared methodology (Common, Pricing) states rules, which name an unknown
+                # outcome and a cost without a provider record.
+                if row["reader_definition"].get("category") != "common" and _UNKNOWN.search(
+                    sentence
+                ):
                     errors.append(f"{where}: {path} says unknown")
                 if _PARALLEL.search(sentence) and not (isinstance(parallel, int) and parallel > 1):
                     errors.append(f"{where}: {path} says trials run in parallel; it is {parallel}")

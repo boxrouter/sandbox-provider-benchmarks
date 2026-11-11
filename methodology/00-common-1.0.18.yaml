@@ -14,13 +14,19 @@ environment:
     provider. Results are never aggregated across job-host regions; each job-host region is
     its own series.
   connection_idle_seconds: 300
+  connection_idle_exceptions:
+  - provider: daytona
+    rule: The SDK has no idle-timeout setting. Its command channel keeps its connection open, and its file-transfer
+      channel reconnects after file_transfer_idle_seconds of idle time.
+    file_transfer_idle_seconds: 5
   job_host: Every provider is timed from its own cloud job host, the same kind of host for every provider,
     in the AWS region its publication names (every trial's host record carries it as job_host). Each latency
     includes the network path from the job host to the provider's API, which is part of the result and is
     not the provider's own speed.
   network_path: 'Before each provider''s chain starts the run measures that path, untimed and at no cost:
-    the median time to open a TCP connection over 10 attempts to each API host of the provider, with no
-    sandbox and no API call. It is kept in the run manifest with the job host''s name.'
+    the median time to open a TCP connection over network_path_attempts attempts to each API host of the
+    provider, with no sandbox and no API call. It is kept in the run manifest with the job host''s name.'
+  network_path_attempts: 10
 clocks:
   operation: Monotonic clock of the job host, around each call.
   command_runtime: The sandbox's own clock, read just before and after the command. Total time, runtime
@@ -163,12 +169,13 @@ independence:
       test: Rank-based, two-sided.
       correction: benjamini_hochberg
       q: 0.05
+      power: 0.8
       across: 'One family: every finding that can fail (trend, first_round, round_start, lag1, overlap,
         host_saturated and the clustering of a tier split), across every pair of the run. host_type makes
         notes only and is corrected apart.'
     verdict: A check fails a pair only when its effect passes the size stated for it and its corrected
       q is under 0.05. A significant but smaller effect is reported and never fails. Each pair also reports
-      the smallest effect the checks could have found, at 80% power at the corrected level, so a pass
+      the smallest effect the checks could have found, at the stated power at the corrected level, so a pass
       is never read as proof of independence. A failing pair stays out of the publication until its trials
       are excluded with a recorded reason, the effect is explained in the record, or the pair is re-run.
     checks:

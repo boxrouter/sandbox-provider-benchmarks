@@ -128,126 +128,257 @@ common:
 methods:
   common:
     notes:
-      introduction: Sets the shared timing, trial-success, statistics, cost, and failure rules that apply to every benchmark.
-      opening: BoxRouter benchmarks measure the end-to-end speed and billed cost of cloud sandboxes across coding agents, reinforcement learning rollouts, continuous integration pipelines, and low-level machine primitives. Every benchmark runs against ordinary self-serve accounts in each provider's default US region.
+      introduction: Defines the test environment, trial lifecycle, timing clocks, failure classifications, statistical estimators, and independence checks shared across all BoxRouter benchmarks.
       environment: |-
-        Benchmarks request a {machine:measured.environment.size} sandbox unless a workload states otherwise, and record the CPU count and memory the sandbox reports. Benchmarks use the BoxRouter standard image pinned by digest ({hash:sha256|measured.environment.image.reference}); a changed image digest starts a separate results series.
+        **Scope:** BoxRouter benchmarks measure how fast cloud sandboxes run and what they cost. The tests cover coding agents, reinforcement learning rollouts, continuous integration pipelines, sandbox operations, and machine performance.
 
-        Workloads requiring custom toolchains use task-specific images. All images are prepared in each provider account before runs.
+        **Accounts:** Every provider is tested the way an ordinary customer would use it. Each benchmark runs through BoxRouter Core and pinned provider adapters against a self-serve account, with no provider-specific tuning.
 
-        Every provider is timed from its own dedicated cloud job host in AWS region us-west-2, and before each provider's chain starts, the harness records the median TCP connection time across ten attempts to each provider API endpoint. BoxRouter Core and each provider's adapter run at pinned versions, and results from any other host are not combined with these.
+        **Region:** Every provider runs in its default US region. Boat is the exception: it has no US region and no region selector, so its sandboxes run in the EU, and its results are labeled with that region. Boat's results on metrics timed from the US job host carry a marker and a note, because they include the transatlantic network round trip.
 
-        Idle connections stay open for up to {duration:measured.environment.connection_idle_seconds} where the provider's SDK allows it, so sequential requests reuse a warm TLS connection. Daytona's SDK has no setting; its commands keep their connection open, and file transfers reconnect after five seconds idle.
-      clocks: |-
-        Start and end timestamps for any timed span are measured on the same machine. Every timed span belongs to one of two clocks, keeping caller wait (total time), in-sandbox execution (runtime), and transport overhead ("latency", total time minus runtime) separate.
+        **Sandbox Size:** Each benchmark requests a {machine:measured.environment.size} sandbox unless its methodology page specifies another size, and records the CPU count and memory the sandbox reports.
 
-        A timed span contains only the steps its benchmark names, with no warm-up request, probe, or keep-alive inside it. Lifecycle and control-plane operations (`create`, `snapshots.create`, `restore`, file transfers, and `destroy`) have no guest shell around them.
+        **Images:** Every image is pinned by digest and prepared in each provider account before the benchmark run starts. Standard benchmarks use the BoxRouter standard image, pinned by its SHA-256 digest ({hash:sha256|measured.environment.image.reference}); a changed digest starts a separate results series.
 
-        Core times each operation on the job host's monotonic clock from adapter entry (after payload preparation) until the call returns or raises, excluding post-create readiness checks, output archive downloads, and cleanup verification.
+        {name:test.deepswe}, {name:test.terminal-bench-4-0}, and {name:test.r2e-gym} need custom toolchains, so they use task-specific images, also pinned by digest. The {name:tab.create} tests append a unique per-trial layer to a pinned base image.
 
-        Commands that execute inside a sandbox are timed by the guest's own clock so network round trips do not inflate CPU and disk measurements. Bash's `$EPOCHREALTIME` builtin provides microsecond wall-clock readings without spawning a subprocess, but wall clocks inside virtualized guests or restored snapshots can step when synchronized by the host.
+        **Job Host:** Every provider is timed from its own dedicated cloud job host. The job hosts are machines of the same type in the AWS region the publication names, and every trial record stores the host it ran from. Results from different job-host regions are never combined.
 
-        We guard against clock jumps by reading `/proc/uptime` (a monotonic kernel counter at ten-millisecond resolution) into a shell variable via the `read -r -N 64` builtin before and after the timed span. Whole-file reads are required because virtualized procfs implementations such as Sysbox can fail on subsequent line reads.
+        **Network Path:** Every operation timed on the job host includes the network path between the job host and the provider's region. Before a provider's benchmark chain starts, the benchmark script records a baseline for that path: the median time to open a TCP connection to each of the provider's API endpoints, over {param:measured.environment.network_path_attempts} attempts.
 
-        A guest runtime is accepted only when the monotonic uptime span passes the clock gate in the formulas. If the two clocks disagree by more than twenty milliseconds, the runtime is discarded as stepped rather than estimated.
+        The baseline is untimed, creates no sandbox, makes no API call, and is stored in the run manifest with the job host's name.
+
+        **Connections:** Calls reuse a warm connection. Where the provider's SDK supports connection keep-alive, idle client connections stay open for up to {duration:measured.environment.connection_idle_seconds}, so sequential calls reuse a warm TLS session. Daytona's SDK exposes no idle-timeout setting: its command channel keeps its connection open, and its file-transfer channel reconnects after {duration:measured.environment.connection_idle_exceptions.0.file_transfer_idle_seconds} of idle time.
+
+        **Eligibility:** A provider's capability declaration decides which benchmarks it enters. The declarations live in {param:measured.capability_source.repository}, in the files {param:measured.capability_source.declaration_path}. A benchmark includes a provider when the declaration lists every capability the benchmark requires, and excludes the provider when a required capability is absent.
+      trial_lifecycle: |-
+        **Steps:** Every trial follows the same four steps.
+
+        1. **Sandbox creation:** A fresh sandbox starts with the test environment's machine size and image, unless the benchmark page specifies others.
+        2. **Readiness check:** An untimed check waits until the sandbox accepts commands, as Readiness Check below describes.
+        3. **Timed procedure:** The benchmark's measured steps run. The first failed step ends the trial, with no retries inside it.
+        4. **Resource cleanup:** Every sandbox, snapshot, and temporary image the trial created is deleted and confirmed gone. Each sandbox carries a batch label and a provider-enforced lifetime, so a crashed trial cannot leave one running. {name:test.r2e-gym} counts `destroy` in its charted total; other benchmarks record it without charting it.
+
+        **Time Limits:** Every step has a time limit above the slowest normal time seen on any provider, so only a hung call reaches it. Each benchmark lists its limits in its Failures section.
+
+        **Long Commands:** A command that can run for tens of seconds or more (a data load, a `fio` run, an install, a replay script) runs in the background, because a provider's gateway can end a synchronous call that waits too long. The benchmark script polls it every {duration:content.timing.replay.poll_seconds} until it exits; its start and end come from the sandbox's clock, so polling adds nothing to the measured runtime.
       ready_check: |-
-        Every trial follows a four-step lifecycle.
+        **Purpose:** Some providers return from `create` before the sandbox accepts commands, so the first requests fail with {param:measured.ready_check.retry_on.0}, {param:measured.ready_check.retry_on.1}, {param:measured.ready_check.retry_on.2}, {param:measured.ready_check.retry_on.3}, or {param:measured.ready_check.retry_on.4} until it does.
 
-        1. Create a fresh sandbox for the trial, with the machine and image in the test environment unless the test's page names others; the create has a time limit.
-        2. Then run an untimed ready check, because some providers return from `create` before the sandbox accepts commands (HTTP 502, 503 or 504, or a refused or reset connection).
-           - Skipped by: {name:test.sequential-tti} and {name:test.burst-tti}, which time the first command themselves, and sandboxes restored from a snapshot.
-           - Check: send `true` through BoxRouter, with a {duration:measured.ready_check.attempt_timeout_seconds} timeout per attempt and no guest clock wrapper.
-           - Retry: on HTTP 502, 503 or 504, connection refused or connection reset, retry with exponential backoff: first wait {param:measured.ready_check.initial_backoff_ms} ms, multiplied by {param:measured.ready_check.backoff_multiplier} after each not-ready answer, capped at {param:measured.ready_check.max_backoff_ms} ms, with ±{percent:measured.ready_check.jitter_fraction} jitter, and no attempt later than {duration:measured.ready_check.deadline_seconds} after the first.
-           - Failure: reaching that deadline, or any other error, aborts the trial as a provider failure.
-           - Evidence: every attempt and the time to interactive are kept in private evidence.
-        3. Then run the benchmark's timed procedure; the first failed step ends the trial without in-trial retries.
-        4. Last, delete every sandbox, snapshot, and image for the trial and confirm it gone, with a time limit per destroy; destroy time is recorded but not charted, and each sandbox carries a label with its batch and a lifetime that the provider enforces to confirm crashed trials aren't left running.
+        **Backoff:** Right after `create` returns, the benchmark script sends a trivial command ({param:measured.ready_check.command}) through BoxRouter, with a {duration:measured.ready_check.attempt_timeout_seconds} timeout per attempt and no guest clock wrapper, retried with exponential backoff: first wait {duration:measured.ready_check.initial_backoff_ms}, ×{param:measured.ready_check.backoff_multiplier} per not-ready answer, capped at {duration:measured.ready_check.max_backoff_ms}, ±{percent:measured.ready_check.jitter_fraction} jitter, no attempt more than {duration:measured.ready_check.deadline_seconds} after the first.
 
-        Each step's time limit sits above the slowest normal time seen on any provider, with a margin, so a slow provider is measured rather than cut off and a hung call cannot stall the batch.
+        **Deadline:** A check that reaches its deadline without a ready answer, or fails with any other error, ends the trial as a provider failure. Every attempt and the time to interactive are kept in private evidence.
 
-        A command that can run for tens of seconds or more (a data load, a fio row, an install, a replay script) is started in the background, and the benchmark script reads its status every {duration:content.timing.replay.poll_seconds} until it exits, because a call that waits more than about 120 s can be cut by a provider's gateway.
+        **Timed Readiness:** For some tests the wait for a ready sandbox is part of the timed measurement, so no untimed check runs before it. {tests:measured.ready_check.skipped_by_benchmarks} sends its first timed command as soon as `create` returns. On a sandbox restored from a snapshot, {tests:measured.ready_check.skipped_on_restore_by_benchmarks} send the first timed step as soon as `restore` returns; the source sandbox made by `create` still gets the check.
+      clocks: |-
+        **Clocks:** Every timed span starts and ends on the same machine's clock. A timed span contains only the steps its benchmark names, with no warm-up request, probe, or keep-alive inside it. Each span uses one of two clocks:
 
-        The command's start and end come from the sandbox's clock, so the polling adds nothing to the measured time.
+        - **Job-host clock:** The job host's monotonic clock times control-plane and lifecycle operations. BoxRouter Core times each operation (`create`, `snapshots.create`, `restore`, `attach`, file transfers, and `destroy`) from adapter entry, after payload preparation, until the call returns or raises an exception. Post-create readiness checks, output archive downloads, and cleanup verification are excluded. Lifecycle and file-transfer operations run without a guest shell wrapper.
+        - **Sandbox clock:** The guest's own clock times commands inside the sandbox. Network transport between the job host and the provider therefore does not inflate CPU, memory, or disk measurements.
+
+        **Latency:** The caller's wait (total time) splits into the command's execution inside the sandbox (runtime) and the transport overhead around it, which BoxRouter calls "latency" (total time minus runtime):
+      guest_timing: |-
+        **Clock Wrapper:** A short Bash clock wrapper times guest commands without starting a subprocess. Bash's `$EPOCHREALTIME` builtin records microsecond wall-clock timestamps before and after the command. The wrapper writes the result as a `__SANDBOX_CLOCK` trailer line on standard error.
+
+        **Monotonic Clock:** A second, monotonic clock catches guest clocks that jump, since virtualized guest wall clocks and restored snapshots can step when the host synchronizes them. The wrapper also reads `/proc/uptime`, a monotonic kernel counter with {duration:content.timing.intervals.guest.agreement.resolution_ns} resolution, into a shell variable before and after the timed span.
+
+        It reads the whole file with the `read -r -N 64` builtin, because virtualized procfs implementations such as Sysbox can fail on subsequent line reads.
+
+        **Clock Gate:** A guest runtime counts only when both clocks agree. The clock gate accepts a runtime when the wall-clock span and the uptime span satisfy:
+      clock_gate: If the two spans differ by more than {duration:content.timing.intervals.guest.agreement.tolerance_ns}, or either span is negative, the trial's runtime is discarded as a stepped clock rather than estimated.
       failure_policy: |-
-        Public speed and cost results include successful trials only. Failure counts are not published beside speed results; they belong to a separate {name:section.reliability} benchmark (coming soon).
+        **Published Results:** Published speed and cost results come from successful trials only. Unsuccessful attempts, their ownership, replacement links, and billed costs stay in private evidence for cleanup verification and diagnosis. Provider failure rates are measured separately, in the {name:section.reliability} benchmark.
 
-        Every trial ends in one of four classifications.
+        **Outcomes:** Every trial ends in one of these outcomes.
 
-        - A success passes every step and post-run integrity check, holds the guest clock gate, and has every sandbox, snapshot, and temporary image created by the trial confirmed deleted.
-        - A provider failure is any create, snapshot, restore, destroy, or transport error; a readiness check that reaches its {duration:measured.ready_check.deadline_seconds} deadline without a ready answer; a replay script that terminates early without logging a command mismatch; or a failure with uncertain ownership.
-        - A benchmark script error is a failure of our own benchmark script (such as output it cannot parse after a command exited 0); we stop that unit on that provider, fix the script and run the unit again in a later run, without charging the failure to the provider.
-        - An excluded trial ("does not replay here") is one where a deterministic trace diverges on a provider: a command returns an unexpected exit code, a final git patch hash mismatches, or a step hits its timeout (exit 124) while the sandbox still answers a post-timeout check; the trial is excluded rather than counted against the provider, because a live agent would have reacted to the output and taken another path.
+        - **Success:** The trial did everything it had to. It passed every step and post-run integrity check within its time limit, held the clock gate on every guest-timed span, and had every sandbox, snapshot, and temporary image it created confirmed deleted.
+        - **Provider failure:** The provider or its sandbox failed. This covers any `create`, `snapshot`, `restore`, `destroy`, or transport error; a sandbox that stops answering; a sandbox whose stop can't be confirmed; a readiness check that reaches its {duration:measured.ready_check.deadline_seconds} deadline without a ready answer or fails with another error; a replay script that ends early without writing a command-mismatch record; and any failure whose owner was not recorded.
+        - **Benchmark error:** BoxRouter's own benchmark script, adapter binding, or core software failed, for example with output it cannot parse after a command succeeded. The error stops that unit on that provider for the rest of the run instead of retrying it in top-up rounds. The defect is fixed and the unit is re-run in a later run, without charging the failure to the provider.
+        - **Excluded trial:** A deterministic trace or live-registry CI job diverged on the provider ("does not replay here"). It diverges when a command returns an unexpected exit code, a final git patch's SHA-256 digest mismatches, an upstream verifier does not write a passing reward after clean command execution, an upstream package registry fails, or a step hits its timeout (exit code {param:content.timing.replay.timeout_exit_code}) while the sandbox still answers a post-timeout check. Excluded trials do not count against the provider, because a live agent would see the output and take another path.
+        - **Missed trial:** A pre-test environment check skipped the trial before the measured procedure ran, for example because the sandbox's `/workspace` rejects `O_DIRECT` or has less free disk space than {name:tab.disk} or {name:test.hard-links} requires. A missed trial is neither a success nor a failure.
 
-        A top-up run refills every missed, excluded or failed slot until every provider reaches the scheduled number of successful trials N; each failed trial stays in the data with its owner and cause.
+        **Status Labels:** A provider without a ranked bar shows a status label instead. When a provider has no ranked bar, or has unresolved failures on a chart, the result shows one of these status labels:
+      status_labels:
+      - status_label: '{param:content.ranking_statuses.too_few_runs.label}'
+        status_meaning: '{param:content.ranking_statuses.too_few_runs.definition}'
+      - status_label: '{param:content.ranking_statuses.filled.label}'
+        status_meaning: '{param:content.ranking_statuses.filled.definition}'
+      - status_label: '{param:content.ranking_statuses.not_offered.label}'
+        status_meaning: '{param:content.ranking_statuses.not_offered.definition}'
+      - status_label: '{param:content.ranking_statuses.account_limit.label}'
+        status_meaning: '{param:content.ranking_statuses.account_limit.definition}'
+      - status_label: '{param:content.ranking_statuses.in_development.label}'
+        status_meaning: '{param:content.ranking_statuses.in_development.definition}'
+      - status_label: '{param:content.ranking_statuses.not_measured.label}'
+        status_meaning: '{param:content.ranking_statuses.not_measured.definition}'
+      - status_label: '{param:content.ranking_statuses.not_displayed.label}'
+        status_meaning: '{param:content.ranking_statuses.not_displayed.definition}'
+      top_ups: |-
+        **Refills:** Each benchmark refills lost trials until every provider reaches its target. The target is the scheduled number of successful trials, N. Missed, excluded, and provider-failed slots are refilled within the run budget, and each failed trial stays in the data with its owner and cause. Independent trials are topped up one at a time, while interacting trials need a complete rerun.
 
-        A failure of our own benchmark script or of BoxRouter's software stops that unit on that provider instead: the unit is not run again in that run, so the defect is fixed rather than repeated. A missed trial, such as one whose sandbox fails a disk check before the test, is neither a success nor a failure; its slot is refilled.
+        **Stop Conditions:** Refilling stops when any of these conditions holds:
 
-        A full run stops refilling when two refill rounds in a row add no successful trial, when more re-runs than N would be needed, when its time limit for refills runs out, when a failure cannot be replaced (the account's spend limit, a trial cut short so that its outcome is unknown, cleanup that could not be verified, a batch that stopped early), or when the run budget is exhausted.
+        - Two refill rounds in a row add no successful trial.
+        - More re-runs than the intended number of successes N would be needed, so a unit never takes more than 2N trial attempts.
+        - The refill time limit expires.
+        - The run budget is spent.
+        - A failure cannot be replaced: the account's spend limit was reached, a trial was cut short so its outcome is unknown, resource cleanup could not be verified, or a batch stopped early.
 
-        A blocked result is shown as {param:content.ranking_statuses.too_few_runs.label}.
-      statistics_rules: Every test reports these statistics for each unit unless its page names an exception. We compute every statistic per provider and per unit over untrimmed successful trials.
-      median_rule: The median is the smallest value with at least half of the successful trials at or below it; with {param:measured.statistics.tail.min_successes} successful trials, the median is the tenth fastest trial.
+        **Unknown Outcomes:** An unknown owner and an unknown outcome are handled differently. A failure whose owner was not recorded counts as a provider failure and is refilled. A trial cut short with an unknown outcome stops refilling.
+      statistics_rules: |-
+        **Trials Used:** Statistics are computed per provider and per unit, over successful trials only. No trial is trimmed unless the benchmark's methodology page states an exception. Cost aggregation and cost confidence intervals follow {name:page.pricing}.
+
+        **Ranking Floor:** A provider enters a ranking only after enough successful trials. Each benchmark sets that minimum as its ranking floor, which its methodology page states. On multi-unit workloads ({name:test.deepswe}, {name:test.terminal-bench-4-0}, {name:test.r2e-gym}, and {name:test.ci-jobs}), the floor counts successes across all units, and a provider is ranked on the All view only once it also reports a provider-sourced cost.
+      per_unit_statistics: '**Percentiles:** Percentiles use the nearest-rank method over the unit''s n successful trials, sorted in ascending order:'
       percentile_rule: |-
-        The p95 is the tail on the worse side (the {param:measured.statistics.tail.worse_side_percentile}th percentile where lower is better, the fifth percentile where higher is better); with {param:measured.statistics.tail.min_successes} successful trials, the p95 is the second slowest successful trial.
+        **Median:** The median is the headline statistic. It is the smallest trial value with at least half of the successful trials at or below it.
 
-        A tail requires at least {param:measured.statistics.tail.min_successes} successful trials for the unit; below {param:measured.statistics.tail.min_successes} successes, we report the single worst successful trial instead, labeled Slowest or Lowest.
+        **Tail:** The tail statistic reports the worse side of the spread. {name:statistic.p95} is the {param:measured.statistics.tail.worse_side_percentile}th percentile where lower is better, and the fifth percentile where higher is better.
+
+        Reporting {name:statistic.p95} requires at least {param:measured.statistics.tail.min_successes} successful trials for the unit. Below that, the single worst successful trial is reported instead, labeled Slowest for time metrics or Lowest for throughput and rate metrics.
+
+        **Mean:** The arithmetic mean is a secondary statistic over all n untrimmed successful trials:
       interval_rule: |-
-        The bootstrap confidence interval ({param:measured.statistics.interval.confidence} confidence level) is a percentile-bootstrap interval for the median: we draw n values with replacement from the successful trials {param:measured.statistics.interval.resamples} times (with the random seed fixed at {param:measured.statistics.interval.seed}) and take the lower and upper tails of the resampled medians.
+        **Confidence Interval:** The time median carries a {percent:measured.statistics.interval.confidence} percentile-bootstrap confidence interval. The bootstrap draws n values with replacement from the unit's n successful trials {param:measured.statistics.interval.resamples} times, with the random seed fixed at {param:measured.statistics.interval.seed}, and the interval is the central {percent:measured.statistics.interval.confidence} of the resampled medians.
 
-        Where a benchmark pools multiple calls from each sandbox ({name:test.exec-latency}), we resample whole trials rather than individual calls because calls inside a single sandbox are not independent.
-      workload_value: |-
-        Workloads such as {name:test.deepswe}, {name:test.terminal-bench-4-0}, {name:test.r2e-gym}, and {name:test.ci-jobs} comprise multiple distinct units whose durations span an order of magnitude (for example, a five-second operations script against a 199 s ML evaluation). Summing or taking an arithmetic mean across units would let the longest task dominate the ranking.
+        {name:page.pricing} defines the bootstrap interval for mean cost per success.
 
-        {param:reader.common.blocks.common.all_view_aggregation} Using the geometric mean gives equal proportional weight to every unit: making a ten-minute trace ten percent faster improves the workload value by the same percentage as making a half-minute trace ten percent faster.
+        **Pooled Trials:** A benchmark that pools several calls per trial resamples whole trials. {name:test.exec-latency} takes many calls from each sandbox, and calls inside one sandbox are not independent, so the bootstrap resamples whole trials with replacement rather than individual calls.
+      workload_value: '**Geometric Mean:** A workload''s value must not let its longest task dominate. Workloads such as {name:test.deepswe}, {name:test.terminal-bench-4-0}, {name:test.r2e-gym}, and {name:test.ci-jobs} contain units whose durations span an order of magnitude, so a sum or an arithmetic mean would let the longest task decide the ranking. {param:reader.common.blocks.common.all_view_aggregation}'
+      workload_value_rules: |-
+        **Equal Weight:** Every unit carries equal proportional weight. Making a short unit ten percent faster changes the workload value by the same percentage as making a long unit ten percent faster.
 
-        A geometric mean requires values greater than zero across the same set of units for all compared providers; omitting a unit where a provider failed would change the metric's denominator and allow a provider to improve its time by failing its slowest task.
+        **Missing Units:** A provider cannot improve its value by failing a unit. A geometric mean needs positive values over the same unit set for every compared provider, and dropping a unit where a provider failed would let that provider improve its workload value by failing its slowest task.
 
-        When a provider completes at least one unit in a workload but has no successful trials on unit u, we substitute the slowest median time (and highest cost) observed among the providers that completed unit u, analogous to a Worst-Case Execution Time (WCET) or PAR-1 penalty, and flag the provider with a substitution note.
+        So when a provider completes at least one unit of a workload but has no successful trials on a unit, its value on that unit is filled with the slowest time (and highest cost) observed on the unit across all providers that completed it, and the result carries a substitution note.
+
+        **Overview Composites:** On {name:section.overview}, {name:index.time-index} and {name:index.cost-index} take a second unweighted geometric mean across the workload values in the selected scope.
       stage_rule: |-
-        When a benchmark breaks total time into stages (such as {name:stage.read}, {name:stage.write}, {name:stage.install}, {name:stage.build}, and {name:stage.test}), each stage's segment is computed from its own per-stage median across trials.
+        **Stage Medians:** Each stage in a stacked bar has its own median. When a benchmark splits total time into stages (such as {name:stage.read}, {name:stage.write}, {name:stage.install}, {name:stage.build}, and {name:stage.test}), each stage gets its own per-stage median across trials. Per-stage medians need not sum to the median total time.
 
-        On the chart, segment widths are proportionally scaled by the total median divided by the sum of the stage medians so the visual segments add up to the total median bar, while each segment's printed label displays its unscaled stage median.
-      cost: |-
-        Every sandbox's cost comes from the provider: either reported directly by the provider's billing API for that sandbox ID or calculated from provider-reported usage and lifecycle records priced at public list rates using the provider's rules in `cost-method.json` (sandbox-provider-pricing). Each published result records the price-sheet version it used.
+        **Bar Scaling:** Stacked bars scale their segments to fill the total but label the real values. Each segment's width is scaled by the total median divided by the sum of the stage medians, so the plotted segments fill the total median bar. The label on each segment shows its unscaled stage median. Step mean values do sum to the total mean, apart from untimed intervals between steps.
 
-        Our own timers and requested machine sizes never produce a cost. Cost is computed per unit in two steps.
+        **Derived Views:** Interactive subset sums on the charts are derived views. For each trial, a derived view sums the selected sandboxes or steps only when every selected component has a valid value. It summarizes those trial sums with the same nearest-rank estimators and the same {param:measured.statistics.tail.min_successes}-trial tail floor, without a confidence interval.
+      independence: '**Principle:** No trial''s result may depend on another trial: not on what ran before it, what ran beside it, what an earlier trial left behind, how busy the job host was, or how much of the account''s limits other trials used. Provider-wide features that every customer receives (base-image caches, host placement, and warm pools) stay in the result and are recorded in the trial data.'
+      independence_rules: |-
+        Every run enforces these rules to keep trials apart:
 
-        The trial cost of a successful trial is the sum of the provider-sourced costs of the sandboxes it created, each from its create (or restore) request to its confirmed deletion, as given in the formulas, where the set of sandboxes has one member for single-sandbox benchmarks such as {name:test.deepswe}, five for {name:test.r2e-gym}, and N for {name:test.burst-tti}.
+        1. **Fresh sandbox isolation:** Every trial runs in its own fresh sandbox, unless a multi-sandbox benchmark states an exception ({name:test.r2e-gym}, {name:test.sequential-tti}, {name:test.snapshot-and-restore}, and {name:test.fork}). Several passes, calls, or rows inside one sandbox count as one trial sample, not several independent samples.
+        2. **Equal concurrency and rate-limit spacing:** Every provider runs the same number of trials in parallel, which each benchmark declares and which fits both the job host's concurrency cap and the provider's documented concurrent-sandbox limit. When a provider documents a sandbox-creation rate limit, the benchmark script spaces `create` calls to that limit outside all timed steps and records the spacing in the run manifest.
+        3. **Shuffled, interleaved rounds:** A provider's benchmark order is shuffled once per run, with the random seed recorded in the run manifest. Each benchmark's trials are spread across {param:measured.independence.rounds} rounds interleaved with the other benchmarks, so trials come from separate moments across the run rather than one block.
+        4. **Explicit cache control:** Provider image caches stay enabled, because every customer receives them. Guest page and package caches are cleared or bypassed wherever a benchmark specifies cold execution.
+        5. **Dedicated job hosts:** Each provider's chain runs on its own dedicated cloud job host, so one provider's workload cannot slow another provider's timings.
+        6. **Sequential worker cleanup and in-flight tracking:** A worker starts a new trial only after every resource from its previous trial is confirmed deleted. A trial may share provider hosts, disks, and networks with other trials of its batch that run at the same time, and each trial records how many of them were in flight over its window.
+        7. **Empty account verification:** The benchmark account holds no live sandboxes besides the run's own. The benchmark script checks this before each provider's chain starts and records the count of other live sandboxes at the start and end of every batch.
+        8. **Untimed placement and load probes:** Outside timed steps, each trial records, on a best-effort basis, the sandbox's visible CPU model and count (`nproc`), kernel version, and the device and file system behind the working directory, together with the job host's CPU and memory load over the trial's window. No provider host or zone identifier is collected.
+        9. **Pre-publication statistical audit:** Every completed run is audited before publication by the statistical run checks below, with thresholds fixed before the run.
+        10. **Objective outliers:** A value is excluded as implausible only by the outlier and physical-limit checks below, with its reason, and an excluded trial stays in the data as excluded.
+      run_check: |-
+        **Coverage:** The audit covers every provider-benchmark pair with at least {param:measured.independence.run_check.min_trials} successful trials, on each main metric, using one data point per trial. Pairs with fewer successful trials are skipped and listed as unassessed in the run report, and so are checks whose required per-trial placement facts, job-host load facts, or round numbers were not recorded.
 
-        The cost per unit is shown as the unit's trial costs summarized by the statistic menu's choice (the median by default, or the mean or p95), per 1,000 successes. All views report the geometric mean of the per-unit costs.
+        **Correction:** The comparison checks use two-sided rank-based tests with Benjamini-Hochberg false-discovery-rate correction at q = {param:measured.independence.run_check.significance.q}.
 
-        Where a chart splits a time bar into stages, each stage's cost is proportional to that stage's share of the time bar under the same statistic. If any sandbox in a unit has no provider-sourced cost, the unit's cost is Unknown and that provider is excluded from cost rankings for that test. {name:section.sandbox-operations} shows no cost, and the benchmarks page shows no cost for {name:section.machine-performance}.
-      independence: |-
-        No trial's result may depend on another trial: not on what ran before it, what ran beside it, what an earlier trial left behind, how busy the job host was, or how much of the account's limits other trials used.
+        The correction covers one family of failure-eligible checks (trend, first round, round start, lag 1, overlap, host saturated, and the time-clustering runs test of tier split) across all pairs in the run. The host-type check produces notes only and is corrected separately.
 
-        Every trial runs in its own fresh sandbox unless a multi-sandbox benchmark states otherwise, and every provider runs the same number of trials at once, up to ten in flight, spaced outside timed steps whenever a provider documents a creation rate limit.
+        **Failure Rule:** A check fails a pair only when the effect is both large and significant: the observed effect must reach its minimum effect size, and its corrected q-value must be below {param:measured.independence.run_check.significance.q}. Significant effects smaller than the minimum effect size are reported as notes and never fail a pair.
 
-        A provider's benchmark order is shuffled once per run, and each benchmark's trials are interleaved across {param:measured.independence.rounds} rounds from an empty account so samples come from separate moments rather than one contiguous block.
+        Two findings fail without a significance test: the saturated-share fallback of the host-saturated check, and a better-side finding of the outliers check.
 
-        Each trial records, untimed, the sandbox's CPU model and count, kernel, and the device and file system behind its working directory, together with the job host's load over the trial's window.
+        **Detectable Effect:** Each pair also reports the smallest effect the audit could detect. The audit reports the smallest effect detectable at {percent:measured.independence.run_check.significance.power} power at the corrected threshold, so a passing audit on a small sample is not over-interpreted.
 
-        The sandbox readings are best effort and may be missing; no host or zone identifier of the provider is collected. Host saturation is not assessed for a pair when any of its trials lacks the job host's facts, and the CPU comparison leaves out trials with no CPU count; the run report lists each check it skipped.
+        **Resolution:** A failing pair stays out of publication until the failure is resolved. It is resolved when its outlier trials are excluded under the objective outlier rule, the effect is explained in the record, or the pair is re-run.
 
-        Provider-wide features that every customer receives (base-image caches, host placement and warm pools) stay in the result.
+        **Checks:** The table lists each check, what it tests, and when it fails a pair.
+      run_checks:
+      - check_name: Trend
+        check_test: Fitted drift of the metric across trial execution order, expressed as a percentage of the pair's median.
+        check_threshold: Fails at an effect of at least {param:measured.independence.run_check.checks.0.min_effect_pct}% with q < {param:measured.independence.run_check.significance.q}.
+      - check_name: First Round
+        check_test: The trials of the first round compared against those of the later rounds, with at least {param:measured.independence.run_check.checks.1.min_each} trials in each group.
+        check_threshold: Fails at an effect of at least {param:measured.independence.run_check.checks.1.min_effect_pct}% with q < {param:measured.independence.run_check.significance.q}.
+      - check_name: Round Start
+        check_test: The initial trials of each round (started before any trial of that round finished, right after another benchmark's round) compared against the rest of the same round as ratios to the round median, with at least {param:measured.independence.run_check.checks.2.min_each} trials in each group.
+        check_threshold: Fails at an effect of at least {param:measured.independence.run_check.checks.2.min_effect_pct}% with q < {param:measured.independence.run_check.significance.q}.
+      - check_name: Lag 1
+        check_test: Lag-1 rank autocorrelation (ρ) of trial residuals within a batch, after removing the batch median and a Theil-Sen trend.
+        check_threshold: Fails when |ρ| is at least {param:measured.independence.run_check.checks.3.min_abs_rho}, |ρ| times the series' robust spread is at least {param:measured.independence.run_check.checks.3.min_effect_pct}% of the median, and q < {param:measured.independence.run_check.significance.q}.
+      - check_name: Overlap
+        check_test: Trials running alongside other trials of the same batch (a time-weighted mean of at least {param:measured.independence.run_check.checks.4.shared_min} other trials holding a sandbox) compared against solo trials (at most {param:measured.independence.run_check.checks.4.solo_max} other trials), normalized by the batch median, with at least {param:measured.independence.run_check.checks.4.min_each} trials in each group.
+        check_threshold: Fails at an effect of at least {param:measured.independence.run_check.checks.4.min_effect_pct}% with q < {param:measured.independence.run_check.significance.q}.
+      - check_name: Host Saturated
+        check_test: Trials recorded while the job host was saturated (peak CPU at or above {param:measured.independence.run_check.checks.5.cpu_share} of its limit, any CPU throttling, memory pressure (some avg10) at or above {param:measured.independence.run_check.checks.5.mem_pressure_some_avg10}%, or, where pressure files are absent, less than {param:measured.independence.run_check.checks.5.mem_available_min_kib} KiB of available memory) compared against cool trials.
+        check_threshold: With at least {param:measured.independence.run_check.checks.5.min_each} hot and {param:measured.independence.run_check.checks.5.min_each} cool trials, fails at {param:measured.independence.run_check.checks.5.min_effect_pct}% slower or more with q < {param:measured.independence.run_check.significance.q}. With fewer of either, fails when the saturated share of trials is at least {param:measured.independence.run_check.checks.5.fail_share}, and otherwise attaches a note.
+      - check_name: Tier Split
+        check_test: A bimodal hardware or placement split in a group of at least {param:measured.independence.run_check.checks.7.min_group} trials (at least {param:measured.independence.run_check.checks.7.min_minority} of them in the smaller tier) where Ashman's D reaches the floor for the group's size n ({param:measured.independence.run_check.checks.7.min_ashman_d_by_n.0.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.0.0}, {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.1.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.1.0}, {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.2.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.2.0}, {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.3.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.3.0}, and {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.4.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.4.0}).
+        check_threshold: Attaches a note when the tier ratio is at least {param:measured.independence.run_check.checks.7.note_ratio}. Fails only when the tier ratio is at least {param:measured.independence.run_check.checks.7.fail_ratio}, the smaller tier has at least {param:measured.independence.run_check.checks.7.fail_min_minority} trials, and the tiers cluster in time on a runs test (q < {param:measured.independence.run_check.significance.q}); a split that does not cluster in time reflects host placement and does not fail.
+      - check_name: Host Type
+        check_test: The median of trials grouped by recorded CPU count and model (at least {param:measured.independence.run_check.checks.6.min_each} trials) compared against the most common group (at least {param:measured.independence.run_check.checks.6.min_base} trials), corrected separately from the failure family.
+        check_threshold: Never fails a pair. Attaches a placement note when the difference is at least {param:measured.independence.run_check.checks.6.min_effect_pct}%.
+      - check_name: Outliers
+        check_test: Isolated extreme values in a group of at least {param:measured.independence.run_check.checks.8.min_group} trials, defined as at most max(1, {param:measured.independence.run_check.checks.8.max_share} × n) trials lying beyond {param:measured.independence.run_check.checks.8.robust_z} robust sigmas of the median and at least {param:measured.independence.run_check.checks.8.min_ratio} times away from it.
+        check_threshold: Slow spikes are kept and reported. An isolated value on the better side of the median is excluded as implausible unless its own trial's physical-limit or cache check explains it; where the test's steps include `create` or a build, a better-side value is kept as the provider's warm pool (and noted) unless a recorded fact ties the trial to an earlier one.
+      - check_name: Cache Flags
+        check_test: Per-trial physical-limit and cache checks (a throughput ceiling, a cached direct read, a CPU-bound run, and CPU throttling), each evaluated from the trial's own data.
+        check_threshold: Never fails a pair or excludes a trial. When a check fires in at least {percent:measured.independence.run_check.checks.9.min_share} of a pair's trials, a ceiling or a cached direct read is stated on the benchmark page, and a CPU-bound run or throttling is recorded as a note.
+  pricing:
+    notes:
+      introduction: Defines how sandbox costs are obtained from provider billing records, aggregated across benchmark trials, and verified against published list rates.
+      cost_sources: |-
+        **Evidence:** Every cost comes from the provider's own records. BoxRouter's job-host clocks, guest clocks, and requested machine sizes never produce a cost. In the other direction, provider billing timestamps never replace BoxRouter's measured execution times on speed charts.
 
-        Before publication, every provider-benchmark pair with at least {param:measured.independence.run_check.min_trials} successful trials is audited by two-sided rank-based statistical run checks with Benjamini-Hochberg false-discovery-rate control at q = {param:measured.independence.run_check.significance.q}.
+        **Cost Methods:** Each provider's cost method uses the strongest evidence that provider supplies, and the pricing release's `cost-method.json` pins it. Each published result records the price version it used. In order of preference:
 
-        The check family tests for:
+        - **Reported By Provider:** The provider's billing or usage API reports the USD charge for that sandbox ID, and BoxRouter checks it against the provider's published list rates.
+        - **Calculated:** BoxRouter prices the provider's own reported usage quantities or lifecycle event timestamps at stored public list rates, following the provider's documented billing rules, state transitions, minimum durations, and rounding increments.
 
-        - order drift across trials (at least {param:measured.independence.run_check.checks.0.min_effect_pct}% of the median)
-        - first-round cold effects (at least {param:measured.independence.run_check.checks.1.min_effect_pct}%)
-        - round-start warm-pool steps (at least {param:measured.independence.run_check.checks.2.min_effect_pct}%)
-        - lag-one autocorrelation (rank correlation at least {param:measured.independence.run_check.checks.3.min_abs_rho} with {param:measured.independence.run_check.checks.3.min_effect_pct}% effect)
-        - concurrent-batch overlap slowdown (at least {param:measured.independence.run_check.checks.4.min_effect_pct}%)
-        - job-host saturation, at least {param:measured.independence.run_check.checks.5.min_effect_pct}% slower: CPU use at or above {param:measured.independence.run_check.checks.5.cpu_share} of the host's limit, any CPU throttling, memory pressure (some avg10) at or above {param:measured.independence.run_check.checks.5.mem_pressure_some_avg10}%, or, where the host has no pressure files, less than {param:measured.independence.run_check.checks.5.mem_available_min_kib} KiB of memory available; when too few trials ran saturated or unsaturated to compare, the pair fails if a share of at least {param:measured.independence.run_check.checks.5.fail_share} of its trials ran saturated
-        - bimodal hardware tier clustering (ratio at least {param:measured.independence.run_check.checks.7.fail_ratio} across at least {param:measured.independence.run_check.checks.7.fail_min_minority} trials)
-        - CPU count or model differences between trials, reported as a note and never a failure
+        **No Cost:** Without either, the sandbox has no cost. That happens when neither a verified provider charge nor complete provider usage records are available, or when a required rate or resource class is unrecorded. It also happens when the sandbox's stop can't be confirmed and the provider gives no end time and no maximum lifetime, and then the trial is the provider's failure.
 
-        A comparison check fails a pair only when its effect passes both its minimum size and the corrected significance threshold; the saturated-share fallback and a better-side isolated value fail without a significance test.
+        The result then records no total and lists each missing input as what held the cost back. A missing cost is never zero, a guess, a floor, or a range, and it is shown without a method label.
 
-        An isolated value, one beyond {param:measured.independence.run_check.checks.8.robust_z} robust sigmas and at least {param:measured.independence.run_check.checks.8.min_ratio} times away from the median, is excluded as implausible only when it lies on the better side of the median and the trial's own physical-limit or cache check does not explain it.
+        **Settlement:** Some billing records arrive after the sandbox is gone, so a cost settles over a revisit window. Each provider's `billing.yaml` sets the window, measured from the sandbox's end: when to read first, how often to read again, and when to stop.
 
-        Where the test's steps include a `create` call or a step named build, timed or not, a better value is kept as the provider's warm pool unless a recorded fact ties the trial to an earlier one. A slow spike is kept and reported, and the physical-limit and cache checks never exclude a value themselves.
+        While a late record can still arrive, or an early reported figure can still rise as trailing usage settles, the cost is Pending. Once the window closes, a complete cost is shown under its method's label, and a cost whose record never arrived or expired before collection is Unknown.
+
+        **Modal Reports:** Modal reports billing in hourly buckets, so a Modal sandbox's reported cost needs one dedicated App per sandbox. A Modal sandbox has a valid Reported By Provider cost only when all of these hold:
+
+        - A dedicated Modal App held that single sandbox alone, and its report has at least one row and no duplicate or out-of-span rows.
+        - The report was read after the revisit delay.
+        - The recorded request window covers every hour from the sandbox's start through its end; a covered hour with no row adds nothing.
+
+        **Rate Verification:** Stored list rates are checked against provider billing exports. Each billed quantity is converted to the unit of its rate and multiplied by the stored USD rate. A line item matches when the difference is within the pricing release's tolerance. Any mismatch is investigated as evidence and never hidden.
+      cost_calculation: '**Successful Trials:** A provider''s cost is built up from its successful trials. {param:reader.common.blocks.common.cost_reading} Failed, missed, and excluded trials stay in private evidence for cleanup verification and diagnosis, and never enter published cost figures. Cost is computed per unit in two steps: trial cost, then unit cost.'
+      trial_cost: '**Sandbox Sum:** A trial''s cost is the sum of its sandboxes'' costs. The cost of a successful trial adds up the provider-sourced costs of all sandboxes created during the trial, each counted from its `create` or `restore` request to its confirmed deletion:'
+      trial_cost_sandboxes: '**Sandboxes per Trial:** Most benchmarks use one sandbox per trial. {name:test.deepswe}, {name:test.terminal-bench-4-0}, and {name:test.ci-jobs} sum one sandbox per trial, and {name:test.r2e-gym} sums its base sandbox and the rollout sandboxes restored from its snapshot.'
+      unit_cost: |-
+        **Two Summaries:** Each unit's successful trial costs are summarized in two forms, and each chart scales them to the unit its cost label names, such as cost per trace on {name:test.deepswe}.
+
+        - **Statistic selector:** The statistic selected in the chart menu summarizes the unit's successful trial costs: {name:statistic.median} by default, or {name:statistic.mean} or {name:statistic.p95}. It follows the nearest-rank percentile and {param:measured.statistics.tail.min_successes}-trial tail rules in {name:page.common}.
+        - **Mean cost per success:** The total cost of the unit's successful trials, divided by the number of successful trials.
+
+        **Confidence Interval:** The cost confidence interval is a bootstrap of the mean cost per success. It is a {percent:measured.statistics.interval.confidence} percentile-bootstrap interval across {param:measured.statistics.interval.resamples} resamples, drawn with replacement with the random seed fixed at {param:measured.statistics.interval.seed}.
+      workload_cost: |-
+        **Workload Cost:** A workload's cost is the geometric mean of its unit costs. On a multi-unit workload's All view, a provider's workload cost is the unweighted geometric mean of its per-unit costs under the selected statistic, across all units completed by at least one provider.
+
+        If a provider completed at least one unit in the workload but has no successful trials on a unit, its cost on that unit is the highest unit cost observed on it across all providers that completed it. This matches the missing-unit substitution in {name:page.common}.
+
+        **Composite Cost:** The overview's composite cost averages workload costs the same way. On {name:section.overview}, {name:index.cost-index} is the unweighted geometric mean of a provider's workload costs across the workloads in the selected scope. A provider that failed an entire workload gets the highest observed workload cost for it.
+
+        **Shared Units:** In {name:index.time-vs-cost}, each provider's {name:index.time-index} coordinate is computed over the same set of costed units that enter its {name:index.cost-index} coordinate, so both axes compare the same units.
+      stage_cost: '**Stage Cost:** A stage''s share of the cost follows its share of the time. When a workload chart splits a unit''s time bar into stages (such as {name:stage.read}, {name:stage.write}, {name:stage.install}, {name:stage.lint}, {name:stage.build}, and {name:stage.test}), each stage is assigned a share of the unit''s displayed cost in proportion to its share of the total stage time, under the same statistic:'
+      missing_costs: |-
+        **Missing Costs:** One missing sandbox cost removes the provider's cost for the whole view. If any sandbox in a trial lacks a provider-sourced cost, that trial has no cost.
+
+        If any counted trial in a unit or composite scope lacks a cost, or any unit's cost on the selected statistic is zero (which leaves the geometric mean undefined), the provider has no cost for that view and is listed under {param:content.ranking_statuses.not_displayed.label}.
+
+        **Priced Sections:** Cost is published for workloads and the composites built on them. That covers the workloads ({name:test.deepswe}, {name:test.terminal-bench-4-0}, {name:test.ci-jobs}, and {name:test.r2e-gym}) and their composites ({name:index.cost-index}, {name:index.time-vs-cost}, and the cost scores on provider pages). {name:section.sandbox-operations} and {name:section.machine-performance} show no cost.
+      comparing_models: |-
+        **Why Bills Differ:** Similar hourly rates can produce very different bills, because providers meter different quantities, in different units, across different lifecycle states:
+
+        - **CPU units:** Most price CPU per vCPU; one prices it per physical core (two vCPUs), one bundles it into its memory rate, and one bills a flat machine-hour rate per size tier.
+        - **Allocation or use:** Some bill the reserved size while the sandbox runs, some only the CPU time or memory used, and some the larger of the two.
+        - **Memory units:** A GiB (1,024 MiB) is larger than a GB (1,000 MB), and a provider that prices per GB may bill a GiB of memory as a GB.
+        - **Metering edges:** Whole-minute minimums, whole-second truncation, or millisecond edges can outweigh rate differences for a short sandbox.
+        - **Inactive states:** A paused or stopped sandbox may cost nothing, keep paying for its disk, or pay for a retained snapshot.
   time-index:
     headline: Composite time
     notes:

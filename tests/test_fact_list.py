@@ -9,10 +9,9 @@ from sandbox_benchmark_verifier.conventions import load_conventions
 from sandbox_benchmark_verifier.drill_down_rows import drill_down_row_errors
 
 
-def test_fact_list_keeps_retired_facts_and_concepts_out() -> None:
+def test_fact_list_keeps_retired_facts_out() -> None:
     criteria = content_criteria()
     assert criteria_errors(criteria) == []
-    assert "effective-cores" not in criteria["shared_concepts"]
     assert not any(
         key.startswith(("fact_probe_", "fact_effective_cores_")) for key in criteria["fact_list"]
     )

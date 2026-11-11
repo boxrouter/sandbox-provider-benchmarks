@@ -331,6 +331,7 @@
                 "test": { "type": "string" },
                 "correction": { "enum": ["benjamini_hochberg"] },
                 "q": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+                "power": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1, "description": "The power at which each pair reports the smallest effect its checks could have found." },
                 "across": { "type": "string" }
               }
             },
@@ -512,7 +513,13 @@
         "network_path": {
           "type": "string",
           "description": "How a run measures that network path before a provider's chain starts: untimed, with no sandbox and no API call, recorded in the run manifest.",
-          "examples": ["The median time to open a TCP connection over 10 attempts to each API host of the provider."]
+          "examples": ["The median time to open a TCP connection over network_path_attempts attempts to each API host of the provider."]
+        },
+        "network_path_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How many TCP connections to each API host of the provider the network-path measurement times.",
+          "examples": [10]
         },
         "lifetime_seconds": {
           "type": "integer",
@@ -544,6 +551,20 @@
           "x-unit": "s",
           "description": "How long provider connections stay idle before a new handshake is needed, where the integration allows setting it.",
           "examples": [300]
+        },
+        "connection_idle_exceptions": {
+          "type": "array",
+          "description": "Providers whose SDK does not let the integration set the idle time, with what their connections do instead.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["provider", "rule", "file_transfer_idle_seconds"],
+            "properties": {
+              "provider": { "type": "string", "minLength": 1 },
+              "rule": { "type": "string", "minLength": 1 },
+              "file_transfer_idle_seconds": { "type": "number", "exclusiveMinimum": 0, "x-unit": "s" }
+            }
+          }
         }
       }
     },

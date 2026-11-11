@@ -1,0 +1,8 @@
+id: sbs.pricing
+version: 1.0.0
+effective: '2026-11-10'
+name: Pricing methodology
+category: common
+inherits:
+  id: sbs.common
+  version: 1.0.18

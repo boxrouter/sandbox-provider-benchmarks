@@ -101,44 +101,11 @@ def test_public_fact_explanation_metadata_is_validated_and_exported() -> None:
     assert criteria_errors(broken)
 
 
-@pytest.mark.parametrize(
-    "mutation",
-    ["missing", "length", "semicolons", "internal", "version", "source", "duplicate", "ui"],
-)
-def test_shared_reader_entries_reject_dense_or_internal_copy(mutation: str) -> None:
-    criteria = copy.deepcopy(content_criteria())
-    entry = criteria["shared_concepts"]["median"]
-    if mutation == "missing":
-        entry.pop("name")
-    elif mutation == "length":
-        entry["meaning"] = "A" * 281
-    elif mutation == "semicolons":
-        entry["meaning"] = (
-            "The median is recorded; the result is sorted; the statistic is calculated."
-        )
-    elif mutation == "internal":
-        entry["meaning"] = "The result uses decompress_mips."
-    elif mutation == "version":
-        entry["meaning"] = "The result uses v1.2.3."
-    elif mutation == "source":
-        entry["source"] = "Guessed"
-    elif mutation == "duplicate":
-        entry["meaning"] = criteria["shared_concepts"]["ranking-floor"]["meaning"]
-    else:
-        entry["meaning"] = "The page shows results with a Coming Soon tag."
-    assert criteria_errors(criteria)
-
-
-def test_details_must_add_information_and_link_shared_definitions() -> None:
+def test_details_must_add_information() -> None:
     criteria = content_criteria()
     scope = capture()
     scope["slots"][3]["text"] = scope["slots"][1]["text"] + " This is timed."
     assert any("near-duplicate" in error for error in rendered_content_errors(criteria, scope))
-    scope["slots"][3]["text"] = criteria["shared_concepts"]["ranking-floor"]["meaning"]
-    assert any(
-        "shared concept ranking-floor" in error
-        for error in rendered_content_errors(criteria, scope)
-    )
 
 
 def test_repeated_headings_and_alphabetical_tabs_fail_the_shared_guard() -> None:

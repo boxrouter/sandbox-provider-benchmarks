@@ -66,7 +66,6 @@ path = [
   "contracts/text/public-source-provenance.json",
   "contracts/text/hover-templates.json",
   "contracts/text/index-copy.json",
-  "contracts/text/shared-concepts.json",
   "methodology/**",
   "parameters/*/*/protocol.json",
   "parameters/*/*/workloads.json",

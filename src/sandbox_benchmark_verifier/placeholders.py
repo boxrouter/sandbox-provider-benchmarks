@@ -26,6 +26,7 @@ _TARGETS = {
     "name": _NAME_TARGET,
     "workloads": _NAME_TARGET,
     "units": _NAME_TARGET,
+    "tests": _PARAM_TARGET,
     "quantity": _METRIC_TARGET,
     "param": _PARAM_TARGET,
     "commit": re.compile(
@@ -211,6 +212,21 @@ def _number(target: str, documents: Mapping[str, Mapping[str, Any]]) -> int | fl
     return value
 
 
+# A duration field that names its unit (initial_backoff_ms, tolerance_ns): its size in seconds.
+_DURATION_UNITS = {"_ms": 1e-3, "_ns": 1e-9}
+
+
+def _duration_text(target: str, documents: Mapping[str, Mapping[str, Any]]) -> str:
+    """A duration read from a field in seconds, or in the unit its name ends with (``_ms``,
+    ``_ns``); a value under a second from such a field reads in milliseconds ("20 ms")."""
+    value = _number(target, documents)
+    scale = next((size for suffix, size in _DURATION_UNITS.items() if target.endswith(suffix)), 1)
+    seconds = value * scale
+    if scale != 1 and seconds < 1:
+        return f"{round(seconds * 1000, 6):g} ms"
+    return seconds_text(round(seconds, 9))
+
+
 def seconds_text(seconds: int | float) -> str:
     """The one rule for a duration in reader text: up to 60 s in seconds, then whole hours or
     minutes when the value is a multiple of them ("60 s", "15 min", "2 h"), else seconds."""
@@ -358,6 +374,23 @@ def _workload_names(
     return _list_text(labels)
 
 
+def _test_names(target: str, names: Mapping[str, str], documents: Mapping[str, Any]) -> str:
+    """The names of the tests a definition lists by id, in its order; a test that is off (names
+    status off, named under off.<id>) is left out, so the text follows the one switch."""
+    identifiers = _param_raw(target, documents)
+    if not isinstance(identifiers, list):
+        raise PlaceholderError(f"{target!r} is not a list of test ids")
+    labels = []
+    for identifier in identifiers:
+        if f"test.{identifier}" not in names:
+            raise PlaceholderError(f"unknown test {identifier!r}")
+        if f"off.{identifier}" not in names:
+            labels.append(names[f"test.{identifier}"])
+    if not labels:
+        raise PlaceholderError(f"every test {target!r} lists is off")
+    return _list_text(labels)
+
+
 def _workload_units(
     target: str, names: Mapping[str, str], documents: Mapping[str, Mapping[str, Any]]
 ) -> str:
@@ -458,10 +491,11 @@ def _placeholder_value(
     simple: dict[str, Callable[[], Any]] = {
         "workloads": lambda: _workload_names(target, names, documents),
         "units": lambda: _workload_units(target, names, documents),
+        "tests": lambda: _test_names(target, names, documents),
         "count": lambda: _count(target, documents),
         "countword": lambda: count_word(target, documents),
         "version": lambda: version_text(target, documents),
-        "duration": lambda: seconds_text(_number(target, documents)),
+        "duration": lambda: _duration_text(target, documents),
         "percent": lambda: percent_text(_number(target, documents)),
         "size": lambda: size_text(_number(target, documents)),
         "imagesize": lambda: byte_size_text(int(_number(target, documents))),

@@ -34,7 +34,6 @@ from sandbox_benchmark_verifier.reader_concepts import (
     hover_source_errors,
     hover_templates,
     reasons,
-    shared_concepts,
 )
 from sandbox_benchmark_verifier.scope_kinds import scope_kinds
 from sandbox_benchmark_verifier.stage_hovers import (
@@ -140,9 +139,6 @@ def content_criteria() -> dict[str, Any]:
         result["index_copy"]["descriptions"].update(
             score_descriptions(result["conventions"]["subtitle"], load_tables().names)
         )
-    result["shared_concepts"] = shared_concepts(
-        result.get("fact_explanations", {}), result.get("index_copy", {})
-    )
     result["hover_templates"] = hover_templates(result)
     for code, entry in result["hover_templates"].items():
         entry["slot"] = f"tooltip.{code}"
@@ -427,7 +423,6 @@ def criteria_errors(criteria: Mapping[str, Any]) -> list[str]:
     errors.extend(footer_group_errors(criteria))
     errors.extend(status_details_errors(criteria))
     errors.extend(_public_trial_errors(criteria))
-    errors.extend(_reader_entry_errors(criteria))
     return errors
 
 
@@ -443,38 +438,6 @@ def _public_trial_errors(criteria: Mapping[str, Any]) -> list[str]:
             "public trial presentation must contain successful samples and blocked reasons only"
         ]
     return []
-
-
-def _reader_entry_errors(criteria: Mapping[str, Any]) -> list[str]:
-    rules = criteria.get("reader_entries", {})
-    errors: list[str] = []
-    seen: dict[str, str] = {}
-    for code, entry in criteria.get("shared_concepts", {}).items():
-        if any(not entry.get(field) for field in rules.get("required_fields", [])):
-            errors.append(f"{code}: missing required reader-entry field")
-        text = " ".join(str(entry.get(field, "")) for field in ("name", "meaning", "example"))
-        if len(text) > rules.get("max_length", 280):
-            errors.append(f"{code}: reader entry exceeds length bound")
-        if text.count(";") > rules.get("max_semicolons", 1):
-            errors.append(f"{code}: too many semicolons")
-        if entry.get("source") not in rules.get("source_badges", []):
-            errors.append(f"{code}: unknown source badge")
-        for pattern in criteria["conventions"]["banned_patterns"]["internal_ids"]:
-            if re.search(pattern, text):
-                errors.append(f"{code}: internal identifier in reader text")
-        errors.extend(f"{code}: {error}" for error in _reader_prose_errors(text, criteria))
-        for field in ("meaning", "example"):
-            if field not in entry:
-                continue
-            errors.extend(
-                f"{code}.{field}: {error}"
-                for error in slot_errors(entry.get(field, ""), criteria["slots"]["details.setup"])
-            )
-        meaning = " ".join(str(entry.get("meaning", "")).casefold().split())
-        if meaning and meaning in seen:
-            errors.append(f"{code}: duplicate definition of {seen[meaning]}")
-        seen[meaning] = code
-    return errors
 
 
 def _reader_prose_errors(text: str, criteria: Mapping[str, Any]) -> list[str]:
@@ -502,21 +465,6 @@ def _similarity_errors(values: Mapping[str, str], criteria: Mapping[str, Any]) -
             ):
                 errors.append(f"{slot}: near-duplicate of {other}")
     return errors
-
-
-def _shared_definition_errors(values: Mapping[str, str], criteria: Mapping[str, Any]) -> list[str]:
-    threshold = criteria.get("uniqueness", {}).get("similarity_threshold", 1.0)
-    return [
-        f"{slot}: definition belongs to shared concept {code}; use a link"
-        for slot, text in values.items()
-        if slot.startswith("details.")
-        for code, entry in criteria.get("shared_concepts", {}).items()
-        if "meaning" in entry
-        and SequenceMatcher(
-            None, text.casefold().split(), entry["meaning"].casefold().split()
-        ).ratio()
-        >= threshold
-    ]
 
 
 def slot_rule(criteria: Mapping[str, Any], slot: str, kind: str | None = None) -> dict[str, Any]:
@@ -786,9 +734,8 @@ def _source_similarity_errors(
 
 
 def text_similarity_errors(values: Mapping[str, str], criteria: Mapping[str, Any]) -> list[str]:
-    """Near-duplicates, shared-concept restatements and interface prose among resolved slot text."""
+    """Near-duplicates and interface prose among resolved slot text."""
     errors = _similarity_errors(values, criteria)
-    errors.extend(_shared_definition_errors(values, criteria))
     for slot, text in values.items():
         errors.extend(f"{slot}: {error}" for error in _reader_prose_errors(text, criteria))
     return errors
@@ -840,11 +787,6 @@ def rendered_content_errors(criteria: Mapping[str, Any], scope: Mapping[str, Any
     errors.extend(_rendered_order_errors(slots, panel))
     errors.extend(
         _similarity_errors({slot: row.get("text", "") for slot, row in by_id.items()}, criteria)
-    )
-    errors.extend(
-        _shared_definition_errors(
-            {slot: row.get("text", "") for slot, row in by_id.items()}, criteria
-        )
     )
     errors.extend(_heading_errors(scope.get("headings", []), criteria))
     errors.extend(_taxonomy_errors(scope.get("taxonomy_lists", []), criteria))

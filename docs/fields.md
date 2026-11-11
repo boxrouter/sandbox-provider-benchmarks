@@ -83,6 +83,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `independence.run_check.material_effect` | Version 1.0.7 only: one effect size for every check. |  |  |
 | `independence.run_check.outliers` | Version 1.0.7 only: the outlier rule, stated beside the checks. |  |  |
 | `independence.run_check.min_trials` | Fewest successful trials a pair needs to be checked (from version 1.0.8). |  |  |
+| `independence.run_check.significance.power` | The power at which each pair reports the smallest effect its checks could have found. |  |  |
 | `independence.run_check.checks[]` | Each check with its thresholds, fixed before any run. Thresholds are numbers, flags, lists of names or lists of number pairs. |  |  |
 | `independence_answers` | How the benchmark answers each rule of the inherited common methodology's `independence.rules`, keyed by rule id: it meets the rule, or it is an exception with its reason. The verifier fails a benchmark that leaves a rule unanswered. |  |  |
 | `metrics[]` | The values the benchmark produces, one entry each. |  |  |
@@ -105,10 +106,12 @@ One row per described property of the methodology schemas and canonical names ta
 | `environment.network` | Network requirements of the sandbox for this benchmark, or `unknown`. |  | `"unknown"` |
 | `environment.region_policy` | Rule for choosing a region. The region of a particular run is recorded in the run manifest, not here. |  | `"The provider's US region, never a narrower one."` |
 | `environment.job_host` | Where the benchmark's job host runs and what that means for every latency: the clocks run on it, so each operation time includes the network path between it and the provider's API. It names the job host's region, because that distance is part of every result. |  | `"Every provider is timed from its own cloud job host in one named region; latency includes the network path to the provider's API."` |
-| `environment.network_path` | How a run measures that network path before a provider's chain starts: untimed, with no sandbox and no API call, recorded in the run manifest. |  | `"The median time to open a TCP connection over 10 attempts to each API host of the provider."` |
+| `environment.network_path` | How a run measures that network path before a provider's chain starts: untimed, with no sandbox and no API call, recorded in the run manifest. |  | `"The median time to open a TCP connection over network_path_attempts attempts to each API host of the provider."` |
+| `environment.network_path_attempts` | How many TCP connections to each API host of the provider the network-path measurement times. |  | `10` |
 | `environment.lifetime_seconds` | Maximum lifetime the provider is asked to enforce on each sandbox. | s | `300` |
 | `environment.capability_settings` | Settings the benchmark applies per capability gate, such as the access and ports a preview opens. |  | `{"previews": {"access": "public", "ports": [8080]}}` |
 | `environment.connection_idle_seconds` | How long provider connections stay idle before a new handshake is needed, where the integration allows setting it. | s | `300` |
+| `environment.connection_idle_exceptions[]` | Providers whose SDK does not let the integration set the idle time, with what their connections do instead. |  |  |
 | `clocks` | Which clock times what. |  |  |
 | `clocks.operation` | Clock for operation durations (create, destroy, command round trip). |  | `"Monotonic clock of the job host."` |
 | `clocks.command_runtime` | Clock for a command's own runtime. |  | `"The sandbox's own clock, read around the command."` |

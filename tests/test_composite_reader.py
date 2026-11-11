@@ -12,10 +12,6 @@ def test_composite_copy_and_current_reader_text(bundle: dict[str, Any]) -> None:
     copy = content_criteria()["index_copy"]
     assert copy["description"].startswith("Each provider’s composite value")
     assert copy["definition"].startswith("A composite ")
-    assert "index" not in bundle["content_criteria"]["shared_concepts"]
-    assert (
-        bundle["content_criteria"]["shared_concepts"]["workload-value"]["name"] == "Workload Value"
-    )
 
 
 def test_the_cost_composite_and_time_vs_cost_state_one_omission_rule(

@@ -328,14 +328,17 @@
     },
     "not_displayed": {
       "label": "Not Displayed",
+      "definition": "The provider is left off this view: it has no result here, or it lacks an input the view needs, such as a provider-sourced cost.",
       "footer": true
     },
     "filled": {
       "label": "Provider Failures",
+      "definition": "The provider has failed trials that top-up rounds did not replace.",
       "footer": true
     },
     "filled_units": {
       "label": "Provider Failures",
+      "definition": "The provider has units whose failed trials top-up rounds did not replace.",
       "footer": true
     }
   },
@@ -348,20 +351,6 @@
       "(?i)\\bcoming soon tag\\b"
     ],
     "status_is_metadata": true
-  },
-  "reader_entries": {
-    "required_fields": [
-      "name",
-      "source"
-    ],
-    "max_length": 280,
-    "max_semicolons": 1,
-    "source_badges": [
-      "Measured",
-      "Calculated",
-      "Published",
-      "Recorded"
-    ]
   },
   "literal_templates": {},
   "provider_capabilities": {

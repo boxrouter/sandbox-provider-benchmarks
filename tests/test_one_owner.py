@@ -66,12 +66,10 @@ def test_median_and_mean_labels_are_the_registry_names() -> None:
     for statistic in ("median", "mean"):
         assert page["field_labels"][statistic] == names[statistic]
         assert page["enum_labels"][statistic] == names[statistic]
-    assert criteria["shared_concepts"]["median"]["name"] == names["median"]
-    for path in ("methodology-page.json", "shared-concepts.json"):
-        text = (ROOT / "contracts/text" / path).read_text(encoding="utf-8")
-        assert '"median": "Median"' not in text
-        assert '"mean": "Mean"' not in text
-        assert '"name": "Median"' not in text
+    text = (ROOT / "contracts/text/methodology-page.json").read_text(encoding="utf-8")
+    assert '"median": "Median"' not in text
+    assert '"mean": "Mean"' not in text
+    assert '"name": "Median"' not in text
 
 
 def test_every_yaml_file_is_parsed_by_the_one_loader() -> None:

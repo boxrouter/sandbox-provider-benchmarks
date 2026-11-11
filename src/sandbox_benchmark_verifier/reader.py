@@ -75,7 +75,7 @@ INDEX_PANEL_NOTES = {"setup", "trial_steps", "how_to_read", "cost_summary", "cos
 # A page hosting other tests keeps its own Short Name and subtitle.
 PAGE_NOTES = {"page_headline", "page_introduction"}
 _MEASURED = re.compile(
-    r"\{(param|commit|hash|count|countword|version|duration|percent|size|imagesize|machine|product):([^{}]*)\}"
+    r"\{(param|commit|hash|count|countword|version|duration|percent|size|imagesize|machine|product|tests):([^{}]*)\}"
 )
 SLOT_CHECKED_NOTES = (
     "trial_steps",
@@ -88,7 +88,6 @@ SLOT_CHECKED_NOTES = (
     "calculation",
     "failure_policy",
     "statistics_rules",
-    "median_rule",
     "percentile_rule",
     "interval_rule",
     "workload_value",
@@ -101,7 +100,7 @@ VERSIONED_NOTES = ("independence",)
 # A reference to another document version pins a fact the reader cannot follow to the result.
 _WORKLOAD = re.compile(r"\{(?:param:|hash:[^|{}]*\|)measured\.parameters\.workload\.")
 _VERSIONED = re.compile(
-    r"\{(?:param:(?!measured\.|content\.|reader\.)|(?:count|countword|version|duration|percent|size|imagesize|machine|product):(?!measured\.|content\.)"
+    r"\{(?:param:(?!measured\.|content\.|reader\.)|(?:count|countword|version|duration|percent|size|imagesize|machine|product|tests):(?!measured\.|content\.)"
     r"|hash:[^|{}]*\|(?!measured\.)"
     r"|commit:(?:[^|{}]*\|)*(?!measured\.|[0-9a-f]{40}\}|(?:[a-z]+:)?[\w.-]+/[\w.-]+\||[A-Za-z0-9-]+\|))[^{}]*\}"
 )
@@ -561,7 +560,7 @@ def compile_reader(
         entry = with_blocks(entry, source.get("common", {}).get("blocks", {}))
         versions = sorted(
             (
-                _withpinned_workload(root, doc, documents, entry)
+                _withpinned_workload(root, _with_inherited_common(doc, documents), documents, entry)
                 for (doc_id, _), doc in documents.items()
                 if doc_id == document_id
             ),
@@ -882,6 +881,18 @@ def _without_versioned_notes(entry: Mapping[str, Any]) -> dict[str, Any]:
         key: text for key, text in entry.get("notes", {}).items() if key not in VERSIONED_NOTES
     }
     return {**entry, "notes": notes}
+
+
+def _with_inherited_common(
+    measured: Mapping[str, Any], documents: Mapping[tuple[str, str], Mapping[str, Any]]
+) -> Mapping[str, Any]:
+    """A shared document that builds on another (Pricing on Common) reads that document's facts
+    under its own: its ``{param:measured...}`` resolve against both, its own fields first."""
+    parent = measured.get("inherits")
+    if measured.get("category") != "common" or not isinstance(parent, Mapping):
+        return measured
+    base = documents.get((str(parent["id"]), str(parent["version"])), {})
+    return {**base, **measured}
 
 
 def _withpinned_workload(

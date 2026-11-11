@@ -112,6 +112,39 @@
       "name": "Independence",
       "order": 10,
       "sources": []
+    },
+    "cost-sources": {
+      "name": "Cost Sources and Evidence",
+      "order": 20,
+      "sources": [
+        "notes.cost_sources"
+      ]
+    },
+    "cost-calculation": {
+      "name": "Trial, Unit, and Workload Cost",
+      "order": 21,
+      "sources": [
+        "notes.cost_calculation",
+        "notes.trial_cost",
+        "formula:pricing-trial-cost",
+        "notes.trial_cost_sandboxes",
+        "notes.unit_cost",
+        "notes.workload_cost",
+        "notes.stage_cost",
+        "formula:pricing-stage-cost",
+        "notes.missing_costs"
+      ]
+    },
+    "comparing-models": {
+      "name": "Comparing Provider Pricing Models",
+      "order": 22,
+      "requires": [
+        "notes.comparing_models"
+      ],
+      "sources": [
+        "notes.comparing_models",
+        "cost-method"
+      ]
     }
   },
   "common_sections": {
@@ -119,48 +152,50 @@
       "sources": []
     },
     "trial-lifecycle": {
-      "order": 0,
+      "order": 1,
       "sources": [
+        "notes.trial_lifecycle",
         "notes.ready_check"
       ]
     },
     "measurement": {
-      "order": 1,
+      "name": "Timing and Clocks",
+      "order": 2,
       "sources": [
         "notes.clocks",
         "formula:common-latency",
+        "notes.guest_timing",
         "formula:common-clock-gate",
-        "concept:elapsed-time"
+        "notes.clock_gate"
       ]
     },
     "failures": {
-      "order": 2,
+      "name": "Failures, Exclusions, and Top-Ups",
+      "order": 3,
       "sources": [
         "notes.failure_policy",
-        "concept:trial-counts"
+        "notes.status_labels",
+        "notes.top_ups"
       ]
     },
     "statistics": {
-      "order": 3,
+      "order": 4,
       "sources": [
         "notes.statistics_rules",
-        "concept:median",
-        "notes.median_rule",
+        "notes.per_unit_statistics",
         "formula:common-percentile",
         "notes.percentile_rule",
         "formula:common-mean",
-        "concept:interval",
         "notes.interval_rule",
-        "concept:ranking-floor",
-        "concept:workload-value",
         "notes.workload_value",
         "formula:common-workload-value",
+        "notes.workload_value_rules",
         "notes.stage_rule"
       ]
     },
     "provider-scores": {
       "name": "{name:hero.provider-score}",
-      "order": 4,
+      "order": 5,
       "sources": [
         "notes.what_this_measures",
         "notes.how_it_is_measured",
@@ -185,34 +220,26 @@
       ]
     },
     "independence": {
-      "order": 7,
+      "order": 6,
       "sources": [
-        "notes.independence"
-      ]
-    },
-    "cost": {
-      "order": 8,
-      "sources": [
-        "notes.cost",
-        "formula:common-trial-cost",
-        "formula:common-stage-cost",
-        "concept:cost-per-success",
-        "concept:price-sheet",
-        "cost-method"
+        "notes.independence",
+        "notes.independence_rules",
+        "notes.run_check",
+        "notes.run_checks"
       ]
     },
     "sandbox": {
-      "name": "Default Sandbox",
-      "order": 9,
+      "name": "Test Environment",
+      "order": 0,
       "requires": [],
       "sources": [
         "notes.environment",
-        "environment.size",
         "environment.image"
       ]
     },
     "requirements": {
-      "order": 10
+      "order": 7,
+      "sources": []
     }
   },
   "calculation_template": {
@@ -367,7 +394,7 @@
     "not_ranked": "{param:content.ranking_statuses.too_few_runs.label}",
     "note": "Reported When Fired",
     "notes": "Notes",
-    "notes.stage_rule": "Stage Segments",
+    "notes.stage_rule": "Stage Segments and Derived Views",
     "open_preview": "Open {name:stage.preview}",
     "operation": "Operation",
     "optional": "Optional",
@@ -600,7 +627,28 @@
     "calculation": "Calculation",
     "clocks.headline": "Clock",
     "version": "Version",
-    "statistics.primary": "Statistic"
+    "statistics.primary": "Statistic",
+    "network_path_attempts": "Network Path Attempts",
+    "connection_idle_exceptions": "Idle Connection Exceptions",
+    "file_transfer_idle_seconds": "File Transfer Idle Time",
+    "power": "Power",
+    "provider": "Provider",
+    "notes.trial_cost": "Trial Cost",
+    "notes.unit_cost": "Unit Cost",
+    "notes.workload_cost": "Workload and Composite Cost",
+    "notes.stage_cost": "Stages and Missing Costs",
+    "notes.ready_check": "Readiness Check",
+    "notes.guest_timing": "Guest Timing and the Clock Gate",
+    "notes.top_ups": "Top-Ups",
+    "notes.per_unit_statistics": "Per-Unit Statistics",
+    "notes.workload_value": "Multi-Unit Workload Value",
+    "notes.independence_rules": "Execution Rules",
+    "notes.run_check": "Statistical Run Checks",
+    "status_label": "Status",
+    "status_meaning": "Meaning",
+    "check_name": "Check",
+    "check_test": "What It Tests",
+    "check_threshold": "When It Fails"
   },
   "enum_labels": {
     "true": "Yes",
@@ -768,27 +816,18 @@
   ],
   "common_name": "{name:page.common}",
   "statistic_links": {
-    "median": [
+    "per-unit-statistics": [
       "median",
-      "medians"
-    ],
-    "nearest-rank-percentile": [
+      "medians",
       "percentile",
       "percentiles",
       "p95",
-      "tail"
-    ],
-    "mean": [
-      "mean"
-    ],
-    "interval": [
+      "tail",
+      "mean",
       "confidence interval",
       "confidence intervals"
     ],
-    "ranking-floor": [
-      "ranked"
-    ],
-    "workload-value": [
+    "multi-unit-workload-value": [
       "geometric mean",
       "geometric means"
     ]
@@ -1143,7 +1182,6 @@
       "tests": [
         "sbs.common"
       ],
-      "name": "Latency",
       "aria_label": "Latency is the total time minus the runtime.",
       "tex": "t_{\\mathrm{latency}} = t_{\\mathrm{total}} - t_{\\mathrm{runtime}}",
       "variables": [
@@ -1165,9 +1203,8 @@
       "tests": [
         "sbs.common"
       ],
-      "name": "Clock Gate",
-      "aria_label": "A guest runtime is accepted when the wall-clock and uptime spans are not negative and differ by at most 20 milliseconds.",
-      "tex": "\\Delta t_{\\mathrm{wall}} \\ge 0, \\quad \\Delta t_{\\mathrm{up}} \\ge 0, \\quad \\text{and} \\quad \\left| \\Delta t_{\\mathrm{wall}} - \\Delta t_{\\mathrm{up}} \\right| \\le 20\\ \\text{ms}",
+      "aria_label": "A guest runtime is accepted when the wall-clock and uptime spans are not negative and differ by at most the clock gate's tolerance.",
+      "tex": "\\Delta t_{\\mathrm{wall}} \\ge 0, \\quad \\Delta t_{\\mathrm{up}} \\ge 0, \\quad \\text{and} \\quad \\left| \\Delta t_{\\mathrm{wall}} - \\Delta t_{\\mathrm{up}} \\right| \\le t_{\\mathrm{tol}}",
       "variables": [
         {
           "symbol": "\\Delta t_{\\mathrm{wall}}",
@@ -1176,6 +1213,10 @@
         {
           "symbol": "\\Delta t_{\\mathrm{up}}",
           "definition": "Elapsed /proc/uptime duration over the same span."
+        },
+        {
+          "symbol": "t_{\\mathrm{tol}}",
+          "definition": "The clock gate's tolerance, given below."
         }
       ]
     },
@@ -1183,7 +1224,6 @@
       "tests": [
         "sbs.common"
       ],
-      "name": "Nearest-Rank Percentile",
       "aria_label": "The nearest-rank percentile is the value at rank r, the larger of 1 and the ceiling of p over 100 times n.",
       "tex": "Q_p = x_{(r)}, \\quad r = \\max\\left( 1,\\ \\left\\lceil \\dfrac{p}{100} \\times n \\right\\rceil \\right)",
       "variables": [
@@ -1213,7 +1253,6 @@
       "tests": [
         "sbs.common"
       ],
-      "name": "Mean",
       "aria_label": "The mean is the sum of the n successful trial values divided by n.",
       "tex": "x_{\\mathrm{mean}} = \\dfrac{x_1 + \\cdots + x_n}{n}",
       "variables": [
@@ -1239,16 +1278,16 @@
       "tests": [
         "sbs.common"
       ],
-      "aria_label": "A workload value is the geometric mean of a provider's per-unit medians.",
+      "aria_label": "A workload value is the geometric mean of a provider's per-unit values.",
       "tex": "T_p = \\left( \\prod_{u \\in U} m_{p,u} \\right)^{1/|U|}",
       "variables": [
         {
           "symbol": "T_p",
-          "definition": "Workload value of provider p: the geometric mean of its per-unit medians."
+          "definition": "Workload value of provider p."
         },
         {
           "symbol": "m_{p,u}",
-          "definition": "Provider p's median on unit u."
+          "definition": "Provider p's value on unit u under the selected statistic."
         },
         {
           "symbol": "U",
@@ -1256,11 +1295,10 @@
         }
       ]
     },
-    "common-trial-cost": {
+    "pricing-trial-cost": {
       "tests": [
-        "sbs.common"
+        "sbs.pricing"
       ],
-      "name": "Trial Cost",
       "aria_label": "The cost of a trial is the sum of the costs of the sandboxes it created.",
       "tex": "c_i = \\sum_{s} c_{i,s}",
       "variables": [
@@ -1274,11 +1312,10 @@
         }
       ]
     },
-    "common-stage-cost": {
+    "pricing-stage-cost": {
       "tests": [
-        "sbs.common"
+        "sbs.pricing"
       ],
-      "name": "Stage Cost",
       "aria_label": "A stage's cost is the unit's displayed cost times the stage's share of the time.",
       "tex": "c_s = C \\times \\dfrac{t_s}{t}",
       "variables": [
@@ -1302,7 +1339,8 @@
     }
   },
   "document_names": {
-    "sbs.common": "{name:page.common}"
+    "sbs.common": "{name:page.common}",
+    "sbs.pricing": "{name:page.pricing}"
   },
   "metric_names": {
     "reliability": "{name:section.reliability}",
@@ -1392,6 +1430,7 @@
     "websocket_subprotocol": "code",
     "attempt_timeout_seconds": "duration_seconds",
     "connection_idle_seconds": "duration_seconds",
+    "file_transfer_idle_seconds": "duration_seconds",
     "deadline_seconds": "duration_seconds",
     "lifetime_seconds": "duration_seconds",
     "local_poll_gap_seconds": "duration_seconds",

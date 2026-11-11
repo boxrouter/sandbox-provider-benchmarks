@@ -38,10 +38,11 @@ def test_the_glance_has_two_groups_with_the_version_and_the_headline_clock() -> 
 
 def test_every_measuring_method_names_its_clock_and_a_composite_names_none() -> None:
     methods = _reader_methods()
+    shared = {row["id"] for row in load_tables(ROOT).names if row["kind"] == "page"}
     missing = [
         name
         for name, entry in methods.items()
-        if name != "common" and "clock" not in entry and name not in COMPOSITES
+        if name not in shared and "clock" not in entry and name not in COMPOSITES
     ]
     assert not missing
     assert not [name for name in COMPOSITES if "clock" in methods[name]]

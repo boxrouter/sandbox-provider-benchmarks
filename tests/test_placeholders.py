@@ -232,6 +232,46 @@ def test_duration_reads_a_seconds_parameter() -> None:
         _resolve("{duration:demo.1.0.0.procedure.variants}")
 
 
+def test_duration_reads_a_field_in_the_unit_its_name_ends_with() -> None:
+    documents: dict[str, Mapping[str, Any]] = {
+        "gate": {"tolerance_ns": 20_000_000, "wait_ms": 1500, "first_ms": 20, "limit_seconds": 120}
+    }
+
+    def resolve(template: str) -> str:
+        return resolve_template(template, names={}, documents=documents)
+
+    assert resolve("{duration:gate.tolerance_ns}") == "20 ms"
+    assert resolve("{duration:gate.first_ms}") == "20 ms"
+    assert resolve("{duration:gate.wait_ms}") == "1.5 s"
+    assert resolve("{duration:gate.limit_seconds}") == "2 min"
+
+
+def test_tests_names_a_list_of_test_ids_and_leaves_out_a_test_that_is_off() -> None:
+    """A test that is off (names status off) is named under off.<id>; a list holding it names the
+    rest."""
+    names = {
+        "test.sequential-tti": "Sequential TTI",
+        "test.burst-tti": "Burst TTI",
+        "off.burst-tti": "Burst TTI",
+        "test.fork": "Fork",
+        "test.r2e-gym": "R2E-Gym",
+    }
+    documents: dict[str, Mapping[str, Any]] = {
+        "ready": {"skip": ["sequential-tti", "burst-tti"], "restore": ["fork", "r2e-gym"]}
+    }
+
+    def resolve(template: str) -> str:
+        return resolve_template(template, names=names, documents=documents)
+
+    assert resolve("{tests:ready.skip}") == "Sequential TTI"
+    assert resolve("{tests:ready.restore}") == "Fork and R2E-Gym"
+    documents = {"ready": {"skip": ["burst-tti"], "unknown": ["nope"]}}
+    with pytest.raises(PlaceholderError, match="is off"):
+        resolve("{tests:ready.skip}")
+    with pytest.raises(PlaceholderError, match="unknown test"):
+        resolve("{tests:ready.unknown}")
+
+
 def test_product_multiplies_whole_number_parameters_with_thousands_separators() -> None:
     template = "{product:demo.1.0.0.procedure.trials*demo.1.0.0.procedure.parameters.calls} calls"
     assert _resolve(template) == "10,000 calls"

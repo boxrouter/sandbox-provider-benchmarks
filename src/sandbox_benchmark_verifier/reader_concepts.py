@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""Resolve short shared definitions and illustrative examples from owned data."""
+"""Compile the hover templates and failure reasons from owned data."""
 
 import json
 from collections.abc import Mapping
@@ -12,37 +12,6 @@ from sandbox_benchmark_verifier.catalog import _assets, load_methodology
 from sandbox_benchmark_verifier.name_refs import canonical_name_map
 from sandbox_benchmark_verifier.names import load_tables
 from sandbox_benchmark_verifier.placeholders import resolve_template
-
-
-def shared_concepts(facts: Mapping[str, Any], index_copy: Mapping[str, Any]) -> dict[str, Any]:
-    """Produce reader cards; formal ids remain metadata rather than reader prose."""
-    path = _assets() / "contracts/text/shared-concepts.json"
-    if not path.is_file():
-        return {}
-    source = json.loads(path.read_text(encoding="utf-8"))
-    result = {}
-    names = canonical_name_map(load_tables())
-    for code, entry in source["concepts"].items():
-        context = {"facts": facts, "concept": entry, "content": {"index_copy": index_copy}}
-        result[code] = {
-            **entry,
-            "name": resolve_template(entry["name"], names=names, documents=context),
-            **(
-                {"meaning": resolve_template(entry["meaning"], names=names, documents=context)}
-                if "meaning" in entry
-                else {}
-            ),
-            **(
-                {
-                    "example": resolve_template(
-                        entry["example"]["template"], names=names, documents=context
-                    )
-                }
-                if "example" in entry
-                else {}
-            ),
-        }
-    return result
 
 
 @cache
