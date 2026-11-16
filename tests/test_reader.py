@@ -92,6 +92,31 @@ def test_current_fio_result_uses_the_current_command_and_its_own_facts(
     assert bundle["schema"] == "boxrouter.bench.text/3"
 
 
+def test_cutover_reader_keeps_direct_and_cloud_measurement_facts_separate(
+    bundle: dict[str, Any],
+) -> None:
+    common = bundle["reader"]["methods"]["common"]["text"]["notes"]
+    clocks = common["clocks"]
+    independence = common["independence"]
+    reconnect = bundle["reader"]["methods"]["reconnect"]["text"]["notes"]["opening"]
+    previews = bundle["reader"]["methods"]["previews"]["text"]["notes"]
+    region_note = bundle["region_exceptions"][0]["network_note"]
+
+    assert "Direct uses the runner job host's monotonic clock" in clocks
+    assert "Cloud uses the BoxRouter API server's monotonic clock" in clocks
+    assert "Direct also audits job-host load" in independence
+    assert "Cloud records and bounds per-call API-server stalls" in independence
+    assert "fresh Direct client process" in reconnect
+    assert "fresh Cloud provider session" in reconnect
+    assert (
+        "one request's monotonic clock, from process.start returning to the first successful URL "
+        "probe response" in previews["opening"]
+    )
+    assert "process.start duration and server-listening evidence separate" in previews["opening"]
+    assert "US measuring host" in region_note
+    assert "US-East" not in region_note
+
+
 def _pinned(directory: Path, block_size: str) -> str:
     """A pinned fio workload directory: the current sequential-read parameters with the sequential
     read row at the given block size."""

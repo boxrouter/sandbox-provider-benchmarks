@@ -16,7 +16,7 @@ catalog_selection:
         in Germany, Finland and France (https://docs.boat.dev/compliance.md, read 2026-11-05), and its
         create request has no region field (https://docs.boat.dev/api/reference/sandboxes/create-sandbox.md).
       label: (EU)
-      network_note: Includes the network round trip between our US job host and {provider}'s machines in the EU.
+      network_note: Includes the network round trip between our US measuring host and {provider}'s machines in the EU.
 # The label of a workload's all-units variant: its unit plural in Title Case.
 all_variant_template: "All {Units}"
 metric_label_grammar:

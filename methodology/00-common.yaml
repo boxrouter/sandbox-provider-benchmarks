@@ -19,16 +19,17 @@ environment:
       channel reconnects after {duration:sbs.common.environment.connection_idle_exceptions.0.file_transfer_idle_seconds}
       of idle time.
     file_transfer_idle_seconds: 5
-  job_host: Every provider is timed from its own cloud job host, the same kind of host for every provider,
-    in the AWS region its publication names (every trial's host record carries it as job_host). Each latency
-    includes the network path from the job host to the provider's API, which is part of the result and is
-    not the provider's own speed.
+  job_host: Direct measurements use a cloud job host per provider, in the AWS region the publication names
+    (each trial's host record carries it as job_host). Cloud measurements use the BoxRouter API server as
+    their measuring host in the publication's AWS region. Each latency includes the network path from its
+    measuring host to the provider's API, which is part of the result and is not the provider's own speed.
   network_path: 'Before each provider''s chain starts the run measures that path, untimed and at no cost:
     the median time to open a TCP connection over network_path_attempts attempts to each API host of the
     provider, with no sandbox and no API call. It is kept in the run manifest with the job host''s name.'
   network_path_attempts: 10
 clocks:
-  operation: Monotonic clock of the job host, around each call.
+  operation: Direct uses the job host's monotonic clock around each call; Cloud uses the API server's
+    monotonic clock around each provider call.
   command_runtime: The sandbox's own clock, read just before and after the command. Total time, runtime
     and latency (total minus runtime) stay separate.
 ready_check:
@@ -114,10 +115,11 @@ capability_source:
   use: The benchmark page uses declarations to include tests whose required capabilities are declared
     and exclude tests when a required capability is absent.
 independence:
-  principle: 'No trial''s result depends on another trial: not on what ran before it, what ran beside
-    it, what an earlier trial left behind, how busy the job host was, or how much of the account''s limits
-    other trials used. What every customer gets from the provider (image caches, host placement, warm
-    pools) stays in the result and is recorded, not removed.'
+  principle: 'No trial''s result depends on another trial: not on what ran before it, what ran beside it,
+    what an earlier trial left behind, or how much of the account''s limits other trials used. Direct
+    measurements also audit job-host load; Cloud measurements record and bound per-call API-server stalls.
+    What every customer gets from the provider (image caches, host placement, warm pools) stays in the
+    result and is recorded, not removed.'
   rounds: 4
   rules:
   - id: fresh_sandbox
@@ -138,8 +140,9 @@ independence:
     rule: The provider's image caches stay on, because every customer gets them. Page and package caches
       are avoided wherever a benchmark says so, and each benchmark states what is cold and what is warm.
   - id: job_host
-    rule: Each provider's trials run from their own job host, so one provider's load cannot slow another's.
-      The job host's monotonic clock is the operation clock.
+    rule: Direct measurements run each provider's trials from its own job host and use that host's monotonic
+      clock. Cloud measurements use the API server's monotonic clock and record and bound each provider-call
+      stall.
   - id: shared_provider_hosts
     rule: A trial may share provider hosts, disks and networks with the other trials of its own batch
       that are in flight, and the number in flight is recorded for each trial. Trials never share a sandbox,
@@ -151,8 +154,9 @@ independence:
   - id: placement_facts
     rule: 'Each trial records, untimed and outside the measured steps, where it ran: the CPU model and
       count, the kernel and the device and file system behind the working directory, read inside the
-      sandbox on a best-effort basis, together with the job host''s load over the trial''s window. No host or
-      zone identifier of the provider is collected.'
+      sandbox on a best-effort basis. Direct trials also record the job host''s load over their window;
+      Cloud timing records carry the API server''s stall for each provider call. No host or zone identifier
+      of the provider is collected.'
   - id: run_check
     rule: Every run is checked before publication by the independence check below. Its thresholds are
       fixed here, before any run, and a pair that fails stays out of the publication until its trials
@@ -170,14 +174,16 @@ independence:
       correction: benjamini_hochberg
       q: 0.05
       power: 0.8
-      across: 'One family: every finding that can fail (trend, first_round, round_start, lag1, overlap,
-        host_saturated and the clustering of a tier split), across every pair of the run. host_type makes
+      across: 'One family: every statistical finding that can fail (trend, first_round, round_start, lag1,
+        overlap, Direct host_saturated and the clustering of a tier split), across every pair of the run. host_type makes
         notes only and is corrected apart.'
-    verdict: A check fails a pair only when its effect passes the size stated for it and its corrected
-      q is under 0.05. A significant but smaller effect is reported and never fails. Each pair also reports
-      the smallest effect the checks could have found, at the stated power at the corrected level, so a pass
-      is never read as proof of independence. A failing pair stays out of the publication until its trials
-      are excluded with a recorded reason, the effect is explained in the record, or the pair is re-run.
+    verdict: Statistical checks fail a pair only when their effect passes the stated size and corrected q
+      is under 0.05. A significant but smaller effect is reported and never fails. In Cloud mode, a call
+      whose API-server stall exceeds the configured per-operation bound rejects its trial. Each pair also
+      reports the smallest effect the statistical checks could have found at the stated power and corrected
+      level, so a pass is never read as proof of independence. A failing pair stays out of the publication
+      until its trials are excluded with a recorded reason, the effect is explained in the record, or the
+      pair is re-run.
     checks:
     - id: trend
       measures: The fitted change of the value across the trial order, as a percentage of the pair's median.
@@ -209,12 +215,14 @@ independence:
       solo_max: 0.1
       shared_min: 1.0
     - id: host_saturated
-      measures: Trials taken while the job host was saturated against the others. Saturated is CPU at
+      measures: Direct mode compares trials taken while the job host was saturated against the others.
+        Saturated is CPU at
         cpu_share of its limit or any throttling, memory pressure (some avg10) at or above mem_pressure_some_avg10
         percent, or, where the host has no pressure files, available memory under mem_available_min_kib.
         With at least min_each hot and cool trials the comparison decides; with too few of either to compare,
         the pair fails when the saturated share is at least fail_share, and otherwise it is a note listing
-        the saturated trials.
+        the saturated trials. Cloud mode rejects a trial when a provider call exceeds its configured
+        per-operation stall bound; it does not run a hot/cool comparison.
       min_effect_pct: 15.0
       min_each: 5
       cpu_share: 0.9

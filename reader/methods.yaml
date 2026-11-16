@@ -77,14 +77,14 @@ common:
       snapshot_stage_end: Snapshot operation completes and the call returns
     reconnect:
       opening: |-
-        Stateless serverless workers, webhook handlers, and agents recovering from a process restart or deploy cannot reuse an in-memory sandbox object; they must attach to an already-running sandbox by its ID from a brand-new client process and issue their first command.
+        Stateless serverless workers, webhook handlers, and agents recovering from a process restart or deploy cannot reuse an in-memory sandbox object; they attach to an already-running sandbox by its ID from a fresh Direct client process or a fresh Cloud provider session, then issue their first command.
 
-        The {name:tab.reconnect} benchmark measures that cold-client attach path ({name:test.reconnect}): in each trial, a parent process creates a sandbox, and {param:measured.procedure.variants.0.parameters.rounds} sequential child processes, each spawned fresh on the job host with its own BoxRouter client and zero shared connection state, attach to the sandbox by ID and run `true`.
+        The {name:tab.reconnect} benchmark measures that cold-client attach path ({name:test.reconnect}): in each trial, a parent creates a sandbox and {param:measured.procedure.variants.0.parameters.rounds} rounds attach by ID and run `true`. Direct uses a new child process and BoxRouter client each round; Cloud requests a fresh provider session for each API call.
     previews:
       opening: |-
         App-building agents and interactive web IDEs start a development server inside a sandbox and hand the user a public preview URL to view the live app and receive Hot Module Replacement (HMR) updates over a WebSocket.
 
-        The {name:tab.previews} benchmark launches a pinned {param:measured.procedure.variants.0.label} and measures how long the sandbox's public preview URL takes to return its first valid HTTP 200 response (URL ready), splitting that wait into the server's in-sandbox startup time ({name:stage.server-listening}) and the remaining process-launch and routing time ({name:stage.between}).
+        The {name:tab.previews} benchmark launches a pinned {param:measured.procedure.variants.0.label}. Direct {name:stage.between} is URL-ready time less server-listening runtime; Cloud measures it on one request's monotonic clock, from process.start returning to the first successful URL probe response. Cloud keeps process.start duration and server-listening evidence separate.
 
         Once the preview URL is live, the benchmark measures the Time to First Byte (TTFB) of {param:measured.procedure.variants.0.parameters.requests} sequential HTTP GET requests over a kept-alive connection and tests whether a WebSocket upgrade (vite-hmr) succeeds through the preview proxy.
     image-build:
@@ -171,10 +171,10 @@ methods:
 
         **Timed Readiness:** For some tests the wait for a ready sandbox is part of the timed measurement, so no untimed check runs before it. {tests:measured.ready_check.skipped_by_benchmarks} sends its first timed command as soon as `create` returns. On a sandbox restored from a snapshot, {tests:measured.ready_check.skipped_on_restore_by_benchmarks} send the first timed step as soon as `restore` returns; the source sandbox made by `create` still gets the check.
       clocks: |-
-        **Clocks:** Every timed span starts and ends on the same machine's clock. A timed span contains only the steps its benchmark names, with no warm-up request, probe, or keep-alive inside it. Each span uses one of two clocks:
+        **Clocks:** Every timed span starts and ends on the same machine's clock. A timed span contains only the steps its benchmark names, with no warm-up request, probe, or keep-alive inside it. Direct and Cloud use distinct job-host clocks; every mode also keeps sandbox-clock command runtime separate:
 
-        - **Job-host clock:** The job host's monotonic clock times control-plane and lifecycle operations. BoxRouter Core times each operation (`create`, `snapshots.create`, `restore`, `attach`, file transfers, and `destroy`) from adapter entry, after payload preparation, until the call returns or raises an exception. Post-create readiness checks, output archive downloads, and cleanup verification are excluded. Lifecycle and file-transfer operations run without a guest shell wrapper.
-        - **Sandbox clock:** The guest's own clock times commands inside the sandbox. Network transport between the job host and the provider therefore does not inflate CPU, memory, or disk measurements.
+        - **Job-host clock:** Direct uses the runner job host's monotonic clock; Cloud uses the BoxRouter API server's monotonic clock for provider operations. Core times each operation (`create`, `snapshots.create`, `restore`, `attach`, file transfers, and `destroy`) from adapter entry, after payload preparation, until the call returns or raises an exception. Cloud's runner-to-API duration is recorded separately. Post-create readiness checks, output archive downloads, and cleanup verification are excluded. Lifecycle and file-transfer operations run without a guest shell wrapper.
+        - **Sandbox clock:** The guest's own clock times commands inside the sandbox. Network transport between the measuring host and the provider therefore does not inflate CPU, memory, or disk measurements.
 
         **Latency:** The caller's wait (total time) splits into the command's execution inside the sandbox (runtime) and the transport overhead around it, which BoxRouter calls "latency" (total time minus runtime):
       guest_timing: |-
@@ -259,7 +259,7 @@ methods:
         **Bar Scaling:** Stacked bars scale their segments to fill the total but label the real values. Each segment's width is scaled by the total median divided by the sum of the stage medians, so the plotted segments fill the total median bar. The label on each segment shows its unscaled stage median. Step mean values do sum to the total mean, apart from untimed intervals between steps.
 
         **Derived Views:** Interactive subset sums on the charts are derived views. For each trial, a derived view sums the selected sandboxes or steps only when every selected component has a valid value. It summarizes those trial sums with the same nearest-rank estimators and the same {param:measured.statistics.tail.min_successes}-trial tail floor, without a confidence interval.
-      independence: '**Principle:** No trial''s result may depend on another trial: not on what ran before it, what ran beside it, what an earlier trial left behind, how busy the job host was, or how much of the account''s limits other trials used. Provider-wide features that every customer receives (base-image caches, host placement, and warm pools) stay in the result and are recorded in the trial data.'
+      independence: '**Principle:** No result depends on what ran before or beside a trial, what earlier trials left behind, or other trials'' use of account limits. Direct also audits job-host load; Cloud records and bounds per-call API-server stalls. Provider features all customers get (image caches, placement, warm pools) stay in the result and are recorded.'
       independence_rules: |-
         Every run enforces these rules to keep trials apart:
 
@@ -267,18 +267,18 @@ methods:
         2. **Equal concurrency and rate-limit spacing:** Every provider runs the same number of trials in parallel, which each benchmark declares and which fits both the job host's concurrency cap and the provider's documented concurrent-sandbox limit. When a provider documents a sandbox-creation rate limit, the benchmark script spaces `create` calls to that limit outside all timed steps and records the spacing in the run manifest.
         3. **Shuffled, interleaved rounds:** A provider's benchmark order is shuffled once per run, with the random seed recorded in the run manifest. Each benchmark's trials are spread across {param:measured.independence.rounds} rounds interleaved with the other benchmarks, so trials come from separate moments across the run rather than one block.
         4. **Explicit cache control:** Provider image caches stay enabled, because every customer receives them. Guest page and package caches are cleared or bypassed wherever a benchmark specifies cold execution.
-        5. **Dedicated job hosts:** Each provider's chain runs on its own dedicated cloud job host, so one provider's workload cannot slow another provider's timings.
+        5. **Measuring host:** Direct measurements run each provider's chain on its own dedicated cloud job host. Cloud measurements use the BoxRouter API server as the measuring host and check per-operation stalls instead of comparing hot and cool host trials.
         6. **Sequential worker cleanup and in-flight tracking:** A worker starts a new trial only after every resource from its previous trial is confirmed deleted. A trial may share provider hosts, disks, and networks with other trials of its batch that run at the same time, and each trial records how many of them were in flight over its window.
         7. **Empty account verification:** The benchmark account holds no live sandboxes besides the run's own. The benchmark script checks this before each provider's chain starts and records the count of other live sandboxes at the start and end of every batch.
-        8. **Untimed placement and load probes:** Outside timed steps, each trial records, on a best-effort basis, the sandbox's visible CPU model and count (`nproc`), kernel version, and the device and file system behind the working directory, together with the job host's CPU and memory load over the trial's window. No provider host or zone identifier is collected.
+        8. **Untimed placement and load probes:** Direct trials record, on a best-effort basis, the sandbox's visible CPU model and count (`nproc`), kernel version, the device and file system behind the working directory, and the job host's CPU and memory load. Cloud trials retain the per-operation stall evidence used by their separate check. No provider host or zone identifier is collected.
         9. **Pre-publication statistical audit:** Every completed run is audited before publication by the statistical run checks below, with thresholds fixed before the run.
         10. **Objective outliers:** A value is excluded as implausible only by the outlier and physical-limit checks below, with its reason, and an excluded trial stays in the data as excluded.
       run_check: |-
-        **Coverage:** The audit covers every provider-benchmark pair with at least {param:measured.independence.run_check.min_trials} successful trials, on each main metric, using one data point per trial. Pairs with fewer successful trials are skipped and listed as unassessed in the run report, and so are checks whose required per-trial placement facts, job-host load facts, or round numbers were not recorded.
+        **Coverage:** The audit covers every provider-benchmark pair with at least {param:measured.independence.run_check.min_trials} successful trials, on each main metric, using one data point per trial. Pairs with fewer successful trials are skipped and listed as unassessed in the run report, as are checks missing required placement facts, Direct-mode host-load facts, or round numbers.
 
         **Correction:** The comparison checks use two-sided rank-based tests with Benjamini-Hochberg false-discovery-rate correction at q = {param:measured.independence.run_check.significance.q}.
 
-        The correction covers one family of failure-eligible checks (trend, first round, round start, lag 1, overlap, host saturated, and the time-clustering runs test of tier split) across all pairs in the run. The host-type check produces notes only and is corrected separately.
+        The correction covers one family of failure-eligible checks (trend, first round, round start, lag 1, overlap, Direct-mode host saturation, and the time-clustering runs test of tier split) across all pairs in the run. The host-type check produces notes only and is corrected separately. Cloud mode applies its per-operation stall rejection without a hot/cool comparison.
 
         **Failure Rule:** A check fails a pair only when the effect is both large and significant: the observed effect must reach its minimum effect size, and its corrected q-value must be below {param:measured.independence.run_check.significance.q}. Significant effects smaller than the minimum effect size are reported as notes and never fail a pair.
 
@@ -305,9 +305,9 @@ methods:
       - check_name: Overlap
         check_test: Trials running alongside other trials of the same batch (a time-weighted mean of at least {param:measured.independence.run_check.checks.4.shared_min} other trials holding a sandbox) compared against solo trials (at most {param:measured.independence.run_check.checks.4.solo_max} other trials), normalized by the batch median, with at least {param:measured.independence.run_check.checks.4.min_each} trials in each group.
         check_threshold: Fails at an effect of at least {param:measured.independence.run_check.checks.4.min_effect_pct}% with q < {param:measured.independence.run_check.significance.q}.
-      - check_name: Host Saturated
-        check_test: Trials recorded while the job host was saturated (peak CPU at or above {param:measured.independence.run_check.checks.5.cpu_share} of its limit, any CPU throttling, memory pressure (some avg10) at or above {param:measured.independence.run_check.checks.5.mem_pressure_some_avg10}%, or, where pressure files are absent, less than {param:measured.independence.run_check.checks.5.mem_available_min_kib} KiB of available memory) compared against cool trials.
-        check_threshold: With at least {param:measured.independence.run_check.checks.5.min_each} hot and {param:measured.independence.run_check.checks.5.min_each} cool trials, fails at {param:measured.independence.run_check.checks.5.min_effect_pct}% slower or more with q < {param:measured.independence.run_check.significance.q}. With fewer of either, fails when the saturated share of trials is at least {param:measured.independence.run_check.checks.5.fail_share}, and otherwise attaches a note.
+      - check_name: Host Saturated (Direct)
+        check_test: Direct mode compares trials recorded while the job host was saturated (peak CPU at or above {param:measured.independence.run_check.checks.5.cpu_share} of its limit, any CPU throttling, memory pressure (some avg10) at or above {param:measured.independence.run_check.checks.5.mem_pressure_some_avg10}%, or, where pressure files are absent, less than {param:measured.independence.run_check.checks.5.mem_available_min_kib} KiB of available memory) against cool trials. Cloud mode uses per-operation stall evidence instead.
+        check_threshold: Direct mode uses the hot/cool comparison and saturated-share fallback stated in the measured definition. In Cloud mode, a call above its configured per-operation stall bound rejects the trial; no hot/cool comparison runs.
       - check_name: Tier Split
         check_test: A bimodal hardware or placement split in a group of at least {param:measured.independence.run_check.checks.7.min_group} trials (at least {param:measured.independence.run_check.checks.7.min_minority} of them in the smaller tier) where Ashman's D reaches the floor for the group's size n ({param:measured.independence.run_check.checks.7.min_ashman_d_by_n.0.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.0.0}, {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.1.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.1.0}, {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.2.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.2.0}, {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.3.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.3.0}, and {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.4.1} for n ≥ {param:measured.independence.run_check.checks.7.min_ashman_d_by_n.4.0}).
         check_threshold: Attaches a note when the tier ratio is at least {param:measured.independence.run_check.checks.7.note_ratio}. Fails only when the tier ratio is at least {param:measured.independence.run_check.checks.7.fail_ratio}, the smaller tier has at least {param:measured.independence.run_check.checks.7.fail_min_minority} trials, and the tiers cluster in time on a runs test (q < {param:measured.independence.run_check.significance.q}); a split that does not cluster in time reflects host placement and does not fail.
@@ -1092,21 +1092,21 @@ methods:
         A trial succeeds only when `image.prepare` completes and the provider's prepared image artifact and temporary registry tag are deleted.
   previews:
     step_notes:
-      url_poll: "The job host starts polling the public preview URL every {duration:measured.procedure.variants.0.parameters.poll_gap_seconds} while simultaneously launching `node node_modules/vite/bin/vite.js` inside the sandbox and polling `127.0.0.1:{param:measured.procedure.variants.0.parameters.port}{param:measured.procedure.variants.0.parameters.path}` inside the guest every {duration:measured.procedure.variants.0.parameters.local_poll_gap_seconds}."
+      url_poll: "The Direct job host, or the Cloud request that starts the process, polls the public preview URL every {duration:measured.procedure.variants.0.parameters.poll_gap_seconds} while Vite starts and localhost is polled inside the sandbox every {duration:measured.procedure.variants.0.parameters.local_poll_gap_seconds}. Cloud {name:stage.between} starts when process.start returns and ends at the first successful URL probe response, on the one request's monotonic clock."
       websocket: "The harness times a WebSocket upgrade with subprotocol `{param:measured.procedure.variants.0.parameters.websocket_subprotocol}` and verifies its connected message."
     headline_steps: [start_server, server_listening, url_poll]
     clock: [runner]
     notes:
       opening: '{param:reader.common.blocks.previews.opening}'
-      introduction: 'Times from launching a Vite development server inside a sandbox until its public preview URL returns the HTTP 200 response to the job host, split into {name:stage.server} and {name:stage.between}.'
-      metric: '{name:test.previews} is the duration from launching the Vite development server inside the sandbox until its public HTTPS preview URL returns its first valid 200 OK response ({param:measured.procedure.variants.0.parameters.expected_body}) on `{param:measured.procedure.variants.0.parameters.path}`.'
+      introduction: 'Times the Cloud preview from process.start returning to the first successful URL probe response, while Direct {name:stage.between} is URL-ready time less server-listening runtime.'
+      metric: '{name:test.previews} is the Direct URL-ready duration less server-listening runtime, or, for Cloud, the interval on the process-start request monotonic clock from process.start returning to the first HTTP 200 response with body {param:measured.procedure.variants.0.parameters.expected_body} on `{param:measured.procedure.variants.0.parameters.path}`.'
       setup: |-
         Each trial uses a sandbox created from BoxRouter's pinned standard image with port {param:measured.procedure.variants.0.parameters.port} exposed as a public preview URL, running a pre-bundled Vite {version:measured.source.ids.2} archive (`previews-app.tar`, verified by {hash:SHA-256|measured.parameters.workload.app.sha256}).
       trial_steps: '[[steps: create]]Create sandbox with a port {param:measured.procedure.variants.0.parameters.port} preview, [[steps: upload]]upload and verify Vite archive, [[steps: open_preview]]and open the preview URL (timed, not charted); [[steps: url_poll]]poll the preview URL [[steps: start_server]]while launching Vite (start-server) [[steps: server_listening]]and polling `127.0.0.1:{param:measured.procedure.variants.0.parameters.port}` (server-listening); [[steps: request]]send {param:measured.procedure.variants.0.parameters.requests} sequential `GET /ping.txt` requests on a kept-alive connection (request); [[steps: websocket]]test a vite-hmr WebSocket upgrade (websocket) [[steps: destroy]]and destroy the sandbox.'
       limitations:
-      - Only providers that expose the previews capability through BoxRouter are measured (others show {param:content.ranking_statuses.in_development.label}); {name:stage.between} includes both `process.start` dispatch and the provider's edge routing proxy.
+      - Only providers that expose the previews capability through BoxRouter are measured (others show {param:content.ranking_statuses.in_development.label}); Cloud {name:stage.between} begins when process.start returns and includes the public probe and provider edge routing.
       - Both url-poll and server-listening sleep {duration:measured.procedure.variants.0.parameters.poll_gap_seconds} between attempts, so both readiness durations carry up to that much polling quantization plus any request in flight when Vite begins listening.
-      - The request GET calls reuse the connection from url-poll, so DNS lookup, TCP connect and TLS handshake time is excluded from request TTFB while distance to the provider's preview ingress is included.
+      - In Direct, the request GET calls reuse the connection from url-poll, so DNS lookup, TCP connect and TLS handshake time is excluded from request TTFB while distance to the provider's preview ingress is included.
       - 'Vite runs with `allowedHosts: true` and `skipWebSocketTokenCheck: true` so the benchmark script can test HTTP and WebSocket routing directly without a headless browser.'
       statistics_rules: |-
         {param:reader.common.blocks.common.statistics_citation}
@@ -1122,24 +1122,24 @@ methods:
         end: Localhost in the sandbox first answers HTTP 200 with body ok
         clock: sandbox
       between:
-        start: Server answers on localhost in the sandbox
-        end: Preview URL first answers HTTP 200 with body ok
+        start: Direct server answers on localhost; for Cloud, process.start returns to the runner
+        end: The first successful URL probe after that start edge (HTTP 200 with body ok)
         clock: runner
   reconnect:
     headline_steps: [attach, "true"]
     clock: [runner]
     notes:
       opening: '{param:reader.common.blocks.reconnect.opening}'
-      introduction: 'Times a fresh client process attaching to an existing sandbox by its ID and executing its first `true` command.'
-      metric: '{name:test.reconnect} is the sum of two timed calls: `attach` (looking up and binding to an already-running sandbox by its ID from a brand-new OS process and BoxRouter client) and `true` (executing the first `true` command on that handle), pooled across {param:measured.procedure.variants.0.parameters.rounds} sequential rounds per trial and {param:measured.procedure.trials} trials ({product:measured.procedure.trials*measured.procedure.variants.0.parameters.rounds} reconnect rounds total).'
+      introduction: 'Times attaching to an existing sandbox and running its first `true` command, using a fresh client process in Direct mode or a fresh provider session for each Cloud API call.'
+      metric: '{name:test.reconnect} is the sum of median `attach` and median `true` operation times, pooled across {param:measured.procedure.variants.0.parameters.rounds} sequential rounds per trial and {param:measured.procedure.trials} trials ({product:measured.procedure.trials*measured.procedure.variants.0.parameters.rounds} reconnect rounds total).'
       setup: '{param:reader.common.blocks.common.sandbox}.'
       workload: |-
-        Each child Python process starts with a clean address space and zero pooled sockets, so every round measures a cold SDK attach.
-      trial_steps: '[[steps: create]]Create a sandbox in the parent process and run the untimed readiness check; then [[steps: attach]]for each of {param:measured.procedure.variants.0.parameters.rounds} rounds, spawn a fresh child OS process on the job host, initialize a new BoxRouter client (untimed), time the `attach` lookup by sandbox ID, [[steps: true]]and immediately time the first `true` command with guest clock reads; then [[steps: destroy]]destroy the sandbox from the parent process (untimed).'
+        Direct starts each round in a clean child process with a new BoxRouter client. Cloud opens a fresh provider session for each API call, so neither path reuses client or session state from an earlier round.
+      trial_steps: '[[steps: create]]Create a sandbox and run the untimed readiness check; then [[steps: attach]]for each of {param:measured.procedure.variants.0.parameters.rounds} rounds, Direct spawns a fresh child process and client or Cloud opens a fresh provider session to time the `attach` lookup by sandbox ID, [[steps: true]]then each path times the first `true` command with guest clock reads; then [[steps: destroy]]destroy the sandbox (untimed).'
       limitations:
       - Provider SDKs differ in how much work happens during `attach` versus the first command (no provider's `attach` pre-opens the command execution socket), so the chart compares the combined `attach + first command` time together.
-      - Starting each child process, loading BoxRouter and building its client happen before the `attach` timer starts.
-      - Both `attach` and `true` include the network round trip between the job host and the provider's US region.
+      - Direct process and client startup, and Cloud provider-session setup, happen outside the respective operation timers.
+      - Both `attach` and `true` include the network round trip between the Direct job host or Cloud API server and the provider's region.
       statistics_rules: |-
         {param:reader.common.blocks.common.statistics_citation}
 
@@ -1147,7 +1147,7 @@ methods:
       failure_policy: |-
         {param:reader.common.blocks.common.failures_citation}
 
-        A trial succeeds only when all {param:measured.procedure.variants.0.parameters.rounds} child-process attach rounds complete `attach` and `true` with exit code 0, pass the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
+        A trial succeeds only when all {param:measured.procedure.variants.0.parameters.rounds} Direct child-process or Cloud fresh-session rounds complete `attach` and `true` with exit code 0, pass the twenty-millisecond `/proc/uptime` gate, and the sandbox is confirmed destroyed.
   7-zip-1-thread:
     clock: [sandbox]
     panel:

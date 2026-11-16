@@ -336,8 +336,9 @@ independence_answers:
       its own snapshot only. The provider's image caches stay on.
   job_host:
     status: meets
-    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
-      own clock; the job host serves one provider only.
+    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
+      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
+      checked against the configured bound.
   shared_provider_hosts:
     status: meets
     text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
@@ -348,8 +349,7 @@ independence_answers:
       is recorded at each batch's start and end.
   placement_facts:
     status: meets
-    text: Each trial records its CPU model and count, kernel, working-directory device and file system,
-      and the job host's load over its window.
+    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
   run_check:
     status: meets
     text: The run's independence check covers the pair on its main metric with the common thresholds.

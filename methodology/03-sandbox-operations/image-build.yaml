@@ -247,8 +247,9 @@ independence_answers:
       unique, so no earlier trial's build is reused.
   job_host:
     status: meets
-    text: Operation times come from the job host's monotonic clock and command runtimes from the sandbox's
-      own clock; the job host serves one provider only.
+    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
+      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
+      checked against the configured bound.
   shared_provider_hosts:
     status: exception
     text: One build runs at a time per provider, so no other trial of the batch is in flight.
@@ -258,8 +259,7 @@ independence_answers:
       is recorded at each batch's start and end.
   placement_facts:
     status: exception
-    text: No sandbox runs, so no sandbox host facts exist; the job host's load over each trial's window
-      is recorded.
+    text: No sandbox placement facts exist. Direct still records job-host load; Cloud timing records per-call API-server stall.
   run_check:
     status: meets
     text: The run's independence check covers the pair on its main metric with the common thresholds.
