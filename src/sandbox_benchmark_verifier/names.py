@@ -285,8 +285,13 @@ def _write_cached_science_rows(scope: _TablesCacheScope, rows: list[dict[str, An
         "payload": payload,
     }
     cache_bytes = _canonical_json(record) + b"\n"
-    scope.directory.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary = tempfile.mkstemp(prefix=f".{scope.key}.", dir=scope.directory)
+    try:
+        scope.directory.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary = tempfile.mkstemp(prefix=f".{scope.key}.", dir=scope.directory)
+    except OSError:
+        # The cache only saves recompiling: where no cache directory is writable (an image
+        # whose user has no home), the rows are used uncached.
+        return
     try:
         with os.fdopen(descriptor, "wb") as stream:
             stream.write(cache_bytes)

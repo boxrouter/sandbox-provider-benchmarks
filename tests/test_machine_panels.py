@@ -141,3 +141,13 @@ def test_a_sentence_may_start_with_a_tool_name_exactly_as_its_document_owns_it()
     assert capital_start_findings("the disk benchmarks read throughput.") == [
         "reader.capital-start"
     ]
+
+
+def test_an_unwritable_cache_directory_leaves_the_tables_uncached(tmp_path: Path) -> None:
+    """The worker image runs as a user whose home is not writable (benchmark-deploy-gap
+    43873179155: PermissionError on /.cache): the cache is skipped, never an error."""
+    blocked = tmp_path / "file"
+    blocked.write_text("not a directory", encoding="utf-8")
+    with compiler_tables_cache(ROOT, DIGEST_ALGORITHMS, cache_directory=blocked / "tables"):
+        assert apply_panel_text(ROOT, []) == []
+        assert panel_errors(ROOT, []) == []
