@@ -208,7 +208,14 @@ validity_checks:
 - id: standby_evidence
   threat: A provider that never went to sleep would look like a fast resume.
   check: The observed `frozen_s` value compares the job-host gap with the sandbox clock readings, from
-    the end of `control`, the last command before the wait, to the start of `data-back`.
+    the end of `control`, the last command before the wait, to the start of `data-back`. Through
+    BoxRouter that gap spans separate requests, so `frozen_s` stays Unknown and the check uses
+    `standby_lower_bound_s` instead, a value that is not published. It is the job host's monotonic
+    gap from the return of the `control` request to the send of the `data-back` request, less the
+    sandbox clock's progress over the same interval. That gap holds no BoxRouter or network time
+    outside the guest readings, so it is never longer than the true gap between them, and a positive
+    value proves the sandbox was frozen at least that long. It is a validity check only. It is never
+    a latency and is never added to or subtracted from a published time.
 source:
   name: deterministic 4 KiB marker workload
   version: unknown
