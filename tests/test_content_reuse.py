@@ -52,7 +52,6 @@ def test_document_errors_match_default_and_supplied_criteria_without_mutation(
 ) -> None:
     document = {
         "id": "demo",
-        "version": "1.0.0",
         "notes": {
             "summary": "The test runs 10 trials.",
             "introduction": "The test runs 10 trials.",
@@ -100,7 +99,7 @@ def test_slot_rule_updates_a_copy_of_the_selected_rule() -> None:
 def test_text_verification_reuses_bundle_criteria_for_fields_and_documents(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     criteria: Mapping[str, Any] = MappingProxyType(
         {
@@ -110,15 +109,12 @@ def test_text_verification_reuses_bundle_criteria_for_fields_and_documents(
     )
     document = {
         "id": "demo",
-        "version": "1.0.0",
         "category": "index",
         "notes": {"introduction": "A short summary."},
     }
     bundle: dict[str, Any] = {
         "content_criteria": criteria,
-        "methodologies": {
-            "demo": {"1.0.0": {"text": {"notes": {"introduction": "A short summary."}}}}
-        },
+        "methodologies": {"demo": {"text": {"notes": {"introduction": "A short summary."}}}},
         "reader": {"methods": {}},
         "metric_labels": {"metrics": {}},
         "names": [],
@@ -173,7 +169,7 @@ def test_text_verification_reuses_bundle_criteria_for_fields_and_documents(
     monkeypatch.setattr(text, "document_content_errors", document_errors)
     monkeypatch.setattr(text, "load_tables", load_tables)
     monkeypatch.setattr(text, "_document_rows", lambda _root, _rows: {"test:demo-row": document})
-    monkeypatch.setattr(text, "_latest_documents", lambda _root, **_common: {})
+    monkeypatch.setattr(text, "_ordinary_documents", lambda _root, **_common: {})
     monkeypatch.setattr(text, "criteria_errors", lambda _criteria: [])
     monkeypatch.setattr(text, "raw_token_warnings", lambda _bundle: [])
     monkeypatch.setattr(text, "index_metric_id_warnings", lambda _bundle: [])

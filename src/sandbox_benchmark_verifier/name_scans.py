@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 from sandbox_benchmark_verifier.conventions import load_conventions
-from sandbox_benchmark_verifier.versions import newest
 from sandbox_benchmark_verifier.yaml_load import read_mapping
 
 _RETIRED_WORD_SKIPPED_KEYS = frozenset(
@@ -30,8 +29,8 @@ def _reader_strings(value: Any, where: str) -> Iterator[tuple[str, str]]:
 
 
 def retired_word_errors(root: Path, documents: list[dict[str, Any]]) -> list[str]:
-    """No reader-facing string of the names, the page contracts, the reader text or the newest
-    version of a current document holds a retired word (conventions ``naming.retired_words``)."""
+    """No reader-facing string of the names, the page contracts, the reader text or
+    a current document holds a retired word (conventions ``naming.retired_words``)."""
     if not (root / "conventions" / "text-conventions.yaml").is_file():
         return []
     words = load_conventions(root)["naming"].get("retired_words", [])
@@ -58,12 +57,11 @@ def retired_word_errors(root: Path, documents: list[dict[str, Any]]) -> list[str
             }
     retired = set(read_mapping(root / "names" / "aliases.yaml").get("document", {}))
     # The Common Methodology holds retired text under paths the contract already retires.
-    current = newest(
-        document
+    sources.update(
+        (str(document["id"]), document)
         for document in documents
         if str(document["id"]) not in retired and document["id"] != "sbs.common"
     )
-    sources.update((f"{key}@{doc['version']}", doc) for key, doc in current.items())
     return [
         f"{source}{where}: {match.group(0)!r} is a retired word"
         for source, value in sources.items()

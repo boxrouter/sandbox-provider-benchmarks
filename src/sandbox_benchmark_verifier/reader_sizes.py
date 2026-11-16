@@ -48,7 +48,7 @@ def near(match: re.Match[str], sizes: Iterable[int]) -> bool:
 def recorded_sizes(root: Path) -> list[int]:
     """Every byte count the parameter files record as a fact of a workload (an image's size)."""
     sizes: set[int] = set()
-    for path in sorted((root / "parameters").glob("*/*/workloads.json")):
+    for path in sorted((root / "parameters").glob("*/workloads.json")):
         for workload in json.loads(path.read_text(encoding="utf-8")):
             facts = workload.get("data", {}).get("facts", {}) if isinstance(workload, dict) else {}
             sizes.update(v for k, v in facts.items() if k.endswith("_bytes") and isinstance(v, int))

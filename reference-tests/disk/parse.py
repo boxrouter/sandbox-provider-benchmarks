@@ -9,32 +9,32 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
-# Row -> (published test id, methodology id and version, measurement, unit, fio field)
+# Row -> (published test id, methodology id, measurement, unit, fio field)
 METRICS = {
     "seq_read": (
         "disk-seq-read-1m",
-        ("sequential-read", "1.1.18"),
+        "sequential-read",
         "sequential_read_mib_per_second",
         "MiB/s",
         "bw_bytes",
     ),
     "seq_write": (
         "disk-seq-write-1m",
-        ("sequential-write", "1.1.18"),
+        "sequential-write",
         "sequential_write_mib_per_second",
         "MiB/s",
         "bw_bytes",
     ),
     "rand_read": (
         "disk-rand-read-4k",
-        ("random-read", "1.1.17"),
+        "random-read",
         "random_read_iops",
         "IOPS",
         "iops",
     ),
     "rand_write": (
         "disk-rand-write-4k",
-        ("random-write", "1.1.17"),
+        "random-write",
         "random_write_iops",
         "IOPS",
         "iops",
@@ -56,7 +56,7 @@ def measurements(paths: list[Path]) -> Iterator[dict[str, object]]:
             raise ValueError(f"{path} must contain one fio job")
         direction = "read" if key.endswith("read") else "write"
         stats = jobs[0].get(direction, {})
-        test_id, (methodology, version), name, unit, field = METRICS[key]
+        test_id, methodology, name, unit, field = METRICS[key]
         value = stats.get(field)
         if not isinstance(value, (int, float)):
             raise ValueError(f"{path} is missing {direction}.{field}")
@@ -64,7 +64,7 @@ def measurements(paths: list[Path]) -> Iterator[dict[str, object]]:
             value = value / (1024 * 1024)
         yield {
             "provider": "reference",
-            "methodology": {"id": methodology, "version": version},
+            "methodology": {"id": methodology},
             "run_id": "reference-local",
             "trial": 1,
             "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),

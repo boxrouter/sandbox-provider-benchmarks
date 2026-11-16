@@ -19,7 +19,7 @@ def measurement(output: str) -> dict[str, Any]:
         raise ValueError("expected one known package-install variant and a nonnegative duration")
     return {
         "provider": "reference",
-        "methodology": {"id": "package-registries", "version": "1.1.16"},
+        "methodology": {"id": "package-registries"},
         "run_id": "reference-local",
         "trial": 1,
         "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),

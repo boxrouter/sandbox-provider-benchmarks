@@ -24,9 +24,7 @@ def test_current_methodology_and_schemas_validate() -> None:
 
 def test_validate_handles_multi_document_methodology(tmp_path: Path) -> None:
     (tmp_path / "methodology").mkdir()
-    (tmp_path / "methodology" / "cpu.yaml").write_text(
-        "id: cpu\nversion: 1.0.0\n---\nid: memory\nversion: 1.0.0\n"
-    )
+    (tmp_path / "methodology" / "cpu.yaml").write_text("id: cpu\n---\nid: memory\n")
     (tmp_path / "runs").mkdir()
     (tmp_path / "runs" / "sample.yaml").write_text("methodologies:\n  - methodology_id: cpu\n")
     assert validate(tmp_path) == []
@@ -35,7 +33,7 @@ def test_validate_handles_multi_document_methodology(tmp_path: Path) -> None:
 def test_non_string_keys_are_rejected(tmp_path: Path) -> None:
     (tmp_path / "methodology").mkdir()
     (tmp_path / "methodology" / "exec.yaml").write_text(
-        "id: exec\nversion: 1.0.0\nfailure_policy:\n  timeout_seconds:\n    true: 30\n"
+        "id: exec\nfailure_policy:\n  timeout_seconds:\n    true: 30\n"
     )
     assert validate(tmp_path) == [
         f"{tmp_path / 'methodology' / 'exec.yaml'}: key $.failure_policy.timeout_seconds.True "
@@ -59,12 +57,12 @@ def test_ready_check_skip_lists_name_existing_methodology_ids(tmp_path: Path) ->
     (tmp_path / "methodology").mkdir()
     common = tmp_path / "methodology" / "common.yaml"
     common.write_text(
-        "id: sbs.common\nversion: 1.0.0\nready_check:\n"
+        "id: sbs.common\nready_check:\n"
         "  skipped_by_benchmarks: [sbs.common]\n  skipped_on_restore_by_benchmarks: [sbs.common]\n"
     )
     assert validate(tmp_path) == []
     common.write_text(
-        "id: sbs.common\nversion: 1.0.0\nready_check:\n"
+        "id: sbs.common\nready_check:\n"
         "  skipped_by_benchmarks: [sandbox.create.sequential_tti]\n"
         "  skipped_on_restore_by_benchmarks: [fork]\n"
     )
@@ -122,9 +120,9 @@ exclusion_reason: null
 def test_reproduce_checks_seeded_percentile_interval(tmp_path: Path) -> None:
     (tmp_path / "methodology").mkdir()
     (tmp_path / "methodology" / "cpu.yaml").write_text(
-        "id: sbs.common\nversion: 1.0.0\ncategory: common\nstatistics:\n  interval:\n"
+        "id: sbs.common\ncategory: common\nstatistics:\n  interval:\n"
         "    type: bootstrap_percentile\n    confidence: 0.95\n    resamples: 100\n    seed: 7\n"
-        "---\nid: cpu\nversion: 1.0.0\n"
+        "---\nid: cpu\n"
     )
     raw_dir = tmp_path / "data" / "run-a" / "raw"
     aggregate_dir = tmp_path / "data" / "run-a" / "aggregates"
@@ -134,7 +132,7 @@ def test_reproduce_checks_seeded_percentile_interval(tmp_path: Path) -> None:
     rows = []
     for index, value in enumerate(values, start=1):
         rows.append(
-            f"provider: provider-a\nrun_id: run-a\nmethodology: {{id: cpu, version: '1.0.0'}}\n"
+            f"provider: provider-a\nrun_id: run-a\nmethodology: {{id: cpu}}\n"
             f"measurement: compute\nunit: MIPS\ntrial: {index}\nvalue: {value}\n"
             "success: true\nexclusion_reason: null\n"
         )
@@ -142,7 +140,7 @@ def test_reproduce_checks_seeded_percentile_interval(tmp_path: Path) -> None:
     low, high = bootstrap_ci(values, seed=7, resamples=100) or (0.0, 0.0)
     aggregate = aggregate_dir / "cpu.yaml"
     aggregate.write_text(
-        "provider: provider-a\nrun_id: run-a\nmethodology: {id: cpu, version: '1.0.0'}\n"
+        "provider: provider-a\nrun_id: run-a\nmethodology: {id: cpu}\n"
         "measurement: compute\n"
         "precision: {decimal_places: 9}\nstatistic: median\nvalue: "
         f"{nearest_rank(values, 0.5)}\nunit: MIPS\n"

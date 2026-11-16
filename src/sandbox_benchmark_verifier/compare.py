@@ -112,10 +112,11 @@ def _choose(kind: str, wanted: str, found: Sequence[str]) -> str:
 
 
 def _find_methodology(documents: Sequence[MethodologyDocument], citation: Any) -> Mapping[str, Any]:
-    if isinstance(citation, Mapping):
-        for item in documents:
-            if item.document.get("id") == citation.get("id"):
-                return item.document
+    """The document a citation names: a methodology id, or a record that holds one."""
+    identifier = citation.get("id") if isinstance(citation, Mapping) else citation
+    for item in documents:
+        if item.document.get("id") == identifier:
+            return item.document
     raise CompareError(f"methodology {citation} is not in this installed verifier; update it")
 
 

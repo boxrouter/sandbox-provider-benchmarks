@@ -1,21 +1,18 @@
 id: previews
-version: 1.1.14
 effective: '2026-11-08'
 name: '{name:test.previews}'
 category: sandbox_operation
 notes:
   what_this_measures: The result records preview readiness, request time to first byte and successful
     {name:stage.websocket} upgrades.
-  how_to_read: The {param:previews.1.1.14.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:previews.statistics.primary} summarizes successful trials in the axis
     unit; {direction:url_ready}.
   summary: A pinned development server starts and serves requests through its public preview URL.
   how_it_is_measured: A job-host monotonic clock times from server-start dispatch to the expected HTTP
     response through the preview URL. The workload is a pinned Vite development server.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful request.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: url_ready
   unit: ms
@@ -93,7 +90,7 @@ procedure:
       poll_gap_seconds: 0.01
       local_poll_gap_seconds: 0.01
       websocket_subprotocol: vite-hmr
-    description: The workload uses the {param:previews.1.1.14.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:previews.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -234,7 +231,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/previews/1.1.14/
+  path: parameters/previews/
   sha256: ff47ba34de0654994a51a10112df055c8c2677f92ed13287bf2a173f76f83da5
 capabilities:
   required:

@@ -17,10 +17,7 @@ from sandbox_benchmark_verifier.placeholders import resolve_template
 @cache
 def _template_documents(root: Path) -> dict[str, Mapping[str, Any]]:
     """Reuse immutable source records while compiling the release's reader templates."""
-    return {
-        f"{item.document['id']}.{item.document['version']}": item.document
-        for item in load_methodology(root)
-    }
+    return {str(item.document["id"]): item.document for item in load_methodology(root)}
 
 
 def hover_templates(content: Mapping[str, Any]) -> dict[str, Any]:

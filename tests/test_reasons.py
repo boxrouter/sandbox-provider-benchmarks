@@ -74,13 +74,16 @@ def test_hover_templates_keep_retired_templates_out() -> None:
 
 # Rule no-count-facts (Andre, 2026-11-10, NC-both): the page states no count as n of m. The
 # failures hover says how many trials failed and why, not out of how many. The texts below still
-# read "{k} of {n}": a score's rank (rule score-rank), and three that are open with Andre: a dot's
-# position ("Trial 3 of 20"), a provider page's capability count ("12 of 20 supported") and the
-# runner's burst failure cause ("3 of 10 sandboxes ready"). A new one fails here.
+# read "{k} of {n}": a score's rank (rule score-rank), a pooled dot's call ("Call 7,112 of
+# 10,000": Andre, 2026-11-12, D62, "label which one it is out of the 10,000"), and three that
+# are open with Andre: a dot's position ("Trial 3 of 20"), a provider page's capability count
+# ("12 of 20 supported") and the runner's burst failure cause ("3 of 10 sandboxes ready").
+# A new one fails here.
 N_OF_M = re.compile(r"\{[^{}]+\} of \{[^{}]+\}|\b\d[\d,]* of \d[\d,]*\b")
 N_OF_M_KEPT = {
     "methodology_page.pages.rank",
     "hover_templates.chart_trial_of",
+    "hover_templates.chart_call_of",
     "provider_capabilities.count",
     "reasons.burst_failure_k_of_n",
 }

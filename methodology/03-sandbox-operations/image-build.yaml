@@ -1,19 +1,16 @@
 id: image-build-2vcpu-4gib
-version: 1.2.14
 effective: '2026-11-08'
 name: '{name:test.image-build-2vcpu-4gib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures the provider’s preparation of a pinned base image with a new
     layer at the requested size.
-  how_to_read: The {param:image-build-2vcpu-4gib.1.2.14.statistics.primary} is shown in {unit:image_build_time};
+  how_to_read: The {param:image-build-2vcpu-4gib.statistics.primary} is shown in {unit:image_build_time};
     {direction:image_build_time}.
   summary: Pinned base images are prepared with one new layer at the selected machine size.
   how_it_is_measured: A job-host monotonic clock times image preparation from dispatch until the provider
     call returns. Each trial uses a pinned base image with a new layer.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: image_build_time
   unit: ms
@@ -45,93 +42,93 @@ procedure:
     label: Standard
     parameters:
       base_image: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.0.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.0.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
       how_to_read: 'For the standard image, files counts merged regular-file paths, including hardlink paths; directories, symlinks and whiteouts are excluded. Byte counts sum layer archives. Custom-image file counts are retained from prior definitions; their counting convention has not been reverified.'
   - id: python
     label: Python
     parameters:
       base_image: docker.io/library/python@sha256:2e13bb9164213e8dec5adf78bc63bb710054c4b656800e29a25f756ed2fa18ae
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.1.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.1.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   - id: node
     label: Node.js
     parameters:
       base_image: docker.io/library/node@sha256:f9b3548b20b15b705b66aeecaeac7dd690c73d5e4661357aac02e60e3d38c88a
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.2.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.2.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   - id: go
     label: Go
     parameters:
       base_image: docker.io/library/golang@sha256:8aa2821993207ae840ce09e4223217efcd14e01f71525db734faf4232bd59999
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.3.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.3.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   - id: rust
     label: Rust
     parameters:
       base_image: docker.io/library/rust@sha256:c3d8fc865b8bee83c7894fb833c2c78c8cac5e865d45afc9d05ed026a6301c14
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.4.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.4.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   - id: java
     label: Java
     parameters:
       base_image: docker.io/library/eclipse-temurin@sha256:8c052273471ca5128e67f18ffe9e9c32abf1b104bb0090fa10175eda51004145
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.5.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.5.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   - id: data-science
     label: Data Science
     parameters:
       base_image: quay.io/jupyter/datascience-notebook@sha256:8ac5299c9097d4006642ab168ad8447ec5ada41ea099abc8f65e3395ed7ff9b1
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.6.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.6.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   - id: igel
     label: igel (Python)
     parameters:
       base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:434ed4187abdb6948dec6434ab4a354d11a19955ebcc706a605ebc6e2470c140
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.7.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.7.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   - id: yjs
     label: Yjs (Node/TS)
     parameters:
       base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.8.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.8.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   - id: dasel
     label: dasel (Go)
     parameters:
       base_image: public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:0529d5659b2d11ee76e3ba13a877043b3e43bcf123f36a840f9cf5b5ade09b78
-    description: The workload uses the {param:image-build-2vcpu-4gib.1.2.14.procedure.variants.9.label}
+    description: The workload uses the {param:image-build-2vcpu-4gib.procedure.variants.9.label}
       configuration.
     notes:
-      summary: '{param:image-build-2vcpu-4gib.1.2.14.notes.summary}'
-      what_this_measures: '{param:image-build-2vcpu-4gib.1.2.14.notes.what_this_measures}'
+      summary: '{param:image-build-2vcpu-4gib.notes.summary}'
+      what_this_measures: '{param:image-build-2vcpu-4gib.notes.what_this_measures}'
   steps:
   - id: build
     name: Prepare image
@@ -178,7 +175,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/image-build-2vcpu-4gib/1.2.14/
+  path: parameters/image-build-2vcpu-4gib/
   sha256: 0c26227ffc5437b848c709874be13e9795588ae1fdaf49c50a36f1af03295d62
 interpretation:
   what_to_do: Compare how build time grows with the image a team brings, from the standard image to large

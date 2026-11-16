@@ -1,14 +1,11 @@
 id: reliability.provider_failures
-version: 0.1.6
 effective: '2026-11-08'
-name: Reliability
+name: '{name:section.reliability}'
 category: reliability
 status: planned
 description: Reliability measures how often each provider fails, counting only failures
   the provider caused.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: provider_success_rate
   unit: ratio
@@ -64,7 +61,7 @@ failure_policy:
     run there. It is neither a success nor a failure.
   - An excluded trial stays in the data with its reason.
 notes:
-  summary: '{param:reliability.provider_failures.0.1.6.description}'
+  summary: '{param:reliability.provider_failures.description}'
   what_this_measures: Failures caused by the benchmark or workload are excluded from
     provider-failure counts.
   how_to_read: The success rate compares successful trials with successful trials

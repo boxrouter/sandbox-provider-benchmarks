@@ -25,7 +25,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 VALID: dict[str, Any] = {
     "id": "fixture-new",
-    "version": "1.0.0",
     "procedure": {
         "concurrency": {"trials_in_parallel": 10, "sandboxes_at_once": 1},
         "steps": [
@@ -136,12 +135,12 @@ def test_each_new_benchmark_requirement_fails_with_its_own_message(
 ) -> None:
     document = deepcopy(VALID)
     change(document)
-    expected = [] if message is None else [f"fixture-new 1.0.0: new benchmark: {message}"]
+    expected = [] if message is None else [f"fixture-new: new benchmark: {message}"]
     assert new_benchmark_errors(_tree(tmp_path, document, [])) == expected
 
 
 def test_pre_template_and_planned_documents_are_exempt(tmp_path: Path) -> None:
-    document = {"id": "fixture-new", "version": "1.0.0", "procedure": {"steps": [{"id": "a"}]}}
+    document = {"id": "fixture-new", "procedure": {"steps": [{"id": "a"}]}}
     assert new_benchmark_errors(_tree(tmp_path / "listed", document, ["fixture-new"])) == []
     planned = {**document, "status": "planned"}
     assert new_benchmark_errors(_tree(tmp_path / "planned", planned, [])) == []

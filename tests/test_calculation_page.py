@@ -14,7 +14,6 @@ import pytest
 
 from sandbox_benchmark_verifier.content import content_criteria
 from sandbox_benchmark_verifier.names import load_tables
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -24,9 +23,7 @@ SCORE_DOCUMENTS = ("index.speed_score", "index.cost_score", "index.provider_scor
 
 
 def _newest(bundle: dict[str, Any], identifier: str) -> dict[str, Any]:
-    versions = bundle["methodologies"][identifier]
-    newest = max(versions, key=version_key)
-    definition: dict[str, Any] = versions[newest]["reader_definition"]
+    definition: dict[str, Any] = bundle["methodologies"][identifier]["reader_definition"]
     return definition
 
 

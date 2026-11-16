@@ -7,7 +7,6 @@ from collections.abc import Mapping
 from typing import Any
 
 from sandbox_benchmark_verifier.catalog import _assets
-from sandbox_benchmark_verifier.versions import version_key
 
 
 def chart_bindings() -> dict[str, Any]:
@@ -70,8 +69,7 @@ def compile_chart_bindings(
         document = binding["document"]
         if document not in bundle["methodologies"]:
             continue  # A synthetic conformance bundle can contain a subset of methods.
-        versions = bundle["methodologies"][document]
-        entry = versions[max(versions, key=version_key)]
+        entry = bundle["methodologies"][document]
         canonical = aliases.get("document", {}).get(document, document)
         charts, metrics = _document_charts(binding, entry, canonical)
         bindings[canonical] = charts

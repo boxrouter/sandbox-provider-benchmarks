@@ -23,7 +23,7 @@ def measurements(output: str) -> Iterator[dict[str, object]]:
         raise ValueError("STREAM output is missing the Triad rate")
     yield {
         "provider": "reference",
-        "methodology": {"id": "stream-triad", "version": "1.1.18"},
+        "methodology": {"id": "stream-triad"},
         "run_id": "reference-local",
         "trial": 1,
         "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),

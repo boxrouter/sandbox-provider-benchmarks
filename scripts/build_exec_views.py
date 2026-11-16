@@ -28,7 +28,6 @@ HEADER = (
 )
 ORDER = [
     "id",
-    "version",
     "effective",
     "name",
     "category",
@@ -69,7 +68,7 @@ def documents(source: dict[str, Any]) -> list[dict[str, Any]]:
         document = merge(source["shared"], view)
         document["parameters"] = {
             **document["parameters"],
-            "path": f"parameters/{document['id']}/{document['version']}/",
+            "path": f"parameters/{document['id']}/",
         }
         unknown = set(document) - set(ORDER)
         if unknown:

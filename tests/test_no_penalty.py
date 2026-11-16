@@ -9,23 +9,15 @@ from typing import Any
 import pytest
 
 from sandbox_benchmark_verifier.text import _methodologies
-from sandbox_benchmark_verifier.versions import newest, version_key
 
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-# The first versions without the penalty; every later version must keep it out.
-@pytest.mark.parametrize(
-    ("identifier", "first"), [("time-index", "1.1.19"), ("cost-index", "1.1.17")]
-)
-def test_the_latest_composites_carry_no_penalty_and_fill_inside_each_workload(
-    identifier: str, first: str
-) -> None:
-    document = newest(_methodologies(ROOT))[identifier]
-    version = version_key(document["version"])
-    assert version >= version_key(first)
+@pytest.mark.parametrize("identifier", ["time-index", "cost-index"])
+def test_the_composites_carry_no_penalty_and_fill_inside_each_workload(identifier: str) -> None:
+    document = {item["id"]: item for item in _methodologies(ROOT)}[identifier]
     assert "missing_unit_penalty" not in document["statistics"]
     composition = document["composition"]
     # A missing unit takes a value some provider recorded on that same unit, inside its workload,

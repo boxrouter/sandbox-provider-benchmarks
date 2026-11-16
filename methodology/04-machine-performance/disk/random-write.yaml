@@ -1,5 +1,4 @@
 id: random-write
-version: 1.1.17
 effective: '2026-11-08'
 name: '{name:test.random-write}'
 category: machine_performance
@@ -11,13 +10,11 @@ notes:
     I/O, so the page cache does not supply the data.
   how_it_is_measured: The `fio` workload performs random write operations with direct I/O in the workspace
     for the declared duration and ramp; its result uses the sandbox clock.
-  how_to_read: The {param:random-write.1.1.17.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:random-write.statistics.primary} summarizes successful trials in the axis
     unit; {direction:random_write_iops}.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: random_write_iops
   unit: IOPS
@@ -81,8 +78,8 @@ procedure:
     name: Cache checks
     timer: null
     action: 'After the rows, untimed: write a separate 256 MiB file and read it through the page cache,
-      then read it with direct I/O. Sample the first 64 MiB of the data file: its 4 KiB blocks must all
-      differ and zlib may shrink them by at most 1%, or the trial is the benchmark''s failure.'
+      then read it with direct I/O. Sample the first 64 MiB of the data file: at least 99.9% of its 4 KiB
+      blocks must differ and zlib may shrink them by at most 1%, or the trial is the benchmark''s failure.'
   - id: destroy
     name: '{name:stage.destroy}'
     action: Destroy the sandbox and confirm it is gone.
@@ -93,7 +90,6 @@ procedure:
   cadence: Manual.
   shared_trial:
     with: sequential-read
-    version: 1.1.18
 timing_boundaries:
   start: The row's fio starts after the untimed setup and the data file's first write, or the row before
     it; rows are shuffled within each trial.

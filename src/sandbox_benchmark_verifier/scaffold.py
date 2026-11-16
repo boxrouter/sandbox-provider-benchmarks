@@ -15,7 +15,7 @@ from typing import Any
 import yaml
 from jsonschema import Draft202012Validator
 
-from sandbox_benchmark_verifier.catalog import common_document, default_context, load_methodology
+from sandbox_benchmark_verifier.catalog import COMMON_ID, common_document, load_methodology
 from sandbox_benchmark_verifier.lifecycle_profile import SCHEMA
 from sandbox_benchmark_verifier.lock import update as update_lock
 from sandbox_benchmark_verifier.name_refs import canonical_name_map, name_reference_errors
@@ -81,7 +81,6 @@ class BenchmarkDraft:  # pylint: disable=too-many-instance-attributes
     name: str
     command: str
     image: str
-    version: str = "1.0.0"
     trials: int = 5
     timeout_s: int = 60
     measurement: str = "command"
@@ -121,8 +120,6 @@ def add(root: Path, request: BenchmarkDraft) -> Path:
     """
     if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", request.identifier):
         raise ValueError("new command identity must be a lowercase record id")
-    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", request.version):
-        raise ValueError("version must be semantic major.minor.patch")
     if (
         not request.name.strip()
         or not request.command.strip()
@@ -136,8 +133,8 @@ def add(root: Path, request: BenchmarkDraft) -> Path:
         raise ValueError("measurement must be command or startup")
     if matches := reuse(root, request.identifier, request.name):
         raise ValueError("reuse an existing methodology: " + ", ".join(matches))
-    path = root / "methodology" / request.identifier / f"{request.version}.yaml"
-    directory = root / "parameters" / request.identifier / request.version
+    path = root / "methodology" / f"{request.identifier}.yaml"
+    directory = root / "parameters" / request.identifier
     if path.exists() or directory.exists():
         raise ValueError("scaffold destination exists; edit the existing document in place")
     schema = json.loads((root / "schemas/methodology.schema.json").read_text())
@@ -165,7 +162,6 @@ def add(root: Path, request: BenchmarkDraft) -> Path:
     finish = "The command exit status returns to the caller."
     document = {
         "id": request.identifier,
-        "version": request.version,
         "effective": datetime.now(UTC).date().isoformat(),
         "name": request.name,
         "category": "workload",
@@ -244,7 +240,7 @@ def add(root: Path, request: BenchmarkDraft) -> Path:
             ]
         },
         "execution": {"mode": "script", "inference": False},
-        "inherits": default_context(root),
+        "inherits": COMMON_ID,
         "independence_answers": independence_answers(),
         "failure_policy": {
             "timeout_seconds": {"command": request.timeout_s},
@@ -453,7 +449,7 @@ def add_from_shape(  # pylint: disable=too-many-locals
     shape: Mapping[str, Any],
     draft: Mapping[str, Any],
 ) -> Path:
-    """Write a new benchmark at version 1.0.0 from a runner block's shape and the author's draft.
+    """Write a new benchmark from a runner block's shape and the author's draft.
 
     Only new files are written: ``methodology/<folder>/<id>.yaml`` and its parameter tree. Then
     the lock update rewrites ``methodology/released.lock`` so the new document has its row.
@@ -467,7 +463,7 @@ def add_from_shape(  # pylint: disable=too-many-locals
     if matches := reuse(root, identifier, str(draft["name"])):
         raise ValueError("reuse an existing methodology: " + ", ".join(matches))
     path = root / "methodology" / folder / f"{identifier}.yaml"
-    directory = root / "parameters" / identifier / "1.0.0"
+    directory = root / "parameters" / identifier
     if path.exists() or directory.exists():
         raise ValueError("scaffold destination exists; edit the existing document in place")
     category = _category(root, folder)
@@ -479,17 +475,15 @@ def add_from_shape(  # pylint: disable=too-many-locals
         "sandboxes_at_once": sandboxes if at_once else 1,
     }
     steps = _steps(root, shape, draft, sandboxes)
-    context = default_context(root)
-    common = common_document([item.document for item in load_methodology(root)], context)
+    common = common_document([item.document for item in load_methodology(root)])
     gates = [operations(root)[step["operation"]]["gate"] for step in steps]
     document: dict[str, Any] = {
         "id": identifier,
-        "version": "1.0.0",
         "effective": datetime.now(UTC).date().isoformat(),
         "name": draft["name"],
         "category": category,
         "notes": draft["notes"],
-        "inherits": context,
+        "inherits": COMMON_ID,
         "metrics": draft["metrics"],
         "environment": {
             "size": {"vcpu": 2, "memory_gib": 4},

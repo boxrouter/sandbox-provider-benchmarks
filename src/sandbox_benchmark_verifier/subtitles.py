@@ -100,10 +100,9 @@ def workload_subtitles() -> dict[str, dict[str, str]]:
     if errors := subtitle_word_errors(entries, tables.names):
         raise ValueError("; ".join(errors))
     documents = dict(_template_documents(root))
-    every = {(str(doc["id"]), str(doc["version"])): doc for doc in documents.values()}
     for key in set(_WORKLOAD_PARAMETER.findall(json.dumps(entries))):
         document = documents[key]
-        workload = pinned_workload(root, document, every)
+        workload = pinned_workload(root, document, documents)
         documents[key] = {
             **document,
             "parameters": {**document["parameters"], "workload": workload},

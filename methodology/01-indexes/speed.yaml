@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/methodology.schema.json
 id: time-index
-version: 1.1.29
 effective: '2026-11-08'
 name: '{name:time-index}'
 category: index
@@ -12,9 +11,7 @@ notes:
   how_to_read: '{param:content.index_copy.details.time.how_to_read}'
   cost_summary: '{param:content.index_copy.description}'
   cost_how_to_read: '{param:content.index_copy.details.time.cost_how_to_read}'
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: typical_time
   unit: ms
@@ -25,13 +22,10 @@ metrics:
 composition:
   inputs:
   - id: deepswe
-    version: 1.1.22
     quantity: Time per trace
   - id: terminal-bench-4-0
-    version: 1.1.19
     quantity: Time per trace
   - id: github-actions
-    version: 1.1.16
     quantity: Time per job
   per_input_value: >-
     A provider's value for a workload is the geometric mean, over that workload's units (traces or

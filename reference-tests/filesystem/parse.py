@@ -23,7 +23,7 @@ def measurements(path: Path) -> dict[str, object]:
     value = float(match.group(1))
     return {
         "provider": "reference",
-        "methodology": {"id": "hard-links", "version": "1.1.17"},
+        "methodology": {"id": "hard-links"},
         "run_id": "reference-local",
         "trial": 1,
         "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),

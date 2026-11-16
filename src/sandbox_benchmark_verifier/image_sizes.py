@@ -22,10 +22,9 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 from sandbox_benchmark_verifier.conventions import load_conventions
-from sandbox_benchmark_verifier.versions import version_key
 
 _T = TypeVar("_T")
-WORKLOADS = "parameters/image-build*/*/workloads.json"
+WORKLOADS = "parameters/image-build*/workloads.json"
 COMMAND = "sandbox-benchmark-verify image-sizes"
 _PARTS = re.compile(r"([^/]+)/(.+)@(sha256:[0-9a-f]{64})")
 _ACCEPT = ", ".join(
@@ -50,8 +49,8 @@ FIELDS = ("compressed_bytes", "uncompressed_bytes", "layers", "files")
 
 
 def _workloads(root: Path) -> Iterator[tuple[Path, list[dict[str, Any]]]]:
-    """Every Image Build workload file with its parsed rows, oldest version first."""
-    for path in sorted(root.glob(WORKLOADS), key=lambda p: version_key(p.parent.name)):
+    """Every Image Build workload file with its parsed rows."""
+    for path in sorted(root.glob(WORKLOADS)):
         yield path, json.loads(path.read_text(encoding="utf-8"))
 
 

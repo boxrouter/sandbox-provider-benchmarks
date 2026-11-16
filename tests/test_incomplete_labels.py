@@ -11,7 +11,6 @@ import yaml
 
 from sandbox_benchmark_verifier.content import content_criteria, criteria_errors
 from sandbox_benchmark_verifier.names import load_tables
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -38,11 +37,7 @@ def test_every_ci_job_has_a_short_name_its_full_name_ends_with() -> None:
 def test_the_tail_fallback_suffix_reads_the_floor_from_the_methodology() -> None:
 
     facts = content_criteria()["fact_list"]
-    newest = max(
-        Path("methodology").glob("00-common-*.yaml"),
-        key=lambda path: version_key(path.stem.removeprefix("00-common-")),
-    )
-    common = yaml.safe_load(newest.read_text(encoding="utf-8"))
+    common = yaml.safe_load(Path("methodology/00-common.yaml").read_text(encoding="utf-8"))
     floor = common["statistics"]["tail"]["min_successes"]
     assert facts["fact_tail_floor"] == str(floor)
 

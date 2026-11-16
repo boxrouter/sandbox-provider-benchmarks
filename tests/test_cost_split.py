@@ -9,8 +9,6 @@ import pytest
 
 from sandbox_benchmark_verifier.content import content_criteria
 from sandbox_benchmark_verifier.cost_split import cost_split_errors
-from sandbox_benchmark_verifier.reader import reader_text
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -44,5 +42,4 @@ def test_every_workload_reads_the_one_allocation_sentence(
 ) -> None:
     sentence = bundle["content_criteria"]["fact_list"]["fact_cost_split_rule"]
     method = bundle["reader"]["methods"][identifier]
-    version = max(bundle["methodologies"][method["document"]], key=version_key)
-    assert sentence in reader_text(bundle, identifier, version)["notes"]["cost_how_to_read"]
+    assert sentence in method["text"]["notes"]["cost_how_to_read"]

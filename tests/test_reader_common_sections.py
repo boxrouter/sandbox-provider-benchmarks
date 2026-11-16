@@ -16,7 +16,6 @@ import pytest
 
 from sandbox_benchmark_verifier import reader
 from sandbox_benchmark_verifier.content import content_criteria
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -107,9 +106,7 @@ def test_a_test_page_draws_failures_before_statistics() -> None:
 def test_the_default_sandbox_section_draws_the_standard_image(bundle: dict[str, Any]) -> None:
     """The Common page shows the standard image's digest, registry and pull command."""
     assert "environment.image" in _common_sections()["sandbox"]
-    versions = bundle["methodologies"]["sbs.common"]
-    newest = max(versions, key=version_key)
-    image = versions[newest]["reader_definition"]["environment"]["image"]
+    image = bundle["methodologies"]["sbs.common"]["reader_definition"]["environment"]["image"]
     assert image["reference"]
 
 

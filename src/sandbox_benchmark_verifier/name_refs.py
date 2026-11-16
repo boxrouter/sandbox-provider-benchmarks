@@ -14,7 +14,6 @@ from typing import Any
 from sandbox_benchmark_verifier.catalog import _assets
 from sandbox_benchmark_verifier.glance_clock import glance_clock_errors
 from sandbox_benchmark_verifier.lifecycle_profile import profiles
-from sandbox_benchmark_verifier.lock import read_lock
 from sandbox_benchmark_verifier.name_row_checks import off_documents
 from sandbox_benchmark_verifier.names import Tables, _methodology_documents, load_tables
 from sandbox_benchmark_verifier.placeholders import parse_placeholders, resolve_template
@@ -277,14 +276,9 @@ def source_name_errors(root: Path) -> list[str]:
                     text, patterns=patterns, resolved=not reader_template
                 )
             )
-    locked = read_lock(root)
-    profile_name_owners = {
-        f"{profile.identifier}@{profile.method.document['version']}" for profile in profiles(root)
-    }
+    profile_name_owners = {profile.identifier for profile in profiles(root)}
     for document in _methodology_documents(root):
-        identifier = f"{document['id']}@{document['version']}"
-        if identifier in locked:
-            continue
+        identifier = str(document["id"])
         for location, text in reader_strings(document):
             if location == "name" and identifier in profile_name_owners:
                 continue  # Lifecycle names are generated from this owning field.

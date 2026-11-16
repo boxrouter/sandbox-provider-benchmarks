@@ -19,7 +19,6 @@ from typing import Any
 from sandbox_benchmark_verifier.names import tables_view
 from sandbox_benchmark_verifier.panel_titles import panel_title, title_errors
 from sandbox_benchmark_verifier.placeholders import resolve_template
-from sandbox_benchmark_verifier.versions import newest
 
 
 def _tabs(root: Path) -> dict[str, Mapping[str, Any]]:
@@ -92,7 +91,7 @@ def apply_panel_text(root: Path, documents: Sequence[dict[str, Any]]) -> list[di
         return list(documents)
     tabs = _tabs(root)
     selections = _selections(root)
-    by_version = {f"{item['id']}.{item['version']}": item for item in documents}
+    by_id = {str(item["id"]): item for item in documents}
     names = {str(row["id"]): str(row["name"]) for row in tables_view(root).names}
     result: list[dict[str, Any]] = []
     for document in documents:
@@ -106,7 +105,7 @@ def apply_panel_text(root: Path, documents: Sequence[dict[str, Any]]) -> list[di
         generated["panel"] = {
             **panel,
             "title": panel_title(root, **parts),
-            "command": resolve_template(str(panel["command"]), names=names, documents=by_version),
+            "command": resolve_template(str(panel["command"]), names=names, documents=by_id),
         }
         result.append(generated)
     return result
@@ -121,7 +120,7 @@ def _run_commands(
 ) -> list[str]:
     """The command lines the pinned workload parameters say the test runs."""
     shared = document.get("procedure", {}).get("shared_trial")
-    owner = documents[f"{shared['with']}.{shared['version']}"] if shared else document
+    owner = documents[shared["with"]] if shared else document
     path = root / str(owner["parameters"]["path"]) / "workloads.json"
     vcpu = str(document["environment"]["size"]["vcpu"])
     commands: list[str] = []
@@ -148,7 +147,7 @@ def _document_errors(
     selections: Mapping[str, str],
 ) -> list[str]:
     """Errors of one machine test's panel block and the title generated from it."""
-    label = f"{document['id']}.{document['version']}"
+    label = str(document["id"])
     text = generated[label]["panel"]
     standard = str(document["source"]["name"])
     errors = (
@@ -168,10 +167,8 @@ def panel_errors(root: Path, documents: Sequence[dict[str, Any]]) -> list[str]:
     if not _has_sources(root):
         return []
     errors: list[str] = []
-    latest = newest(documents)
-    generated = {
-        f"{item['id']}.{item['version']}": item for item in apply_panel_text(root, documents)
-    }
+    latest = {str(item["id"]): item for item in documents}
+    generated = {str(item["id"]): item for item in apply_panel_text(root, documents)}
     tabs = _tabs(root)
     selections = _selections(root)
     titles: dict[str, set[str]] = {}
@@ -180,14 +177,10 @@ def panel_errors(root: Path, documents: Sequence[dict[str, Any]]) -> list[str]:
         if "measure" not in tab or document is None:
             continue
         if not isinstance(document.get("panel"), Mapping):
-            errors.append(
-                f"{identifier}.{document['version']}: the {tab['id']} tab's test has no panel block"
-            )
+            errors.append(f"{identifier}: the {tab['id']} tab's test has no panel block")
             continue
         errors.extend(_document_errors(root, document, generated, tabs=tabs, selections=selections))
-        titles.setdefault(str(tab["id"]), set()).add(
-            generated[f"{identifier}.{document['version']}"]["panel"]["title"]
-        )
+        titles.setdefault(str(tab["id"]), set()).add(generated[identifier]["panel"]["title"])
     selected = {str(tab["id"]) for identifier, tab in tabs.items() if identifier in selections}
     tests_per_tab = Counter(str(tab["id"]) for tab in tabs.values())
     errors.extend(

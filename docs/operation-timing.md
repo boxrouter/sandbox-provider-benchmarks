@@ -53,9 +53,9 @@ Methodology `sequential-tti`, metric `time_to_interactive`, one record per sandb
   xml.etree.ElementTree'` (`start-time-python3`), `node -e 'require("crypto"); require("zlib");
   require("http")'` (`start-time-node`) or `git --version` (`start-time-git`).
 - **Trial:** build a new image that appends one small layer holding the trial's unique id to the
-  standard image, so the provider has never seen it; then create, run the command and destroy ten
-  sandboxes one after another. Sandbox 1 starts cold.
-- **Record:** `variant` is `n-<position>`, the sandbox's position in its trial (`n-1` to `n-10`).
+  standard image, so the provider has never seen it; then create, run the command and destroy each
+  of the trial's sandboxes one after another. Sandbox 1 starts cold.
+- **Record:** `variant` is `n-<position>`, the sandbox's position in its trial (`n-1` for the first, up to the last).
   The destroy call and the image build are recorded by us but are not part of the value.
 
 ## Exec latency (`true`)

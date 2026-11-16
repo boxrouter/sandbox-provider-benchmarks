@@ -44,7 +44,7 @@ def resolve(
     reference: Mapping[str, str],
     documents: Sequence[MethodologyDocument] | None = None,
 ) -> Any:
-    """Resolve a methodology citation or an intra-contract pointer."""
+    """Resolve a methodology document citation or an intra-contract pointer."""
     value: Any = contract
     if "document" in reference:
         source = contract["sources"][reference["document"]]
@@ -52,7 +52,6 @@ def resolve(
             item.document
             for item in (load_methodology() if documents is None else documents)
             if item.document["id"] == source["id"]
-            and str(item.document["version"]) == str(source["version"])
         ]
         if len(matches) != 1:
             raise ValueError("timing source must identify one methodology document")

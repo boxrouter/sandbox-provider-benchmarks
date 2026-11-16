@@ -15,7 +15,6 @@ from sandbox_benchmark_verifier.methodology_page import reader_definition
 from sandbox_benchmark_verifier.names import load_tables, resolve
 from sandbox_benchmark_verifier.subtitles import score_fact_errors, template_errors
 from sandbox_benchmark_verifier.text import _methodologies
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -23,10 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _document(identifier: str) -> dict[str, Any]:
-    return max(
-        (document for document in _methodologies(ROOT) if document["id"] == identifier),
-        key=lambda document: version_key(document["version"]),
-    )
+    return next(document for document in _methodologies(ROOT) if document["id"] == identifier)
 
 
 @pytest.mark.parametrize(
@@ -82,7 +78,7 @@ def test_the_score_axis_titles_are_exactly_the_quantity_words(bundle: dict[str, 
     assert metrics["time-index/typical_time"]["labels"]["axis"]["metric"] == "Time ({unit})"
 
 
-def test_a_score_document_is_not_listed_among_another_documents_versions() -> None:
+def test_a_score_document_is_not_listed_among_another_documents_aliases() -> None:
     aliases = load_tables(ROOT).aliases["document"]
     others = {key: value for key, value in aliases.items() if not key.endswith("_score")}
     for document, own in (("index.speed_score", "time-score"), ("index.cost_score", "cost-score")):
@@ -91,8 +87,7 @@ def test_a_score_document_is_not_listed_among_another_documents_versions() -> No
 
 
 def _provider_score() -> dict[str, Any]:
-    versions = [d for d in _methodologies(ROOT) if d["id"] == "index.provider_score"]
-    return max(versions, key=lambda d: version_key(d["version"]))
+    return next(d for d in _methodologies(ROOT) if d["id"] == "index.provider_score")
 
 
 def _children(rows: list[dict[str, Any]], parent: str) -> list[dict[str, Any]]:
@@ -174,33 +169,14 @@ def test_time_score_and_cost_score_read_in_parallel() -> None:
 def test_fresh_score_tail_uses_completed_units_and_its_exact_inherited_floor(
     identifier: str,
 ) -> None:
-    documents = {(d["id"], str(d["version"])): d for d in _methodologies(ROOT)}
-    document = max(
-        (d for (key, _), d in documents.items() if key == identifier),
-        key=lambda d: version_key(d["version"]),
-    )
-    inherited = document["inherits"]
-    common = documents[(inherited["id"], str(inherited["version"]))]
+    documents = {d["id"]: d for d in _methodologies(ROOT)}
+    document = documents[identifier]
+    common = documents[document["inherits"]]
     floor = common["statistics"]["tail"]["min_successes"]
     policy = document["statistics"]["percentile_method"]
     assert not re.search(r"\b\d+\b", policy), "the score must not restate a numerical floor"
     shown = reader_definition(document, documents, content_criteria()["methodology_page"])
     assert shown["statistics"]["tail"]["min_successes"] == floor
-    # A distinct later common cannot silently supply this score's floor.
-    future = copy.deepcopy(common)
-    future["version"] = "99.0.0"
-    future["statistics"]["tail"]["min_successes"] = floor + 1
-    documents[(future["id"], future["version"])] = future
-    assert (
-        reader_definition(document, documents, content_criteria()["methodology_page"])[
-            "statistics"
-        ]["tail"]["min_successes"]
-        == floor
-    )
-    moved = copy.deepcopy(document)
-    moved["inherits"] = {"id": future["id"], "version": future["version"]}
-    bound = reader_definition(moved, documents, content_criteria()["methodology_page"])
-    assert bound["statistics"]["tail"]["min_successes"] == floor + 1
     samples = list(range(1, floor + 1))
     assert summary_value("p95", samples) != summary_value("slowest", samples)
 
@@ -208,13 +184,8 @@ def test_fresh_score_tail_uses_completed_units_and_its_exact_inherited_floor(
 def test_two_provider_tail_set_witness_keeps_a_completed_low_sample_unit() -> None:
     # Independent numerical reference for the new definition, not a campaign admission simulation.
     # The retained producer witness separately proves scheduled=floor/successes=floor-5 is refused.
-    documents = {(d["id"], str(d["version"])): d for d in _methodologies(ROOT)}
-    score = max(
-        (d for (key, _), d in documents.items() if key == "index.speed_score"),
-        key=lambda d: version_key(d["version"]),
-    )
-    inherited = score["inherits"]
-    common = documents[(inherited["id"], str(inherited["version"]))]
+    documents = {d["id"]: d for d in _methodologies(ROOT)}
+    common = documents[documents["index.speed_score"]["inherits"]]
     floor = common["statistics"]["tail"]["min_successes"]
     units = {
         "u": {"a": [100.0] * (floor - 1), "b": [50.0] * floor},

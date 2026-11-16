@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/methodology.schema.json
 id: cost-index
-version: 1.1.27
 effective: '2026-11-08'
 name: '{name:cost-index}'
 category: index
@@ -12,9 +11,7 @@ notes:
   how_to_read: '{param:content.index_copy.details.cost.how_to_read}'
   cost_summary: '{param:content.index_copy.description}'
   cost_how_to_read: '{param:content.index_copy.details.cost.how_to_read}'
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: typical_cost
   unit: USD
@@ -25,13 +22,10 @@ metrics:
 composition:
   inputs:
   - id: deepswe
-    version: 1.1.22
     quantity: Cost per trace
   - id: terminal-bench-4-0
-    version: 1.1.19
     quantity: Cost per trace
   - id: github-actions
-    version: 1.1.16
     quantity: Cost per job
   per_input_value: >-
     The geometric mean, over the units (traces or jobs) that some provider completed in that

@@ -1,21 +1,18 @@
 id: fork
-version: 1.1.15
 effective: '2026-11-08'
 name: '{name:test.fork}'
 category: sandbox_operation
 notes:
   what_this_measures: The result records each create-from-snapshot request and its representative first
     commands as sandboxes are started in sequence.
-  how_to_read: The {param:fork.1.1.15.statistics.primary} summarizes successful trials in the axis unit;
+  how_to_read: The {param:fork.statistics.primary} summarizes successful trials in the axis unit;
     {direction:create_from_snapshot}.
   summary: New sandboxes are created in sequence from the same snapshot and run representative first commands.
   how_it_is_measured: A job-host monotonic clock times each create-from-snapshot request and first command
     until its result returns. The same snapshot supplies each sandbox in sequence.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful sandbox.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: create_from_snapshot
   unit: ms
@@ -59,7 +56,7 @@ procedure:
     parameters:
       restores: 4
       snapshot_deletable: true
-    description: The workload uses the {param:fork.1.1.15.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:fork.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: Create source sandbox
@@ -171,7 +168,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/fork/1.1.15/
+  path: parameters/fork/
   sha256: 8b732952eed6563d3e764c863b4aaf0bf336aa29e5c8e7b8b2bc3d67a5ad6734
 capabilities:
   required:
@@ -251,14 +248,13 @@ independence_answers:
 
 ---
 id: snapshot-and-restore
-version: 1.1.14
 effective: '2026-11-08'
 name: '{name:test.snapshot-and-restore}'
 category: sandbox_operation
 notes:
   what_this_measures: The result records snapshot creation, creation of a sandbox from that snapshot and
     the first commands in the restored sandbox.
-  how_to_read: The {param:snapshot-and-restore.1.1.14.statistics.primary} is shown in {unit:snapshot_time};
+  how_to_read: The {param:snapshot-and-restore.statistics.primary} is shown in {unit:snapshot_time};
     {direction:snapshot_time}.
   summary: A sandbox creates a snapshot, restores it and runs representative first commands.
   how_it_is_measured: A job-host monotonic clock times each snapshot, restore, or first-command call from
@@ -267,9 +263,7 @@ notes:
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, divided by successful
     units.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: snapshot_time
   unit: ms
@@ -322,7 +316,7 @@ procedure:
       && node -e 'require("crypto"); require("zlib"); require("http")' && git --version
     parameters:
       snapshot_deletable: true
-    description: The workload uses the {param:snapshot-and-restore.1.1.14.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:snapshot-and-restore.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: Create source sandbox
@@ -444,7 +438,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/snapshot-and-restore/1.1.14/
+  path: parameters/snapshot-and-restore/
   sha256: c487406246a17af5bd28277bdade464a182157b34fee9e36ccb876b03c6d044d
 capabilities:
   required:

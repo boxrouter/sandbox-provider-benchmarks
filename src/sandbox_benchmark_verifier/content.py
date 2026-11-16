@@ -19,7 +19,6 @@ from sandbox_benchmark_verifier.conventions import (
 from sandbox_benchmark_verifier.cost_split import cost_split_errors
 from sandbox_benchmark_verifier.drill_down_rows import drill_down_row_errors
 from sandbox_benchmark_verifier.image_sizes import byte_size_text, standard_image_bytes
-from sandbox_benchmark_verifier.lock import read_lock
 from sandbox_benchmark_verifier.name_refs import canonical_name_map, resolve_name_references
 from sandbox_benchmark_verifier.names import load_tables
 from sandbox_benchmark_verifier.option_hovers import option_hover_errors
@@ -58,7 +57,6 @@ from sandbox_benchmark_verifier.subtitles import (
 )
 from sandbox_benchmark_verifier.text_predicates import lookup
 from sandbox_benchmark_verifier.timing import load_timing_contract
-from sandbox_benchmark_verifier.versions import newest
 
 # A clock belongs to a step's timer, which the stage hover renders; keyed text never restates it.
 CLOCK_CLAUSE = re.compile(r"(?i)\b(?:job-host|sandbox|monotonic)\s+clock\b|\bclock\s+measures\b")
@@ -119,7 +117,7 @@ def content_criteria() -> dict[str, Any]:
     _standard_image_size(result["methodology_page"])
     # The executable timing rules the runner reads, so reader text can read their values.
     result["timing"] = load_timing_contract()
-    documents: dict[str, Mapping[str, Any]] = dict(newest(_template_documents(_assets()).values()))
+    documents: dict[str, Mapping[str, Any]] = dict(_template_documents(_assets()))
     tables = load_tables()
     canonical_names = canonical_name_map(tables)
     # {param:...} references are resolved here, once; content.* parameters read the criteria.
@@ -199,6 +197,28 @@ def _public_source_criteria_errors(criteria: Mapping[str, Any]) -> list[str]:
     return errors
 
 
+MEASURED_DATA_KINDS = frozenset({"sandbox_positions"})
+"""The facts of the published data a page may draw in place of a methodology parameter."""
+
+
+def _measured_from_data_errors(fields: Mapping[str, Any]) -> list[str]:
+    """`measured_from_data` marks a methodology parameter the page reads from the data it draws
+    (Sequential TTI's sandboxes per trial: the data's `n-*` positions), not from the pinned
+    document, whose value may belong to a later dataset. Each key must be a parameter the
+    methodology schema defines, and each value a data fact the page knows."""
+    schema = json.loads((_assets() / "schemas/methodology.schema.json").read_text(encoding="utf-8"))
+    errors = []
+    for path, kind in fields.items():
+        node: Any = schema
+        for part in str(path).split("."):
+            node = node.get("properties", {}).get(part) if isinstance(node, Mapping) else None
+        if node is None:
+            errors.append(f"{path}: measured_from_data names a parameter the schema lacks")
+        if kind not in MEASURED_DATA_KINDS:
+            errors.append(f"{path}: unsupported data fact {kind!r} in measured_from_data")
+    return errors
+
+
 def _methodology_page_criteria_errors(criteria: Mapping[str, Any]) -> list[str]:
     errors: list[str] = []
     for key, label in criteria.get("methodology_page", {}).get("field_labels", {}).items():
@@ -206,12 +226,19 @@ def _methodology_page_criteria_errors(criteria: Mapping[str, Any]) -> list[str]:
             errors.append(f"{key}: methodology labels must be owner-written, not schema keys")
     page = criteria.get("methodology_page", {})
     for key, value_format in page.get("field_formats", {}).items():
-        if value_format not in {"code", "duration_seconds", "machine_size", "plain_number"}:
+        if value_format not in {
+            "code",
+            "duration_seconds",
+            "machine_size",
+            "plain_number",
+            "provider_id",
+        }:
             errors.append(f"{key}: unsupported owned methodology value format")
     if "machine_size" in page.get("field_formats", {}).values() and not all(
         f"{{{name}}}" in str(page.get("machine_size", "")) for name in ("vcpu", "memory_gib")
     ):
         errors.append("machine_size must be a template with {vcpu} and {memory_gib}")
+    errors.extend(_measured_from_data_errors(page.get("measured_from_data", {})))
     errors.extend(_standard_image_errors(page.get("standard_image")))
     if any(key in page.get("byline", {}) for key in ("version", "effective")):
         errors.append("methodology pages must not show document versions or effective dates")
@@ -510,7 +537,8 @@ def slot_errors(
         errors.append("text differs from its owned literal template")
     if slot["form"] == "sentence":
         sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z])", text)
-        if len(sentences) > slot["max_sentences"]:
+        # A slot may leave the sentence count open (details.limitations); its length still caps it.
+        if "max_sentences" in slot and len(sentences) > slot["max_sentences"]:
             errors.append(f"at most {slot['max_sentences']} sentences are allowed")
         for sentence in sentences:
             starts = re.match(r"[A-Z0-9]", sentence) or owned_start.match(sentence)
@@ -605,7 +633,7 @@ def document_reader_literal_errors(
         if slot.get("owner") == "methodology" and slot.get("source", "").startswith("procedure.")
     )
     return [
-        f"{document['id']}@{document['version']}.{path}[{index}]: {error}"
+        f"{document['id']}.{path}[{index}]: {error}"
         for path in sorted(paths)
         for index, template in enumerate(_reader_path_values(document, path.split(".")))
         for error in reader_literal_errors(template, criteria)
@@ -641,11 +669,7 @@ def document_content_errors(
         *document_reader_literal_errors(document, source),
         *stage_hover_errors(document, limit=source["slots"]["tooltip"]["max_length"]),
         *boundary_source_errors(document),
-        *(
-            []
-            if f"{document['id']}@{document['version']}" in read_lock(_assets())
-            else option_hover_errors(document, limit=source["slots"]["tooltip"]["max_length"])
-        ),
+        *option_hover_errors(document, limit=source["slots"]["tooltip"]["max_length"]),
     ]
 
 
@@ -671,7 +695,7 @@ def _source_slot_errors(
         if path not in criteria["placeholders"]["check_fields"]:
             continue
         for index, template in enumerate(_strings(lookup(document, path))):
-            location = f"{document['id']}@{document['version']}.{path}" + (
+            location = f"{document['id']}.{path}" + (
                 f"[{index}]" if path.endswith("limitations") else ""
             )
             resolved = resolve_template(
@@ -743,7 +767,7 @@ def text_similarity_errors(values: Mapping[str, str], criteria: Mapping[str, Any
 
 def _method_page_errors(document: Mapping[str, Any], criteria: Mapping[str, Any]) -> list[str]:
     errors: list[str] = []
-    identifier = f"{document['id']}@{document['version']}"
+    identifier = str(document["id"])
     page_template = next(
         (
             item

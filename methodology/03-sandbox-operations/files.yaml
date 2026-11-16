@@ -1,13 +1,12 @@
 # yaml-language-server: $schema=../../schemas/methodology.schema.json
 id: list-2vcpu-8gib
-version: 1.0.3
 effective: '2026-11-08'
 name: '{name:test.list-2vcpu-8gib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures the round-trip time of a directory-list request in a 2 vCPU
     and 8 GiB sandbox, from dispatch on the job host until the 200 file names return.
-  how_to_read: The {param:list.1.1.13.statistics.primary} across successful trials is shown in {unit:total_time};
+  how_to_read: The {param:list.statistics.primary} across successful trials is shown in {unit:total_time};
     {direction:total_time}.
   summary: Repeated requests list a prepared directory of 200 empty files in a 2 vCPU and 8 GiB sandbox.
   how_it_is_measured: After an untimed setup command creates 200 empty files in /workspace/prim/list,
@@ -17,9 +16,7 @@ notes:
     by the number of successful calls.
   cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
     required for a cost to be shown.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_time
   unit: ms
@@ -54,7 +51,7 @@ procedure:
     parameters:
       file_count: 200
       repetitions: 100
-    description: The workload uses the {param:list.1.1.13.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:list.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -125,7 +122,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/list-2vcpu-8gib/1.0.3/
+  path: parameters/list-2vcpu-8gib/
   sha256: efb4031b7a6ff9a3b883f52e8e4000b3b2be7a6669d158e3f8d120ccace36b6e
 interpretation:
   what_to_do: Compare providers within the 2 vCPU and 8 GiB cell on the round-trip time of listing a directory,
@@ -208,14 +205,13 @@ independence_answers:
 
 ---
 id: read-4kib-2vcpu-8gib
-version: 1.0.3
 effective: '2026-11-08'
 name: '{name:test.read-4kib-2vcpu-8gib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures the round-trip time of a 4 KiB file-read request in a 2 vCPU
     and 8 GiB sandbox, from dispatch on the job host until the complete 4,096-byte file returns.
-  how_to_read: The {param:read-4kib.1.1.13.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:read-4kib.statistics.primary} summarizes successful trials in the axis
     unit; {direction:total_time}.
   summary: Repeated requests read a fixed 4 KiB file from a 2 vCPU and 8 GiB sandbox and verify its SHA-256
     digest.
@@ -226,9 +222,7 @@ notes:
     by the number of successful calls.
   cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
     required for a cost to be shown.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_time
   unit: ms
@@ -263,7 +257,7 @@ procedure:
     parameters:
       bytes: 4096
       repetitions: 100
-    description: The workload uses the {param:read-4kib.1.1.13.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:read-4kib.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -304,7 +298,6 @@ procedure:
   cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
   shared_trial:
     with: list-2vcpu-8gib
-    version: 1.0.3
 timing_boundaries:
   start: Each file-read request is dispatched.
   stop: The complete file returns to the job host.
@@ -424,14 +417,13 @@ independence_answers:
 
 ---
 id: write-4kib-2vcpu-8gib
-version: 1.0.3
 effective: '2026-11-08'
 name: '{name:test.write-4kib-2vcpu-8gib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures the round-trip time of a 4 KiB file-write request in a 2 vCPU
     and 8 GiB sandbox, from dispatch on the job host until the write call returns.
-  how_to_read: The {param:write-4kib.1.1.13.statistics.primary} across successful trials is shown in {unit:total_time};
+  how_to_read: The {param:write-4kib.statistics.primary} across successful trials is shown in {unit:total_time};
     {direction:total_time}.
   summary: Repeated requests write a fixed 4 KiB incompressible payload to one file path in a 2 vCPU and
     8 GiB sandbox.
@@ -441,9 +433,7 @@ notes:
     by the number of successful calls.
   cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
     required for a cost to be shown.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_time
   unit: ms
@@ -477,7 +467,7 @@ procedure:
     parameters:
       bytes: 4096
       repetitions: 100
-    description: The workload uses the {param:write-4kib.1.1.13.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:write-4kib.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -511,7 +501,6 @@ procedure:
   cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
   shared_trial:
     with: list-2vcpu-8gib
-    version: 1.0.3
 timing_boundaries:
   start: Each file-write request is dispatched.
   stop: The write call returns after staging and copying the bytes into place.
@@ -631,23 +620,20 @@ independence_answers:
 
 ---
 id: list
-version: 1.1.13
 effective: '2026-11-08'
 name: '{name:test.list}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures each directory-list request from dispatch until the file names
     return.
-  how_to_read: The {param:list.1.1.13.statistics.primary} is shown in {unit:total_time}; {direction:total_time}.
+  how_to_read: The {param:list.statistics.primary} is shown in {unit:total_time}; {direction:total_time}.
   summary: Repeated requests list a fixed directory of empty files.
   how_it_is_measured: A job-host monotonic clock times each directory-list request until the names return.
     The workload uses the same fixed directory of empty files.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, divided by successful
     units.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_time
   unit: ms
@@ -682,7 +668,7 @@ procedure:
     parameters:
       file_count: 200
       repetitions: 100
-    description: The workload uses the {param:list.1.1.13.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:list.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -753,7 +739,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/list/1.1.13/
+  path: parameters/list/
   sha256: efb4031b7a6ff9a3b883f52e8e4000b3b2be7a6669d158e3f8d120ccace36b6e
 interpretation:
   what_to_do: Compare providers on the cost of a directory listing, which an agent pays at the start of
@@ -773,8 +759,6 @@ interpretation:
     in the record on its own, for the cold case.
   - 'The first failed repetition ends the trial: that operation''s later repetitions and every operation
     after it are recorded as not reached.'
-  - Version 6 of the earlier shared trial dropped the run-output operation and starts with the directory
-    listing; version 5's results are not pooled with it.
 validity_checks:
 - id: names_exact
   threat: A listing that returns the wrong names could still be fast.
@@ -835,23 +819,20 @@ independence_answers:
 
 ---
 id: read-4kib
-version: 1.1.13
 effective: '2026-11-08'
 name: '{name:test.read-4kib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures each file-read request from dispatch until the complete file
     returns.
-  how_to_read: The {param:read-4kib.1.1.13.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:read-4kib.statistics.primary} summarizes successful trials in the axis
     unit; {direction:total_time}.
   summary: Repeated requests read a fixed file and verify its contents.
   how_it_is_measured: A job-host monotonic clock times each file-read request until the complete file
     returns. The workload uses a fixed incompressible file.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful call.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_time
   unit: ms
@@ -885,7 +866,7 @@ procedure:
     parameters:
       bytes: 4096
       repetitions: 100
-    description: The workload uses the {param:read-4kib.1.1.13.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:read-4kib.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -930,7 +911,6 @@ procedure:
   cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
   shared_trial:
     with: list
-    version: 1.1.13
 timing_boundaries:
   start: Each file-read request is dispatched.
   stop: The complete file returns to the job host.
@@ -986,8 +966,6 @@ interpretation:
     in the record on its own, for the cold case.
   - 'The first failed repetition ends the trial: that operation''s later repetitions and every operation
     after it are recorded as not reached.'
-  - Version 6 of the earlier shared trial dropped the run-output operation and starts with the directory
-    listing; version 5's results are not pooled with it.
   - Some providers' integrations do extra work per file call; it is part of that provider's path and is
     recorded.
 validity_checks:
@@ -1048,23 +1026,20 @@ independence_answers:
 
 ---
 id: write-4kib
-version: 1.1.13
 effective: '2026-11-08'
 name: '{name:test.write-4kib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures each file-write request from dispatch until the provider returns
     its result.
-  how_to_read: The {param:write-4kib.1.1.13.statistics.primary} is shown in {unit:total_time}; {direction:total_time}.
+  how_to_read: The {param:write-4kib.statistics.primary} is shown in {unit:total_time}; {direction:total_time}.
   summary: Repeated requests write a fixed incompressible payload to a sandbox file.
   how_it_is_measured: A job-host monotonic clock times each file-write request until its result returns.
     The workload uses a fixed incompressible payload.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, divided by successful
     units.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_time
   unit: ms
@@ -1098,7 +1073,7 @@ procedure:
     parameters:
       bytes: 4096
       repetitions: 100
-    description: The workload uses the {param:write-4kib.1.1.13.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:write-4kib.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -1132,7 +1107,6 @@ procedure:
   cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
   shared_trial:
     with: list
-    version: 1.1.13
 timing_boundaries:
   start: Each file-write request is dispatched.
   stop: The write call returns after staging and copying the bytes into place.
@@ -1186,8 +1160,6 @@ interpretation:
     in the record on its own, for the cold case.
   - 'The first failed repetition ends the trial: that operation''s later repetitions and every operation
     after it are recorded as not reached.'
-  - Version 6 of the earlier shared trial dropped the run-output operation and starts with the directory
-    listing; version 5's results are not pooled with it.
   - Some providers' integrations do extra work per file call; it is part of that provider's path and is
     recorded.
   - Each file repetition also records its bytes per second. The wall time from the first repetition's

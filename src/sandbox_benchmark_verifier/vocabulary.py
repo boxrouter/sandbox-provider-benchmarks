@@ -15,7 +15,6 @@ from collections.abc import Iterator, Mapping
 from typing import Any
 
 from sandbox_benchmark_verifier.name_refs import reader_strings
-from sandbox_benchmark_verifier.versions import version_key
 
 RULE_ID = "reader.vocabulary"
 # Subtrees of the content criteria that state rules or ids rather than reader text.
@@ -34,14 +33,13 @@ def retired_words(conventions: Mapping[str, Any]) -> list[str]:
 
 def _current_rows(
     bundle: Mapping[str, Any], aliases: Mapping[str, str]
-) -> Iterator[tuple[str, str, Mapping[str, Any]]]:
-    """The newest version of every document a page reads (not a superseded document id)."""
+) -> Iterator[tuple[str, Mapping[str, Any]]]:
+    """Every document a page reads (not a superseded document id)."""
     methodologies = bundle["methodologies"]
-    for identifier, versions in methodologies.items():
+    for identifier, row in methodologies.items():
         if aliases.get(identifier) in methodologies:
             continue  # an earlier lineage of a document that has its own id now
-        newest = max(versions, key=version_key)
-        yield identifier, newest, versions[newest]
+        yield identifier, row
 
 
 def retired_word_errors(
@@ -62,10 +60,8 @@ def retired_word_errors(
         ("reader", bundle["reader"]),
         ("metric_labels", bundle["metric_labels"]),
     ]
-    for identifier, version, row in _current_rows(bundle, aliases):
-        sources.extend(
-            (f"{identifier}@{version}.{field}", row[field]) for field in _ROW_TEXT if field in row
-        )
+    for identifier, row in _current_rows(bundle, aliases):
+        sources.extend((f"{identifier}.{field}", row[field]) for field in _ROW_TEXT if field in row)
     return [
         f"retired word {match.group(0)!r} in {path}: {text[:100]}"
         for name, source in sources

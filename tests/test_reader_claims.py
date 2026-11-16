@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""Reader text is true of the version it describes, and the gates that make it so work."""
+"""Reader text is true of the document it describes, and the gates that make it so work."""
 
 from pathlib import Path
 from typing import Any
@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from sandbox_benchmark_verifier.reader import reader_errors
-from sandbox_benchmark_verifier.reader_claims import reader_claim_errors
+from sandbox_benchmark_verifier.reader_claims import raw_key_errors, reader_claim_errors
 from sandbox_benchmark_verifier.reader_when import gate_errors, gated, ungated
 
 pytestmark = pytest.mark.unit
@@ -24,16 +24,12 @@ def _bundle(text: str, *, parallel: int = 1, variants: int = 1, **facts: Any) ->
         **facts,
     }
     return {
-        "reader": {
-            "methods": {
-                "demo": {"document": "demo", "text": {"notes": {"x": text}}, "by_version": {}}
-            }
-        },
-        "methodologies": {"demo": {"1.0.0": {"reader_definition": definition}}},
+        "reader": {"methods": {"demo": {"document": "demo", "text": {"notes": {"x": text}}}}},
+        "methodologies": {"demo": {"reader_definition": definition}},
     }
 
 
-def test_the_published_reader_text_is_true_of_every_version(bundle: dict[str, Any]) -> None:
+def test_the_published_reader_text_is_true_of_every_document(bundle: dict[str, Any]) -> None:
     assert reader_claim_errors(bundle) == []
 
 
@@ -46,7 +42,7 @@ def test_the_published_reader_text_is_true_of_every_version(bundle: dict[str, An
         ("All ten traces come from Claude Opus 5 (high).", {"variants": 5}),
     ],
 )
-def test_a_claim_its_version_contradicts_fails(text: str, fixed: dict[str, int]) -> None:
+def test_a_claim_its_document_contradicts_fails(text: str, fixed: dict[str, int]) -> None:
     assert reader_claim_errors(_bundle(text, **fixed))
 
 
@@ -69,7 +65,7 @@ def test_a_fact_that_draws_unknown_fails_and_a_true_claim_passes() -> None:
 def test_a_tail_floor_counts_successes_instead_of_scheduled_trials(text: str) -> None:
     facts: dict[str, Any] = {"statistics": {"tail": {"min_successes": 20}}}
     assert reader_claim_errors(_bundle(text, **facts)) == [
-        "demo@1.0.0: notes.x bases a tail on trials without requiring successes; "
+        "demo: notes.x bases a tail on trials without requiring successes; "
         "statistics.tail.min_successes counts successes"
     ]
     assert (
@@ -101,7 +97,7 @@ def test_a_gate_reads_lengths_words_and_drops_empty_items() -> None:
     assert gated({"a": f"[[when {PARALLEL} > 1: y]]", "b": "z"}, MEASURED) == {"b": "z"}
 
 
-def test_a_path_the_definition_lacks_is_false_but_an_error_for_the_newest_version() -> None:
+def test_a_path_the_definition_lacks_is_false_but_an_error_for_the_document() -> None:
     text = "[[when measured.procedure.nothing > 1: y]]"
     assert gated(f"A {text}", MEASURED) == "A"
     with pytest.raises(ValueError, match="no procedure.nothing"):
@@ -116,3 +112,40 @@ def test_a_misspelt_gate_is_refused() -> None:
 
 def test_the_reader_source_has_no_malformed_gate() -> None:
     assert reader_errors(Path(__file__).resolve().parents[1]) == []
+
+
+def _keyed(text: str, *, omit: tuple[str, ...] = (), path: str = "rule") -> dict[str, Any]:
+    """A bundle whose reader definition holds `text` at `environment.<path>`, beside a key."""
+    bundle = _bundle("Fine.", environment={path: text, "file_transfer_idle_seconds": 5})
+    bundle["content_criteria"] = {"methodology_page": {"omit": list(omit)}}
+    return bundle
+
+
+def test_a_drawn_sentence_that_names_a_parameter_key_fails() -> None:
+    [error] = raw_key_errors(_keyed("It reconnects after file_transfer_idle_seconds of idle time."))
+    assert "environment.rule shows the key file_transfer_idle_seconds as text" in error
+
+
+@pytest.mark.parametrize(
+    ("text", "omit"),
+    [
+        ("It reconnects after 5 s of idle time.", ()),  # the value, written through a placeholder
+        ("Typed as `file_transfer_idle_seconds` in a code mark.", ()),
+        ("file_transfer_idle_seconds", ()),  # one word: an identifier, not prose
+        ("It reconnects after file_transfer_idle_seconds of idle time.", ("environment.rule",)),
+        ("It reconnects after file_transfer_idle_seconds of idle time.", ("environment",)),
+    ],
+)
+def test_a_value_a_code_mark_an_identifier_or_an_omitted_field_passes(
+    text: str, omit: tuple[str, ...]
+) -> None:
+    assert raw_key_errors(_keyed(text, omit=omit)) == []
+
+
+def test_reader_text_that_names_a_parameter_key_fails() -> None:
+    bundle = _keyed("Fine here.")
+    bundle["reader"]["methods"]["demo"]["text"] = {
+        "notes": {"x": "Idle for file_transfer_idle_seconds."}
+    }
+    [error] = raw_key_errors(bundle)
+    assert "text.notes.x shows the key file_transfer_idle_seconds" in error

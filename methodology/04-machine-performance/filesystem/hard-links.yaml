@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../../schemas/methodology.schema.json
 id: hard-links-2vcpu-8gib
-version: 1.0.3
 effective: '2026-11-08'
 name: '{name:test.hard-links-2vcpu-8gib}'
 category: machine_performance
@@ -14,15 +13,13 @@ notes:
   how_it_is_measured: The pinned stress-ng 0.19.02 binary runs one link worker for 30 seconds in /workspace/hardlink;
     its reported rate divides the total successful hard links by the stressor's own elapsed clock time,
     which includes link removal.
-  how_to_read: The {param:hard-links.1.1.17.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:hard-links.statistics.primary} summarizes successful trials in the axis
     unit; {direction:links_per_second}.
   cost_summary: The cost is the sum of the provider-sourced sandbox costs for successful trials, divided
     by the number of successful trials.
   cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
     required for a cost to be shown.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: links_per_second
   unit: links/s
@@ -138,7 +135,7 @@ execution:
   mode: script
   inference: false
 parameters:
-  path: parameters/hard-links-2vcpu-8gib/1.0.3/
+  path: parameters/hard-links-2vcpu-8gib/
   sha256: 86a4f3d1f5c94fcda31b8df55e104d673184b7c3ac7bb4783a63154771bfb8d8
 interpretation:
   informs: The result shows how fast a 2 vCPU and 8 GiB sandbox executes the hard-link creation and removal
@@ -213,7 +210,6 @@ independence_answers:
 
 ---
 id: hard-links
-version: 1.1.17
 effective: '2026-11-08'
 name: '{name:test.hard-links}'
 category: machine_performance
@@ -225,13 +221,11 @@ notes:
     speed also affects the loop.
   how_it_is_measured: The filesystem tool runs a fixed link workload in the workspace; its successful-link
     count includes removal time and uses the tool’s own clock.
-  how_to_read: The {param:hard-links.1.1.17.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:hard-links.statistics.primary} summarizes successful trials in the axis
     unit; {direction:links_per_second}.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: links_per_second
   unit: links/s
@@ -347,7 +341,7 @@ execution:
   mode: script
   inference: false
 parameters:
-  path: parameters/hard-links/1.1.17/
+  path: parameters/hard-links/
   sha256: 86a4f3d1f5c94fcda31b8df55e104d673184b7c3ac7bb4783a63154771bfb8d8
 interpretation:
   informs: 'How long the hard-link part of a package install takes: a provider with half the rate takes

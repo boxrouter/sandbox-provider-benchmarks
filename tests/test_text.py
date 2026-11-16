@@ -34,7 +34,6 @@ from sandbox_benchmark_verifier.text import (
     text_warnings,
     write_text_bundle,
 )
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -51,24 +50,10 @@ def test_the_text_check_loads_the_tables_once(
     assert [call.args[0] for call in spy.call_args_list].count(root.resolve()) == 1
 
 
-def test_old_methodology_documents_still_validate() -> None:
-    schema = json.loads((ROOT / "schemas/methodology.schema.json").read_text())
-    validator = Draft202012Validator(schema)
-    old = {
-        "id": "sbs.common",
-        "version": "1.0.0",
-        "effective": "2026-01-01",
-        "name": "Common defaults",
-        "category": "common",
-        "description": "Shared benchmark defaults.",
-    }
-    assert validator.is_valid(old)
-
-
 def test_all_additive_methodology_fields_validate() -> None:
     schema = json.loads((ROOT / "schemas/methodology.schema.json").read_text())
     validator = Draft202012Validator(schema)
-    common = yaml.safe_load((ROOT / "methodology/00-common-1.0.18.yaml").read_text())
+    common = yaml.safe_load((ROOT / "methodology/00-common.yaml").read_text())
     common["notes"] = {
         "summary": "A short summary.",
         "how_it_is_measured": "Timed on a monotonic clock.",
@@ -148,7 +133,7 @@ def test_report_only_text_check_reports_missing_slots_and_text_outside(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     (tmp_path / "names").mkdir()
     (tmp_path / "methodology").mkdir()
@@ -161,9 +146,9 @@ def test_report_only_text_check_reports_missing_slots_and_text_outside(
     (tmp_path / "names/aliases.yaml").write_text("schema: boxrouter.bench.aliases/1\n")
     common = declare_common(tmp_path)  # catalog selection's one explicit common (#755)
     (tmp_path / "methodology/demo.yaml").write_text(
-        "id: demo\nversion: 1.0.0\neffective: '2026-01-01'\nname: '{name:test.demo}'\n"
+        "id: demo\neffective: '2026-01-01'\nname: '{name:test.demo}'\n"
         "category: common\ndescription: Legacy reader text.\n"
-        f"inherits: {{id: {common['id']}, version: {common['version']}}}\n"
+        f"inherits: {common}\n"
     )
     warnings = text_warnings(tmp_path)
     assert "missing or unfilled slot names row 1 benchmarks.summary" in warnings
@@ -189,7 +174,7 @@ def test_report_only_text_check_reports_missing_slots_and_text_outside(
 def test_text_enforcement_accepts_a_complete_panel(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     (tmp_path / "names").mkdir()
     (tmp_path / "methodology").mkdir()
@@ -208,8 +193,8 @@ def test_text_enforcement_accepts_a_complete_panel(
     )
     common = declare_common(tmp_path)  # catalog selection's one explicit common (#755)
     (tmp_path / "methodology/demo.yaml").write_text(
-        "id: demo\nversion: 1.0.0\neffective: '2026-01-01'\nname: '{name:test.demo}'\n"
-        f"inherits: {{id: {common['id']}, version: {common['version']}}}\n"
+        "id: demo\neffective: '2026-01-01'\nname: '{name:test.demo}'\n"
+        f"inherits: {common}\n"
         "category: sandbox_operation\nnotes:\n"
         "  summary: The workload measures call completion.\n"
         "  what_this_measures: The result includes request and response handling.\n"
@@ -244,21 +229,18 @@ def test_current_reader_references_pass_the_default_enforcing_check() -> None:
 def test_semantic_digest_excludes_text_but_tracks_method_changes() -> None:
     document: dict[str, Any] = {
         "id": "demo",
-        "version": "1.0.0",
         "effective": "2026-01-01",
         "notes": {"summary": "First."},
         "metrics": [{"quantity": "time", "per": "call", "unit": "ms"}],
-        "parameters": {"path": "parameters/demo/1.0.0/", "sha256": "same"},
+        "parameters": {"path": "parameters/demo/", "sha256": "same"},
     }
     original = semantic_digest(document)
     document["name"] = "{name:time-index}"
     document["notes"]["summary"] = "Second."
     document["metrics"][0]["quantity"] = "duration"
     assert semantic_digest(document) == original
-    document["version"] = "1.0.1"
     document["effective"] = "2026-02-01"
     document["description"] = "A new display sentence."
-    document["parameters"]["path"] = "parameters/demo/1.0.1/"
     assert semantic_digest(document) == original
     document["metrics"][0]["unit"] = "s"
     assert semantic_digest(document) != original
@@ -295,8 +277,7 @@ def test_text_bundle_contains_all_slot_sources_and_is_stable(
     assert bundle["names_schema"] == "boxrouter.bench.names/2"
     methods = bundle["methodologies"]
     for index_id in ("time-index", "cost-index", "time-vs-cost"):
-        newest = max(methods[index_id], key=version_key)
-        url = methods[index_id][newest]["owner"]["public_method_url"]
+        url = methods[index_id]["owner"]["public_method_url"]
         assert url == f"/benchmarks/methodology/{index_id}"
     source_methods = _methodologies(ROOT)
     tables = load_tables(ROOT)
@@ -310,7 +291,7 @@ def test_text_bundle_contains_all_slot_sources_and_is_stable(
             if row.get("name")
         }
     )
-    source_documents = {f"{item['id']}.{item['version']}": item for item in source_methods}
+    source_documents = {str(item["id"]): item for item in source_methods}
     directions = tables.metric_label_grammar.get("tokens", {}).get("directions", {})
 
     def resolve_expected(value: Any) -> Any:
@@ -327,13 +308,11 @@ def test_text_bundle_contains_all_slot_sources_and_is_stable(
             return [resolve_expected(item) for item in value]
         return value
 
-    assert {
-        (identifier, version) for identifier, versions in methods.items() for version in versions
-    } == {(str(item["id"]), str(item["version"])) for item in source_methods}
-    method_by_ref = {(str(item["id"]), str(item["version"])): item for item in source_methods}
+    assert set(methods) == {str(item["id"]) for item in source_methods}
+    method_by_ref = {str(item["id"]): item for item in source_methods}
     for document in source_methods:
         if "{param:" in json.dumps(document):
-            continue  # Version-bound slots are checked against their exact sources below.
+            continue  # Slots that read another document are checked against their sources below.
         expected: dict[str, Any] = {}
         if isinstance(document.get("name"), str) and "{name:" in document["name"]:
             name_id = document["name"].removeprefix("{name:").removesuffix("}")
@@ -368,13 +347,7 @@ def test_text_bundle_contains_all_slot_sources_and_is_stable(
                     "direction": metric.get("direction"),
                     "statistic": metric.get("statistic")
                     or document.get("statistics", {}).get("primary")
-                    or method_by_ref.get(
-                        (
-                            str(document.get("inherits", {}).get("id", "")),
-                            str(document.get("inherits", {}).get("version", "")),
-                        ),
-                        {},
-                    )
+                    or method_by_ref.get(str(document.get("inherits", "")), {})
                     .get("statistics", {})
                     .get("primary"),
                 }
@@ -410,15 +383,11 @@ def test_text_bundle_contains_all_slot_sources_and_is_stable(
             documents=source_documents,
             references=projection_references(ROOT),
         )
-        assert methods[str(document["id"])][str(document["version"])]["text"] == expected
-    common = methods["sbs.common"][max(methods["sbs.common"], key=version_key)]
+        assert methods[str(document["id"])]["text"] == expected
+    common = methods["sbs.common"]
     assert "semantic_digest" in common
     assert common["text"]
-    assert all(
-        versioned["semantic_digest"] and "text" in versioned
-        for versions in methods.values()
-        for versioned in versions.values()
-    )
+    assert all(method["semantic_digest"] and "text" in method for method in methods.values())
     output = tmp_path / "dist/text.json"
     write_text_bundle(ROOT, output)
     assert json.loads(output.read_text()) == export_text_bundle(bundle)
@@ -447,17 +416,13 @@ def test_metric_text_fixture_roundtrips_with_no_semantic_digest_drift(
     method_path = root / "methodology/03-sandbox-operations/create.yaml"
     method_documents = list(yaml.safe_load_all(method_path.read_text()))
     for method in method_documents:
-        if method.get("id") == "sequential-tti" and method.get("version") == "1.2.18":
+        if method.get("id") == "sequential-tti":
             # This fixture tests a mean binding, so its scientifically equivalent reader agrees.
             method["metrics"][0]["statistic"] = "mean"
     method_path.write_text(
         "\n---\n".join(yaml.safe_dump(item, sort_keys=False) for item in method_documents)
     )
-    document = next(
-        method
-        for method in _methodologies(root)
-        if method["id"] == "sequential-tti" and method["version"] == "1.2.18"
-    )
+    document = next(method for method in _methodologies(root) if method["id"] == "sequential-tti")
     names_doc = yaml.safe_load((root / "names/names.yaml").read_text())
     name_row = next(
         row for row in names_doc["names"] if row["kind"] == "test" and row["id"] == "sequential-tti"
@@ -472,7 +437,7 @@ def test_metric_text_fixture_roundtrips_with_no_semantic_digest_drift(
     output = tmp_path / "consumer/text.json"
     write_text_bundle(root, output)
     consumed = json.loads(output.read_text())
-    entry = consumed["methodologies"]["sequential-tti"]["1.2.18"]
+    entry = consumed["methodologies"]["sequential-tti"]
 
     assert entry["semantic_digest"] == before
     assert entry["text"]["metrics"] == [
@@ -498,7 +463,7 @@ def test_semantic_digest_ignores_the_display_name() -> None:
     assert semantic_digest(document) == semantic
 
 
-def test_slot_reference_never_falls_back_to_another_version(
+def test_slot_reference_never_falls_back_to_another_path(
     checkout: Path,
     tmp_path: Path,
     build_text_bundle: Callable[[Path], dict[str, Any]],
@@ -506,20 +471,20 @@ def test_slot_reference_never_falls_back_to_another_version(
     root = checkout
     path = root / "methodology/01-indexes/speed.yaml"
     documents = list(yaml.safe_load_all(path.read_text()))
-    documents[-1].setdefault("notes", {})["summary"] = "{param:time-index.9.9.9.notes.summary}"
+    documents[-1].setdefault("notes", {})["summary"] = "{param:time-index.notes.no_such_slot}"
     path.write_text("\n---\n".join(yaml.safe_dump(item, sort_keys=False) for item in documents))
     with pytest.raises(PlaceholderError) as error:
         build_text_bundle(root)
-    assert str(error.value) == "unknown parameter path 'time-index.9.9.9.notes.summary'"
+    assert str(error.value) == "unknown parameter path 'time-index.notes.no_such_slot'"
 
 
 @pytest.mark.parametrize(
     "notes",
     [
         {"summary": "{name:missing}"},
-        {"nested": [{"summary": "{param:demo.1.0.0.notes.nested.0.summary}"}]},
-        {"a": "{param:demo.1.0.0.notes.b}", "b": "{param:demo.1.0.0.notes.a}"},
-        {"summary": "{param:demo.1.0.0.parameters.value}"},
+        {"nested": [{"summary": "{param:demo.notes.nested.0.summary}"}]},
+        {"a": "{param:demo.notes.b}", "b": "{param:demo.notes.a}"},
+        {"summary": "{param:demo.parameters.value}"},
     ],
 )
 def test_export_rejects_invalid_nested_slot_references(
@@ -532,9 +497,9 @@ def test_export_rejects_invalid_nested_slot_references(
     path = root / "methodology/demo.yaml"
     document = {
         "id": "demo",
-        "version": "1.0.0",
+        "inherits": "sbs.common",
         "notes": notes,
-        "parameters": {"value": "{param:missing.1.0.0.value}"},
+        "parameters": {"value": "{param:missing.value}"},
     }
     path.write_text(yaml.safe_dump(document))
     for check in (build_text_bundle, text_warnings):
@@ -550,9 +515,9 @@ def test_export_expands_reused_text_in_nested_slots_deterministically(
     root = checkout
     document = {
         "id": "demo",
-        "version": "1.0.0",
+        "inherits": "sbs.common",
         "parameters": {"values": [{"text": "{name:time-index}"}]},
-        "notes": {"nested": [{"text": "{param:demo.1.0.0.parameters.values.0.text}"}]},
+        "notes": {"nested": [{"text": "{param:demo.parameters.values.0.text}"}]},
     }
     (root / "methodology/demo.yaml").write_text(yaml.safe_dump(document))
     bundle = build_text_bundle(root)
@@ -561,7 +526,7 @@ def test_export_expands_reused_text_in_nested_slots_deterministically(
         for row in bundle["names"]
         if row["id"] == "time-index" and row["kind"] == "index"
     )
-    text = bundle["methodologies"]["demo"]["1.0.0"]["text"]
+    text = bundle["methodologies"]["demo"]["text"]
     assert text == {"notes": {"nested": [{"text": expected}]}}
     assert build_text_bundle(root) == bundle
 

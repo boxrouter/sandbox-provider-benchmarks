@@ -25,10 +25,7 @@ def assert_records_valid(records: list[dict[str, object]]) -> None:
         citation = record["methodology"]
         assert isinstance(citation, dict)
         document = next(
-            item.document
-            for item in documents
-            if (item.document.get("id"), item.document.get("version"))
-            == (citation["id"], citation["version"])
+            item.document for item in documents if item.document.get("id") == citation["id"]
         )
         metrics = {metric["name"]: metric["unit"] for metric in document["metrics"]}
         assert metrics[str(record["measurement"])] == record["unit"]

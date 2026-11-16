@@ -14,6 +14,7 @@ from sandbox_benchmark_verifier import chart_bindings as bindings_module
 from sandbox_benchmark_verifier.chart_bindings import chart_bindings
 from sandbox_benchmark_verifier.content import CONVENTION_ROOTS, content_criteria
 from sandbox_benchmark_verifier.names import load_tables
+from sandbox_benchmark_verifier.yaml_load import load_yaml_all
 
 pytestmark = pytest.mark.unit
 
@@ -76,29 +77,21 @@ def test_every_yaml_file_is_parsed_by_the_one_loader() -> None:
     assert bypasses == []
 
 
-def test_versions_are_compared_as_numbers_not_as_text() -> None:
-    """As text, 1.1.10 sorts before 1.1.4, so a check that compared the version string with "1.1.4"
-    skipped the newest read-4kib version. Versions are compared through `version_key`."""
-    dotted = r"""["']\d+\.\d+\.\d+["']"""
-    assert _python_lines(re.compile(rf"[<>]=?\s*{dotted}|{dotted}\s*[<>]")) == []
-
-
-def test_a_dotted_version_is_parsed_only_by_version_key() -> None:
-    """More than forty hand-written parsers (split on dots into ints, or digits read by regex)
-    had grown in src and tests; versions.version_key is the one."""
-    parser = re.compile(
-        r'int\(\w+\) for \w+ in .*\.split\("\."\)|map\(int, .*\.split\("\."\)|findall\(r"\\d\+"'
-    )
-    assert _python_lines(parser, skip="src/sandbox_benchmark_verifier/versions.py") == []
-
-
-def _python_lines(pattern: re.Pattern[str], skip: str = "") -> list[str]:
-    """Each line of the repository's Python that the pattern matches, as path:line."""
-    return sorted(
-        f"{path.relative_to(ROOT)}:{number}"
-        for directory in ("src", "tests", "scripts")
-        for path in (ROOT / directory).rglob("*.py")
-        if path.relative_to(ROOT).as_posix() != skip
-        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
-        if pattern.search(line)
-    )
+def test_a_methodology_document_has_no_version() -> None:
+    """One current methodology (founder, 2026-11-09): a document is found by its id alone."""
+    versioned = [
+        f"{path.relative_to(ROOT)}: {document.get('id')}"
+        for path in sorted((ROOT / "methodology").rglob("*.yaml"))
+        for document in load_yaml_all(path.read_text(encoding="utf-8"))
+        if isinstance(document, dict)
+        and ("version" in document or isinstance(document.get("inherits"), dict))
+    ]
+    assert versioned == []
+    assert not [
+        p for p in (ROOT / "methodology").rglob("*") if re.search(r"-\d+\.\d+\.\d+", p.name)
+    ]
+    assert not [
+        p
+        for p in (ROOT / "parameters").glob("*/*")
+        if p.is_dir() and re.fullmatch(r"\d+\.\d+\.\d+", p.name)
+    ]

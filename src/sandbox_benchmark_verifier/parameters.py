@@ -9,7 +9,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from sandbox_benchmark_verifier.text import semantic_digest
+from sandbox_benchmark_verifier.names import tables_view
 
 RECORD_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 FORMULA_NAMES = frozenset({"start", "end", "total", "runtime"})
@@ -159,27 +159,14 @@ def formula_errors(formula: str, steps: frozenset[str]) -> Iterator[str]:
     yield from problems[:1]
 
 
-def _reuses_parameters(
-    document: Mapping[str, Any], owners: Mapping[tuple[str, str], Mapping[str, Any]]
-) -> bool:
-    parameters = document.get("parameters", {})
-    return any(
-        owner.get("id") == document.get("id")
-        and owner.get("parameters") == parameters
-        and parameters.get("path") == f"parameters/{owner.get('id')}/{owner.get('version')}/"
-        and semantic_digest(owner) == semantic_digest(document)
-        for owner in owners.values()
-    )
-
-
 def document_errors(
     root: Path,
     path: Path,
     document: Mapping[str, Any],
-    owners: Mapping[tuple[str, str], Mapping[str, Any]],
+    owners: Mapping[str, Mapping[str, Any]],
 ) -> Iterator[str]:
     """Checks on one methodology document: parameters, shared trial and formulas."""
-    identifier, version = document.get("id"), document.get("version")
+    identifier = document.get("id")
     parameters = document.get("parameters")
     shared = (
         document.get("procedure", {}).get("shared_trial")
@@ -187,9 +174,9 @@ def document_errors(
         else None
     )
     if isinstance(parameters, Mapping):
-        expected = f"parameters/{identifier}/{version}/"
+        expected = f"parameters/{identifier}/"
         directory = root / str(parameters.get("path", ""))
-        if parameters.get("path") != expected and not _reuses_parameters(document, owners):
+        if parameters.get("path") != expected:
             yield f"{path}: parameters.path must be {expected}"
         elif not directory.is_dir():
             yield f"{path}: parameters directory {expected} is missing"
@@ -200,7 +187,7 @@ def document_errors(
         if shared is not None:
             yield f"{path}: a shared_trial document must not hold parameters"
     if isinstance(shared, Mapping):
-        owner = owners.get((str(shared.get("with")), str(shared.get("version"))))
+        owner = owners.get(str(shared.get("with")))
         if owner is None:
             yield f"{path}: shared_trial names an unknown methodology"
         elif not isinstance(owner.get("parameters"), Mapping):
@@ -233,23 +220,35 @@ def _metric_errors(path: Path, metrics: Sequence[Any], names: frozenset[str]) ->
         )
 
 
+def named_variants(root: Path) -> dict[str, set[str]]:
+    """Variant and job ids the names table declares, by the methodology id that is their parent."""
+    found: dict[str, set[str]] = {}
+    if not (root / "names").is_dir():
+        return found
+    for row in tables_view(root).names:
+        if row["kind"] in ("variant", "job"):
+            found.setdefault(str(row.get("parent")), set()).add(str(row["id"]))
+    return found
+
+
 def allowed_variants(
     root: Path,
     document: Mapping[str, Any],
-    owners: Mapping[tuple[str, str], Mapping[str, Any]],
+    owners: Mapping[str, Mapping[str, Any]],
+    named: Mapping[str, set[str]],
 ) -> set[str]:
     """Variant ids a measurement of this methodology may carry."""
     procedure = document.get("procedure")
-    found: set[str] = set()
+    found: set[str] = set(named.get(str(document.get("id")), ()))
     if isinstance(procedure, Mapping):
         for variant in procedure.get("variants", []):
             if isinstance(variant, Mapping) and isinstance(variant.get("id"), str):
                 found.add(variant["id"])
         shared = procedure.get("shared_trial")
         if isinstance(shared, Mapping):
-            owner = owners.get((str(shared.get("with")), str(shared.get("version"))))
+            owner = owners.get(str(shared.get("with")))
             if owner is not None:
-                found |= allowed_variants(root, owner, {})
+                found |= allowed_variants(root, owner, {}, named)
     parameters = document.get("parameters")
     if isinstance(parameters, Mapping):
         found |= parameter_workloads(root / str(parameters.get("path", "")))
@@ -259,20 +258,18 @@ def allowed_variants(
 def variant_errors(
     root: Path,
     records: Sequence[tuple[Path, Any]],
-    owners: Mapping[tuple[str, str], Mapping[str, Any]],
+    owners: Mapping[str, Mapping[str, Any]],
 ) -> Iterator[str]:
-    """A measurement's ``variant`` must be a variant or parameter workload of its methodology."""
+    """A measurement's ``variant`` must be a variant, parameter workload or names-table variant."""
+    named = named_variants(root)
     for path, record in records:
         if not isinstance(record, Mapping) or "variant" not in record:
             continue
         method = record.get("methodology")
         if not isinstance(method, Mapping):
             continue
-        document = next(
-            (owner for (identifier, _), owner in owners.items() if identifier == method.get("id")),
-            None,
-        )
+        document = owners.get(str(method.get("id")))
         if document is None:
             continue  # unknown methodology is reported elsewhere
-        if record["variant"] not in allowed_variants(root, document, owners):
+        if record["variant"] not in allowed_variants(root, document, owners, named):
             yield f"{path}: variant {record['variant']} is not a variant of {method.get('id')}"

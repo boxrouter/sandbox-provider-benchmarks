@@ -4,14 +4,12 @@
 
 import re
 from pathlib import Path
-from typing import Any
 
 import pytest
 import yaml
 
 from sandbox_benchmark_verifier.names import load_tables
 from sandbox_benchmark_verifier.text import _methodologies
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -36,19 +34,15 @@ def test_names_table_has_no_hex_names() -> None:
 
 
 def test_current_workload_variant_labels_have_no_hex() -> None:
-    """The latest version of each document (old ids folded into their canonical one) is checked;
-    released older versions are immutable records the page no longer names from."""
+    """Each document (old ids folded into their canonical one) is checked."""
     pattern = _pattern()
     canonical = load_tables(ROOT).aliases["document"]
-    latest: dict[str, tuple[tuple[int, ...], dict[str, Any]]] = {}
-    for document in _methodologies(ROOT):
-        identifier = canonical.get(document["id"], document["id"])
-        version = version_key(document["version"])
-        if identifier not in latest or version > latest[identifier][0]:
-            latest[identifier] = (version, document)
+    current = {
+        canonical.get(document["id"], document["id"]): document for document in _methodologies(ROOT)
+    }
     found = [
-        f"{identifier}@{'.'.join(map(str, version))} {variant.get('id')}: {variant.get('label')}"
-        for identifier, (version, document) in latest.items()
+        f"{identifier} {variant.get('id')}: {variant.get('label')}"
+        for identifier, document in current.items()
         for variant in (document.get("procedure") or {}).get("variants") or []
         if pattern.search(str(variant.get("label", "")))
     ]

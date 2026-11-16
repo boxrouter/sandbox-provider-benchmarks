@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/methodology.schema.json
 id: time-vs-cost
-version: 1.1.20
 effective: '2026-11-08'
 name: '{name:time-vs-cost}'
 category: index
@@ -11,9 +10,7 @@ notes:
   how_to_read: '{param:content.index_copy.details.time_vs_cost.how_to_read}'
   cost_summary: '{param:content.index_copy.description}'
   cost_how_to_read: Both axes use the same costed units.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: typical_cost
   unit: USD
@@ -31,10 +28,8 @@ metrics:
 composition:
   inputs:
   - id: cost-index
-    version: 1.1.27
     quantity: Cost, execution scope
   - id: time-index
-    version: 1.1.29
     quantity: Time over the units that have a cost, execution scope
   per_input_value: As in {name:index.cost-index} for cost. For time, each workload's time is taken
     over the same units that give its cost, which for a provider with a cost is the whole common
@@ -52,11 +47,9 @@ composition:
   plots:
     x:
       id: cost-index
-      version: 1.1.27
       quantity: Cost (USD)
     y:
       id: time-index
-      version: 1.1.29
       quantity: Time (ms)
     note: Execution scope (all three workloads). The page also offers each workload's own time against
       cost as separate views, which belong to that workload's methodology.

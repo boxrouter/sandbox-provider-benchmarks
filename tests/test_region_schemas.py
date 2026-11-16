@@ -11,7 +11,7 @@ from sandbox_benchmark_verifier.catalog import load_schema
 def _run(region: object) -> dict[str, object]:
     return {
         "run_id": "2026-11-01-a",
-        "methodologies": {"sandbox.create.sequential_tti": "1.0.0"},
+        "methodologies": ["sandbox.create.sequential_tti"],
         "region": region,
         "machine_configs": [{"id": "2x4", "vcpu": 2, "memory_gib": 4}],
         "providers": [
@@ -38,7 +38,7 @@ def _run(region: object) -> dict[str, object]:
 def _measurement(region: object) -> dict[str, object]:
     return {
         "provider": "e2b",
-        "methodology": {"id": "sandbox.create.sequential_tti", "version": "1.0.0"},
+        "methodology": {"id": "sandbox.create.sequential_tti"},
         "run_id": "2026-11-01-a",
         "trial": 1,
         "timestamp": "2026-11-01T09:12:03Z",

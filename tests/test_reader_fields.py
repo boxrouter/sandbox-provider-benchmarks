@@ -23,7 +23,6 @@ from sandbox_benchmark_verifier.methodology_page import reader_definition
 from sandbox_benchmark_verifier.pinned_workload import pinned_workload
 from sandbox_benchmark_verifier.reader_steps import split_trial_steps
 from sandbox_benchmark_verifier.text import export_text_bundle, placeholder_leftovers
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -116,28 +115,26 @@ def test_apinned_workload_exposes_the_whole_parameter_file(tmp_path: Path) -> No
 
 
 def test_the_style_rules_read_the_pinned_workload_of_a_document(
-    tmp_path: Path, declare_common: Callable[[Path], dict[str, str]]
+    tmp_path: Path, declare_common: Callable[[Path], str]
 ) -> None:
     common = declare_common(tmp_path)
-    directory = tmp_path / "parameters" / "demo" / "1.0.0"
+    directory = tmp_path / "parameters" / "demo"
     directory.mkdir(parents=True)
     data = {"rows": {"a": {"bs": "4k"}}}
     (directory / "workloads.json").write_text(json.dumps([{"data": data}]), encoding="utf-8")
     (tmp_path / "methodology").mkdir(exist_ok=True)
     (tmp_path / "methodology" / "demo.yaml").write_text(
-        "id: demo\nversion: 1.0.0\nparameters:\n  path: parameters/demo/1.0.0/\n"
-        f"inherits: {{id: {common['id']}, version: {common['version']}}}\n",
+        f"id: demo\nparameters:\n  path: parameters/demo/\ninherits: {common}\n",
         encoding="utf-8",
     )
     documents = text_module._style_documents(tmp_path)  # pylint: disable=protected-access
     assert documents["demo"]["parameters"]["workload"]["rows"] == {"a": {"bs": "4k"}}
 
 
-def test_limitations_items_are_one_sentence_of_at_most_240_characters() -> None:
+def test_limitations_items_are_sentences_of_at_most_240_characters() -> None:
+    """A limitation may take more than one sentence (Andre, 2026-11-13); its length is capped."""
     assert _errors(limitations=[SENTENCE, "A" * 239 + "."]) == []
-    assert _errors(limitations=[SENTENCE, f"{SENTENCE} {SENTENCE}"]) == [
-        "demo.notes.limitations[1]: at most 1 sentences are allowed"
-    ]
+    assert _errors(limitations=[SENTENCE, f"{SENTENCE} {SENTENCE}"]) == []
     assert any("length must be 8..240" in error for error in _errors(limitations=["A" * 240 + "."]))
 
 
@@ -203,7 +200,7 @@ def test_a_reference_to_a_missing_tab_block_fails_naming_the_method(
         "{param:reader.common.blocks.create.no_such_block}"
     )
     monkeypatch.setattr(reader, "load_reader", lambda _root: source)
-    with pytest.raises(ValueError, match=r"sequential-tti@.*no_such_block"):
+    with pytest.raises(ValueError, match=r"sequential-tti: .*no_such_block"):
         build_text_bundle(ROOT)
 
 
@@ -253,19 +250,14 @@ def test_a_note_reads_apinned_workload_row(
 
 
 def test_a_common_definition_without_independence_facts_draws_no_independence_note() -> None:
-    common = max(
-        (
-            document
-            for document in text_module._methodologies(ROOT)
-            if document["id"] == "sbs.common"
-        ),
-        key=lambda document: version_key(str(document["version"])),
+    common = next(
+        document for document in text_module._methodologies(ROOT) if document["id"] == "sbs.common"
     )
     common = copy.deepcopy(common)
     common.pop("independence", None)
     definition = reader_definition(
         common,
-        {("sbs.common", str(common["version"])): common},
+        {"sbs.common": common},
         content_criteria()["methodology_page"],
     )
     notes = definition["notes"]
@@ -277,26 +269,17 @@ def test_common_has_a_reader_entry_for_the_common_methodology(bundle: dict[str, 
     common = bundle["reader"]["methods"]["common"]
     assert common["document"] == "sbs.common"
     assert common["text"]["notes"]["introduction"]
-    assert common["unresolved_versions"] == []
 
 
 def test_common_owns_cost_for_a_definition_that_states_none() -> None:
     policy = content_criteria()["methodology_page"]
     assert "cost" in policy["inherited_fields"]
-    common = {
-        "id": "sbs.common",
-        "version": "1.0.10",
-        "cost": {"method": "provider_reported_or_priced"},
-    }
-    child = {
-        "id": "demo",
-        "version": "1.0.0",
-        "inherits": {"id": "sbs.common", "version": "1.0.10"},
-    }
-    documents = {("sbs.common", "1.0.10"): common, ("demo", "1.0.0"): child}
+    common = {"id": "sbs.common", "cost": {"method": "provider_reported_or_priced"}}
+    child = {"id": "demo", "inherits": "sbs.common"}
+    documents: dict[str, dict[str, Any]] = {"sbs.common": common, "demo": child}
     definition = reader_definition(child, documents, policy)
     assert definition["cost"] == common["cost"]
-    assert definition["reader_sources"]["cost"] == {"id": "sbs.common", "version": "1.0.10"}
+    assert definition["reader_sources"]["cost"] == {"id": "sbs.common"}
 
 
 def test_a_note_reads_counts_durations_and_products_of_its_own_definition(
@@ -313,20 +296,6 @@ def test_a_note_reads_counts_durations_and_products_of_its_own_definition(
     assert methods["sequential-read"]["text"]["notes"]["trial_steps"].startswith(
         "400 runs, 1 metric, 30 min."
     )
-
-
-def test_every_measured_version_has_reader_text(bundle: dict[str, Any]) -> None:
-    """A version the copy cannot describe throws when a page draws it; none may exist today.
-
-    A pinned version's variants read its own `notes.*` (the locked definition's), which the reader's
-    notes replace; those references must still resolve (sequential-tti@1.2.2 once did not).
-    """
-    unresolved = {
-        identifier: method["unresolved_versions"]
-        for identifier, method in bundle["reader"]["methods"].items()
-        if method["unresolved_versions"]
-    }
-    assert unresolved == {}
 
 
 def test_a_test_reads_only_the_blocks_of_its_tab_its_section_and_common(
@@ -372,7 +341,7 @@ def test_the_exported_bundle_holds_resolved_text_only(bundle: dict[str, Any]) ->
 
 def test_a_reference_left_in_the_bundle_fails_the_export(bundle: dict[str, Any]) -> None:
     broken = copy.deepcopy(bundle)
-    broken["methodologies"]["sequential-tti"]["1.2.18"]["text"]["notes"]["setup"] = (
+    broken["methodologies"]["sequential-tti"]["text"]["notes"]["setup"] = (
         "Takes {count:measured.procedure.trials} trials."
     )
     with pytest.raises(ValueError, match=r"methodologies\.sequential-tti"):

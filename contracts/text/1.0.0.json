@@ -470,7 +470,7 @@
         "short": "Cold"
       },
       {
-        "sandbox": 10,
+        "sandbox": "last",
         "label": "Warm Start",
         "short": "Warm"
       }

@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # yaml-language-server: $schema=../../schemas/methodology.schema.json
 id: index.cost_score
-version: 1.0.8
 effective: '2026-11-08'
 name: '{name:quantity.cost-score}'
 category: index
@@ -14,9 +13,7 @@ notes:
   how_to_read: '{param:content.index_copy.details.cost_score.how_to_read}'
   cost_summary: '{param:content.index_copy.description}'
   cost_how_to_read: '{param:content.index_copy.details.cost_score.how_to_read}'
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: typical_cost_score
   unit: points
@@ -27,13 +24,10 @@ metrics:
 composition:
   inputs:
   - id: deepswe
-    version: 1.1.22
     quantity: Cost per trace
   - id: terminal-bench-4-0
-    version: 1.1.19
     quantity: Cost per trace
   - id: github-actions
-    version: 1.1.16
     quantity: Cost per job
   per_input_value: 'A provider''s score for a workload is the arithmetic mean, over that workload''s units
     (traces or jobs) that some provider completed on the unit statistic, of each unit''s score: 100 times
@@ -98,7 +92,6 @@ interpretation:
 
 ---
 id: index.speed_score
-version: 1.0.8
 effective: '2026-11-08'
 name: '{name:quantity.time-score}'
 category: index
@@ -110,9 +103,7 @@ notes:
   how_to_read: '{param:content.index_copy.details.time_score.how_to_read}'
   cost_summary: '{param:content.index_copy.description}'
   cost_how_to_read: '{param:content.index_copy.details.time_score.how_to_read}'
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: typical_time_score
   unit: points
@@ -123,13 +114,10 @@ metrics:
 composition:
   inputs:
   - id: deepswe
-    version: 1.1.22
     quantity: Time per trace
   - id: terminal-bench-4-0
-    version: 1.1.19
     quantity: Time per trace
   - id: github-actions
-    version: 1.1.16
     quantity: Time per job
   per_input_value: 'A provider''s score for a workload is the arithmetic mean, over that workload''s units
     (traces or jobs) that some provider completed on the unit statistic, of each unit''s score: 100 times
@@ -190,7 +178,6 @@ interpretation:
 # SPDX-License-Identifier: Apache-2.0
 # yaml-language-server: $schema=../../schemas/methodology.schema.json
 id: index.provider_score
-version: 1.0.16
 effective: '2026-11-08'
 name: '{name:hero.provider-score}'
 category: index
@@ -199,9 +186,7 @@ notes:
   what_this_measures: '{param:content.index_copy.details.provider_score.what_this_measures_four_scores}'
   how_it_is_measured: '{param:content.index_copy.details.provider_score.how_it_is_measured}'
   how_to_read: '{param:content.index_copy.details.provider_score.how_to_read}'
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: provider_score
   unit: points
@@ -212,91 +197,62 @@ metrics:
 composition:
   inputs:
   - id: deepswe
-    version: 1.1.22
     quantity: '{name:quantity.time-score} and {name:quantity.cost-score} per trace'
   - id: terminal-bench-4-0
-    version: 1.1.19
     quantity: '{name:quantity.time-score} and {name:quantity.cost-score} per trace'
   - id: r2e-gym
-    version: 1.1.22
     quantity: '{name:quantity.time-score} and {name:quantity.cost-score} per task'
   - id: github-actions
-    version: 1.1.16
     quantity: '{name:quantity.time-score} and {name:quantity.cost-score} per job'
   - id: sequential-tti
-    version: 1.2.18
     quantity: Score on the test's default configuration
   - id: burst-tti
-    version: 1.2.15
     quantity: Score on the test's default configuration
   - id: exec-latency-per-100-calls
-    version: 1.0.11
     quantity: Score on the test's default configuration
   - id: read-4kib
-    version: 1.1.13
     quantity: Score on the test's default configuration
   - id: write-4kib
-    version: 1.1.13
     quantity: Score on the test's default configuration
   - id: list
-    version: 1.1.13
     quantity: Score on the test's default configuration
   - id: read-4kib-2vcpu-8gib
-    version: 1.0.3
     quantity: Score on the test's default configuration
   - id: write-4kib-2vcpu-8gib
-    version: 1.0.3
     quantity: Score on the test's default configuration
   - id: list-2vcpu-8gib
-    version: 1.0.3
     quantity: Score on the test's default configuration
   - id: pause-resume
-    version: 1.2.16
     quantity: Score on the test's default configuration
   - id: delayed-resume
-    version: 1.2.16
     quantity: Score on the test's default configuration
   - id: snapshot-and-restore
-    version: 1.1.14
     quantity: Score on the test's default configuration
   - id: fork
-    version: 1.1.15
     quantity: Score on the test's default configuration
   - id: image-build-2vcpu-4gib
-    version: 1.2.14
     quantity: Score on the test's default configuration
   - id: previews
-    version: 1.1.14
     quantity: Score on the test's default configuration
   - id: reconnect
-    version: 1.1.13
     quantity: Score on the test's default configuration
   - id: 7-zip-1-thread
-    version: 1.1.18
     quantity: Score on the test's default configuration
   - id: stream-triad
-    version: 1.1.18
     quantity: Score on the test's default configuration
   - id: sequential-read
-    version: 1.1.18
     quantity: Score on the test's default configuration
   - id: sequential-write
-    version: 1.1.18
     quantity: Score on the test's default configuration
   - id: random-read
-    version: 1.1.17
     quantity: Score on the test's default configuration
   - id: random-write
-    version: 1.1.17
     quantity: Score on the test's default configuration
   - id: hard-links
-    version: 1.1.17
     quantity: Score on the test's default configuration
   - id: hard-links-2vcpu-8gib
-    version: 1.0.3
     quantity: Score on the test's default configuration
   - id: package-registries
-    version: 1.1.16
     quantity: Score on the test's default configuration
   per_input_value: 'A workload suite''s score is its time score or its cost score (the arithmetic mean
     of its units'' scores). Exclude from the unit set for every provider any unit with a failed attempt

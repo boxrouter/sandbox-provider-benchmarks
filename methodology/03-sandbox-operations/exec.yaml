@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/methodology.schema.json
 id: exec-latency-2vcpu-8gib
-version: 1.0.3
 effective: '2026-11-08'
 name: '{name:test.exec-latency-2vcpu-8gib}'
 category: sandbox_operation
@@ -13,15 +12,13 @@ notes:
   how_it_is_measured: A monotonic clock on the job host times each of 100 sequential true calls in one
     fresh 2 vCPU and 8 GiB sandbox from dispatch until the exit status and the sandbox clock readings
     return.
-  how_to_read: The {param:exec-latency.1.2.12.statistics.primary} summarizes every call of every successful
+  how_to_read: The {param:exec-latency.statistics.primary} summarizes every call of every successful
     trial, pooled across trials, in the axis unit; {direction:total_time}.
   cost_summary: The cost is the sum of the provider-sourced sandbox costs for successful trials, divided
     by the number of successful calls.
   cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
     required for a cost to be shown.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_time
   unit: ms
@@ -60,7 +57,7 @@ procedure:
     command: 'true'
     parameters:
       calls: 100
-    description: The workload uses the {param:exec-latency.1.2.12.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:exec-latency.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -167,7 +164,7 @@ independence_answers:
     status: meets
     text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
 parameters:
-  path: parameters/exec-latency-2vcpu-8gib/1.0.3/
+  path: parameters/exec-latency-2vcpu-8gib/
   sha256: f97b44012d461bfe429c9918e4d9b3c7bf43b8cc030f84115a43424d1363da79
 interpretation:
   what_to_do: Use this latency to judge the per-call overhead floor under every command that an agent

@@ -12,7 +12,6 @@ from sandbox_benchmark_verifier.conventions import load_conventions
 from sandbox_benchmark_verifier.glance_clock import RULE_ID, clock_labels, glance_clock_errors
 from sandbox_benchmark_verifier.names import load_tables
 from sandbox_benchmark_verifier.reader import load_reader
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,13 +25,12 @@ def _reader_methods() -> dict[str, Any]:
     return methods
 
 
-def test_the_glance_has_two_groups_with_the_version_and_the_headline_clock() -> None:
+def test_the_glance_has_two_groups_with_the_headline_clock() -> None:
     page = content_criteria()["methodology_page"]
     what, how = page["at_a_glance"]["groups"]
     assert "clocks.headline" in what
-    assert "version" in how
+    assert "version" not in what + how
     assert "clocks.operation" not in what + how
-    assert page["field_labels"]["version"] == "Version"
     assert page["field_labels"]["clocks.headline"] == "Clock"
 
 
@@ -59,11 +57,9 @@ def test_a_method_names_only_clocks_that_its_stages_have() -> None:
             assert set(entry["clock"]) <= stage_clocks, name
 
 
-def _clocks(bundle: dict[str, Any], document: str) -> dict[str, dict[str, Any]]:
-    return {
-        version: row["reader_definition"]["clocks"]
-        for version, row in bundle["methodologies"][document].items()
-    }
+def _clocks(bundle: dict[str, Any], document: str) -> dict[str, Any]:
+    clocks: dict[str, Any] = bundle["methodologies"][document]["reader_definition"]["clocks"]
+    return clocks
 
 
 def test_the_clock_row_is_the_label_of_the_headline_clock_not_its_definition(
@@ -81,18 +77,14 @@ def test_the_clock_row_is_the_label_of_the_headline_clock_not_its_definition(
         "7-zip-1-thread",
         "stream-triad",
     ):
-        for version, row in _clocks(bundle, document).items():
-            assert row["headline"] == labels["sandbox"], (document, version)
+        assert _clocks(bundle, document)["headline"] == labels["sandbox"], document
     for document in ("sequential-tti", "burst-tti", "read-4kib", "exec-latency", "fork"):
-        for version, row in _clocks(bundle, document).items():
-            assert row["headline"] == labels["runner"], (document, version)
-    for version, row in _clocks(bundle, "r2e-gym").items():
-        assert row["headline"] == f"{labels['runner']} and {labels['sandbox']}", version
+        assert _clocks(bundle, document)["headline"] == labels["runner"], document
+    assert _clocks(bundle, "r2e-gym")["headline"] == f"{labels['runner']} and {labels['sandbox']}"
     assert glance_clock_errors(bundle) == []
     # A composite runs no trials of its own: the calculation template gives it no clock at all.
     for document in COMPOSITES:
-        for version, row in bundle["methodologies"][document].items():
-            assert "clocks" not in row["reader_definition"], (document, version)
+        assert "clocks" not in bundle["methodologies"][document]["reader_definition"], document
 
 
 def test_a_clock_row_that_is_a_definition_sentence_is_refused(bundle: dict[str, Any]) -> None:
@@ -107,22 +99,19 @@ def test_a_clock_row_that_is_a_definition_sentence_is_refused(bundle: dict[str, 
     broken = {
         "names": bundle["names"],
         "methodologies": {
-            document: {"1.0.0": {"reader_definition": {"clocks": {"headline": value}}}}
+            document: {"reader_definition": {"clocks": {"headline": value}}}
             for document, value in old.items()
         },
     }
     assert [error.split(" clocks.headline")[0] for error in glance_clock_errors(broken)] == [
-        f"{RULE_ID}: fork@1.0.0",
-        f"{RULE_ID}: r2e-gym@1.0.0",
+        f"{RULE_ID}: fork",
+        f"{RULE_ID}: r2e-gym",
     ]
     rules = {rule["id"] for rule in load_conventions()["presentation"]["rules"]}
     assert RULE_ID in rules
 
 
 def test_the_files_page_lists_the_variants_of_all_three_tests(bundle: dict[str, Any]) -> None:
-    for version, row in bundle["methodologies"]["read-4kib"].items():
-        labels = [variant["label"] for variant in row["reader_definition"]["procedure"]["variants"]]
-        if version_key(version) >= (1, 1, 4):
-            assert labels == ["Read 4 KiB", "List 200 empty files", "Write a 4 KiB payload"], (
-                version
-            )
+    row = bundle["methodologies"]["read-4kib"]
+    labels = [variant["label"] for variant in row["reader_definition"]["procedure"]["variants"]]
+    assert labels == ["Read 4 KiB", "List 200 empty files", "Write a 4 KiB payload"]

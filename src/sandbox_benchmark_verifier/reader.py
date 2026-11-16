@@ -1,19 +1,18 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""The current reader copy of every test, apart from the versioned scientific documents.
+"""The current reader copy of every test, apart from the scientific documents.
 
 ``reader/methods.yaml`` holds the wording (headline, notes, panel command) keyed by
 a test's canonical name id. A wording edit changes this file and nothing in ``methodology/``: no
-scientific version, no release-lock hash, no re-run. A statement of fact in the copy reads the
-measured definition of the result it describes, ``{param:measured.<path>}``; the compiler resolves
-it against each measured version, never against the newest one.
+release-lock hash, no re-run. A statement of fact in the copy reads the measured definition of the
+result it describes, ``{param:measured.<path>}``; the compiler resolves it against that document.
 """
 
 import copy
 import json
 import re
 import subprocess
-from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterator, Mapping, Sequence
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -23,9 +22,7 @@ from jsonschema import Draft202012Validator
 from sandbox_benchmark_verifier.catalog import (
     _PACKAGED_ASSETS,
     METHODOLOGY_COMMIT,
-    default_context,
     load_schema,
-    ordinary_documents,
     repository_url,
 )
 from sandbox_benchmark_verifier.content import (
@@ -47,7 +44,14 @@ from sandbox_benchmark_verifier.placeholders import (
     PlaceholderError,
     commit_url,
     mark_sha256,
+    measured_token_errors,
     with_blocks,
+)
+from sandbox_benchmark_verifier.reader_limitations import (
+    limitation_errors,
+    limitation_items,
+    page_members,
+    split_limitation,
 )
 from sandbox_benchmark_verifier.reader_steps import (
     STEP_MARK,
@@ -60,7 +64,6 @@ from sandbox_benchmark_verifier.reader_steps import (
 )
 from sandbox_benchmark_verifier.reader_when import gate_errors, gated, ungated
 from sandbox_benchmark_verifier.subtitles import generated_notes
-from sandbox_benchmark_verifier.versions import document_version
 from sandbox_benchmark_verifier.yaml_load import dump_yaml, load_yaml
 
 READER_PATH = "reader/methods.yaml"
@@ -94,9 +97,6 @@ SLOT_CHECKED_NOTES = (
     "stage_rule",
     "independence",
 )
-# Notes that quote facts only the newer versions of a document state: an older version without the
-# facts draws none of this note, while any other unresolved reference makes the version unresolved.
-VERSIONED_NOTES = ("independence",)
 # A reference to another document version pins a fact the reader cannot follow to the result.
 _WORKLOAD = re.compile(r"\{(?:param:|hash:[^|{}]*\|)measured\.parameters\.workload\.")
 _VERSIONED = re.compile(
@@ -121,7 +121,7 @@ def load_reader(root: Path) -> dict[str, Any] | None:
 
 def plain_reader(root: Path) -> dict[str, Any] | None:
     """The reader source with each trial-step note as the Details text reads it (no markers) and
-    every version gate taken as holding."""
+    every gate taken as holding."""
     loaded = load_reader(root)
     if loaded is None:
         return None
@@ -130,6 +130,8 @@ def plain_reader(root: Path) -> dict[str, Any] | None:
         notes = method.get("notes", {}) if isinstance(method, dict) else {}
         if isinstance(notes.get("trial_steps"), str):
             notes["trial_steps"] = STEP_MARK.sub("", notes["trial_steps"])
+        if isinstance(notes.get("limitations"), list):
+            notes["limitations"] = [split_limitation(text)[1] for text in notes["limitations"]]
     return source
 
 
@@ -208,6 +210,21 @@ def cost_scope_errors(source: Mapping[str, Any], rows: Sequence[Mapping[str, Any
     ]
 
 
+def _measured_errors(root: Path) -> list[str]:
+    """Each ``{measured:...}`` token of the reader copy that the page contract does not allow."""
+    path = root / "contracts/text/methodology-page.json"
+    fields = (
+        json.loads(path.read_text(encoding="utf-8")).get("measured_from_data", {})
+        if path.is_file()
+        else {}
+    )
+    return [
+        f"{READER_PATH}: {where}: {error}"
+        for where, text in _raw_strings(load_reader(root))
+        for error in measured_token_errors(text, fields)
+    ]
+
+
 def reader_errors(root: Path) -> list[str]:
     """Schema errors, and any fact reference that is not to the measured definition."""
     source = plain_reader(root)
@@ -219,7 +236,7 @@ def reader_errors(root: Path) -> list[str]:
     ]
     for identifier, entry in source.get("methods", {}).items():
         errors.extend(
-            f"{READER_PATH}: {identifier}{path}: {match} pins a document version; "
+            f"{READER_PATH}: {identifier}{path}: {match} pins another document's fact; "
             "read the measured definition with {param:measured.<path>}"
             for path, text in _strings(entry)
             for match in _VERSIONED.findall(text)
@@ -229,6 +246,7 @@ def reader_errors(root: Path) -> list[str]:
         for path, text in _raw_strings(load_reader(root))
         for error in gate_errors(text)
     )
+    errors.extend(_measured_errors(root))
     scopes, tests = _names_rows(root)
     errors.extend(cost_scope_errors(source, load_tables(root).names))
     for identifier, entry in source.get("methods", {}).items():
@@ -252,6 +270,17 @@ def reader_errors(root: Path) -> list[str]:
         for identifier, entry in source.get("methods", {}).items()
         if identifier not in hosts
         if (page_notes := sorted(set(entry.get("notes", {})) & PAGE_NOTES))
+    )
+    # A page host's limitations are read by every test on the page, so each names its tests.
+    errors.extend(
+        f"{READER_PATH}: {error}"
+        for identifier, entry in (load_reader(root) or {}).get("methods", {}).items()
+        for error in limitation_errors(
+            identifier,
+            entry.get("notes", {}).get("limitations", []),
+            page_members(tests, identifier),
+            host=identifier in hosts,
+        )
     )
     # A methodology page draws its subtitle from its test's introduction, or from page_introduction
     # when its page holds other tests (the web page reads nothing else), so each one has it.
@@ -333,15 +362,13 @@ _BARE_INTEGER = re.compile(r"(?<![\w.,$/-])\d{7,}(?![\w,]|\.\d)")
 
 
 def _reader_sentences(reader: Mapping[str, Any]) -> Iterator[tuple[str, str]]:
-    """Every string of every version of every method's text, with where it is."""
+    """Every string of every method's text, with where it is."""
     for identifier, method in reader["methods"].items():
-        texts = {"": method["text"], **{f"@{v}": t for v, t in method["by_version"].items()}}
-        for version, text in texts.items():
-            yield from reader_strings(text, f"{identifier}{version}")
+        yield from reader_strings(method["text"], identifier)
 
 
 def reader_count_errors(reader: Mapping[str, Any]) -> list[str]:
-    """Every sentence of every version that writes "1" before a plural noun: word the count so
+    """Every sentence that writes "1" before a plural noun: word the count so
     it reads right for any number ("trials run in batches of up to 1", "each replayed 1x")."""
     errors: list[str] = []
     for where, sentence in _reader_sentences(reader):
@@ -444,7 +471,7 @@ def _apply_headline_clocks(
     methodologies: Mapping[str, Mapping[str, Any]],
     methods: Mapping[str, Mapping[str, Any]],
 ) -> None:
-    """Write each version's headline clock into its reader view (``clocks.headline``).
+    """Write each document's headline clock into its reader view (``clocks.headline``).
 
     A method names the clocks its headline number is read from (``clock``); At a Glance's Clock
     row is their names-table labels (glance_clock), not the job host's clock for every page.
@@ -453,9 +480,9 @@ def _apply_headline_clocks(
     for identifier, entry in ((load_reader(root) or {}).get("methods", {})).items():
         if "clock" not in entry:
             continue
-        for row in methodologies[methods[identifier]["document"]].values():
-            clocks = row["reader_definition"].setdefault("clocks", {})
-            clocks["headline"] = clock_row(entry["clock"], labels)
+        row = methodologies[methods[identifier]["document"]]
+        clocks = row["reader_definition"].setdefault("clocks", {})
+        clocks["headline"] = clock_row(entry["clock"], labels)
 
 
 def _apply_hash_marks(
@@ -463,18 +490,17 @@ def _apply_hash_marks(
     methodologies: Mapping[str, Mapping[str, Any]],
     methods: Mapping[str, Mapping[str, Any]],
 ) -> None:
-    """Draw a definition text's SHA-256 as a link on its word in every version's reader view.
+    """Draw a definition text's SHA-256 as a link on its word in the document's reader view.
 
     A method's ``hash_marks`` names each such field and its word; a released record keeps the text.
     """
     for identifier, entry in ((load_reader(root) or {}).get("methods", {})).items():
         for path, label in entry.get("hash_marks", {}).items():
             *parents, key = path.split(".")
-            for row in methodologies[methods[identifier]["document"]].values():
-                holder = row["reader_definition"]
-                for parent in parents:
-                    holder = holder[parent]
-                holder[key] = mark_sha256(label, holder[key])
+            holder = methodologies[methods[identifier]["document"]]["reader_definition"]
+            for parent in parents:
+                holder = holder[parent]
+            holder[key] = mark_sha256(label, holder[key])
 
 
 def _variant_commit(commits: Mapping[str, Any], variant: Mapping[str, Any]) -> tuple[str, str]:
@@ -483,29 +509,18 @@ def _variant_commit(commits: Mapping[str, Any], variant: Mapping[str, Any]) -> t
     return commits["repositories"][image], commit
 
 
-def _newest_labels(versions: Iterable[Mapping[str, Any]]) -> dict[str, str]:
-    """Each variant's label in the newest version that has it: a task keeps one name everywhere."""
-    labels: dict[str, str] = {}
-    for version in sorted(versions, key=document_version):
-        labels |= {row["id"]: row["label"] for row in version["procedure"]["variants"]}
-    return labels
-
-
 def _apply_variant_commits(
     root: Path,
     methodologies: Mapping[str, Mapping[str, Any]],
     methods: Mapping[str, Mapping[str, Any]],
 ) -> None:
-    """Write each variant's newest label and its commit's page into every version's reader view."""
+    """Write each variant's commit's page into the document's reader view."""
     urls = content_criteria()["methodology_page"]["hash_link"]["commit_urls"]
     for identifier, entry in ((load_reader(root) or {}).get("methods", {})).items():
         if commits := entry.get("variant_commits"):
-            rows = methodologies[methods[identifier]["document"]].values()
-            labels = _newest_labels(row["reader_definition"] for row in rows)
-            for row in rows:
-                for variant in row["reader_definition"]["procedure"]["variants"]:
-                    variant["label"] = labels[variant["id"]]
-                    variant["link"] = commit_url(*_variant_commit(commits, variant), urls)
+            row = methodologies[methods[identifier]["document"]]
+            for variant in row["reader_definition"]["procedure"]["variants"]:
+                variant["link"] = commit_url(*_variant_commit(commits, variant), urls)
 
 
 def apply_reader_views(
@@ -530,19 +545,15 @@ def reader_source(root: Path) -> dict[str, Any]:
 def compile_reader(
     root: Path,
     *,
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     document_ids: Mapping[str, str],
     project: Callable[..., dict[str, Any]],
 ) -> dict[str, Any] | None:
-    """Compile each method's copy against its measured versions.
+    """Compile each method's copy against its measured document.
 
     ``document_ids`` maps a canonical method id to its document id; ``project`` turns a document
     carrying the reader's wording into the text slots a page draws (headline, notes, panel).
-    The entry's ``text`` is resolved against the newest measured version; ``by_version`` holds only
-    the versions whose resolved copy differs, and ``unresolved_versions`` those the copy cannot
-    describe (a fact path the measured definition does not have). A consumer asked for one of those
-    must fail, naming the id and version (``reader_text``); it never falls back to the newest text
-    or to newer scientific facts.
+    A fact path the measured definition does not have fails the build, naming the method.
     """
     source = load_reader(root)
     if source is None:
@@ -550,7 +561,6 @@ def compile_reader(
     if errors := reader_errors(root):
         raise ValueError(f"{READER_PATH} is not valid: {'; '.join(errors)}")
     methods: dict[str, Any] = {}
-    current = ordinary_documents(list(documents.values()), common=default_context(root))
     _, tests = _names_rows(root)
     aliases = load_tables(root).aliases.get("document", {})
     for identifier, entry in source["methods"].items():
@@ -558,13 +568,8 @@ def compile_reader(
             raise ValueError(f"{READER_PATH}: {identifier!r} names no test or index")
         document_id = document_ids[identifier]
         entry = with_blocks(entry, source.get("common", {}).get("blocks", {}))
-        versions = sorted(
-            (
-                _withpinned_workload(root, _with_inherited_common(doc, documents), documents, entry)
-                for (doc_id, _), doc in documents.items()
-                if doc_id == document_id
-            ),
-            key=document_version,
+        measured = _withpinned_workload(
+            root, _with_inherited_common(documents[document_id], documents), documents, entry
         )
         methods[identifier] = {
             "document": document_id,
@@ -572,7 +577,7 @@ def compile_reader(
                 root,
                 identifier,
                 _with_subtitles(root, identifier, entry),
-                versions,
+                measured,
                 project,
                 partial(
                     _timed_by_page_members,
@@ -591,9 +596,6 @@ def compile_reader(
                     documents=documents,
                     aliases=aliases,
                 ),
-                current_version=str(current[document_id]["version"])
-                if document_id in current
-                else None,
             ),
         }
     return methods
@@ -689,33 +691,27 @@ def _compile_method(  # pylint: disable=too-many-arguments,too-many-positional-a
     root: Path,
     identifier: str,
     entry: Mapping[str, Any],
-    versions: list[Mapping[str, Any]],
+    measured: Mapping[str, Any],
     project: Callable[..., dict[str, Any]],
     timed_by_members: Callable[[Mapping[str, Any]], Collection[str]] | None = None,
     member_parts: Callable[[Mapping[str, Any]], Sequence[Mapping[str, str]]] | None = None,
-    *,
-    current_version: str | None = None,
 ) -> dict[str, Any]:
-    """One method's copy against each of its measured versions, newest first resolved."""
-    resolved: dict[str, dict[str, Any]] = {}
-    unresolved: list[str] = []
+    """One method's copy against its measured document."""
     headline = entry.get("headline_steps", [])
 
-    def compiled(measured: Mapping[str, Any], wording: Mapping[str, Any]) -> dict[str, Any]:
-        carrier = _carrier(measured, wording, strict=str(measured["version"]) == current_version)
+    def compiled() -> dict[str, Any]:
+        carrier = _carrier(measured, entry)
         text = project(apply_panel_text(root, [carrier])[0])
         note = text.get("notes", {}).get("trial_steps")
         steps = measured.get("procedure", {}).get("steps", [])
-        strict = str(measured["version"]) == current_version
-        if strict and any(step.get("timer") for step in steps) and not headline:
+        if any(step.get("timer") for step in steps) and not headline:
             raise ValueError("headline_steps: name the steps that make the number")
-        if strict:
-            headline_span_errors(measured.get("metrics", []), steps, headline)
+        headline_span_errors(measured.get("metrics", []), steps, headline)
         if isinstance(note, str):
             clean, items = trial_step_items(
                 note,
                 steps,
-                strict=strict,
+                strict=True,
                 timed_by_members=timed_by_members(measured) if timed_by_members else (),
                 headline=headline,
             )
@@ -723,10 +719,19 @@ def _compile_method(  # pylint: disable=too-many-arguments,too-many-positional-a
                 flat = {f"stepnote_{key}": value for key, value in step_notes.items()}
                 words = project(_carrier(measured, {"notes": flat}))["notes"]
                 items = with_step_notes(
-                    items, {key: words[f"stepnote_{key}"] for key in step_notes}, strict=strict
+                    items, {key: words[f"stepnote_{key}"] for key in step_notes}, strict=True
                 )
             text["notes"] = {**text["notes"], "trial_steps": clean, "step_items": items}
-        text["notes"] = {**text["notes"], **_resolved_tables(project, measured, entry, versions)}
+        if isinstance(limits := text["notes"].get("limitations"), list):
+            plain, tagged = limitation_items(
+                [str(limit) for limit in limits], page_members(_names_rows(root)[1], identifier)
+            )
+            text["notes"] = {
+                **text["notes"],
+                "limitations": plain,
+                **({"limitation_items": tagged} if tagged else {}),
+            }
+        text["notes"] = {**text["notes"], **_resolved_tables(project, measured, entry)}
         if limits := time_limits(steps):
             # Step names may name a stage or a test ({name:stage.create}).
             flat = {f"limit{at}_step": row["step"] for at, row in enumerate(limits)}
@@ -738,7 +743,7 @@ def _compile_method(  # pylint: disable=too-many-arguments,too-many-positional-a
                 ],
             }
         parts = [
-            *timed_parts(steps, headline, strict=strict),
+            *timed_parts(steps, headline, strict=True),
             *(member_parts(measured) if member_parts else ()),
         ]
         if parts := [row for at, row in enumerate(parts) if row not in parts[:at]]:
@@ -757,26 +762,10 @@ def _compile_method(  # pylint: disable=too-many-arguments,too-many-positional-a
             }
         return text
 
-    for measured in versions:
-        version = str(measured["version"])
-        try:
-            resolved[version] = compiled(measured, entry)
-        except (PlaceholderError, ValueError) as error:
-            if str(measured["version"]) == current_version:
-                raise ValueError(f"{identifier}@{version}: {error}") from error
-            try:
-                resolved[version] = compiled(measured, _without_versioned_notes(entry))
-            except (PlaceholderError, ValueError):
-                unresolved.append(version)
-    return {
-        "text": resolved.get(current_version or "", {}),
-        "by_version": {
-            version: text
-            for version, text in resolved.items()
-            if text != resolved.get(current_version or "", {})
-        },
-        "unresolved_versions": unresolved,
-    }
+    try:
+        return {"text": compiled()}
+    except (PlaceholderError, ValueError) as error:
+        raise ValueError(f"{identifier}: {error}") from error
 
 
 def _page_members(  # pylint: disable=too-many-arguments
@@ -784,7 +773,7 @@ def _page_members(  # pylint: disable=too-many-arguments
     measured: Mapping[str, Any],
     tests: Mapping[str, Mapping[str, Any]],
     document_ids: Mapping[str, str],
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     *,
     aliases: Mapping[str, str] | None = None,
 ) -> list[tuple[str, Mapping[str, Any]]]:
@@ -802,7 +791,7 @@ def _timed_by_page_members(  # pylint: disable=too-many-arguments
     identifier: str,
     tests: Mapping[str, Mapping[str, Any]],
     document_ids: Mapping[str, str],
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     aliases: Mapping[str, str] | None = None,
 ) -> set[str]:
     """The timers of members bound to this measured host's common and effective date."""
@@ -820,18 +809,16 @@ def _resolved_tables(
     project: Callable[..., dict[str, Any]],
     measured: Mapping[str, Any],
     entry: Mapping[str, Any],
-    versions: Sequence[Mapping[str, Any]],
 ) -> dict[str, list[dict[str, str]]]:
-    """The tables a page draws as notes: the reader's own rows, resolved against this version, a
+    """The tables a page draws as notes: the reader's own rows, resolved against this document, a
     row per variant that names a commit, and the definition's variants where each runs its own
     command."""
     tables: dict[str, list[dict[str, str]]] = {}
     rows = {name: list(rows) for name, rows in entry.get("tables", {}).items()}
     if commits := entry.get("variant_commits"):
-        labels = _newest_labels(versions)
         rows[commits["table"]] = [
             {
-                commits["field"]: labels[variant["id"]],
+                commits["field"]: variant["label"],
                 "repository": f"`{_variant_commit(commits, variant)[0]}`",
                 "commit": f"{{commit:{_variant_commit(commits, variant)[0]}|"
                 f"measured.procedure.variants.{at}.parameters.{commits['field']}}}",
@@ -861,7 +848,7 @@ def _member_parts(  # pylint: disable=too-many-arguments
     source: Mapping[str, Any],
     tests: Mapping[str, Mapping[str, Any]],
     document_ids: Mapping[str, str],
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     aliases: Mapping[str, str] | None = None,
 ) -> list[dict[str, str]]:
     """The headline parts from members selected for this exact measured host."""
@@ -876,29 +863,22 @@ def _member_parts(  # pylint: disable=too-many-arguments
     return parts
 
 
-def _without_versioned_notes(entry: Mapping[str, Any]) -> dict[str, Any]:
-    notes = {
-        key: text for key, text in entry.get("notes", {}).items() if key not in VERSIONED_NOTES
-    }
-    return {**entry, "notes": notes}
-
-
 def _with_inherited_common(
-    measured: Mapping[str, Any], documents: Mapping[tuple[str, str], Mapping[str, Any]]
+    measured: Mapping[str, Any], documents: Mapping[str, Mapping[str, Any]]
 ) -> Mapping[str, Any]:
     """A shared document that builds on another (Pricing on Common) reads that document's facts
     under its own: its ``{param:measured...}`` resolve against both, its own fields first."""
     parent = measured.get("inherits")
-    if measured.get("category") != "common" or not isinstance(parent, Mapping):
+    if measured.get("category") != "common" or not isinstance(parent, str):
         return measured
-    base = documents.get((str(parent["id"]), str(parent["version"])), {})
+    base = documents.get(parent, {})
     return {**base, **measured}
 
 
 def _withpinned_workload(
     root: Path,
     measured: Mapping[str, Any],
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     entry: Mapping[str, Any],
 ) -> Mapping[str, Any]:
     """The measured document, carrying its pinned workload when the reader copy reads it."""
@@ -919,22 +899,20 @@ def _withpinned_workload(
     return enriched
 
 
-def _carrier(
-    measured: Mapping[str, Any], entry: Mapping[str, Any], *, strict: bool = False
-) -> dict[str, Any]:
+def _carrier(measured: Mapping[str, Any], entry: Mapping[str, Any]) -> dict[str, Any]:
     """The measured document with its wording replaced by the reader's, facts read from itself.
 
     A sentence gated on a parameter (``[[when ...]]``) stays only where the measured definition
-    satisfies it; ``strict`` makes a gate on a path the definition lacks an error.
+    satisfies it; a gate on a path the definition lacks is an error.
     """
-    entry = gated(entry, measured, strict=strict)
+    entry = gated(entry, measured, strict=True)
     carrier = copy.deepcopy(dict(measured))
     for key in ("headline", "notes", "panel"):
         carrier.pop(key, None)
-    prefix = f"{measured['id']}.{measured['version']}."
+    prefix = f"{measured['id']}."
 
     def bind(match: re.Match[str]) -> str:
-        """Point each measured path of one reference (every factor of a product) at this version."""
+        """Point each measured path of one reference (every factor) at this document."""
         target = re.sub(r"(^|\*|\|)measured\.", lambda found: found[1] + prefix, match[2])
         return f"{{{match[1]}:{target}}}"
 
@@ -947,27 +925,3 @@ def _with_subtitles(root: Path, identifier: str, entry: Mapping[str, Any]) -> di
     """The entry with a workload's cost_summary generated from the subtitle template."""
     generated = generated_notes(root, identifier)
     return {**entry, "notes": {**entry.get("notes", {}), **generated}} if generated else dict(entry)
-
-
-class ReaderVersionError(LookupError):
-    """The reader copy cannot describe the asked method or measured version."""
-
-
-def reader_text(bundle: Mapping[str, Any], identifier: str, version: str) -> dict[str, Any]:
-    """The reader copy of a method as it reads for one measured version, or a deliberate error.
-
-    A method or version the bundle does not know, and a version its copy cannot describe, raise
-    ``ReaderVersionError`` naming both; nothing falls back to the newest copy or facts.
-    """
-    methods = bundle["reader"]["methods"]
-    if identifier not in methods:
-        raise ReaderVersionError(f"no reader copy for method {identifier!r}")
-    method = methods[identifier]
-    if version not in bundle["methodologies"].get(method["document"], {}):
-        raise ReaderVersionError(f"method {identifier!r} has no measured version {version!r}")
-    if version in method["unresolved_versions"]:
-        raise ReaderVersionError(
-            f"the reader copy of {identifier!r} cannot describe measured version {version!r}"
-        )
-    text: dict[str, Any] = method["by_version"].get(version, method["text"])
-    return text

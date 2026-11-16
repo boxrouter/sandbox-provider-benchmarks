@@ -1,22 +1,19 @@
 id: deepswe
-version: 1.1.22
 effective: '2026-11-08'
 name: '{name:test.deepswe}'
 category: workload
 notes:
   what_this_measures: The result sums command runtimes for a recorded session using the sandbox clock.
     Model speed and agent quality are excluded.
-  how_to_read: The {param:deepswe.1.1.22.statistics.primary} summarizes successful trials in the axis unit;
+  how_to_read: The {param:deepswe.statistics.primary} summarizes successful trials in the axis unit;
     {direction:tool_time}.
   summary: Each {name:test.deepswe} trace is one agent's full tool-use trace on a repository task.
-  how_it_is_measured: Recorded sessions come from {name:test.deepswe} {param:deepswe.1.1.22.source.dataset_version} tasks. Commands run back to
+  how_it_is_measured: Recorded sessions come from {name:test.deepswe} {param:deepswe.source.dataset_version} tasks. Commands run back to
     back in each task's prepared image, with each runtime measured by the sandbox's own clock.
   cost_summary: The cost covers sandbox creation through confirmed destruction, divided by successful
     traces.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: tool_time
   unit: ms
@@ -61,7 +58,7 @@ procedure:
     label: Claude Opus 5 high
     parameters:
       config: claude-opus-5-high
-    description: The workload uses the {param:deepswe.1.1.22.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:deepswe.procedure.variants.0.label} configuration.
   stages:
   - id: read
     name: '{name:stage.read}'
@@ -151,7 +148,7 @@ statistics:
 cost:
   method: provider_reported_or_priced
 parameters:
-  path: parameters/deepswe/1.1.22/
+  path: parameters/deepswe/
   sha256: ddca17744dfb792446f807c71430b706b1055f1e0fcd6b46ee0d4379129888e4
 capabilities:
   required: []

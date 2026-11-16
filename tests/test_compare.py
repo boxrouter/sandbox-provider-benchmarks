@@ -10,7 +10,6 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
-from sandbox_benchmark_verifier.catalog import load_methodology
 from sandbox_benchmark_verifier.cli import main
 from sandbox_benchmark_verifier.compare import (
     CompareError,
@@ -22,16 +21,11 @@ from sandbox_benchmark_verifier.compare import (
     summary_source,
 )
 from sandbox_benchmark_verifier.stats import bootstrap_ci, nearest_rank
-from sandbox_benchmark_verifier.versions import newest
 
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLICATION = "20260101T000000Z"
-
-
-def _current_version(identifier: str) -> str:
-    return str(newest(item.document for item in load_methodology(ROOT))[identifier]["version"])
 
 
 PUBLISHED = [120.0 + step for step in range(40)]
@@ -59,7 +53,7 @@ def publication(*results: dict[str, Any]) -> dict[str, Any]:
                 "id": "disk-rand-read-4k",
                 "name": "Random Read",
                 "unit": "IOPS",
-                "methodology": {"id": "random-read", "version": _current_version("random-read")},
+                "methodology": {"id": "random-read"},
                 "variants": [{"id": "fio-1g", "trials_per_result": 40}],
                 "default_variant": "fio-1g",
                 "results": list(results) or [result("alpha#one", PUBLISHED)],
@@ -68,7 +62,7 @@ def publication(*results: dict[str, Any]) -> dict[str, Any]:
                 "id": "hardlink",
                 "name": "Hard Links",
                 "unit": "links/s",
-                "methodology": {"id": "hard-links", "version": _current_version("hard-links")},
+                "methodology": {"id": "hard-links"},
                 "variants": [{"id": "link-30s", "trials_per_result": 40}],
                 "results": [],
             },

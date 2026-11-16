@@ -19,7 +19,6 @@ from sandbox_benchmark_verifier.name_refs import (
 )
 from sandbox_benchmark_verifier.names import _methodology_documents, load_tables
 from sandbox_benchmark_verifier.placeholders import PlaceholderError, resolve_template
-from sandbox_benchmark_verifier.versions import version_key
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = pytest.mark.unit
@@ -77,9 +76,7 @@ def test_owner_sources_and_current_reader_projection_pass_name_checks(
     assert published_name_errors(bundle, ROOT) == []
     text = bundle["content_criteria"]["index_copy"]["details"]["time"]["what_this_measures_concise"]
     assert "Terminal-Bench 4.0 and CI Actions" in text
-    scope = bundle["methodologies"]["cost-index"]["1.1.27"]["reader_definition"]["composition"][
-        "scopes"
-    ][1]
+    scope = bundle["methodologies"]["cost-index"]["reader_definition"]["composition"]["scopes"][1]
     assert scope["label"] == "Coding"
 
 
@@ -87,11 +84,10 @@ def test_no_scope_label_repeats_the_names_of_the_list_under_it(bundle: dict[str,
     """ "Execution (DeepSWE, Terminal-Bench 4.0 and CI Actions)" sat above the same three names."""
     members = {row["name"] for row in bundle["names"] if row["kind"] == "test"}
     seen = 0
-    for versions in bundle["methodologies"].values():
-        for entry in versions.values():
-            for scope in entry["reader_definition"].get("composition", {}).get("scopes", []):
-                seen += 1
-                assert not [name for name in members if name in scope["label"]], scope["label"]
+    for entry in bundle["methodologies"].values():
+        for scope in entry["reader_definition"].get("composition", {}).get("scopes", []):
+            seen += 1
+            assert not [name for name in members if name in scope["label"]], scope["label"]
     assert seen
 
 
@@ -128,7 +124,7 @@ def test_the_names_table_gives_every_composite_member_a_unit() -> None:
 
 
 def test_a_composite_input_is_named_by_its_current_document_id() -> None:
-    """The newest composites pin `deepswe`, `terminal-bench-4-0` and `github-actions`, which name
+    """The composites pin `deepswe`, `terminal-bench-4-0` and `github-actions`, which name
     the same workloads and units as their retired ids."""
     names = canonical_name_map(load_tables(ROOT))
     assert [
@@ -145,9 +141,8 @@ def test_composite_subtitles_are_the_template_with_the_members_units(
 ) -> None:
 
     names = canonical_name_map(load_tables(ROOT))
-    index = max(
-        (document for document in _methodology_documents(ROOT) if document["id"] == "time-index"),
-        key=lambda document: version_key(document["version"]),
+    index = next(
+        document for document in _methodology_documents(ROOT) if document["id"] == "time-index"
     )
     units = [names[f"unit.{member['id']}"] for member in index["composition"]["inputs"]]
     units = list(dict.fromkeys(units))

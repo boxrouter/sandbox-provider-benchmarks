@@ -44,6 +44,7 @@ from sandbox_benchmark_verifier.scaffold import BenchmarkDraft, add, add_from_sh
 from sandbox_benchmark_verifier.stats import bootstrap_ci, nearest_rank, numeric
 from sandbox_benchmark_verifier.text import text_warnings, write_text_bundle
 from sandbox_benchmark_verifier.timing import timing_errors
+from sandbox_benchmark_verifier.workload_value import UNIT_STATISTICS, derived_value
 from sandbox_benchmark_verifier.yaml_load import load_yaml, load_yaml_all
 
 ROOT = Path.cwd()
@@ -90,11 +91,7 @@ def method_refs(value: Any) -> Iterator[str]:
         method = value.get("methodology")
         if isinstance(method, Mapping) and isinstance(method.get("id"), str):
             yield method["id"]
-        citations = value.get("methodologies")
-        if isinstance(citations, Mapping):
-            yield from (identifier for identifier in citations if isinstance(identifier, str))
-        else:
-            yield from citation_refs(citations)
+        yield from citation_refs(value.get("methodologies"))
         if isinstance(value.get("methodology_id"), str):
             yield value["methodology_id"]
         for child in value.values():
@@ -156,18 +153,16 @@ def non_string_keys(value: Any, where: str = "$") -> Iterator[str]:
 def methodology_index(
     root: Path, documents: Sequence[tuple[Path, Any]]
 ) -> tuple[set[str], list[str]]:
-    """Index the methodology ids and report duplicate ID/version pairs."""
-    counts: dict[tuple[str, str], int] = defaultdict(int)
+    """Index the methodology ids and report duplicates."""
+    counts: dict[str, int] = defaultdict(int)
     for path, document in documents:
         if path.is_relative_to(root / "methodology") and isinstance(document, Mapping):
             if isinstance(document.get("id"), str):
-                counts[(document["id"], str(document.get("version")))] += 1
+                counts[document["id"]] += 1
     errors = [
-        f"duplicate methodology id/version: {identifier} {version}"
-        for (identifier, version), count in counts.items()
-        if count > 1
+        f"duplicate methodology id: {identifier}" for identifier, n in counts.items() if n > 1
     ]
-    return {identifier for identifier, _ in counts}, errors
+    return set(counts), errors
 
 
 def run_identity_allowlists(
@@ -194,11 +189,7 @@ def parameter_errors(
     method_documents: Sequence[dict[str, Any]],
 ) -> list[str]:
     """Check pinned parameters, shared trials, formulas and measurement variants."""
-    owners = {
-        (str(document["id"]), str(document["version"])): document
-        for document in method_documents
-        if "version" in document
-    }
+    owners = {str(document["id"]): document for document in method_documents}
     errors: list[str] = []
     for path, document in documents:
         if path.is_relative_to(root / "methodology") and isinstance(document, Mapping):
@@ -388,7 +379,7 @@ def verify_ci(
     """Check a reported percentile-bootstrap interval using its methodology settings."""
     found = aggregate.get("interval")
     if options is None or not isinstance(found, Mapping):
-        return [f"{path}: interval needs a versioned methodology bootstrap configuration"]
+        return [f"{path}: interval needs a methodology bootstrap configuration"]
     seed, resamples, confidence = options
     found_confidence = numeric(found.get("confidence"))
     if found_confidence is None or not math.isclose(found_confidence, confidence):
@@ -480,12 +471,15 @@ def verify_aggregate(
     path: Path,
     aggregate: Mapping[str, Any],
     raw: Sequence[tuple[Path, Mapping[str, Any]]],
+    cache: dict[tuple[Any, ...], Any] | None = None,
 ) -> list[str]:
     """Recompute one supported aggregate and its optional confidence interval."""
     precision = aggregate.get("precision")
     precision_schema = load_schema("aggregate")["properties"]["precision"]
     if not Draft202012Validator(precision_schema).is_valid(precision):
         return [f"{path}: aggregate must declare valid precision"]
+    if "derivation" in aggregate:
+        return verify_derived(path, aggregate, raw, cache)
     values, excluded = selected_measurements(root, aggregate, raw)
     error: str | None = None
     statistic = str(aggregate.get("statistic", aggregate.get("method", "median"))).lower()
@@ -541,6 +535,43 @@ def verify_aggregate(
     return [error] if error else []
 
 
+def verify_derived(
+    path: Path,
+    aggregate: Mapping[str, Any],
+    raw: Sequence[tuple[Path, Mapping[str, Any]]],
+    cache: dict[tuple[Any, ...], Any] | None,
+) -> list[str]:
+    """Recompute an aggregate that names a derivation, and its unit counts."""
+    statistic = str(aggregate.get("statistic"))
+    error: str | None = None
+    if statistic not in UNIT_STATISTICS:
+        error = f"a derived aggregate's statistic must be one of {list(UNIT_STATISTICS)}"
+    elif aggregate.get("interval") is not None:
+        error = "a derived aggregate has no interval"
+    else:
+        shared = {} if cache is None else cache
+        rows = shared.setdefault(("rows", id(raw)), [row for _, row in raw])
+        derived = derived_value(aggregate, rows, shared)
+        expected = numeric(aggregate.get("value"))
+        counts = (("n", derived.units), ("excluded_n", derived.omitted))
+        if derived.value is None or expected is None:
+            if derived.value is not None or expected is not None:
+                found = "no value" if derived.value is None else f"{statistic} {derived.value}"
+                error = f"expected {found}, found {aggregate.get('value')}"
+        elif not close(expected, derived.value, aggregate):
+            error = f"expected {statistic} {derived.value}, found {expected}"
+        else:
+            error = next(
+                (
+                    f"expected {field}={actual}, found {field}={aggregate[field]}"
+                    for field, actual in counts
+                    if isinstance(aggregate.get(field), int) and aggregate[field] != actual
+                ),
+                None,
+            )
+    return [] if error is None else [f"{path}: {error}"]
+
+
 def reproduce(root: Path = ROOT) -> list[str]:
     """Recompute median, mean and seeded median intervals from raw measurements."""
     raw = raw_measurements(root)
@@ -550,6 +581,7 @@ def reproduce(root: Path = ROOT) -> list[str]:
     by_path = {path.resolve(): rows for path, rows in by_path.items()}
     selections: dict[Path, list[tuple[Path, Mapping[str, Any]]]] = {}
     errors: list[str] = []
+    cache: dict[tuple[Any, ...], Any] = {}
     for path, aggregate in records(root / "data"):
         if "aggregates" not in path.parts or not isinstance(aggregate, Mapping):
             continue
@@ -567,7 +599,7 @@ def reproduce(root: Path = ROOT) -> list[str]:
                     for row in rows
                 ]
             candidates = selections[target]
-        errors.extend(verify_aggregate(root, path, aggregate, candidates))
+        errors.extend(verify_aggregate(root, path, aggregate, candidates, cache))
     return errors
 
 

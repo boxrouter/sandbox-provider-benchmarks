@@ -5,7 +5,6 @@
 import json
 import shutil
 import sys
-from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -13,8 +12,6 @@ import pytest
 import yaml
 from jsonschema import ValidationError
 
-from sandbox_benchmark_verifier import lifecycle_profile
-from sandbox_benchmark_verifier.catalog import default_context
 from sandbox_benchmark_verifier.cli import main, validate
 from sandbox_benchmark_verifier.lifecycle_profile import profiles
 from sandbox_benchmark_verifier.lock import check as lock_errors
@@ -30,7 +27,7 @@ IMAGE = "example.invalid/fixture@sha256:" + "0" * 64
 def author_gaps(identifier: str) -> list[str]:
     """The new-benchmark requirements a command-mode draft leaves for its author to answer."""
     return [
-        f"{identifier} 1.0.0: new benchmark: {what}"
+        f"{identifier}: new benchmark: {what}"
         for what in (
             "every step needs an operation",
             "interpretation.informs is empty",
@@ -117,8 +114,8 @@ def test_future_schema_requirement_cannot_silently_make_the_template_stale(tree:
     path.write_text(json.dumps(schema))
     with pytest.raises(ValidationError, match="future-required-fact"):
         add(tree, BenchmarkDraft("fixture-new", "Fixture New", "true", IMAGE))
-    assert not (tree / "methodology/fixture-new").exists()
-    assert not (tree / "parameters/fixture-new/1.0.0").exists()
+    assert not (tree / "methodology/fixture-new.yaml").exists()
+    assert not (tree / "parameters/fixture-new").exists()
 
 
 def test_cli_generates_one_image_sweep_definition(
@@ -147,7 +144,7 @@ def test_cli_generates_one_image_sweep_definition(
         ],
     )
     assert main() == 0
-    assert len(list((tree / "methodology/fixture-startup").glob("*.yaml"))) == 1
+    assert (tree / "methodology/fixture-startup.yaml").is_file()
     assert validate(tree) == author_gaps("fixture-startup")
     assert text_warnings(tree) == []
 
@@ -165,107 +162,16 @@ def test_profile_name_is_owned_once_and_reader_mentions_still_require_references
     document["notes"]["summary"] = request.name
     path.write_text(yaml.safe_dump(document))
     assert source_name_errors(tree) == [
-        "fixture-owned-name@1.0.0.notes.summary: canonical name 'Fixture Owned Name' "
+        "fixture-owned-name.notes.summary: canonical name 'Fixture Owned Name' "
         "requires a name placeholder"
     ]
 
 
-def _profile_successor(tree: Path, source: Path, version: str, common: dict[str, str]) -> Path:
-    document = yaml.safe_load(source.read_text())
-    old = tree / document["parameters"]["path"]
-    directory = tree / "parameters" / document["id"] / version
-    shutil.copytree(old, directory)
-    document["version"] = version
-    document["inherits"] = common
-    document["parameters"]["path"] = str(directory.relative_to(tree))
-    target = source.with_name(f"{version}.yaml")
-    target.write_text(yaml.safe_dump(document))
-    return target
-
-
-def test_lifecycle_discovery_binds_context_before_version_and_exact_profile_keeps_old_version(
-    tree: Path,
-) -> None:
+def test_lifecycle_discovery_finds_a_scaffolded_protocol(tree: Path) -> None:
     source = add(tree, BenchmarkDraft("fixture-context", "Fixture Context", "true", IMAGE))
-    declared = default_context(tree)
-    assert yaml.safe_load(source.read_text())["inherits"] == declared
-    # 00-common.yaml holds several documents, so every common file is read as a stream.
-    future = deepcopy(
-        next(
-            document
-            for path in sorted((tree / "methodology").glob("00-common*.yaml"))
-            for document in yaml.safe_load_all(path.read_text())
-            if document and document["version"] == declared["version"]
-        )
-    )
-    future["version"] = "1.0.999"
-    future["environment"]["region_policy"] = {"selection": "no_portable_region_request"}
-    (tree / "methodology/00-common-1.0.999.yaml").write_text(yaml.safe_dump(future))
-    other = {"id": "sbs.common", "version": "1.0.999"}
-    _profile_successor(tree, source, "9.0.0", other)
-    _profile_successor(tree, source, "1.0.1", declared)
-    assert [p.method.document["version"] for p in profiles(tree)] == ["1.0.1"]
-    assert [p.method.document["version"] for p in profiles(tree, common=other)] == ["9.0.0"]
-    exact = lifecycle_profile.profile(tree, {"id": "fixture-context", "version": "1.0.0"})
-    assert exact.method.document == yaml.safe_load(source.read_text())
-    assert exact.workloads()
-
-
-def test_lifecycle_exact_profile_refuses_invalid_missing_or_escaping_reference(tree: Path) -> None:
-    source = add(tree, BenchmarkDraft("fixture-exact", "Fixture Exact", "true", IMAGE))
-    with pytest.raises(ValueError, match="exact"):
-        lifecycle_profile.profile(tree, {"id": "fixture-exact"})
-    with pytest.raises(ValueError, match="missing or ambiguous"):
-        lifecycle_profile.profile(tree, {"id": "fixture-exact", "version": "9.0.0"})
-    document = yaml.safe_load(source.read_text())
-    document["parameters"]["path"] = "../outside"
-    source.write_text(yaml.safe_dump(document))
-    with pytest.raises(ValueError, match="inside"):
-        lifecycle_profile.profile(tree, {"id": "fixture-exact", "version": "1.0.0"})
-
-
-@pytest.mark.parametrize("defect", ["ambiguous", "missing-common", "future-common", "policy"])
-def test_exact_lifecycle_profile_refuses_invalid_bound_context(tree: Path, defect: str) -> None:
-    source = add(tree, BenchmarkDraft("fixture-bound", "Fixture Bound", "true", IMAGE))
-    document = yaml.safe_load(source.read_text())
-    if defect == "ambiguous":
-        source.with_name("duplicate.yaml").write_text(source.read_text())
-        message = "missing or ambiguous"
-    elif defect == "missing-common":
-        document["inherits"]["version"] = "9.0.0"
-        source.write_text(yaml.safe_dump(document))
-        message = "common is missing or ambiguous"
-    else:
-        common_ref = document["inherits"]
-        # The file that holds that version alone (00-common.yaml is a stream of several).
-        common_path = next(
-            path
-            for path in sorted((tree / "methodology").glob("00-common*.yaml"))
-            if [d["version"] for d in yaml.safe_load_all(path.read_text()) if d]
-            == [common_ref["version"]]
-        )
-        common = yaml.safe_load(common_path.read_text())
-        if defect == "future-common":
-            common["effective"] = "9999-01-01"
-            message = "common takes effect after"
-        else:
-            common["environment"]["region_policy"] = {"selection": "no_portable_region_request"}
-            document["environment"]["region_policy"] = "legacy US request"
-            source.write_text(yaml.safe_dump(document))
-            message = "leaf region policy conflicts"
-        common_path.write_text(yaml.safe_dump(common))
-    with pytest.raises(ValueError, match=message):
-        lifecycle_profile.profile(tree, {"id": "fixture-bound", "version": "1.0.0"})
-
-
-def test_lifecycle_discovery_requires_declared_default_when_a_protocol_exists(tree: Path) -> None:
-    add(tree, BenchmarkDraft("fixture-default", "Fixture Default", "true", IMAGE))
-    path = tree / "names/names.yaml"
-    names = yaml.safe_load(path.read_text())
-    names.pop("catalog_selection")
-    path.write_text(yaml.safe_dump(names))
-    with pytest.raises(ValueError, match="exact default common"):
-        profiles(tree)
+    assert yaml.safe_load(source.read_text())["inherits"] == "sbs.common"
+    [found] = [item for item in profiles(tree) if item.identifier == "fixture-context"]
+    assert found.workloads()
 
 
 SHAPES = ROOT / "tests/fixtures/shapes"
@@ -339,8 +245,8 @@ def test_a_shape_and_draft_generate_a_valid_new_benchmark(
         [step["id"]] for step in shape["steps"]
     ]
     assert procedure["concurrency"] == {"trials_in_parallel": 10, "sandboxes_at_once": 1}
-    assert sorted((tree / f"parameters/{identifier}/1.0.0").iterdir()) == [
-        tree / f"parameters/{identifier}/1.0.0/workloads.json"
+    assert sorted((tree / f"parameters/{identifier}").iterdir()) == [
+        tree / f"parameters/{identifier}/workloads.json"
     ]
 
 
@@ -402,7 +308,7 @@ def test_an_existing_id_or_file_is_refused(tree: Path) -> None:
 def test_a_shape_benchmark_lands_with_its_lock_row(tree: Path) -> None:
     shape, draft = shape_and_draft("snapshot")
     add_from_shape(tree, "fixture-snapshot", "03-sandbox-operations", shape, draft)
-    assert "fixture-snapshot@1.0.0 " in (tree / "methodology/released.lock").read_text()
+    assert "fixture-snapshot " in (tree / "methodology/released.lock").read_text()
     assert lock_errors(tree, require_complete=True) == []
 
 

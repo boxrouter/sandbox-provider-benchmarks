@@ -28,7 +28,7 @@ def measurements(output: str) -> Iterator[dict[str, object]]:
     ):
         yield {
             "provider": "reference",
-            "methodology": {"id": "7-zip-1-thread", "version": "1.1.18"},
+            "methodology": {"id": "7-zip-1-thread"},
             "run_id": "reference-local",
             "trial": 1,
             "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),

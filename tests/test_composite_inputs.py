@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""A composite's newest version inherits its inputs' common and pins the inputs then in force."""
+"""A composite inherits the common of its inputs and cites inputs that exist, by id."""
 
 import sys
 from copy import deepcopy
@@ -13,7 +13,6 @@ from sandbox_benchmark_verifier import cli
 from sandbox_benchmark_verifier.catalog import ordinary_documents
 from sandbox_benchmark_verifier.composites import composition_input_errors, select_composite_outputs
 from sandbox_benchmark_verifier.names import _methodology_documents, load_tables
-from sandbox_benchmark_verifier.versions import newest
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = pytest.mark.unit
@@ -28,24 +27,19 @@ COMPOSITES = (
 
 
 @pytest.mark.parametrize("identifier", COMPOSITES)
-def test_the_newest_composite_cites_the_inputs_in_force_under_their_common(
-    identifier: str,
-) -> None:
-    """bench-planner, 2026-11-05: a composite combines its inputs' results, so it stands on the
-    common they were measured under. argon-land, 2026-11-05: it pins each input's newest version
-    not after its own effective date, as a test page binds its members; an input released later,
-    often for text only, does not force a new composite version. Both are the validator's rules
-    (``composition_input_errors``)."""
-    composite = newest(_methodology_documents(ROOT))[identifier]
-    assert composite["composition"]["inputs"]
+def test_a_composite_cites_inputs_that_exist_under_its_common(identifier: str) -> None:
+    """A composite combines its inputs' results, so it stands on the common they were measured
+    under (``composition_input_errors``)."""
     documents = list(_methodology_documents(ROOT))
+    composite = {document["id"]: document for document in documents}[identifier]
+    assert composite["composition"]["inputs"]
     assert composition_input_errors(composite, documents) == [], identifier
 
 
-def test_every_input_of_every_composite_version_has_a_test_name_or_a_retired_name() -> None:
-    """an Inputs list drew a raw id (`sandbox.image_build.size_4x8`) because
-    an older version still names a retired document. Each input is a test's or an index's
-    document, or a retired document with an owner-written name."""
+def test_every_input_of_every_composite_has_a_test_name_or_a_retired_name() -> None:
+    """An Inputs list drew a raw id (`sandbox.image_build.size_4x8`) because a composite still
+    names a retired document. Each input is a test's or an index's document, or a retired document
+    with an owner-written name."""
     tables = load_tables(ROOT)
     aliases = tables.aliases.get("document", {})
     tested = {
@@ -65,155 +59,87 @@ def test_every_input_of_every_composite_version_has_a_test_name_or_a_retired_nam
     assert unnamed == []
 
 
-def _input(
-    identifier: str, version: str, effective: str, common_version: str = "1.0.10"
-) -> dict[str, Any]:
-    return {
-        "id": identifier,
-        "version": version,
-        "effective": effective,
-        "inherits": {"id": "sbs.common", "version": common_version},
-    }
+def _input(identifier: str, effective: str, inherits: str = "sbs.common") -> dict[str, Any]:
+    return {"id": identifier, "effective": effective, "inherits": inherits}
 
 
 def _index(
-    inputs: list[dict[str, Any]],
-    *,
-    effective: str = "2026-01-01",
-    common_version: str = "1.0.10",
+    inputs: list[dict[str, Any]], *, effective: str = "2026-01-01", inherits: str = "sbs.common"
 ) -> dict[str, Any]:
     composition: dict[str, Any] = {"inputs": inputs}
     return {
         "id": "synthetic.index",
-        "version": "1.0.0",
         "effective": effective,
         "category": "index",
-        "inherits": {"id": "sbs.common", "version": common_version},
+        "inherits": inherits,
         "composition": composition,
     }
 
 
-def test_omitted_selection_requires_the_latest_input_as_of_the_index_date() -> None:
-    documents = [
-        _input("synthetic.leaf", "1.0.0", "2024-01-01"),
-        _input("synthetic.leaf", "1.1.0", "2025-01-01"),
-    ]
-    index = _index([{"id": "synthetic.leaf", "version": "1.0.0", "quantity": "Value"}])
-
-    assert composition_input_errors(index, documents) == [
-        "input is not latest as of index effective date: synthetic.leaf@1.0.0"
-    ]
+FIRST = {"id": "synthetic.first", "quantity": "Value"}
+SECOND = {"id": "synthetic.second", "quantity": "Value"}
 
 
 @pytest.mark.parametrize(
     ("inputs", "x", "expected"),
     [
+        ([FIRST, SECOND], {"id": "synthetic.first", "quantity": "X"}, None),
         (
-            [
-                {"id": "synthetic.first", "version": "1.0.0", "quantity": "Value"},
-                {"id": "synthetic.second", "version": "1.0.0", "quantity": "Value"},
-            ],
-            {"id": "synthetic.first", "version": "1.0.0", "quantity": "X"},
-            None,
+            [FIRST, SECOND],
+            {"id": "synthetic.outside", "quantity": "X"},
+            "plot axis x is missing from composition inputs: synthetic.outside",
         ),
         (
-            [
-                {"id": "synthetic.first", "version": "1.0.0", "quantity": "Value"},
-                {"id": "synthetic.second", "version": "1.0.0", "quantity": "Value"},
-            ],
-            {"id": "synthetic.first", "version": "1.1.0", "quantity": "X"},
-            "plot axis x is stale in composition inputs: synthetic.first@1.1.0",
-        ),
-        (
-            [
-                {"id": "synthetic.first", "version": "1.0.0", "quantity": "Value"},
-                {"id": "synthetic.second", "version": "1.0.0", "quantity": "Value"},
-            ],
-            {"id": "synthetic.outside", "version": "1.0.0", "quantity": "X"},
-            "plot axis x is missing from composition inputs: synthetic.outside@1.0.0",
-        ),
-        (
-            [
-                {"id": "synthetic.first", "version": "1.0.0", "quantity": "Value"},
-                {"id": "synthetic.first", "version": "1.0.0", "quantity": "Value"},
-                {"id": "synthetic.second", "version": "1.0.0", "quantity": "Value"},
-            ],
-            {"id": "synthetic.first", "version": "1.0.0", "quantity": "X"},
-            "plot axis x is ambiguous in composition inputs: synthetic.first@1.0.0",
+            [FIRST, FIRST, SECOND],
+            {"id": "synthetic.first", "quantity": "X"},
+            "plot axis x is ambiguous in composition inputs: synthetic.first",
         ),
     ],
 )
 @pytest.mark.parametrize("axis", ["x", "y"])
-def test_plot_axes_must_be_unique_exact_members_of_the_composition_vector(
-    inputs: list[dict[str, Any]],
-    x: dict[str, str],
-    expected: str | None,
-    axis: str,
+def test_plot_axes_must_be_unique_members_of_the_composition_vector(
+    inputs: list[dict[str, Any]], x: dict[str, str], expected: str | None, axis: str
 ) -> None:
     documents = [
-        _input("synthetic.first", "1.0.0", "2024-01-01"),
-        _input("synthetic.second", "1.0.0", "2024-01-01"),
+        _input("synthetic.first", "2024-01-01"),
+        _input("synthetic.second", "2024-01-01"),
+        {"id": "sbs.common", "effective": "2023-01-01"},
     ]
     index = _index(deepcopy(inputs))
     other_axis = "y" if axis == "x" else "x"
-    valid_other = {
-        "id": "synthetic.second",
-        "version": "1.0.0",
-        "quantity": "Y" if axis == "x" else "X",
-    }
+    valid_other = {"id": "synthetic.second", "quantity": "Y" if axis == "x" else "X"}
     index["composition"]["plots"] = {axis: x, other_axis: valid_other}
 
     errors = composition_input_errors(index, documents)
 
     if expected is None:
-        assert errors == []
+        assert not [error for error in errors if error.startswith("plot axis")]
     else:
         assert expected.replace("axis x", f"axis {axis}") in errors
-
-
-def test_two_inputs_must_inherit_the_same_exact_common_as_the_index() -> None:
-    documents = [
-        _input("synthetic.first", "1.0.0", "2024-01-01", "1.0.10"),
-        _input("synthetic.second", "1.0.0", "2024-01-01", "1.0.11"),
-    ]
-    index = _index(
-        [
-            {"id": "synthetic.first", "version": "1.0.0", "quantity": "Value"},
-            {"id": "synthetic.second", "version": "1.0.0", "quantity": "Value"},
-        ],
-        common_version="1.0.11",
-    )
-
-    assert composition_input_errors(index, documents) == [
-        "input common mismatch: synthetic.first@1.0.0",
-        "no input version is effective by index date: synthetic.first",
-    ]
 
 
 @pytest.mark.parametrize(
     ("index", "documents", "expected"),
     [
         (
-            _index(
-                [{"id": "synthetic.leaf", "version": "1.0.0", "quantity": "Value"}],
-            ),
-            [_input("synthetic.leaf", "1.0.0", "2027-01-01")],
-            [
-                "input is effective after index effective date: synthetic.leaf@1.0.0",
-                "no input version is effective by index date: synthetic.leaf",
-            ],
+            _index([{"id": "synthetic.leaf", "quantity": "Value"}]),
+            [_input("synthetic.leaf", "2027-01-01")],
+            ["input is effective after index effective date: synthetic.leaf"],
         ),
         (
-            _index(
-                [{"id": "synthetic.leaf", "version": "9.9.9", "quantity": "Value"}],
-            ),
-            [_input("synthetic.leaf", "1.0.0", "2024-01-01")],
-            ["unknown exact input: synthetic.leaf@9.9.9"],
+            _index([{"id": "synthetic.missing", "quantity": "Value"}]),
+            [_input("synthetic.leaf", "2024-01-01")],
+            ["unknown input: synthetic.missing"],
         ),
         (
             _index([{"id": "synthetic.leaf", "quantity": "Value"}]),
-            [_input("synthetic.leaf", "1.0.0", "2024-01-01")],
-            ["input synthetic.leaf has no version"],
+            [_input("synthetic.leaf", "2024-01-01", inherits="other")],
+            ["input does not inherit sbs.common: synthetic.leaf"],
+        ),
+        (
+            _index([{"id": "synthetic.leaf", "quantity": "Value"}]),
+            [_input("synthetic.leaf", "2024-01-01"), _input("synthetic.leaf", "2024-01-01")],
+            ["duplicate input methodology: synthetic.leaf"],
         ),
     ],
 )
@@ -223,51 +149,35 @@ def test_composition_input_errors_refuses_invalid_selections(
     assert composition_input_errors(index, documents) == expected
 
 
-def _cli_documents(
-    *,
-    missing_version: bool = False,
-    stale_default: bool = False,
-    own_procedure: bool = False,
-) -> list[dict[str, Any]]:
-    latest = newest(_methodology_documents(ROOT))
+def _cli_documents(*, own_procedure: bool = False) -> list[dict[str, Any]]:
+    latest = {document["id"]: document for document in _methodology_documents(ROOT)}
     source_index = deepcopy(latest["time-index"])
     source_id = source_index["composition"]["inputs"][0]["id"]
     source_input = deepcopy(latest[source_id])
-    common = deepcopy(source_index["inherits"])
     first = deepcopy(source_input)
-    first.update(id="synthetic.input.first", version="1.0.0", effective="2024-01-01")
-    first["inherits"] = deepcopy(common)
+    first.update(id="synthetic.input.first", effective="2024-01-01")
     second = deepcopy(source_input)
-    second.update(id="synthetic.input.second", version="1.0.0", effective="2024-01-01")
-    second["inherits"] = deepcopy(common)
+    second.update(id="synthetic.input.second", effective="2024-01-01")
     index = source_index
-    index.update(id="synthetic.index", version="1.0.0", effective="2026-01-01")
-    index["inherits"] = deepcopy(common)
+    index.update(id="synthetic.index", effective="2026-01-01")
     index["composition"]["inputs"] = [
-        {"id": "synthetic.input.first", "version": "1.0.0", "quantity": "Value"},
-        {"id": "synthetic.input.second", "version": "1.0.0", "quantity": "Value"},
+        {"id": "synthetic.input.first", "quantity": "Value"},
+        {"id": "synthetic.input.second", "quantity": "Value"},
     ]
-    if missing_version:
-        index["composition"]["inputs"][0].pop("version")
     if own_procedure:
         index["procedure"] = deepcopy(source_input["procedure"])
-    documents = [first, second, index]
-    if stale_default:
-        newer = deepcopy(first)
-        newer.update(version="1.1.0", effective="2025-01-01")
-        documents.append(newer)
-    return documents
+    return [first, second, index]
 
 
 def _cli_non_index_documents() -> list[dict[str, Any]]:
-    latest = newest(_methodology_documents(ROOT))
+    latest = {document["id"]: document for document in _methodology_documents(ROOT)}
     source_id = latest["time-index"]["composition"]["inputs"][0]["id"]
     source = deepcopy(latest[source_id])
-    source.update(id="synthetic.selection.source", version="1.0.0", effective="2024-01-01")
+    source.update(id="synthetic.selection.source", effective="2024-01-01")
     owner = deepcopy(source)
     owner.update(id="synthetic.selection.owner", effective="2026-01-01")
     composition: dict[str, Any] = {
-        "inputs": [{"id": source["id"], "version": source["version"], "quantity": "Value"}],
+        "inputs": [{"id": source["id"], "quantity": "Value"}],
         "aggregation": "geometric_mean",
         "weighting": "Equal weight per input.",
         "inclusion": "Only providers with a value in every input.",
@@ -312,8 +222,6 @@ def _run_validation_cli(
     ("documents", "expected_exit", "expected_output"),
     [
         (_cli_documents(), 0, "validate: ok"),
-        (_cli_documents(missing_version=True), 1, "schema validation failed"),
-        (_cli_documents(stale_default=True), 0, "validate: ok"),
         (_cli_documents(own_procedure=True), 1, "schema validation failed"),
         (_cli_non_index_documents(), 0, "validate: ok"),
     ],
@@ -332,83 +240,58 @@ def test_validation_cli_checks_the_composite_schema(
     assert expected_output in output
 
 
-def test_exact_output_selection_reads_only_the_requested_graph() -> None:
-    common = {"id": "sbs.common", "version": "1.0.10", "effective": "2024-01-01"}
-    leaf = _input("example", "1.1.0", "2025-01-01")
+def test_output_selection_reads_only_the_requested_graph() -> None:
+    common = {"id": "sbs.common", "effective": "2024-01-01"}
+    leaf = _input("example", "2025-01-01")
     index = {
         "id": "example-index",
-        "version": "1.0.0",
         "effective": "2025-02-01",
         "category": "index",
-        "inherits": leaf["inherits"],
-        "composition": {"inputs": [{"id": "example", "version": "1.1.0"}]},
+        "inherits": "sbs.common",
+        "composition": {"inputs": [{"id": "example"}]},
     }
-    unrelated = {
-        **index,
-        "id": "unused",
-        "composition": {"inputs": [{"id": "missing", "version": "1.0.0"}]},
-    }
+    unrelated = {**index, "id": "unused", "composition": {"inputs": [{"id": "missing"}]}}
     docs = [common, leaf, index, unrelated]
-    assert ordinary_documents(docs, common=leaf["inherits"])["example-index"] is index
-    selected = select_composite_outputs(
-        docs, common=leaf["inherits"], outputs=[{"id": "example-index", "version": "1.0.0"}]
-    )
+    assert ordinary_documents(docs)["example-index"] is index
+    selected = select_composite_outputs(docs, outputs=[{"id": "example-index"}])
     assert selected["example"] is leaf
     assert "unused" not in selected
-    with pytest.raises(ValueError, match="common mismatch"):
-        select_composite_outputs(
-            [*docs, {"id": "sbs.common", "version": "1.0.13"}],
-            common={"id": "sbs.common", "version": "1.0.13"},
-            outputs=[{"id": "example-index", "version": "1.0.0"}],
-        )
-    with pytest.raises(ValueError, match="exact reference"):
-        select_composite_outputs(docs, common=leaf["inherits"], outputs=[{"id": "example-index"}])
+    with pytest.raises(ValueError, match="needs a reference"):
+        select_composite_outputs(docs, outputs=[{"input": "example"}])
     with pytest.raises(ValueError, match="owner scope"):
-        select_composite_outputs(
-            docs,
-            common=leaf["inherits"],
-            outputs=[{"id": "example-index", "version": "1.0.0", "scope": "invented"}],
-        )
+        select_composite_outputs(docs, outputs=[{"id": "example-index", "scope": "invented"}])
 
 
-@pytest.mark.parametrize("case", ["mixed", "future", "missing-version", "duplicate"])
-def test_exact_output_entrypoint_refuses_invalid_two_input_closure(case: str) -> None:
-    common = {"id": "sbs.common", "version": "1.0.10"}
-    a = _input("a", "1.0.0", "2024-01-01")
-    b = _input("b", "1.0.0", "2024-01-01")
-    index = _index(
-        [{"id": "a", "version": "1.0.0"}, {"id": "b", "version": "1.0.0"}],
-    )
+@pytest.mark.parametrize("case", ["other-common", "future", "missing", "duplicate"])
+def test_output_entrypoint_refuses_an_invalid_two_input_closure(case: str) -> None:
+    common = {"id": "sbs.common", "effective": "2024-01-01"}
+    a = _input("a", "2024-01-01")
+    b = _input("b", "2024-01-01")
+    index = _index([{"id": "a", "quantity": "A"}, {"id": "b", "quantity": "B"}])
     docs = [common, a, b, index]
-    if case == "mixed":
-        b["inherits"]["version"] = "1.0.13"
+    if case == "other-common":
+        b["inherits"] = "elsewhere"
     elif case == "future":
         b["effective"] = "2027-01-01"
-    elif case == "missing-version":
-        del index["composition"]["inputs"][1]["version"]
+    elif case == "missing":
+        index["composition"]["inputs"][1]["id"] = "c"
     else:
         docs.append(deepcopy(b))
     with pytest.raises(ValueError):
-        select_composite_outputs(
-            docs, common=common, outputs=[{"id": index["id"], "version": index["version"]}]
-        )
+        select_composite_outputs(docs, outputs=[{"id": index["id"]}])
 
 
-def test_exact_graph_refuses_leaf_policy_mixing_inside_no_region_common() -> None:
+def test_graph_refuses_leaf_policy_mixing_inside_no_region_common() -> None:
     common = {
         "id": "sbs.common",
-        "version": "1.0.10",
+        "effective": "2024-01-01",
         "environment": {"region_policy": {"selection": "no_portable_region_request"}},
     }
-    leaf = _input("a", "1.0.0", "2024-01-01")
+    leaf = _input("a", "2024-01-01")
     leaf["environment"] = {"region_policy": "Existing US leaf override."}
-    index = _index([{"id": "a", "version": "1.0.0"}])
-    assert composition_input_errors(index, [common, leaf, index]) == [
-        "leaf region policy conflicts with bound common selector"
-    ]
+    index = _index([{"id": "a", "quantity": "A"}])
+    assert "leaf region policy conflicts with bound common selector" in composition_input_errors(
+        index, [common, leaf, index]
+    )
     with pytest.raises(ValueError, match="leaf region policy conflicts"):
-        select_composite_outputs(
-            [common, leaf, index],
-            common={"id": "sbs.common", "version": "1.0.10"},
-            outputs=[{"id": index["id"], "version": index["version"]}],
-        )
+        select_composite_outputs([common, leaf, index], outputs=[{"id": index["id"]}])

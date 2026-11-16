@@ -11,7 +11,6 @@ import yaml
 
 from sandbox_benchmark_verifier.catalog import load_methodology
 from sandbox_benchmark_verifier.conventions import load_conventions
-from sandbox_benchmark_verifier.versions import newest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -41,16 +40,14 @@ def _strings(value: object) -> list[str]:
 
 
 def test_current_reader_slots_are_complete_and_convention_safe(bundle: dict[str, Any]) -> None:
-    # load_methodology skips retired ids: a retired test's released versions are history.
-    latest = newest(item.document for item in load_methodology(ROOT))
-    for identifier, document in latest.items():
-        version = str(document["version"])
-        reader_version = version
-        entry = bundle["methodologies"][identifier][version]["text"]
+    # load_methodology skips retired ids.
+    latest = {item.document["id"]: item.document for item in load_methodology(ROOT)}
+    for identifier in latest:
+        entry = bundle["methodologies"][identifier]["text"]
         notes = entry.get("notes", {})
         for field, value in notes.items():
             if isinstance(value, str) and value.strip():
-                assert _capital_start(value.strip()), f"{identifier}@{reader_version}.{field}"
+                assert _capital_start(value.strip()), f"{identifier}.{field}"
         for field, maximum_sentences, maximum_length in (
             ("summary", 2, 140),
             ("what_this_measures", 2, 300),
@@ -60,23 +57,23 @@ def test_current_reader_slots_are_complete_and_convention_safe(bundle: dict[str,
             value = notes.get(field)
             if value is None or value == "":
                 continue
-                assert _capital_start(value), f"{identifier}@{reader_version}.{field}"
+                assert _capital_start(value), f"{identifier}.{field}"
             if (identifier, field) != ("time-vs-cost", "summary"):  # the frontier template
-                assert value.endswith("."), f"{identifier}@{reader_version}.{field}"
-            assert len(value) <= maximum_length, f"{identifier}@{reader_version}.{field}"
-            message = f"{identifier}@{reader_version}.{field}"
+                assert value.endswith("."), f"{identifier}.{field}"
+            assert len(value) <= maximum_length, f"{identifier}.{field}"
+            message = f"{identifier}.{field}"
             assert len(_sentences(value)) <= maximum_sentences, message
             assert not re.search(r"\btypical\b", value, re.I), message
-            assert "latest result" not in value.lower(), f"{identifier}@{reader_version}.{field}"
+            assert "latest result" not in value.lower(), f"{identifier}.{field}"
             assert not re.search(r"\{(?:name|param|unit|direction):", value), (
-                f"{identifier}@{reader_version}.{field}"
+                f"{identifier}.{field}"
             )
         limits = entry.get("interpretation", {}).get("limits", [])
-        assert len(limits) <= 3, f"{identifier}@{reader_version}.limits"
+        assert len(limits) <= 3, f"{identifier}.limits"
         for index, limit in enumerate(limits):
-            assert limit[0].isupper(), f"{identifier}@{reader_version}.limits[{index}]"
-            assert limit.endswith("."), f"{identifier}@{reader_version}.limits[{index}]"
-            assert len(_sentences(limit)) == 1, f"{identifier}@{reader_version}.limits[{index}]"
+            assert limit[0].isupper(), f"{identifier}.limits[{index}]"
+            assert limit.endswith("."), f"{identifier}.limits[{index}]"
+            assert len(_sentences(limit)) == 1, f"{identifier}.limits[{index}]"
             assert not re.search(r"\btypical\b", limit, re.I)
 
 
@@ -84,16 +81,12 @@ def test_composite_index_descriptions_and_hero_sources_are_short_and_complete(
     bundle: dict[str, Any],
 ) -> None:
     expected = {
-        ("time-index", "1.1.29"): (
-            "A time statistic is aggregated from each workload's trace or job."
-        ),
-        ("cost-index", "1.1.27"): (
-            "A cost statistic is aggregated from each workload's trace or job."
-        ),
-        ("time-vs-cost", "1.1.20"): "Composite time vs Composite cost",
+        "time-index": "A time statistic is aggregated from each workload's trace or job.",
+        "cost-index": "A cost statistic is aggregated from each workload's trace or job.",
+        "time-vs-cost": "Composite time vs Composite cost",
     }
-    for (identifier, reader_version), description in expected.items():
-        text = bundle["methodologies"][identifier][reader_version]["text"]["notes"]["summary"]
+    for identifier, description in expected.items():
+        text = bundle["methodologies"][identifier]["text"]["notes"]["summary"]
         assert text == description
         if (
             identifier != "time-vs-cost"
@@ -103,18 +96,18 @@ def test_composite_index_descriptions_and_hero_sources_are_short_and_complete(
         assert len(text) <= 140
 
     expected_heroes = {
-        "time-index": ("1.1.29", "Composite time"),
-        "cost-index": ("1.1.27", "Composite cost"),
-        "sequential-tti": ("1.2.18", "Create to first command"),
+        "time-index": "Composite time",
+        "cost-index": "Composite cost",
+        "sequential-tti": "Create to first command",
     }
     documents = {
-        (document["id"], str(document["version"])): document
+        document["id"]: document
         for path in (ROOT / "methodology").rglob("*.yaml")
         for document in yaml.safe_load_all(path.read_text())
         if isinstance(document, dict) and document.get("id")
     }
-    for identifier, (version, headline) in expected_heroes.items():
-        document = documents[identifier, version]
+    for identifier, headline in expected_heroes.items():
+        document = documents[identifier]
         value = document["headline"]
         assert value == headline
         assert len(value) <= 60 and "\n" not in value and not value.endswith(".")
@@ -213,11 +206,7 @@ def test_reader_contract_slots_begin_with_a_capital(bundle: dict[str, Any]) -> N
 
 
 def test_composite_documents_name_their_unit_statistic() -> None:
-    for identifier, reader_version in (
-        ("time-index", "1.1.29"),
-        ("cost-index", "1.1.27"),
-        ("time-vs-cost", "1.1.20"),
-    ):
+    for identifier in ("time-index", "cost-index", "time-vs-cost"):
         files = list((ROOT / "methodology/01-indexes").glob("*.yaml"))
         documents = [
             document
@@ -225,7 +214,7 @@ def test_composite_documents_name_their_unit_statistic() -> None:
             for document in yaml.safe_load_all(path.read_text(encoding="utf-8"))
             if isinstance(document, dict) and document.get("id") == identifier
         ]
-        current = next(document for document in documents if document["version"] == reader_version)
+        [current] = documents
         assert current["statistics"]["unit_statistic"] == {
             "default": "median",
             "options": ["median", "mean", "p95"],

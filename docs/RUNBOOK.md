@@ -1,6 +1,6 @@
 # Add a benchmark definition
 
-Use `sandbox-benchmark-verify scaffold` to create a versioned methodology definition and its
+Use `sandbox-benchmark-verify scaffold` to create a methodology definition and its
 digest-bound parameters. The scaffold checks for an existing identity or name before creating
 files. Reuse an existing definition when it describes the same measurement.
 
@@ -8,8 +8,8 @@ Run `sandbox-benchmark-verify scaffold --id <id> --name <name> --image <OCI dige
 --command-line <command>` from this checkout. It checks for an existing identity or name
 before creating files. Reuse an existing definition when it describes the same measurement.
 
-The scaffold writes one versioned YAML definition under `methodology/<id>/<version>.yaml`
-and its digest-bound parameters under `parameters/<id>/<version>/`. Names and metric
+The scaffold writes one YAML definition under `methodology/<category>/<id>.yaml`
+and its digest-bound parameters under `parameters/<id>/`. Names and metric
 references derive from that definition; do not register them separately.
 
 For a single image dimension, pass `--measurement startup --sweep <JSON file>`. The sweep
@@ -28,7 +28,7 @@ The scaffold derives the rest from the shape and `contracts/operations.yaml`: on
 step with its operation, timer draft and timeout, the stages, the sandboxes per trial, 40 trials
 with 10 in parallel and 20 to rank, the 2 vCPU / 4 GiB size, the common image, the required
 capabilities and the independence answers. It writes the new file
-`methodology/<category>/<id>.yaml` and `parameters/<id>/1.0.0/workloads.json`, prints the
+`methodology/<category>/<id>.yaml` and `parameters/<id>/workloads.json`, prints the
 methodology path and adds no names row; graduation adds it. It then runs the lock update
 (`python -m sandbox_benchmark_verifier.lock update`), so `methodology/released.lock` holds the new
 document's row.

@@ -44,25 +44,12 @@
       "examples": ["2026-11-01-a"]
     },
     "methodologies": {
-      "description": "Ids of the methodologies the run used. The object form, methodology id to semantic version, is accepted for one release while the runner stops sending versions, and is removed after.",
-      "examples": [["sandbox.create.sequential_tti"]],
-      "oneOf": [
-        {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": { "$ref": "#/$defs/methodology_id" }
-        },
-        {
-          "type": "object",
-          "minProperties": 1,
-          "propertyNames": { "$ref": "#/$defs/methodology_id" },
-          "additionalProperties": {
-            "type": "string",
-            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
-          }
-        }
-      ]
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/methodology_id" },
+      "description": "Ids of the methodologies the run used.",
+      "examples": [["sandbox.create.sequential_tti"]]
     },
     "region": {
       "type": "object",

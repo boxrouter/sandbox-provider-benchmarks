@@ -11,7 +11,6 @@ import pytest
 from sandbox_benchmark_verifier.name_refs import canonical_name_map
 from sandbox_benchmark_verifier.names import load_tables
 from sandbox_benchmark_verifier.text import _methodologies
-from sandbox_benchmark_verifier.versions import newest
 
 pytestmark = pytest.mark.unit
 
@@ -20,11 +19,13 @@ INDEXES = ("time-index", "cost-index", "index.speed_score", "index.cost_score")
 
 
 @pytest.mark.parametrize("identifier", INDEXES)
-def test_every_input_of_the_newest_index_version_reads_its_workloads_unit_word(
+def test_every_input_of_the_index_reads_its_workloads_unit_word(
     identifier: str,
 ) -> None:
     names = canonical_name_map(load_tables(ROOT))
-    inputs = newest(_methodologies(ROOT))[identifier]["composition"]["inputs"]
+    inputs = {document["id"]: document for document in _methodologies(ROOT)}[identifier][
+        "composition"
+    ]["inputs"]
     assert inputs
     for member in inputs:
         per = re.search(r"\bper (\w+)$", member["quantity"])

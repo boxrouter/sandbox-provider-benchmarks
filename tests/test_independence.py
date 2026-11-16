@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""Every benchmark answers each independence rule of the common methodology it inherits."""
+"""Every benchmark answers each independence rule of the common methodology."""
 
 import copy
 from pathlib import Path
@@ -14,7 +14,6 @@ from sandbox_benchmark_verifier.independence import (
     independence_errors,
     rule_ids,
 )
-from sandbox_benchmark_verifier.versions import version_key
 
 ROOT = Path(__file__).resolve().parents[1]
 RULES = [
@@ -42,26 +41,11 @@ def _documents() -> list[dict[str, Any]]:
 
 
 def _common() -> dict[str, Any]:
-    return max(
-        (document for document in _documents() if document["id"] == "sbs.common"),
-        key=lambda document: version_key(document["version"]),
-    )
-
-
-def _commons() -> dict[tuple[int, ...], dict[str, Any]]:
-    """Every common version the repository holds, since a benchmark inherits its own."""
-    return {
-        version_key(document["version"]): document
-        for document in _documents()
-        if document["id"] == "sbs.common"
-    }
+    return next(document for document in _documents() if document["id"] == "sbs.common")
 
 
 def _benchmark() -> dict[str, Any]:
-    return max(
-        (document for document in _documents() if document["id"] == "sequential-read"),
-        key=lambda document: version_key(document["version"]),
-    )
+    return next(document for document in _documents() if document["id"] == "sequential-read")
 
 
 @pytest.mark.unit
@@ -99,38 +83,38 @@ def test_common_states_the_ten_rules_and_the_thresholds() -> None:
 
 @pytest.mark.unit
 def test_a_missing_answer_fails() -> None:
-    commons = _commons()
+    common = _common()
     document = copy.deepcopy(_benchmark())
-    assert answer_errors(document, commons) == []
+    assert answer_errors(document, common) == []
     del document["independence_answers"]["caches"]
-    assert answer_errors(document, commons) == [
-        f"sequential-read@{document['version']}: independence rule caches is unanswered"
+    assert answer_errors(document, common) == [
+        "sequential-read: independence rule caches is unanswered"
     ]
     del document["independence_answers"]
-    assert "independence_answers is missing" in answer_errors(document, commons)[0]
+    assert "independence_answers is missing" in answer_errors(document, common)[0]
 
 
 @pytest.mark.unit
 def test_an_unknown_answer_fails() -> None:
-    commons = _commons()
+    common = _common()
     document = copy.deepcopy(_benchmark())
     document["independence_answers"]["made_up"] = {"status": "meets", "text": "x"}
-    assert "made_up is not a rule" in answer_errors(document, commons)[0]
+    assert "made_up is not a rule" in answer_errors(document, common)[0]
 
 
 @pytest.mark.unit
 def test_text_that_says_one_at_a_time_contradicts_parallel_trials() -> None:
-    commons = _commons()
+    common = _common()
     document = copy.deepcopy(_benchmark())
     parallel = document["procedure"]["concurrency"]["trials_in_parallel"]
     assert parallel > 1
     document["interpretation"]["caveats"] = ["One trial runs at a time per provider."]
-    errors = answer_errors(document, commons)
+    errors = answer_errors(document, common)
     assert errors and f"trials_in_parallel is {parallel}" in errors[0]
 
 
 @pytest.mark.unit
-def test_the_newest_version_of_a_published_test_must_answer() -> None:
+def test_a_published_test_must_answer() -> None:
     loaded, _ = load_documents(ROOT)
     stripped = [
         (
@@ -142,25 +126,22 @@ def test_the_newest_version_of_a_published_test_must_answer() -> None:
         for path, document in loaded
     ]
     errors = independence_errors(ROOT, stripped)
-    assert any(error.startswith("stream-triad@") for error in errors)
+    assert any(error.startswith("stream-triad:") for error in errors)
 
 
 @pytest.mark.unit
 def test_only_burst_and_image_build_run_one_trial_at_a_time() -> None:
-    newest: dict[str, dict[str, Any]] = {}
-    for document in _documents():
-        if "independence_answers" not in document:
-            continue
-        known = newest.get(document["id"])
-        if known is None or version_key(document["version"]) > version_key(known["version"]):
-            newest[document["id"]] = document
+    documents = {
+        document["id"]: document for document in _documents() if "independence_answers" in document
+    }
     serial = {
         identity
-        for identity, document in newest.items()
+        for identity, document in documents.items()
         if document["procedure"]["concurrency"]["trials_in_parallel"] == 1
     }
     assert serial == {"burst-tti", "image-build-2vcpu-4gib"}
     for identity in serial:
         assert (
-            newest[identity]["independence_answers"]["equal_concurrency"]["status"] == "exception"
+            documents[identity]["independence_answers"]["equal_concurrency"]["status"]
+            == "exception"
         )

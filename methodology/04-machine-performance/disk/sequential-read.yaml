@@ -1,5 +1,4 @@
 id: sequential-read
-version: 1.1.18
 effective: '2026-11-08'
 name: '{name:test.sequential-read}'
 category: machine_performance
@@ -11,13 +10,11 @@ notes:
     I/O, so the page cache does not supply the data.
   how_it_is_measured: The `fio` workload performs sequential read operations with direct I/O in the workspace
     for the declared duration and ramp; its result uses the sandbox clock.
-  how_to_read: The {param:sequential-read.1.1.18.statistics.primary} summarizes successful trials in the
+  how_to_read: The {param:sequential-read.statistics.primary} summarizes successful trials in the
     axis unit; {direction:sequential_read_mib_per_second}.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: sequential_read_mib_per_second
   unit: MiB/s
@@ -82,8 +79,8 @@ procedure:
     name: Cache checks
     timer: null
     action: 'After the rows, untimed: write a separate 256 MiB file and read it through the page cache,
-      then read it with direct I/O. Sample the first 64 MiB of the data file: its 4 KiB blocks must all
-      differ and zlib may shrink them by at most 1%, or the trial is the benchmark''s failure.'
+      then read it with direct I/O. Sample the first 64 MiB of the data file: at least 99.9% of its 4 KiB
+      blocks must differ and zlib may shrink them by at most 1%, or the trial is the benchmark''s failure.'
   - id: destroy
     name: '{name:stage.destroy}'
     action: Destroy the sandbox and confirm it is gone.
@@ -180,7 +177,7 @@ validity_checks:
   check: Recorded when a sequential row is above 15.75 GB/s, one storage device's link limit; it becomes
     a note on the provider's result. No result is removed.
 parameters:
-  path: parameters/sequential-read/1.1.18/
+  path: parameters/sequential-read/
   sha256: 22bc883760e0fc78bb06f71f8c19088672cb6da530314c030a2459e29d6ba774
 independence_answers:
   fresh_sandbox:

@@ -19,7 +19,6 @@ from sandbox_benchmark_verifier.status_footer import (
     concurrency_cap_status_errors,
     status_label_owner_errors,
 )
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,6 +42,38 @@ def test_literal_commands_and_duration_fields_have_owned_formats() -> None:
     assert any(
         "unsupported owned methodology value format" in error for error in criteria_errors(broken)
     )
+
+
+def test_a_provider_field_is_drawn_as_the_provider_not_its_id() -> None:
+    """The connection-idle table's provider column holds a provider id; the page draws the
+    provider's name, so the field has the owned `provider_id` format."""
+    criteria = content_criteria()
+    assert criteria["methodology_page"]["field_formats"]["provider"] == "provider_id"
+    assert not any("provider" in error for error in criteria_errors(criteria))
+    broken = deepcopy(criteria)
+    broken["methodology_page"]["field_formats"]["provider"] = "provider_name"
+    assert any(
+        "unsupported owned methodology value format" in error for error in criteria_errors(broken)
+    )
+
+
+def test_sandboxes_per_trial_is_marked_as_read_from_the_data() -> None:
+    """The pinned document's count may belong to a later dataset than the one drawn, so the page
+    reads it from the data's sandbox positions; the contract says so and its entries are checked."""
+    criteria = content_criteria()
+    page = criteria["methodology_page"]
+    assert page["measured_from_data"] == {"procedure.sandboxes_per_trial": "sandbox_positions"}
+    assert not any("measured_from_data" in error for error in criteria_errors(criteria))
+    for broken_fields, expected in (
+        ({"procedure.sandboxes_per_trial": "elsewhere"}, "unsupported data fact"),
+        (
+            {"procedure.no_such_parameter": "sandbox_positions"},
+            "names a parameter the schema lacks",
+        ),
+    ):
+        broken = deepcopy(criteria)
+        broken["methodology_page"]["measured_from_data"] = broken_fields
+        assert any(expected in error for error in criteria_errors(broken))
 
 
 def test_at_a_glance_is_short_and_sections_carry_no_open_flag() -> None:
@@ -96,17 +127,16 @@ def test_reader_projection_sources_inherited_facts_and_removes_duplicate_fields(
     policy = content_criteria()["methodology_page"]
     document: dict[str, Any] = {
         "id": "example",
-        "version": "1.0.0",
-        "inherits": {"id": "sbs.common", "version": "1.0.0"},
+        "inherits": "sbs.common",
         "statistics": {"primary": "mean"},
         "procedure": {"variants": [{"id": "one"}]},
         "variants": [{"id": "one"}],
     }
     original = deepcopy(document)
     parent = {"statistics": {"primary": "median", "interval": "Bootstrap interval"}}
-    result = reader_definition(document, {("sbs.common", "1.0.0"): parent}, policy)
+    result = reader_definition(document, {"sbs.common": parent}, policy)
     assert result["statistics"] == {"primary": "mean", "interval": "Bootstrap interval"}
-    assert result["reader_sources"] == {"statistics.interval": document["inherits"]}
+    assert result["reader_sources"] == {"statistics.interval": {"id": document["inherits"]}}
     assert "variants" not in result
     assert result["procedure"]["variants"] == document["procedure"]["variants"]
     assert document == original
@@ -281,10 +311,7 @@ def test_the_standard_image_is_public_and_the_page_can_say_how_to_pull_it() -> N
     policy = criteria["methodology_page"]
     assert not [path for path in policy["private_evidence_paths"] if path.startswith("environment")]
     image = policy["standard_image"]
-    common = max(
-        (row for row in load_methodology() if row.document["id"] == "sbs.common"),
-        key=lambda row: version_key(str(row.document["version"])),
-    )
+    common = next(row for row in load_methodology() if row.document["id"] == "sbs.common")
     reference = common.document["environment"]["image"]["reference"]
     name, digest = reference.split("@")
     assert name == "ghcr.io/boxrouter/standard-image"
@@ -299,29 +326,20 @@ def test_the_standard_image_is_public_and_the_page_can_say_how_to_pull_it() -> N
     assert any("sha256 digest" in error for error in criteria_errors(broken))
 
 
-def _tests_page() -> tuple[
-    dict[str, Any], dict[tuple[str, str], dict[str, Any]], list[dict[str, Any]]
-]:
-    def document(identifier: str, version: str, effective: str, unit: str) -> dict[str, Any]:
+def _tests_page() -> tuple[dict[str, Any], dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    def document(identifier: str, effective: str, unit: str) -> dict[str, Any]:
         return {
             "id": identifier,
-            "version": version,
             "effective": effective,
             "metrics": [{"name": "total_time", "unit": unit}],
-            "inherits": {"id": "sbs.common", "version": "1.0.13"},
+            "inherits": "sbs.common",
         }
 
-    host = document("host-doc", "1.0.1", "2026-10-31", "s")
+    host = document("host-doc", "2026-10-31", "s")
     documents = {
-        ("host-doc", "1.0.1"): host,
-        ("member-doc", "1.0.0"): document("member-doc", "1.0.0", "2026-10-30", "old"),
-        ("member-doc", "1.0.1"): document("member-doc", "1.0.1", "2026-10-31", "ms"),
-        ("member-doc", "1.0.2"): document("member-doc", "1.0.2", "2026-11-01", "later"),
-    }
-    documents[("sbs.common", "1.0.13")] = {
-        "id": "sbs.common",
-        "version": "1.0.13",
-        "effective": "2026-01-01",
+        "host-doc": host,
+        "member-doc": document("member-doc", "2026-10-30", "ms"),
+        "sbs.common": {"id": "sbs.common", "effective": "2026-01-01"},
     }
     rows = [
         {"kind": "test", "id": "host", "document": "host-doc"},
@@ -341,7 +359,7 @@ def test_a_page_draws_the_metric_of_each_test_it_holds_under_the_test_name() -> 
     assert host["metrics"] == [{"name": "total_time", "unit": "s"}]
 
 
-def test_a_page_version_before_every_version_of_a_member_draws_no_member() -> None:
+def test_a_page_in_force_before_a_member_draws_no_member() -> None:
     host, documents, rows = _tests_page()
     host["effective"] = "2026-10-01"
     result = reader_definition(
@@ -368,8 +386,7 @@ def test_every_page_lists_the_metrics_of_each_test_of_its_tab_and_their_formulas
         parent = next(r["parent"] for r in rows if r["id"] == host and r["kind"] == "test")
         tab = [r["id"] for r in rows if r["kind"] == "test" and r.get("parent") == parent]
         document = bundle["reader"]["methods"][host]["document"]
-        version = max(bundle["methodologies"][document], key=version_key)
-        definition = bundle["methodologies"][document][version]["reader_definition"]
+        definition = bundle["methodologies"][document]["reader_definition"]
         headings = [m["reader_name"] for m in definition["metrics"]]
         for test in tab:
             assert any(h.startswith(names[test]) for h in headings), (host, test, headings)
@@ -387,16 +404,13 @@ def test_a_document_that_runs_no_trials_has_no_sandbox_and_trials_section(
     assert page["common_sections"]["sandbox"]["requires"] == []
     composites = [
         identifier
-        for identifier, versions in bundle["methodologies"].items()
-        if any(entry["reader_definition"].get("category") == "index" for entry in versions.values())
+        for identifier, entry in bundle["methodologies"].items()
+        if entry["reader_definition"].get("category") == "index"
     ]
     assert composites
     for identifier in composites:
-        for version, entry in bundle["methodologies"][identifier].items():
-            assert "trials" not in entry["reader_definition"].get("procedure", {}), (
-                identifier,
-                version,
-            )
+        entry = bundle["methodologies"][identifier]
+        assert "trials" not in entry["reader_definition"].get("procedure", {}), identifier
 
 
 def test_a_test_page_links_its_parameter_file_instead_of_drawing_a_data_sources_section() -> None:
@@ -407,71 +421,39 @@ def test_a_test_page_links_its_parameter_file_instead_of_drawing_a_data_sources_
     assert page["parameters_link"]["href"].endswith("/blob/v{version}/{path}workloads.json")
 
 
-def test_the_newest_common_states_the_capability_source_without_a_typed_release_or_a_promise() -> (
-    None
-):
+def test_the_common_states_the_capability_source_without_a_typed_release_or_a_promise() -> None:
     """the Provider Requirements source line has no pinned SPS release
     (no source in this build for the release the measured data pinned) and no sentence about the
     next SPS release or an unproven custom_images status."""
-    commons = [row.document for row in load_methodology() if row.document["id"] == "sbs.common"]
-    newest = max(commons, key=lambda document: version_key(document["version"]))
-    source = newest["capability_source"]
+    common = next(row.document for row in load_methodology() if row.document["id"] == "sbs.common")
+    source = common["capability_source"]
     assert "release" not in source
     assert source["use"].endswith("when a required capability is absent.")
     assert "next SPS release" not in source["use"]
     assert "custom_images" not in source["use"]
 
 
-def test_a_common_from_1_0_15_names_no_aws_region() -> None:
-    """The job host's region is a fact of each publication (the runner's host regions), so a common
-    states none: 1.0.10-1.0.14 typed us-west-2, and the US-East publication contradicted itself."""
+def test_the_common_names_no_aws_region() -> None:
+    """The job host's region is a fact of each publication (the runner's host regions), so the
+    common states none."""
     region = re.compile(r"\b(?:us|eu|ap|ca|sa|me|af)-(?:east|west|north|south|central)-\d\b")
-    commons = [row.document for row in load_methodology() if row.document["id"] == "sbs.common"]
-    named = sorted(
-        str(document["version"])
-        for document in commons
-        if version_key(document["version"]) >= (1, 0, 15) and region.search(json.dumps(document))
-    )
-    assert named == []
-    assert any(version_key(document["version"]) >= (1, 0, 15) for document in commons)
+    common = next(row.document for row in load_methodology() if row.document["id"] == "sbs.common")
+    assert not region.search(json.dumps(common))
 
 
-@pytest.mark.parametrize("common_version", ["1.0.10", "1.0.13"])
-def test_page_members_keep_the_measured_hosts_common_and_effective_date(
-    common_version: str,
-) -> None:
-    host, documents, rows = _tests_page()
-    common = {"id": "sbs.common", "version": common_version}
-    documents[("sbs.common", common_version)] = {
-        **documents[("sbs.common", "1.0.13")],
-        "version": common_version,
-    }
-    for document in documents.values():
-        if document["id"] != "sbs.common":
-            document["inherits"] = common
-    other = deepcopy(documents[("member-doc", "1.0.1")])
-    other.update(version="9.0.0", inherits={"id": "sbs.common", "version": "1.0.999"})
-    other["metrics"][0]["unit"] = "wrong-cohort"
-    documents[("member-doc", "9.0.0")] = other
-    result = reader_definition(
-        host, documents, content_criteria()["methodology_page"], "host", rows, {}
-    )
-    assert [metric["unit"] for metric in result["metrics"]] == ["s", "ms"]
-
-
-def test_a_page_with_members_requires_its_exact_common() -> None:
+def test_a_page_with_members_requires_its_common() -> None:
     host, documents, rows = _tests_page()
     host.pop("inherits")
-    with pytest.raises(ValueError, match="exact inherited common"):
+    with pytest.raises(ValueError, match="inherited common"):
         reader_definition(host, documents, content_criteria()["methodology_page"], "host", rows, {})
 
 
 def test_page_members_refuse_conflicting_effective_location_policy() -> None:
     host, documents, rows = _tests_page()
-    documents[("sbs.common", "1.0.13")]["environment"] = {
+    documents["sbs.common"]["environment"] = {
         "region_policy": {"selection": "no_portable_region_request"}
     }
-    documents[("member-doc", "1.0.1")]["environment"] = {"region_policy": "legacy US request"}
+    documents["member-doc"]["environment"] = {"region_policy": "legacy US request"}
     before = deepcopy(documents)
     with pytest.raises(ValueError, match="leaf region policy conflicts"):
         reader_definition(host, documents, content_criteria()["methodology_page"], "host", rows, {})

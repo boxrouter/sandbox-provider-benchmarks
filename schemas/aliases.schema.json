@@ -8,15 +8,6 @@
   "properties": {
     "schema": {"const": "boxrouter.bench.aliases/1"},
     "document": {"$ref": "#/$defs/flat"},
-    "reader_versions": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "$ref": "#/$defs/flat",
-        "required": ["id", "version", "reader_version"],
-        "maxProperties": 3
-      }
-    },
     "test": {"$ref": "#/$defs/flat"},
     "task": {"$ref": "#/$defs/flat"},
     "tab": {"$ref": "#/$defs/flat"},

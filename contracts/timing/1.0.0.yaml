@@ -3,17 +3,17 @@
 schema: sandbox-benchmarks.timing/1
 version: 1.0.0
 sources:
-  common: {id: sbs.common, version: 1.0.18}
-  create: {id: sequential-tti, version: 1.2.18}
-  exec: {id: exec-latency, version: 1.2.12}
-  write: {id: write-4kib, version: 1.1.13}
-  read: {id: read-4kib, version: 1.1.13}
-  list: {id: list, version: 1.1.13}
-  pause: {id: pause-resume, version: 1.2.16}
-  snapshot: {id: snapshot-and-restore, version: 1.1.14}
-  image: {id: image-build-2vcpu-4gib, version: 1.2.14}
-  replay: {id: terminal-bench-4-0, version: 1.1.19}
-  cpu: {id: 7-zip-1-thread, version: 1.1.18}
+  common: {id: sbs.common}
+  create: {id: sequential-tti}
+  exec: {id: exec-latency}
+  write: {id: write-4kib}
+  read: {id: read-4kib}
+  list: {id: list}
+  pause: {id: pause-resume}
+  snapshot: {id: snapshot-and-restore}
+  image: {id: image-build-2vcpu-4gib}
+  replay: {id: terminal-bench-4-0}
+  cpu: {id: 7-zip-1-thread}
 intervals:
   operation:
     citation: {document: common, pointer: /clocks/operation}

@@ -178,11 +178,7 @@ def test_metric_label_references_must_resolve(
     fixture = ROOT / "tests/fixtures/text-bundle"
     method_path = root / "methodology/03-sandbox-operations/create.yaml"
     method_documents = list(yaml.safe_load_all(method_path.read_text()))
-    method = next(
-        item
-        for item in method_documents
-        if item.get("id") == "sequential-tti" and item.get("version") == "1.2.18"
-    )
+    method = next(item for item in method_documents if item.get("id") == "sequential-tti")
     method["metrics"][0][field] = value
     method_path.write_text("\n---\n".join(yaml.safe_dump(item) for item in method_documents))
     names_doc = yaml.safe_load((root / "names/names.yaml").read_text())
@@ -197,12 +193,11 @@ def test_metric_label_references_must_resolve(
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
-        ("document", "unknown-document", "document and version do not exist"),
-        ("version", "9.9.9", "document and version do not exist"),
+        ("document", "unknown-document", "document does not exist"),
         ("name", "unknown_metric", "methodology metric does not resolve uniquely"),
     ],
 )
-def test_metric_binding_uses_exact_document_version_and_name(
+def test_metric_binding_uses_exact_document_and_name(
     checkout: Path, tmp_path: Path, field: str, value: str, message: str
 ) -> None:
     root = checkout
@@ -225,7 +220,7 @@ def test_explicit_statistic_uses_its_own_names_row(checkout: Path, tmp_path: Pat
     method_path = root / "methodology/03-sandbox-operations/create.yaml"
     method_documents = list(yaml.safe_load_all(method_path.read_text()))
     for method in method_documents:
-        if method.get("id") == "sequential-tti" and method.get("version") == "1.2.18":
+        if method.get("id") == "sequential-tti":
             method["metrics"][0]["statistic"] = "mean"
     method_path.write_text("\n---\n".join(yaml.safe_dump(item) for item in method_documents))
     names_doc = yaml.safe_load((root / "names/names.yaml").read_text())

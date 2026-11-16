@@ -4,16 +4,19 @@
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 import yaml
 
+from sandbox_benchmark_verifier import parameters
 from sandbox_benchmark_verifier.cli import validate
 from sandbox_benchmark_verifier.parameters import (
     document_errors,
     formula_errors,
     tree_digest,
+    variant_errors,
     workload_version,
 )
 
@@ -25,16 +28,15 @@ WORKLOAD["version"] = workload_version(WORKLOAD)
 
 def make(tmp_path: Path, *, version: str | None = None, digest: str | None = None) -> Path:
     """A repository with one methodology that pins one workload."""
-    directory = tmp_path / "parameters" / "workload.demo" / "1.0.0"
+    directory = tmp_path / "parameters" / "workload.demo"
     directory.mkdir(parents=True)
     (directory / "workloads.json").write_text(
         json.dumps([{**WORKLOAD, **({"version": version} if version else {})}])
     )
     document = {
         "id": "workload.demo",
-        "version": "1.0.0",
         "parameters": {
-            "path": "parameters/workload.demo/1.0.0/",
+            "path": "parameters/workload.demo/",
             "sha256": digest or tree_digest(directory),
         },
     }
@@ -76,8 +78,7 @@ def test_shared_trial_needs_an_owner_with_parameters(tmp_path: Path) -> None:
     make(tmp_path)
     follower = {
         "id": "workload.follower",
-        "version": "1.0.0",
-        "procedure": {"shared_trial": {"with": "workload.demo", "version": "1.0.0"}},
+        "procedure": {"shared_trial": {"with": "workload.demo"}},
     }
     (tmp_path / "methodology" / "follower.yaml").write_text(yaml.safe_dump(follower))
     assert validate(tmp_path) == []
@@ -87,7 +88,7 @@ def test_shared_trial_needs_an_owner_with_parameters(tmp_path: Path) -> None:
 
 
 def measurement(variant: str) -> dict[str, object]:
-    return {"methodology": {"id": "workload.demo", "version": "1.0.0"}, "variant": variant}
+    return {"methodology": {"id": "workload.demo"}, "variant": variant}
 
 
 def test_measurement_variant_must_be_a_parameter_workload(tmp_path: Path) -> None:
@@ -97,6 +98,20 @@ def test_measurement_variant_must_be_a_parameter_workload(tmp_path: Path) -> Non
     assert validate(tmp_path) == []
     (tmp_path / "data" / "bad.json").write_text(json.dumps(measurement("spotify_player")))
     assert any("is not a variant of workload.demo" in e for e in validate(tmp_path))
+
+
+def test_measurement_variant_may_be_a_names_table_variant(tmp_path: Path) -> None:
+    """The names table owns the all-units variant: ``all`` passes, page id ``set`` fails."""
+    (tmp_path / "names").mkdir()
+    rows = [{"kind": "variant", "id": "all", "parent": "deepswe", "workload": "set"}]
+    records = [
+        (Path(variant), {"methodology": {"id": "deepswe"}, "variant": variant})
+        for variant in ("all", "set", "undeclared")
+    ]
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(parameters, "tables_view", lambda root: SimpleNamespace(names=rows))
+        errors = list(variant_errors(tmp_path, records, {"deepswe": {"id": "deepswe"}}))
+    assert [e.split(":")[0] for e in errors] == ["set", "undeclared"]
 
 
 @pytest.mark.parametrize(
@@ -148,23 +163,10 @@ def test_start_and_end_steps_are_checked_when_steps_are_declared() -> None:
     assert list(formula_errors("end(x) - start(y|z)", frozenset({"x", "y"})))
 
 
-def test_text_revision_reuses_only_the_same_scientific_parameter_tree(tmp_path: Path) -> None:
-    make(tmp_path)
-    path = tmp_path / "methodology/demo.yaml"
-    original = yaml.safe_load(path.read_text())
-    revision = {**original, "version": "1.0.1", "notes": {"summary": "The workload stays fixed."}}
-    path.write_text(yaml.safe_dump_all([original, revision]))
-    assert validate(tmp_path) == []
-    revision["metrics"] = [{"name": "different", "unit": "ms"}]
-    path.write_text(yaml.safe_dump_all([original, revision]))
-    assert any("parameters.path must be" in error for error in validate(tmp_path))
-
-
 def test_a_time_metric_of_a_procedure_needs_a_formula(tmp_path: Path) -> None:
     """Every millisecond metric says how it comes from recorded steps, so its clock is known."""
     document: dict[str, Any] = {
         "id": "demo",
-        "version": "1.0.0",
         "procedure": {"steps": [{"id": "create", "record_steps": ["create"]}]},
         "metrics": [{"name": "create_time", "unit": "ms"}, {"name": "rate", "unit": "MIPS"}],
     }

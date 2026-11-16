@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""Validate the exact input selection of a derived index."""
+"""Validate the input selection of a derived index."""
 
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
@@ -8,12 +8,11 @@ from datetime import date
 from typing import Any
 
 from sandbox_benchmark_verifier.catalog import (
+    COMMON_ID,
     common_document,
     context_region_errors,
     ordinary_in_context,
 )
-from sandbox_benchmark_verifier.independence import COMMON_ID
-from sandbox_benchmark_verifier.versions import version_key
 
 __all__ = ["composition_input_errors", "select_composite_outputs"]
 
@@ -29,111 +28,40 @@ def _effective_date(document: Mapping[str, Any]) -> date | None:
     return parsed if parsed.isoformat() == value else None
 
 
-def _common_ref(document: Mapping[str, Any]) -> tuple[str, str] | None:
-    inherited = document.get("inherits")
-    if not isinstance(inherited, Mapping):
-        return None
-    identifier, version = inherited.get("id"), inherited.get("version")
-    if isinstance(identifier, str) and isinstance(version, str):
-        return identifier, version
-    return None
-
-
-def _latest_version(
-    identifier: str,
-    index_date: date,
-    documents: Sequence[Mapping[str, Any]],
-    common: Mapping[str, str],
-) -> str | None:
-    available: list[tuple[tuple[int, ...], str]] = []
-    for document in documents:
-        if document.get("id") != identifier:
-            continue
-        if not ordinary_in_context(document, common):
-            continue
-        effective = _effective_date(document)
-        version = document.get("version")
-        if effective is None or effective > index_date or not isinstance(version, str):
-            continue
-        try:
-            key = version_key(version)
-        except ValueError:
-            continue
-        available.append((key, version))
-    return max(available, key=lambda candidate: candidate[0])[1] if available else None
-
-
-def _common_error(
-    reference_name: str,
-    index_common: tuple[str, str] | None,
-    selected: Mapping[str, Any],
-) -> str | None:
-    selected_common = _common_ref(selected)
-    if selected_common is None or selected_common[0] != COMMON_ID:
-        return f"exact input does not inherit {COMMON_ID}: {reference_name}"
-    if index_common is not None and selected_common != index_common:
-        return f"input common mismatch: {reference_name}"
-    return None
-
-
-def _input_region_errors(
-    index: Mapping[str, Any],
-    selected: Mapping[str, Any],
-    by_ref: Mapping[tuple[str, str], list[Mapping[str, Any]]],
-) -> list[str]:
-    reference = _common_ref(index)
-    if reference is None or _common_ref(selected) != reference:
-        return []
-    parents = by_ref.get(reference, [])
-    return context_region_errors(selected, parents[0]) if len(parents) == 1 else []
-
-
 def _input_errors(
-    item: Any,
-    index: Mapping[str, Any],
-    by_ref: Mapping[tuple[str, str], list[Mapping[str, Any]]],
-    documents: Sequence[Mapping[str, Any]],
+    item: Any, index: Mapping[str, Any], by_id: Mapping[str, list[Mapping[str, Any]]]
 ) -> list[str]:
     if not isinstance(item, Mapping):
         return ["composition input must be an object"]
-    identifier, version = item.get("id"), item.get("version")
+    identifier = item.get("id")
     if not isinstance(identifier, str):
         return ["composition input has no valid id"]
-    if not isinstance(version, str):
-        return [f"input {identifier} has no version"]
 
-    reference_name = f"{identifier}@{version}"
-    matches = by_ref.get((identifier, version), [])
+    matches = by_id.get(identifier, [])
     if not matches:
-        return [f"unknown exact input: {reference_name}"]
+        return [f"unknown input: {identifier}"]
     if len(matches) != 1:
-        return [f"duplicate exact input methodology: {reference_name}"]
+        return [f"duplicate input methodology: {identifier}"]
 
     index_date = _effective_date(index)
     errors: list[str] = []
     selected_date = _effective_date(matches[0])
     if selected_date is None:
-        errors.append(f"exact input has an invalid effective date: {reference_name}")
+        errors.append(f"input has an invalid effective date: {identifier}")
     elif index_date is not None and selected_date > index_date:
-        errors.append(f"input is effective after index effective date: {reference_name}")
+        errors.append(f"input is effective after index effective date: {identifier}")
 
-    common_error = _common_error(reference_name, _common_ref(index), matches[0])
-    if common_error is not None:
-        errors.append(common_error)
-    errors.extend(_input_region_errors(index, matches[0], by_ref))
-    if index_date is not None:
-        latest = _latest_version(
-            identifier, index_date, documents, dict(index.get("inherits") or {})
-        )
-        if latest is None:
-            errors.append(f"no input version is effective by index date: {identifier}")
-        elif version != latest:
-            errors.append(f"input is not latest as of index effective date: {reference_name}")
+    if not ordinary_in_context(matches[0]):
+        errors.append(f"input does not inherit {COMMON_ID}: {identifier}")
+    else:
+        parents = by_id.get(COMMON_ID, [])
+        if len(parents) == 1:
+            errors.extend(context_region_errors(matches[0], parents[0]))
     return errors
 
 
 def _plot_axis_errors(plots: Any, inputs: list[Any]) -> list[str]:
-    """Require each plot axis to point to one exact member of its own input vector."""
+    """Require each plot axis to point to one member of its own input vector."""
     if plots is None:
         return []
     if not isinstance(plots, Mapping):
@@ -144,30 +72,24 @@ def _plot_axis_errors(plots: Any, inputs: list[Any]) -> list[str]:
         if not isinstance(reference, Mapping):
             errors.append(f"plot axis {axis} must be an object")
             continue
-        identifier, version = reference.get("id"), reference.get("version")
-        if not isinstance(identifier, str) or not isinstance(version, str):
-            errors.append(f"plot axis {axis} has no exact methodology reference")
+        identifier = reference.get("id")
+        if not isinstance(identifier, str):
+            errors.append(f"plot axis {axis} has no methodology reference")
             continue
-        same_id = [
+        found = [
             item for item in inputs if isinstance(item, Mapping) and item.get("id") == identifier
         ]
-        exact = [item for item in same_id if item.get("version") == version]
-        label = f"{identifier}@{version}"
-        if len(exact) > 1:
-            errors.append(f"plot axis {axis} is ambiguous in composition inputs: {label}")
-        elif len(exact) == 1:
-            continue
-        elif same_id:
-            errors.append(f"plot axis {axis} is stale in composition inputs: {label}")
-        else:
-            errors.append(f"plot axis {axis} is missing from composition inputs: {label}")
+        if len(found) > 1:
+            errors.append(f"plot axis {axis} is ambiguous in composition inputs: {identifier}")
+        elif not found:
+            errors.append(f"plot axis {axis} is missing from composition inputs: {identifier}")
     return errors
 
 
 def composition_input_errors(
     index: Mapping[str, Any], documents: Sequence[Mapping[str, Any]]
 ) -> list[str]:
-    """Check that an index cites eligible, exact methodology inputs.
+    """Check that an index cites eligible methodology inputs.
 
     Documents are expected to have passed the methodology schema. The checks here
     repeat the owner-level relationships for consumers that decide eligibility.
@@ -182,23 +104,20 @@ def composition_input_errors(
     if not isinstance(inputs, list) or not inputs:
         return ["composition inputs must be a non-empty list"]
 
-    index_date = _effective_date(index)
     errors: list[str] = []
-    if index_date is None:
+    if _effective_date(index) is None:
         errors.append("index has an invalid effective date")
 
-    index_common = _common_ref(index)
-    if index_common is None or index_common[0] != COMMON_ID:
-        errors.append(f"index must inherit a version of {COMMON_ID}")
+    if not ordinary_in_context(index):
+        errors.append(f"index must inherit {COMMON_ID}")
 
-    by_ref: dict[tuple[str, str], list[Mapping[str, Any]]] = defaultdict(list)
+    by_id: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for document in documents:
-        identifier, version = document.get("id"), document.get("version")
-        if isinstance(identifier, str) and isinstance(version, str):
-            by_ref[(identifier, version)].append(document)
+        if isinstance(document.get("id"), str):
+            by_id[document["id"]].append(document)
 
     for item in inputs:
-        errors.extend(_input_errors(item, index, by_ref, documents))
+        errors.extend(_input_errors(item, index, by_id))
 
     errors.extend(_plot_axis_errors(composition.get("plots"), inputs))
 
@@ -206,38 +125,33 @@ def composition_input_errors(
 
 
 def select_composite_outputs(
-    documents: Sequence[Mapping[str, Any]],
-    *,
-    common: Mapping[str, str],
-    outputs: Sequence[Mapping[str, str]],
+    documents: Sequence[Mapping[str, Any]], *, outputs: Sequence[Mapping[str, str]]
 ) -> dict[str, Mapping[str, Any]]:
-    """Resolve only explicitly cited graphs inside their exact common context.
+    """Resolve only explicitly cited graphs.
 
     This establishes definition eligibility, not the availability of measured inputs. A consumer
     still validates the actual contributing leaves for each emitted scope before execution.
     """
-    parent = common_document(documents, common)
-    by_ref: dict[tuple[str, str], list[Mapping[str, Any]]] = defaultdict(list)
+    parent = common_document(documents)
+    by_id: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for document in documents:
-        by_ref[(str(document.get("id")), str(document.get("version")))].append(document)
+        by_id[str(document.get("id"))].append(document)
     selected: dict[str, Mapping[str, Any]] = {}
-    visiting: set[tuple[str, str]] = set()
+    visiting: set[str] = set()
 
     def visit(reference: Mapping[str, str]) -> Mapping[str, Any]:
-        key = reference["id"], reference["version"]
+        key = reference["id"]
         if key in visiting:
             raise ValueError("selected composition has a dependency cycle")
-        matches = by_ref.get(key, [])
+        matches = by_id.get(key, [])
         if len(matches) != 1:
-            raise ValueError(f"missing or ambiguous exact output input: {key}")
+            raise ValueError(f"missing or ambiguous output input: {key}")
         document = matches[0]
-        if document.get("inherits") != common:
+        if not ordinary_in_context(document):
             raise ValueError(f"selected input common mismatch: {key}")
         if errors := context_region_errors(document, parent):
             raise ValueError("; ".join(errors))
-        if key[0] in selected:
-            if selected[key[0]]["version"] != key[1]:
-                raise ValueError(f"conflicting selected input versions: {key[0]}")
+        if key in selected:
             return document
         visiting.add(key)
         if "composition" in document:
@@ -246,17 +160,17 @@ def select_composite_outputs(
             for item in document["composition"]["inputs"]:
                 visit(item)
         visiting.remove(key)
-        selected[key[0]] = document
+        selected[key] = document
         return document
 
     for reference in outputs:
         if (
-            not {"id", "version"} <= reference.keys()
-            or set(reference) - {"id", "version", "scope", "input"}
+            "id" not in reference
+            or set(reference) - {"id", "scope", "input"}
             or {"scope", "input"} <= reference.keys()
             or any(not isinstance(value, str) or not value for value in reference.values())
         ):
-            raise ValueError("output needs an exact reference and at most one owner selector")
+            raise ValueError("output needs a reference and at most one owner selector")
         document = visit(reference)
         if document.get("category") != "index":
             raise ValueError("selected output is not an index")

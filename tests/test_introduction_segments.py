@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 
 from sandbox_benchmark_verifier.names import _methodology_documents, load_tables
-from sandbox_benchmark_verifier.versions import newest
 from sandbox_benchmark_verifier.yaml_load import load_yaml
 
 pytestmark = pytest.mark.unit
@@ -27,7 +26,7 @@ def test_every_introduction_names_a_segment_as_its_legend_does() -> None:
     def resolved(text: str) -> str:
         return _NAME.sub(lambda match: names.get(match.group(1), match.group(0)), text)
 
-    documents = newest(_methodology_documents(ROOT))
+    documents = {document["id"]: document for document in _methodology_documents(ROOT)}
     reader = load_yaml((ROOT / "reader" / "methods.yaml").read_text(encoding="utf-8"))
     checked = 0
     for identifier, method in reader["methods"].items():

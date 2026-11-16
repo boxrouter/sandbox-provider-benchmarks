@@ -31,7 +31,7 @@ def repo(tmp_path: Path) -> Path:
 
 
 @pytest.mark.unit
-def test_committed_lock_covers_every_version() -> None:
+def test_committed_lock_covers_every_document() -> None:
     assert lock.check(ROOT, require_complete=True) == []
 
 
@@ -53,9 +53,8 @@ def test_edit_removal_and_parameters_are_caught(repo: Path) -> None:
 def test_parameters_tree_is_part_of_the_hash(repo: Path) -> None:
     before = lock.current_hashes(repo)
     key = next(iter(before))
-    identifier, version = key.split("@")
-    folder = repo / "parameters" / identifier / version
-    folder.mkdir(parents=True)
+    folder = repo / "parameters" / key
+    folder.mkdir(parents=True, exist_ok=True)
     (folder / "workloads.json").write_text("[]")
     assert lock.current_hashes(repo)[key] != before[key]
 

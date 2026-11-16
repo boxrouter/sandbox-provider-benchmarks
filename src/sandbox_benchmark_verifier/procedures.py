@@ -22,7 +22,6 @@ from sandbox_benchmark_verifier.names import (
     load_tables,
     resolve,
 )
-from sandbox_benchmark_verifier.versions import version_key
 
 CONFIG = "contracts/procedures.toml"
 CATALOGUE = "sandbox_benchmarks/_assets/procedures.json"
@@ -224,13 +223,13 @@ def references(
 
 
 def projection(root: Path, methods: list[dict[str, Any]], tables: Tables) -> dict[str, Any]:
-    """Resolve one pinned release once for every immutable methodology version."""
+    """Resolve one pinned release once for every methodology document."""
     if not (root / CONFIG).is_file():
         return {"procedures_public": False, "references": {}}
     release = catalogue(root)
     documents = {
         str(tables.aliases.get("document", {}).get(method["id"], method["id"])): method
-        for method in sorted(methods, key=lambda item: version_key(item["version"]))
+        for method in methods
     }
     projected = {}
     retired = retired_ids(root)
@@ -239,7 +238,7 @@ def projection(root: Path, methods: list[dict[str, Any]], tables: Tables) -> dic
             continue  # a retired test runs no procedure
         reference = references(method["id"], method, documents, release=release, tables=tables)
         if reference is not None:
-            projected[method["id"], str(method["version"])] = reference
+            projected[method["id"]] = reference
     return {"procedures_public": configuration(root)["procedures_public"], "references": projected}
 
 
@@ -263,10 +262,7 @@ def procedure_errors(root: Path | None = None) -> list[str]:
         missing = expected - available
         errors.extend(f"benchmark has no released procedure: {key}" for key in sorted(missing))
         documents = {}
-        for record in sorted(
-            load_methodology(root),
-            key=lambda item: version_key(item.document["version"]),
-        ):
+        for record in load_methodology(root):
             try:
                 canonical = resolve("document", record.document["id"], tables=tables)
             except UnknownIdError:

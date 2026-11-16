@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Lock of the current methodology documents.
 
-``methodology/released.lock`` maps ``id@version`` to a sha256 over the parsed document and its
-``parameters/<id>/<version>/`` tree. Each document has one current version, edited in place;
+``methodology/released.lock`` maps ``id`` to a sha256 over the parsed document and its
+``parameters/<id>/`` tree. Each document is edited in place;
 ``check`` reports a document that changed or vanished since the lock was written, and ``update``
 rewrites the lock to the current documents, so a deliberate edit lands with its new hash.
 """
@@ -35,22 +35,22 @@ def tree_digest(directory: Path) -> str:
 def document_hash(document: dict[str, Any], root: Path) -> str:
     """Hash one methodology document together with its parameters tree."""
     canonical = json.dumps(document, sort_keys=True, separators=(",", ":"), default=str)
-    tree = tree_digest(root / "parameters" / str(document["id"]) / str(document["version"]))
+    tree = tree_digest(root / "parameters" / str(document["id"]))
     return hashlib.sha256(f"{canonical}\n{tree}".encode()).hexdigest()
 
 
 def current_hashes(root: Path) -> dict[str, str]:
-    """Hash every id/version document under ``methodology/``."""
+    """Hash every document under ``methodology/``."""
     result: dict[str, str] = {}
     for path in sorted((root / "methodology").rglob("*.yaml")):
         for document in load_yaml_all(path.read_text(encoding="utf-8")):
-            if isinstance(document, dict) and "id" in document and "version" in document:
-                result[f"{document['id']}@{document['version']}"] = document_hash(document, root)
+            if isinstance(document, dict) and "id" in document:
+                result[str(document["id"])] = document_hash(document, root)
     return result
 
 
 def read_lock(root: Path) -> dict[str, str]:
-    """Parse the lock file (``id@version sha256`` per line, ``#`` comments)."""
+    """Parse the lock file (``id sha256`` per line, ``#`` comments)."""
     lock: dict[str, str] = {}
     path = root / LOCK_PATH
     if not path.is_file():
@@ -80,7 +80,7 @@ def update(root: Path) -> list[str]:
     """Rewrite the lock to the current documents; return the keys added, changed or removed."""
     lock, now = read_lock(root), current_hashes(root)
     changed = sorted(key for key in lock.keys() | now.keys() if lock.get(key) != now.get(key))
-    header = "# Current methodology documents: id@version sha256 (document + parameters tree).\n"
+    header = "# Current methodology documents: id sha256 (document + parameters tree).\n"
     (root / LOCK_PATH).write_text(
         header + "".join(f"{key} {now[key]}\n" for key in sorted(now)), encoding="utf-8"
     )

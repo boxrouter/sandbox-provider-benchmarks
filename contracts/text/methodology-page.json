@@ -626,7 +626,6 @@
     "workload": "Workload",
     "calculation": "Calculation",
     "clocks.headline": "Clock",
-    "version": "Version",
     "statistics.primary": "Statistic",
     "network_path_attempts": "Network Path Attempts",
     "connection_idle_exceptions": "Idle Connection Exceptions",
@@ -760,7 +759,6 @@
     "benjamini_hochberg": "Benjamini-Hochberg"
   },
   "omit": [
-    "version",
     "effective",
     "id",
     "category",
@@ -806,12 +804,8 @@
     "composition.levels.id",
     "composition.leaves.summed.id",
     "composition.plots.x.id",
-    "composition.plots.x.version",
     "composition.plots.y.id",
-    "composition.plots.y.version",
     "composition.inputs.id",
-    "composition.inputs.version",
-    "procedure.shared_trial.version",
     "procedure.variants.id"
   ],
   "common_name": "{name:page.common}",
@@ -1439,7 +1433,8 @@
     "wait_seconds": "duration_seconds",
     "source.ids": "code",
     "environment.size": "machine_size",
-    "ports": "plain_number"
+    "provider": "provider_id",
+  "ports": "plain_number"
   },
   "machine_size": "{vcpu} vCPU / {memory_gib} GiB",
   "standard_image": {
@@ -1482,6 +1477,9 @@
     "nested_object": "Each field has its own label from field_labels; labels are never joined from the path.",
     "composite_procedures": "A composite folds its inputs' procedure links into one disclosure (actions.procedures); each input's page links its own."
   },
+  "measured_from_data": {
+    "procedure.sandboxes_per_trial": "sandbox_positions"
+  },
   "at_a_glance": {
     "groups": [
       [
@@ -1491,7 +1489,6 @@
         "clocks.headline"
       ],
       [
-        "version",
         "environment.size",
         "procedure.trials",
         "procedure.variants"

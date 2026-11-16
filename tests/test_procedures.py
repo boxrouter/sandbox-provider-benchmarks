@@ -25,7 +25,7 @@ def test_all_benchmarks_have_release_pinned_sources_and_visibility_is_on(
 ) -> None:
     assert procedures.procedure_errors(ROOT) == []
     assert bundle["procedures_public"] is True
-    reference = next(iter(bundle["methodologies"]["time-index"].values()))["procedure"]
+    reference = bundle["methodologies"]["time-index"]["procedure"]
     assert reference["version"] == procedures.configuration(ROOT)["version"]
     catalogue = procedures.catalogue(ROOT)
     document = next(doc for doc in _methodologies(ROOT) if doc["id"] == "time-index")

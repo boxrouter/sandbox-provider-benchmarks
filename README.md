@@ -23,7 +23,7 @@ measurement methodology and records results. Sandbox Provider Pricing owns price
 
 ```text
 schemas/                    JSON Schemas for methodology, run, measurement and aggregate records
-methodology/                Versioned YAML benchmark definitions, in benchmark-page order
+methodology/                YAML benchmark definitions, in benchmark-page order
 reference-tests/            Generic machine tests
 runs/                       Run manifests (none until a release)
 data/<run_id>/raw/           Raw observations (none until a release)

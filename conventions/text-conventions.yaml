@@ -99,7 +99,6 @@ slots:
     form: sentence
     min_length: 8
     max_length: 240
-    max_sentences: 1
     min_items: 0
     max_items: 8
     shown_items: 3
@@ -2212,9 +2211,9 @@ presentation:
     target: scope
   - id: test-facts-from-measured-document
     text: >-
-      A fact the methodology defines for a test (its machine size, trial count, step limits, region policy and version) is drawn on
+      A fact the methodology defines for a test (its machine size, trial count, step limits and region policy) is drawn on
       the benchmarks pages from the methodology document the test was measured under, never from a second copy in the published data
-      or in web. A test's machine size is its measured document version's own environment.size; a composite document states none,
+      or in web. A test's machine size is its measured document's own environment.size; a composite document states none,
       and its page draws none. A publication whose result records a requested size other than its measured document's is refused
       when it is built.
     severity: error
@@ -3089,20 +3088,18 @@ presentation:
       - presentation.fact-list
     target: scope
   - id: chart-signature
-    text: Sign every full chart panel's plot with the BoxRouter mark and name, muted, right-aligned at
-      the plot's end beside the top bar; where that row has no room, beside the bottom bar, then the
-      mark alone, then nothing on screen. Hero cards carry no signature, and it never covers a bar,
-      dot or value.
+    text: Sign every full chart panel with the BoxRouter mark and name, muted, with no border, fill or
+      padding around it, as the last item of the controls row above the plot, right-aligned with the
+      plot, with Statistics and the other selectors to its left. A panel with no controls row gets the
+      signature right-aligned in a row in the same place. Hero cards carry no signature.
     severity: error
     predicate:
       kind: schema
-      value: chart-signature-in-full-panel-plots
-      placement_order:
-      - top-row
-      - bottom-row
-      - mark-only-top-row
-      - mark-only-bottom-row
-      - none
+      value: chart-signature-in-controls-row
+      placement: last-item-of-controls-row
+      alignment: right-edge-of-plot
+      alignment_tolerance_px: 1
+      frame: none
       excluded_slots:
       - presentation.hero
       viewports_px:
@@ -3155,7 +3152,7 @@ presentation:
     target: scope
     severity: error
   - id: methodology-page-anatomy
-    text: Open each methodology document with its breadcrumb, title, one byline (status when not live, version,
+    text: Open each methodology document with its breadcrumb, title, one byline (status when not live,
       effective date and the documents it builds on), the summary as the lead and what it measures as a
       second paragraph, then its sections in reading order.
     predicate:
@@ -3327,7 +3324,7 @@ presentation:
     severity: error
     target: scope
   - id: methodology-index-rows
-    text: List each methodology as one link row with its name, version and effective date, and its summary
+    text: List each methodology as one link row with its name and effective date, and its summary
       beneath; no cards or dividers.
     predicate:
       kind: schema

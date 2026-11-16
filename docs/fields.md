@@ -8,8 +8,7 @@ One row per described property of the methodology schemas and canonical names ta
 | Property | Meaning | Unit | Example |
 | --- | --- | --- | --- |
 | `id` | Stable dotted identifier. Runs, measurements and aggregates cite it; it never changes when the document is edited. |  | `"sandbox.create.sequential_tti"` |
-| `version` | Semantic version of this methodology. Any change to what is measured or how bumps it; results from different versions are never combined. |  | `"1.0.0"` |
-| `effective` | Date (UTC, YYYY-MM-DD) from which this version applies. | UTC date | `"2026-10-25"` |
+| `effective` | Date (UTC, YYYY-MM-DD) from which this document applies. | UTC date | `"2026-10-25"` |
 | `name` | Human-readable name of the benchmark. |  | `"Sequential time to interactive"` |
 | `category` | Where the benchmark sits in the methodology tree. `common` marks the shared document every other methodology inherits from. |  | `"sandbox_operation"` |
 | `headline` | A short one-line label of what the headline value is, restating the description and metrics without adding claims. Pages draw it under a title with the metric's direction. |  | `"Create to first command"` |
@@ -34,14 +33,12 @@ One row per described property of the methodology schemas and canonical names ta
 | `description` | What the benchmark measures and what a reader can decide from the result, in plain words. |  | `"Time from asking for a new sandbox until its first command returns."` |
 | `capability_source` | The public source of provider capability declarations and how the benchmark page uses them. |  |  |
 | `capability_source.repository` | SPS repository URL. |  |  |
-| `capability_source.release` | Pinned SPS release; versions before sbs.common 1.0.14 carry one. |  |  |
 | `capability_source.declaration_path` | Repository-relative declaration path pattern. |  |  |
 | `capability_source.use` | How the benchmark page uses declarations. |  |  |
 | `status` | `planned` marks a benchmark the page lists as Coming Soon: the document records its definition so far, publishes no number, and may omit the procedure, timing, environment and statistics sections. Absent means active. |  | `"planned"` |
 | `composition` | For an index: the benchmarks it combines and how. An index has no trials of its own; its value is computed from the aggregates of the cited benchmarks. |  |  |
-| `composition.inputs[]` | The complete exact input vector: each input's canonical id and its version in force on this index's effective date. |  |  |
+| `composition.inputs[]` | The complete exact input vector: each input's canonical id. |  |  |
 | `composition.inputs[].id` | Id of the input methodology. |  | `"workload.coding.deepswe"` |
-| `composition.inputs[].version` | Version of the input methodology. |  | `"1.0.0"` |
 | `composition.inputs[].quantity` | The value taken from that benchmark's result, in plain words. |  | `"Typical time per trace."` |
 | `composition.per_input_value` | How each input's per-provider value is formed before the inputs are combined. |  | `"Geometric mean over the traces every provider completed of each trace's median time."` |
 | `composition.aggregation` | How the inputs' values are combined into the index. |  | `"geometric_mean"` |
@@ -75,14 +72,10 @@ One row per described property of the methodology schemas and canonical names ta
 | `composition.plots.y` | Index on the vertical axis. |  |  |
 | `composition.plots.y.id` | A released dotted id, or a canonical id: the slug of the benchmark's name (lowercase letters, digits and hyphens). |  |  |
 | `composition.plots.note` | Further facts about the pairing. |  |  |
-| `inherits` | The common methodology whose defaults (statistics, cost, failure policy, trial policy) apply wherever this document is silent. |  |  |
-| `inherits.id` | Id of the inherited methodology. |  | `"sbs.common"` |
-| `inherits.version` | Version of the inherited methodology. |  | `"1.0.0"` |
+| `inherits` | Id of the common methodology whose defaults (statistics, cost, failure policy, trial policy) apply wherever this document is silent. |  | `"sbs.common"` |
 | `independence` | Common methodology only: the rules that keep one trial's result from depending on another trial, the independence check run on every run, and its thresholds fixed in advance. |  |  |
 | `independence.rounds` | Rounds each pair's trials are spread over. |  |  |
-| `independence.run_check.material_effect` | Version 1.0.7 only: one effect size for every check. |  |  |
-| `independence.run_check.outliers` | Version 1.0.7 only: the outlier rule, stated beside the checks. |  |  |
-| `independence.run_check.min_trials` | Fewest successful trials a pair needs to be checked (from version 1.0.8). |  |  |
+| `independence.run_check.min_trials` | Fewest successful trials a pair needs to be checked. |  |  |
 | `independence.run_check.significance.power` | The power at which each pair reports the smallest effect its checks could have found. |  |  |
 | `independence.run_check.checks[]` | Each check with its thresholds, fixed before any run. Thresholds are numbers, flags, lists of names or lists of number pairs. |  |  |
 | `independence_answers` | How the benchmark answers each rule of the inherited common methodology's `independence.rules`, keyed by rule id: it meets the rule, or it is an exception with its reason. The verifier fails a benchmark that leaves a rule unanswered. |  |  |
@@ -138,10 +131,9 @@ One row per described property of the methodology schemas and canonical names ta
 | `procedure.warm_cold_policy` | What is warm and what is cold at each measurement, stated rather than removed. |  |  |
 | `procedure.warm_cold_policy.policy` | Plain-words statement of the warm and cold conditions. |  | `"The image is new for every trial, so sandbox 1 is cold; later sandboxes follow the previous one by seconds and may use warmer provider hosts."` |
 | `procedure.warm_cold_policy.cold` | Which measurements count as cold. |  | `"Sandbox 1 of a trial."` |
-| `procedure.warm_cold_policy.warm` | Which measurements count as warm. |  | `"Sandbox 10 of a trial."` |
+| `procedure.warm_cold_policy.warm` | Which measurements count as warm. |  | `"The last sandbox of a trial."` |
 | `procedure.shared_trial` | Marks a document measured in the same trial as another (files list, write and read; CPU and memory; disk rows). The named owner holds the `parameters`; this document holds none. |  |  |
 | `procedure.shared_trial.with` | Id of the owning methodology. |  |  |
-| `procedure.shared_trial.version` | Version of the owning methodology. |  |  |
 | `procedure.cadence` | When trials run: the public schedule, such as how often and at what times. |  | `"Every 6 hours."` |
 | `procedure.variants[]` | Parameter sets the same procedure runs with. Results of different variants are kept apart. |  |  |
 | `procedure.variants[].id` | Variant id used in measurements and aggregates. Either a snake_name or a record_id (hyphenated), so it can equal the id a stored record carries. |  | `"true"` |
@@ -165,7 +157,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `procedure.steps[].operation` | The operation the step makes: a key of `contracts/operations.yaml`. Required for a benchmark added after `contracts/pre-template-ids.json`. |  | `"snapshots.create"` |
 | `procedure.steps[].action` | What happens in the step, in plain words. |  | `"Ask the provider for a fresh sandbox from the trial's image."` |
 | `procedure.steps[].timer` | Timer events of the step, or null for a step that is recorded or run but not timed. |  |  |
-| `procedure.steps[].timer.start_event` | Event that starts the step's timer. Versions before the hover system state the timer this way; later versions use `from`, `sent` and `until`. |  | `"The create request is dispatched."` |
+| `procedure.steps[].timer.start_event` | Event that starts the step's timer. |  | `"The create request is dispatched."` |
 | `procedure.steps[].timer.stop_event` | Event that stops the step's timer. |  | `"The create call returns."` |
 | `procedure.steps[].timer.provider_notes` | Public boundary differences by provider slug, where a provider's own API moves the stop event. Provider names appear only as keys. |  | `{"vercel": "The stop event is observed by a 2 s poll."}` |
 | `procedure.steps[].timer.from` | The request or call the timer starts at, as a noun phrase. |  | `"the pause request"` |
@@ -176,8 +168,8 @@ One row per described property of the methodology schemas and canonical names ta
 | `procedure.steps[].record_steps[]` | Step ids stored records carry for the measurements this step covers. |  | `["first-true"]` |
 | `procedure.steps[].in_sandboxes[]` | The 1-based sandboxes of a trial the step runs in; absent means every one. |  | `[1]` |
 | `procedure.steps[].variants[]` | Variant ids the step applies to; absent means every variant. |  | `["spotify-player"]` |
-| `parameters` | The directory of exact workload parameters this methodology version pins: `workloads.json`, optionally `protocol.json` and `assets/`. A parameters directory belongs to one id and version and never changes once released. |  |  |
-| `parameters.path` | Repository-relative directory, `parameters/<methodology id>/<version>/`. |  | `"parameters/workload.coding.deepswe/1.1.0/"` |
+| `parameters` | The directory of exact workload parameters this methodology pins: `workloads.json`, optionally `protocol.json` and `assets/`. A parameters directory belongs to one id. |  |  |
+| `parameters.path` | Repository-relative directory, `parameters/<methodology id>/`. |  | `"parameters/workload.coding.deepswe/"` |
 | `parameters.sha256` | Tree digest of the directory: the SHA-256 of one line `<file sha256> <relative path>\n` per file, files sorted by relative path in byte order. `sandbox-benchmark-verify validate` recomputes it. |  | `"0000000000000000000000000000000000000000000000000000000000000000"` |
 | `capabilities` | Provider capabilities the benchmark needs, by SPS gate name. A provider without a required capability shows no number rather than a failure. |  |  |
 | `capabilities.required[]` | Gates every provider must declare to be measured. |  | `["commands.run"]` |
@@ -199,7 +191,6 @@ One row per described property of the methodology schemas and canonical names ta
 | `statistics.secondary[]` | Further numbers published beside the primary. |  | `["mean"]` |
 | `statistics.unit_statistic` | The statistic of each unit that a composite combines; the reader chooses one of the options. |  | `{"default": "median", "options": ["median", "mean", "p95"]}` |
 | `statistics.unit_statistic.default` | The option used until the reader chooses another. |  |  |
-| `statistics.missing_unit_penalty` | Retired from time-index 1.1.17 and cost-index 1.1.15, which fill a missing unit with the slowest time (or highest cost) any provider had, with no factor. Earlier, immutable versions still carry it. |  | `1.2` |
 | `statistics.percentile_method` | How percentiles are taken from the sample. |  | `"Nearest rank over successful trials; nothing trimmed."` |
 | `statistics.combine_variants` | How the primary statistic of each variant is combined into the benchmark's headline number; absent means variants are not combined. |  | `"mean"` |
 | `statistics.tail` | The worse-side tail published beside the median. Omit when the benchmark publishes none. |  |  |
@@ -227,9 +218,6 @@ One row per described property of the methodology schemas and canonical names ta
 | `cost.pricing_reference.repository` | Repository holding the price sheets. |  | `"sandbox-provider-pricing"` |
 | `cost.pricing_reference.document` | The released document that states the method for one sandbox's cost, for the price and rules versions a publication records. |  | `"cost-method.json"` |
 | `cost.pricing_reference.versions` | Where the versions that select that method are recorded. |  | `"The price and rules versions recorded in the publication; they select each sandbox's method."` |
-| `cost.pricing_reference.function` | Only in versions released before sbs.common 1.0.6: the function that turns usage into a cost. |  | `"price()"` |
-| `cost.pricing_reference.price_sheet_version` | Only in versions released before sbs.common 1.0.6: where the price-sheet version used is recorded. |  | `"recorded in the run manifest"` |
-| `cost.billed_span` | Only in versions released before sbs.common 1.0.6, and no longer defined: the provider's records set the billed period, differently for each provider. |  | `"From the create request to the confirmed destroy."` |
 | `cost.counted_sandboxes` | Which sandboxes count toward one unit's cost. |  | `"A unit's cost is the sum of the costs of the sandboxes it created."` |
 | `cost.per_success` | How cost per success is formed. |  | `"Cost of the successful attempts divided by their number; failed attempts' cost is left out."` |
 | `cost.notes[]` | Further facts about the cost. |  | `["The provider may also charge for image preparation or short-lived image storage."]` |
@@ -279,7 +267,7 @@ One row per described property of the methodology schemas and canonical names ta
 | Property | Meaning | Unit | Example |
 | --- | --- | --- | --- |
 | `run_id` | Identifier of the run. Measurements and aggregates cite it. |  | `"2026-11-01-a"` |
-| `methodologies` | Ids of the methodologies the run used. The object form, methodology id to semantic version, is accepted for one release while the runner stops sending versions, and is removed after. |  | `["sandbox.create.sequential_tti"]` |
+| `methodologies[]` | Ids of the methodologies the run used. |  | `["sandbox.create.sequential_tti"]` |
 | `region` | Region the run requested. An unavailable request is Unknown with its reason; observed placement is recorded on each provider measurement. |  | `{"requested": {"value": "us", "source": "recorded"}}` |
 | `machine_configs[]` | Machine sizes the run requested. |  |  |
 | `machine_configs[].id` | Machine config id used in measurements. |  | `"2x4"` |
@@ -313,7 +301,6 @@ One row per described property of the methodology schemas and canonical names ta
 | `provider` | Provider slug, as in the run manifest. |  | `"e2b"` |
 | `methodology` | Methodology the observation belongs to. |  |  |
 | `methodology.id` | Methodology id. |  | `"sandbox.create.sequential_tti"` |
-| `methodology.version` | Accepted for one release while the runner stops sending it, and ignored; removed after. |  | `"1.0.0"` |
 | `run_id` | Run the observation came from. |  | `"2026-11-01-a"` |
 | `trial` | 1-based trial number within the run, provider and variant. | trial number | `7` |
 | `timestamp` | UTC time the observation was taken. | UTC | `"2026-11-01T09:12:03Z"` |
@@ -327,6 +314,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `success` | Whether the attempt succeeded. A failure that is not excluded counts against the provider. |  | `true` |
 | `exclusion_reason` | Null, or the allowlisted reason this observation is left out of aggregates: `not_provider_failure` (error shown not to be the provider's), `benchmark_error` (the benchmark's own failure), `does_not_replay` (workload does not replay on that provider), `external` (setup step failed the same way on every provider), `replaced_by_top_up` (a later batch replaced it). |  | `null` |
 | `test_id` | Page test identity when several tests share one methodology. |  |  |
+| `composite_owner` | On a failed or excluded attempt, who owns it for the workload value: the provider, or someone else, which omits the attempt's unit for every provider unless a later successful rerun replaces it. `unknown` and an absent field count as the provider's. Absent on a success. |  | `"core"` |
 | `workload` | Workload or upstream trial identity only; never command or trajectory text. |  |  |
 
 ## Aggregate (`schemas/aggregate.schema.json`)
@@ -335,7 +323,6 @@ One row per described property of the methodology schemas and canonical names ta
 | --- | --- | --- | --- |
 | `methodology` | Methodology the number was computed under. |  |  |
 | `methodology.id` | Methodology id. |  | `"sandbox.create.sequential_tti"` |
-| `methodology.version` | Accepted for one release while the runner stops sending it, and ignored; removed after. |  | `"1.0.0"` |
 | `run_id` | Run the number comes from. |  | `"2026-11-01-a"` |
 | `provider` | Provider slug. |  | `"e2b"` |
 | `variant` | Variant id, where the methodology has variants. |  | `"true"` |
@@ -359,3 +346,7 @@ One row per described property of the methodology schemas and canonical names ta
 | `inputs.filter` | Measurement fields that select the inputs from the referenced data, as name/value pairs. |  | `{"provider": "e2b", "variant": "true"}` |
 | `precision` | Comparison precision for the value and interval bounds, in the declared unit. Choose decimal rounding (half a last decimal unit) or an absolute tolerance. No implicit relative tolerance. |  |  |
 | `test_id` | Page test identity when several tests share one methodology. |  |  |
+| `derivation` | Names how the value is derived from the rows of every provider of the variant, where no statistic over one provider's rows gives it. `statistic` is then each unit's value on its successful trials (median, mean or p95), and `inputs.path` holds the rows of all providers of the test. `n` counts the units combined and `excluded_n` the units omitted for a failure that is not the provider's. |  |  |
+| `derivation.id` | `workload-value`: the geometric mean, over the workload's units, of each unit's value on `statistic` over its successful trials, as `composition.per_input_value` in the speed and cost indexes defines it. A unit with a failed attempt whose `composite_owner` is not the provider is omitted for every provider unless a later successful rerun replaces it (rows with exclusion reason `replaced_by_top_up` are ignored). A unit the provider did not complete takes the slowest value, or for a cost the highest exact cost, any provider of the variant had on it. A unit has a cost only where every successful row of the unit has one. |  | `"workload-value"` |
+| `derivation.completed_by` | Measurement whose rows decide which units a provider completed: a unit with at least one successful row, none of which lacks a value. For a time aggregate it is the aggregate's own measurement. |  | `"time_to_interactive"` |
+| `derivation.decimal_places` | Places each unit's value, and the derived value, are rounded to, as the publication rounds them, before units are combined and the value compared. |  | `3` |

@@ -153,11 +153,11 @@ def test_projection_does_not_retype_method_wording_or_scientific_records(
     assert "methods" not in presentation
 
 
-def _cache_source(root: Path, declare_common: Callable[[Path], dict[str, str]]) -> None:
+def _cache_source(root: Path, declare_common: Callable[[Path], str]) -> None:
     (root / "names").mkdir(parents=True)
     (root / "schemas").mkdir()
     (root / "methodology" / "sample").mkdir(parents=True)
-    (root / "parameters" / "sample" / "1.0.0").mkdir(parents=True)
+    (root / "parameters" / "sample").mkdir(parents=True)
     (root / "names" / "names.yaml").write_text(
         "schema: test\nnames: [{row: 1, kind: section, id: overview, name: Overview}]\n",
         encoding="utf-8",
@@ -165,17 +165,16 @@ def _cache_source(root: Path, declare_common: Callable[[Path], dict[str, str]]) 
     (root / "names" / "aliases.yaml").write_text("schema: test\n", encoding="utf-8")
     # Lifecycle discovery selects inside the one declared common (#755, #759).
     common = declare_common(root)
-    (root / "methodology" / "sample" / "1.0.0.yaml").write_text(
-        "id: sample\nversion: 1.0.0\nname: Sample\nmetrics: [{name: Latency}]\n"
-        "parameters: {path: parameters/sample/1.0.0/}\n"
-        f"inherits: {{id: {common['id']}, version: {common['version']}}}\n",
+    (root / "methodology" / "sample" / "sample.yaml").write_text(
+        "id: sample\nname: Sample\nmetrics: [{name: Latency}]\n"
+        f"parameters: {{path: parameters/sample/}}\ninherits: {common}\n",
         encoding="utf-8",
     )
-    (root / "parameters" / "sample" / "1.0.0" / "protocol.json").write_text(
+    (root / "parameters" / "sample" / "protocol.json").write_text(
         '{"schema":"sandbox-benchmark.lifecycle-protocol/1","section":"overview"}',
         encoding="utf-8",
     )
-    (root / "parameters" / "sample" / "1.0.0" / "workloads.json").write_text(
+    (root / "parameters" / "sample" / "workloads.json").write_text(
         '[{"id":"small","label":"Small"}]', encoding="utf-8"
     )
     for name in (
@@ -189,7 +188,7 @@ def _cache_source(root: Path, declare_common: Callable[[Path], dict[str, str]]) 
 
 def test_exact_source_cache_reuses_immutable_tables_across_reader_changes(
     tmp_path: Path,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     source = tmp_path / "source"
     cache = tmp_path / "cache"
@@ -221,7 +220,7 @@ def test_exact_source_cache_reuses_immutable_tables_across_reader_changes(
 def test_an_installed_package_caches_its_tables_from_its_own_compiler_files(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     """A wheel has no src/ beside its assets; the compiler is the running module, so the cache
     still applies (without it every load_tables of a page build parsed the YAML again)."""
@@ -244,7 +243,7 @@ def test_an_installed_package_caches_its_tables_from_its_own_compiler_files(
 
 def test_exact_source_cache_invalidates_science_and_digest_algorithm_changes(
     tmp_path: Path,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     source = tmp_path / "source"
     cache = tmp_path / "cache"
@@ -252,7 +251,7 @@ def test_exact_source_cache_invalidates_science_and_digest_algorithm_changes(
     algorithms = {"semantic_digest": "sha256:method/2"}
     with compiler_tables_cache(source, algorithms, cache_directory=cache):
         original = load_tables(source)
-    sample = source / "methodology" / "sample" / "1.0.0.yaml"
+    sample = source / "methodology" / "sample" / "sample.yaml"
     sample.write_text(
         sample.read_text(encoding="utf-8").replace("name: Sample", "name: Changed Science"),
         encoding="utf-8",
@@ -275,7 +274,7 @@ def test_exact_source_cache_invalidates_science_and_digest_algorithm_changes(
 def test_exact_source_cache_fails_closed_on_stale_or_corrupt_metadata(
     tmp_path: Path,
     damage: str,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     source = tmp_path / "source"
     cache = tmp_path / "cache"
@@ -307,7 +306,7 @@ def _minimal_names_root(root: Path) -> None:
 def test_sparse_root_disables_cache_and_still_runs_compiler_validation(
     tmp_path: Path,
     build_text_bundle: Callable[[Path], dict[str, Any]],
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     root = tmp_path / "sparse"
     cache = tmp_path / "cache"
@@ -327,14 +326,14 @@ def test_missing_cache_schema_or_compiler_fallback_disables_cache(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     missing: str,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     source = tmp_path / "source"
     cache = tmp_path / "cache"
     _cache_source(source, declare_common)
     if missing == "schemas":
         (source / "schemas" / "lifecycle-protocol.schema.json").unlink()
-        (source / "parameters" / "sample" / "1.0.0" / "protocol.json").unlink()
+        (source / "parameters" / "sample" / "protocol.json").unlink()
     else:
         monkeypatch.setattr(names_module, "__file__", str(tmp_path / "absent.py"))
     with compiler_tables_cache(
@@ -349,7 +348,7 @@ def test_missing_cache_schema_or_compiler_fallback_disables_cache(
 
 
 def test_nested_sparse_cache_scope_masks_and_restores_outer_scope(
-    tmp_path: Path, declare_common: Callable[[Path], dict[str, str]]
+    tmp_path: Path, declare_common: Callable[[Path], str]
 ) -> None:
     source = tmp_path / "source"
     sparse = tmp_path / "sparse"
@@ -375,7 +374,7 @@ def test_nested_sparse_cache_scope_masks_and_restores_outer_scope(
 def test_nested_scope_for_the_same_root_reuses_the_outer_scope(
     tmp_path: Path,
     mocker: MockerFixture,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     source = tmp_path / "source"
     cache = tmp_path / "cache"
@@ -393,12 +392,12 @@ def test_nested_scope_for_the_same_root_reuses_the_outer_scope(
 
 
 def test_missing_referenced_workload_parameter_still_fails(
-    tmp_path: Path, declare_common: Callable[[Path], dict[str, str]]
+    tmp_path: Path, declare_common: Callable[[Path], str]
 ) -> None:
     source = tmp_path / "source"
     _cache_source(source, declare_common)
     (source / "schemas" / "methodology.schema.json").unlink()
-    (source / "parameters" / "sample" / "1.0.0" / "workloads.json").unlink()
+    (source / "parameters" / "sample" / "workloads.json").unlink()
     with pytest.raises(FileNotFoundError) as caught:
         with compiler_tables_cache(source, {"semantic_digest": "sha256:method/2"}):
             load_tables(source)
@@ -411,7 +410,7 @@ def test_cache_scope_does_not_swallow_compiler_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     cache_eligible: bool,
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     source = tmp_path / "source"
     if cache_eligible:
@@ -434,7 +433,7 @@ def test_cache_scope_does_not_swallow_compiler_errors(
 def test_present_but_malformed_optional_presentation_channel_fails(
     tmp_path: Path,
     build_text_bundle: Callable[[Path], dict[str, Any]],
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     root = tmp_path / "source"
     _minimal_names_root(root)
@@ -452,7 +451,7 @@ def test_present_but_malformed_optional_presentation_channel_fails(
 def test_present_conventions_directory_missing_source_fails(
     tmp_path: Path,
     build_text_bundle: Callable[[Path], dict[str, Any]],
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     root = tmp_path / "source"
     _minimal_names_root(root)
@@ -468,7 +467,7 @@ def test_canonical_presentation_channel_missing_source_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     build_text_bundle: Callable[[Path], dict[str, Any]],
-    declare_common: Callable[[Path], dict[str, str]],
+    declare_common: Callable[[Path], str],
 ) -> None:
     root = tmp_path / "canonical"
     _minimal_names_root(root)

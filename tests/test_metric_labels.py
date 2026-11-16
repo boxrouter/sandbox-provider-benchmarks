@@ -47,8 +47,7 @@ def test_index_forms_and_statistic_are_source_owned(bundle: dict[str, Any]) -> N
 def test_compiler_uses_quantity_reference_and_nullable_denominator(bundle: dict[str, Any]) -> None:
     source = deepcopy(bundle)
     key = next(key for key in source["methodologies"] if key == "time-index")
-    version = next(iter(source["methodologies"][key]))
-    metric = source["methodologies"][key][version]["text"]["metrics"][0]
+    metric = source["methodologies"][key]["text"]["metrics"][0]
     metric.update(quantity="time", per=None, unit="ms", direction="lower_is_better")
     for row in source["names"]:
         if row["kind"] == "view" and row["id"] == "time":
@@ -62,9 +61,7 @@ def test_compiler_uses_quantity_reference_and_nullable_denominator(bundle: dict[
 def test_rate_sampling_does_not_introduce_another_divisor(bundle: dict[str, Any]) -> None:
     source = deepcopy(bundle)
     document_id = "stream-triad"
-    versions = source["methodologies"][document_id]
-    version = next(reversed(versions))
-    metric = versions[version]["text"]["metrics"][0]
+    metric = source["methodologies"][document_id]["text"]["metrics"][0]
     catalog = compile_metric_labels(source, load_tables(ROOT).aliases)
     result = label_for(catalog, f"{document_id}/{metric['name']}", "axis")
 
@@ -73,7 +70,7 @@ def test_rate_sampling_does_not_introduce_another_divisor(bundle: dict[str, Any]
     assert "trial" not in result.lower()
 
 
-def test_deepswe_current_version_has_source_owned_time_and_cost_axes(
+def test_deepswe_has_source_owned_time_and_cost_axes(
     bundle: dict[str, Any],
 ) -> None:
     catalog = bundle["metric_labels"]
@@ -135,9 +132,7 @@ def test_comparison_reuses_each_source_quantity(bundle: dict[str, Any]) -> None:
 
 def test_legacy_display_uses_only_unambiguous_declared_dimensions(bundle: dict[str, Any]) -> None:
     source = deepcopy(bundle)
-    versions = source["methodologies"]["time-index"]
-    version = next(iter(versions))
-    metric = versions[version]["text"]["metrics"][0]
+    metric = source["methodologies"]["time-index"]["text"]["metrics"][0]
     metric.update(quantity="Historical interval wording", per=None)
     identity = metric["id"]
     catalog = compile_metric_labels(source, load_tables(ROOT).aliases)
@@ -152,7 +147,7 @@ def test_legacy_display_uses_only_unambiguous_declared_dimensions(bundle: dict[s
 
 def test_legacy_denominator_resolves_its_existing_name_row(bundle: dict[str, Any]) -> None:
     source = deepcopy(bundle)
-    metric = next(reversed(source["methodologies"]["time-index"].values()))["text"]["metrics"][0]
+    metric = source["methodologies"]["time-index"]["text"]["metrics"][0]
     row = next(
         row for row in source["names"] if row["kind"] == "per-unit" and row["id"] == "trace-set"
     )
@@ -234,7 +229,7 @@ def test_rl_pipeline_is_a_verified_composition_not_rollout_tool_time(
         "The chart shows geometric mean values per trial; lower is better."
     )
     broken = deepcopy(bundle)
-    next(iter(broken["methodologies"]["r2e-gym"].values()))["timed_steps"].remove("destroy")
+    broken["methodologies"]["r2e-gym"]["timed_steps"].remove("destroy")
     with pytest.raises(ValueError, match="exactly the timed stages"):
         compile_metric_labels(broken, load_tables(ROOT).aliases)
 
@@ -301,8 +296,8 @@ def test_an_id_shaped_quantity_has_a_grammar_name(bundle: dict[str, Any]) -> Non
     unnamed = sorted(
         {
             (document_id, metric["quantity"])
-            for document_id, versions in bundle["methodologies"].items()
-            for metric in next(reversed(versions.values()))["reader_definition"].get("metrics", [])
+            for document_id, row in bundle["methodologies"].items()
+            for metric in row["reader_definition"].get("metrics", [])
             if re.fullmatch(r"[a-z]+(_[a-z]+)+", metric.get("quantity", ""))
             and metric["quantity"] not in quantities
         }
@@ -319,8 +314,8 @@ def test_a_metric_quantity_that_is_also_a_section_id_keeps_its_own_label(
     clashing = sorted(
         {
             metric["quantity"]
-            for versions in bundle["methodologies"].values()
-            for metric in next(reversed(versions.values()))["reader_definition"].get("metrics", [])
+            for row in bundle["methodologies"].values()
+            for metric in row["reader_definition"].get("metrics", [])
             if metric.get("quantity") in labels
             and "{name:section." in labels[metric["quantity"]]
             and f"quantity.{metric['quantity']}" not in labels
@@ -335,8 +330,8 @@ def test_an_id_shaped_metric_value_has_a_page_label(bundle: dict[str, Any]) -> N
     unlabelled = sorted(
         {
             (document_id, field, metric[field])
-            for document_id, versions in bundle["methodologies"].items()
-            for metric in next(reversed(versions.values()))["reader_definition"].get("metrics", [])
+            for document_id, row in bundle["methodologies"].items()
+            for metric in row["reader_definition"].get("metrics", [])
             for field in ("quantity", "per", "unit", "direction")
             if re.fullmatch(r"[a-z][a-z0-9]*([_.][a-z0-9]+)+", str(metric.get(field, "")))
             and metric[field] not in labels
@@ -347,9 +342,8 @@ def test_an_id_shaped_metric_value_has_a_page_label(bundle: dict[str, Any]) -> N
 
 def test_hard_links_axis_reads_hard_link_rate(bundle: dict[str, Any]) -> None:
     source = deepcopy(bundle)
-    versions = source["methodologies"]["hard-links"]
-    version = next(reversed(versions))
-    metric = next(m for m in versions[version]["text"]["metrics"] if m.get("unit") == "links/s")
+    row = source["methodologies"]["hard-links"]
+    metric = next(m for m in row["text"]["metrics"] if m.get("unit") == "links/s")
     catalog = compile_metric_labels(source, load_tables(ROOT).aliases)
     identity = f"hard-links/{metric['name']}"
     assert label_for(catalog, identity, "axis") == "Hard-Link Rate (links/s)"

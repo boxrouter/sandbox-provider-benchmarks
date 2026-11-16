@@ -1,12 +1,11 @@
 id: burst-tti
-version: 1.2.15
 effective: '2026-11-08'
 name: '{name:test.burst-tti}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures from the first dispatched create request until every sandbox’s
     first command returns successfully.
-  how_to_read: The {param:burst-tti.1.2.15.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:burst-tti.statistics.primary} summarizes successful trials in the axis
     unit; {direction:burst_time}.
   summary: >-
     Time to first command is measured for sandboxes created in parallel from one unique trial
@@ -17,9 +16,7 @@ notes:
     caches and warm pools stay enabled.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful burst.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: burst_time
   unit: ms
@@ -65,37 +62,37 @@ procedure:
     command: 'true'
     parameters:
       sandboxes: 5
-    description: The workload uses the {param:burst-tti.1.2.15.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:burst-tti.procedure.variants.0.label} configuration.
     notes:
-      summary: '{param:burst-tti.1.2.15.notes.summary}'
-      what_this_measures: '{param:burst-tti.1.2.15.notes.what_this_measures}'
+      summary: '{param:burst-tti.notes.summary}'
+      what_this_measures: '{param:burst-tti.notes.what_this_measures}'
   - id: n10
     label: 10 sandboxes
     command: 'true'
     parameters:
       sandboxes: 10
-    description: The workload uses the {param:burst-tti.1.2.15.procedure.variants.1.label} configuration.
+    description: The workload uses the {param:burst-tti.procedure.variants.1.label} configuration.
     notes:
-      summary: '{param:burst-tti.1.2.15.notes.summary}'
-      what_this_measures: '{param:burst-tti.1.2.15.notes.what_this_measures}'
+      summary: '{param:burst-tti.notes.summary}'
+      what_this_measures: '{param:burst-tti.notes.what_this_measures}'
   - id: n20
     label: 20 sandboxes
     command: 'true'
     parameters:
       sandboxes: 20
-    description: The workload uses the {param:burst-tti.1.2.15.procedure.variants.2.label} configuration.
+    description: The workload uses the {param:burst-tti.procedure.variants.2.label} configuration.
     notes:
-      summary: '{param:burst-tti.1.2.15.notes.summary}'
-      what_this_measures: '{param:burst-tti.1.2.15.notes.what_this_measures}'
+      summary: '{param:burst-tti.notes.summary}'
+      what_this_measures: '{param:burst-tti.notes.what_this_measures}'
   - id: n50
     label: 50 sandboxes
     command: 'true'
     parameters:
       sandboxes: 50
-    description: The workload uses the {param:burst-tti.1.2.15.procedure.variants.3.label} configuration.
+    description: The workload uses the {param:burst-tti.procedure.variants.3.label} configuration.
     notes:
-      summary: '{param:burst-tti.1.2.15.notes.summary}'
-      what_this_measures: '{param:burst-tti.1.2.15.notes.what_this_measures}'
+      summary: '{param:burst-tti.notes.summary}'
+      what_this_measures: '{param:burst-tti.notes.what_this_measures}'
   steps:
   - id: build
     name: Image build
@@ -202,7 +199,7 @@ failure_policy:
   exclusion_limits:
     launch_spread_ms: 1000
 parameters:
-  path: parameters/burst-tti/1.2.15/
+  path: parameters/burst-tti/
   sha256: 877884a1cb072043e6533c0251ea50e82ed979fe415081378d8a7316aa236d36
 interpretation:
   what_to_do: Compare how much start-up throughput each provider gives a burst of 5, 10, 20 or 50 sandboxes,
@@ -217,8 +214,6 @@ interpretation:
   - The burst time is defined only when all N sandboxes answered; otherwise the result is the number that
     answered, k of N.
   - One burst runs at a time per provider account, so no other sandbox of the batch starts beside it.
-  - Version 3 moves provider creation-context setup before the timed sandbox creates; the sandbox create
-    and ready workload is unchanged.
 validity_checks:
 - id: image_new_per_trial
   threat: A provider could start every trial from an image it has already seen.
@@ -290,7 +285,6 @@ independence_answers:
 
 ---
 id: sequential-tti
-version: 1.2.18
 effective: '2026-11-08'
 name: '{name:test.sequential-tti}'
 category: sandbox_operation
@@ -298,7 +292,7 @@ headline: Create to first command
 notes:
   what_this_measures: The result measures from dispatch of a create request until the selected first command
     returns successfully.
-  how_to_read: The {param:sequential-tti.1.2.18.statistics.primary} is shown in {unit:time_to_interactive};
+  how_to_read: The {param:sequential-tti.statistics.primary} is shown in {unit:time_to_interactive};
     {direction:time_to_interactive}.
   summary: >-
     Time to first command is measured for sandboxes created in sequence from one unique trial
@@ -306,9 +300,7 @@ notes:
   how_it_is_measured: >-
     A job-host monotonic clock times each create request through the selected command’s exit code.
     Each trial uses a unique image layer; provider base-image caches and warm pools stay enabled.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: time_to_interactive
   unit: ms
@@ -330,13 +322,13 @@ environment:
 procedure:
   mode: sequential
   trials: 40
-  sandboxes_per_trial: 10
+  sandboxes_per_trial: 5
   concurrency:
     trials_in_parallel: 10
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: Each trial uses a unique trial-image layer. Provider base-image caches and warm pools
-      remain enabled. Sandboxes 2 through 10 follow the previous one by seconds and may reuse provider
+      remain enabled. Every sandbox after the first follows the previous one by seconds and may reuse provider
       caches or warm-pool state. Nothing is sent to the provider between the image build and the first
       create, or between a create and its command.
     cold: The trial-image layer is unique; host and base-layer cache state is not claimed.
@@ -345,31 +337,31 @@ procedure:
   - id: 'true'
     label: 'true'
     command: 'true'
-    description: The workload uses the {param:sequential-tti.1.2.18.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:sequential-tti.procedure.variants.0.label} configuration.
     notes:
-      summary: '{param:sequential-tti.1.2.18.notes.summary}'
-      what_this_measures: '{param:sequential-tti.1.2.18.notes.what_this_measures}'
+      summary: '{param:sequential-tti.notes.summary}'
+      what_this_measures: '{param:sequential-tti.notes.what_this_measures}'
   - id: python3
     label: python3 -c import
     command: python3 -c 'import json, sqlite3, ssl, asyncio, urllib.request, email.parser, xml.etree.ElementTree'
-    description: The workload uses the {param:sequential-tti.1.2.18.procedure.variants.1.label} configuration.
+    description: The workload uses the {param:sequential-tti.procedure.variants.1.label} configuration.
     notes:
-      summary: '{param:sequential-tti.1.2.18.notes.summary}'
-      what_this_measures: '{param:sequential-tti.1.2.18.notes.what_this_measures}'
+      summary: '{param:sequential-tti.notes.summary}'
+      what_this_measures: '{param:sequential-tti.notes.what_this_measures}'
   - id: node
     label: node -e require
     command: node -e 'require("crypto"); require("zlib"); require("http")'
-    description: The workload uses the {param:sequential-tti.1.2.18.procedure.variants.2.label} configuration.
+    description: The workload uses the {param:sequential-tti.procedure.variants.2.label} configuration.
     notes:
-      summary: '{param:sequential-tti.1.2.18.notes.summary}'
-      what_this_measures: '{param:sequential-tti.1.2.18.notes.what_this_measures}'
+      summary: '{param:sequential-tti.notes.summary}'
+      what_this_measures: '{param:sequential-tti.notes.what_this_measures}'
   - id: git
     label: git --version
     command: git --version
-    description: The workload uses the {param:sequential-tti.1.2.18.procedure.variants.3.label} configuration.
+    description: The workload uses the {param:sequential-tti.procedure.variants.3.label} configuration.
     notes:
-      summary: '{param:sequential-tti.1.2.18.notes.summary}'
-      what_this_measures: '{param:sequential-tti.1.2.18.notes.what_this_measures}'
+      summary: '{param:sequential-tti.notes.summary}'
+      what_this_measures: '{param:sequential-tti.notes.what_this_measures}'
   steps:
   - id: build
     name: Image build
@@ -446,7 +438,7 @@ statistics:
 cost:
   method: not_published
   notes:
-  - A trial's charge covers the image build and all ten sandboxes, and no per-sandbox split is defined,
+  - A trial's charge covers the image build and every sandbox of the trial, and no per-sandbox split is defined,
     so no cost is published for this benchmark.
   - The provider may also charge for image preparation or short-lived image storage.
 failure_policy:
@@ -470,7 +462,7 @@ failure_policy:
   - An excluded trial stays in the data with its reason.
   - The ready check does not run before the first command, since that command is what is measured.
 parameters:
-  path: parameters/sequential-tti/1.2.18/
+  path: parameters/sequential-tti/
   sha256: 240fe318604b76eeec1d775c1b75b9491dbe6369e76bb1627d65a13bd20bfe4d
 interpretation:
   what_to_do: Compare how quickly providers start fresh sandboxes for work, and which first command you
@@ -482,10 +474,8 @@ interpretation:
   - Later starts follow the preceding sandbox closely and may use warmer provider hosts.
   - Image build is recorded but excluded from the computed start time.
   caveats:
-  - Sandboxes 1 and 10 are shown as separate positions; provider base-image caches and warm pools
+  - The first and last sandboxes are shown as separate positions; provider base-image caches and warm pools
     remain enabled, so these positions do not mean cold hosts or base layers.
-  - Version 6 of the earlier test replaced Start time + exec, which ran the three programs as one command;
-    its earlier records stay as history.
   - Up to ten trials of a provider run at once, so a trial can share the provider's hosts with the other
     trials of its batch; the number in flight is recorded for each trial.
 validity_checks:
@@ -512,7 +502,7 @@ execution:
 independence_answers:
   fresh_sandbox:
     status: exception
-    text: Each trial creates ten sandboxes one after another from one new image, by design; the ten are
+    text: Each trial creates its sandboxes one after another from one new image, by design; they are
       one sequence reported by position, and the trial, not the sandbox, is the independent sample.
   equal_concurrency:
     status: meets

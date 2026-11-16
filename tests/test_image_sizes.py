@@ -17,23 +17,19 @@ from sandbox_benchmark_verifier.image_sizes import (
     image_fact_errors,
     standard_image_bytes,
 )
-from sandbox_benchmark_verifier.versions import version_key
 
 ROOT = Path(__file__).resolve().parents[1]
 STANDARD = (
-    max(
-        (item for item in load_methodology(ROOT) if item.document.get("id") == "sbs.common"),
-        key=lambda item: version_key(str(item.document["version"])),
-    )
+    next(item for item in load_methodology(ROOT) if item.document.get("id") == "sbs.common")
     .document["environment"]["image"]["reference"]
     .rsplit("@", 1)[1]
 )
 FACTS = {"compressed_bytes": 10, "uncompressed_bytes": 30, "layers": 2, "files": 7}
 
 
-def _write(root: Path, version: str, rows: list[dict[str, object]]) -> Path:
-    path = root / "parameters/image-build-2vcpu-4gib" / version / "workloads.json"
-    path.parent.mkdir(parents=True)
+def _write(root: Path, rows: list[dict[str, object]]) -> Path:
+    path = root / "parameters/image-build-2vcpu-4gib/workloads.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
@@ -50,15 +46,17 @@ def test_the_repository_has_facts_for_every_image_build_workload() -> None:
 
 
 def test_a_workload_with_no_facts_fails_and_names_the_command(tmp_path: Path) -> None:
-    _write(tmp_path, "1.0.0", [_row("python", "a" * 64)])
+    _write(tmp_path, [_row("python", "a" * 64)])
     errors = image_fact_errors(tmp_path)
     assert len(errors) == 1
     assert "sandbox-benchmark-verify image-sizes" in errors[0]
 
 
 def test_the_generator_reads_a_digest_once_and_reuses_its_facts(tmp_path: Path) -> None:
-    old = _write(tmp_path, "1.0.0", [_row("python", "a" * 64, FACTS)])
-    new = _write(tmp_path, "1.1.0", [_row("python", "a" * 64), _row("node", "b" * 64)])
+    path = _write(
+        tmp_path,
+        [_row("python", "a" * 64, FACTS), _row("python", "a" * 64), _row("node", "b" * 64)],
+    )
     read: list[str] = []
 
     def reader(reference: str) -> dict[str, int]:
@@ -68,11 +66,9 @@ def test_the_generator_reads_a_digest_once_and_reuses_its_facts(tmp_path: Path) 
     filled = fill_facts(tmp_path, reader)
     assert len(filled) == 2
     assert read == [f"docker.io/library/node@sha256:{'b' * 64}"]  # python's digest is already known
-    rows = json.loads(new.read_text())
-    assert rows[0]["data"]["facts"] == FACTS and rows[1]["data"]["facts"]["layers"] == 9
-    assert (
-        json.loads(old.read_text())[0]["data"]["facts"] == FACTS
-    )  # released files stay as they are
+    rows = json.loads(path.read_text())
+    assert rows[0]["data"]["facts"] == FACTS and rows[1]["data"]["facts"] == FACTS
+    assert rows[2]["data"]["facts"]["layers"] == 9
     assert image_fact_errors(tmp_path) == []
     assert fill_facts(tmp_path, reader) == []
 

@@ -1,5 +1,4 @@
 id: sbs.common
-version: 1.0.18
 effective: '2026-11-08'
 name: Common methodology
 category: common
@@ -17,7 +16,8 @@ environment:
   connection_idle_exceptions:
   - provider: daytona
     rule: The SDK has no idle-timeout setting. Its command channel keeps its connection open, and its file-transfer
-      channel reconnects after file_transfer_idle_seconds of idle time.
+      channel reconnects after {duration:sbs.common.environment.connection_idle_exceptions.0.file_transfer_idle_seconds}
+      of idle time.
     file_transfer_idle_seconds: 5
   job_host: Every provider is timed from its own cloud job host, the same kind of host for every provider,
     in the AWS region its publication names (every trial's host record carries it as job_host). Each latency

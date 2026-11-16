@@ -1,5 +1,4 @@
 id: 7-zip-1-thread
-version: 1.1.18
 effective: '2026-11-08'
 name: '{name:test.7-zip-1-thread}'
 category: machine_performance
@@ -10,13 +9,11 @@ notes:
   what_this_measures: The result is the compression and decompression rating from one sandbox CPU thread.
   how_it_is_measured: The compression and decompression tool runs in the sandbox and reports its own rating
     using its own clock.
-  how_to_read: The {param:7-zip-1-thread.1.1.18.statistics.primary} summarizes successful trials in the
+  how_to_read: The {param:7-zip-1-thread.statistics.primary} summarizes successful trials in the
     axis unit; {direction:total_mips}.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_mips
   unit: MIPS
@@ -148,7 +145,7 @@ execution:
   mode: script
   inference: false
 parameters:
-  path: parameters/7-zip-1-thread/1.1.18/
+  path: parameters/7-zip-1-thread/
   sha256: b6a9d141646941719ab5319e7cde3cafb54ebdd2a81189c672654f2a6705db69
 interpretation:
   informs: 'How fast a sandbox computes: agents that build, test, compress or crunch data wait on the

@@ -27,7 +27,7 @@ def clock_row(clocks: Sequence[str], labels: Mapping[str, str]) -> str:
 
 
 def glance_clock_errors(bundle: Mapping[str, Any]) -> list[str]:
-    """Every version's Clock row (``clocks.headline``) is exactly the names table's clock labels."""
+    """Every document's Clock row (``clocks.headline``) is the names table's clock labels."""
     labels = list(clock_labels(bundle["names"]).values())
     allowed = {
         list_text(list(order))
@@ -35,10 +35,8 @@ def glance_clock_errors(bundle: Mapping[str, Any]) -> list[str]:
         for order in permutations(labels, size)
     }
     return [
-        f"{RULE_ID}: {identifier}@{version} clocks.headline is {value!r}, not the names table's "
-        "clock labels"
-        for identifier, versions in bundle.get("methodologies", {}).items()
-        for version, row in versions.items()
+        f"{RULE_ID}: {identifier} clocks.headline is {value!r}, not the names table's clock labels"
+        for identifier, row in bundle.get("methodologies", {}).items()
         if (value := (row.get("reader_definition") or {}).get("clocks", {}).get("headline"))
         is not None
         and not (isinstance(value, str) and value in allowed)

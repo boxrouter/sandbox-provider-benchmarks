@@ -1,6 +1,6 @@
 {
   "deepswe": {
-    "source": "the {name:test.deepswe} {param:deepswe.1.1.22.source.dataset_version} raw data",
+    "source": "the {name:test.deepswe} {param:deepswe.source.dataset_version} raw data",
     "set_clause": "a replay of commands from an agent's attempt to solve a repository task",
     "set_sentence": "Each trace is a replay of commands from an agent's attempt to solve a repository task.",
     "unit_sentence": "This trace is a replay of commands from an agent's attempt to solve the {label} task."
@@ -19,8 +19,8 @@
   },
   "r2e-gym": {
     "source": "the {name:test.r2e-gym} raw data",
-    "set_clause": "a replay of {countword:r2e-gym.1.1.22.parameters.workload.rollouts} recorded rollouts from an agent's attempts at a repository task",
-    "set_sentence": "Each task is a replay of {countword:r2e-gym.1.1.22.parameters.workload.rollouts} recorded rollouts from an agent's attempts to solve a repository task.",
-    "unit_sentence": "This task is a replay of {countword:r2e-gym.1.1.22.parameters.workload.rollouts} recorded rollouts from an agent's attempts to solve the {label} task."
+    "set_clause": "a replay of {countword:r2e-gym.parameters.workload.rollouts} recorded rollouts from an agent's attempts at a repository task",
+    "set_sentence": "Each task is a replay of {countword:r2e-gym.parameters.workload.rollouts} recorded rollouts from an agent's attempts to solve a repository task.",
+    "unit_sentence": "This task is a replay of {countword:r2e-gym.parameters.workload.rollouts} recorded rollouts from an agent's attempts to solve the {label} task."
   }
 }

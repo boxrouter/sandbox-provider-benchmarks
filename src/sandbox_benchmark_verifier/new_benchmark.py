@@ -128,6 +128,6 @@ def new_benchmark_errors(root: Path) -> list[str]:
             or document.get("id") in exempt
         ):
             continue
-        where = f"{document.get('id')} {document.get('version')}: new benchmark"
+        where = f"{document.get('id')}: new benchmark"
         errors.extend(f"{where}: {what}" for what in requirement_errors(document, known))
     return errors

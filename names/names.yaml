@@ -2,10 +2,7 @@
 # Edit by adding rows; an id never changes after creation. Old ids live in aliases.yaml.
 schema: boxrouter.bench.names/2
 catalog_selection:
-  default_common: {id: sbs.common, version: 1.0.18}
   region_country_policy:
-    source: {id: sbs.common, version: 1.0.18}
-    equivalents: [{id: sbs.common, version: 1.0.18}]
     countries: [US]
     # A provider with no US region runs where its entry says, for the stated reason. Each entry
     # is named in the common's region_policy text; nothing else may run outside the US. `label`
@@ -121,7 +118,7 @@ names:
   - {row: 141, kind: "hero", id: "time-score", name: "Time Score", document: "index.speed_score", common_subsection: "provider-scores", unit: "workload", unit_description: "One workload's value is weighted equally."}
   - {row: 142, kind: "hero", id: "cost-score", name: "Cost Score", document: "index.cost_score", common_subsection: "provider-scores", unit: "workload", unit_description: "One workload's value is weighted equally."}
   - {row: 89, kind: "hero", id: "sequential-tti", name: "Cold Startup Time", document: "sequential-tti"}
-  - {row: 90, kind: "page", id: "benchmarks", name: "Sandbox Benchmarks", summary: "Methods and results for comparing sandbox performance across defined workloads."}
+  - {row: 90, kind: "page", id: "benchmarks", name: "Sandbox Provider Benchmarks", summary: "Methods and results for comparing sandbox performance across defined workloads."}
   - {row: 156, kind: "page", id: "common", name: "Common Methodology", document: "sbs.common"}
   - {row: 157, kind: "page", id: "pricing", name: "Pricing Methodology", document: "sbs.pricing"}
   - {row: 139, kind: "quantity", id: "time-score", name: "Time Score"}
@@ -272,7 +269,7 @@ names:
   - {row: 131, kind: "test", id: "read-4kib-2vcpu-8gib", name: "Read 4 KiB (2 vCPU / 8 GiB)", parent: "files", document: "read-4kib-2vcpu-8gib", page: "read-4kib"}
   - {row: 49, kind: "view", id: "files-read-write", name: "Read and Write", parent: "sandbox-operations", subtitle: "Times repeated requests that read/write a fixed incompressible payload to a sandbox file."}
   - {row: 50, kind: "tab", id: "pause-resume", name: "Pause and Resume", parent: "sandbox-operations"}
-  - {row: 50, kind: "test", id: "pause-resume", name: "Pause and Resume", parent: "pause-resume", document: "pause-resume", selector: {label: "Paused Disk Size (GiB)", mode: chooses}, presentation: {panel: "pause-resume", cost: {label: "Cost per 1,000 Successes", divisor: 1}}}
+  - {row: 50, kind: "test", id: "pause-resume", name: "Pause and Resume", parent: "pause-resume", document: "pause-resume", selector: {label: "Paused Disk Size (GiB)", mode: chooses}, presentation: {panel: "pause-resume"}}
   - {row: 51, kind: "variant", id: "empty", name: "Empty", parent: "pause-resume", workload: "empty", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "0"}}
   - {row: 51, kind: "variant", id: "memory-1gib", name: "1 GiB in memory", parent: "pause-resume", workload: "memory-1gib"}
   - {row: 51, kind: "variant", id: "storage-1gib", name: "1 GiB on disk", parent: "pause-resume", workload: "storage-1gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "1"}}
@@ -281,7 +278,7 @@ names:
   - {row: 52, kind: "stage", id: "pause", name: "Pause", parent: "pause-resume"}
   - {row: 52, kind: "stage", id: "resume", name: "Resume", parent: "pause-resume"}
   - {row: 52, kind: "stage", id: "read", name: "Read", parent: "pause-resume"}
-  - {row: 53, kind: "test", id: "delayed-resume", name: "Delayed Resume", parent: "pause-resume", document: "delayed-resume", selector: {label: "Delay Time", mode: chooses, description: "Time spent waiting after pause, or after the initial read where pause is unavailable."}, presentation: {cost: {label: "Cost per 1,000 Successes", divisor: 1}}}
+  - {row: 53, kind: "test", id: "delayed-resume", name: "Delayed Resume", parent: "pause-resume", document: "delayed-resume", selector: {label: "Delay Time", mode: chooses, description: "Time spent waiting after pause, or after the initial read where pause is unavailable."}}
   - {row: 54, kind: "variant", id: "wait-0s", name: "Resumed at once", parent: "delayed-resume", workload: "wait-0s", selector: {label: "Delay Time", mode: chooses, option: "0 s"}}
   - {row: 54, kind: "variant", id: "wait-60s", name: "Resumed after 60 s", parent: "delayed-resume", workload: "wait-60s", selector: {label: "Delay Time", mode: chooses, option: "60 s"}}
   - {row: 54, kind: "variant", id: "wait-15min", name: "Resumed after 15 min", parent: "delayed-resume", workload: "wait-15min", selector: {label: "Delay Time", mode: chooses, option: "15 min"}}

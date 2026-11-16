@@ -19,7 +19,6 @@ from sandbox_benchmark_verifier.names import _load_tables, compiler_tables_cache
 from sandbox_benchmark_verifier.panel_titles import title_errors
 from sandbox_benchmark_verifier.text import DIGEST_ALGORITHMS
 from sandbox_benchmark_verifier.text_predicates import check_program
-from sandbox_benchmark_verifier.versions import newest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -44,7 +43,7 @@ def _specified_tests() -> set[str]:
 
 
 def _latest(documents: list[dict[str, Any]], identifier: str) -> dict[str, Any]:
-    return newest(documents)[identifier]
+    return {document["id"]: document for document in documents}[identifier]
 
 
 def test_every_machine_test_has_a_generated_title_naming_its_standard(
@@ -59,7 +58,7 @@ def test_every_machine_test_has_a_generated_title_naming_its_standard(
         document = _latest(generated, identifier)
         standard = document["source"]["name"]
         assert standard in document["panel"]["title"]
-        entry = bundle["methodologies"][identifier][document["version"]]
+        entry = bundle["methodologies"][identifier]
         assert entry["text"]["panel"] == {
             "title": document["panel"]["title"],
             "command": document["panel"]["command"],

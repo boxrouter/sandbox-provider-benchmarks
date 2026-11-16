@@ -48,7 +48,6 @@ from sandbox_benchmark_verifier.new_benchmark import PRE_TEMPLATE_IDS, pre_templ
 from sandbox_benchmark_verifier.placeholders import resolve_template
 from sandbox_benchmark_verifier.text_predicates import OPERATORS
 from sandbox_benchmark_verifier.unit_forms import unit_form_errors
-from sandbox_benchmark_verifier.versions import version_key
 from sandbox_benchmark_verifier.yaml_load import read_mapping
 
 FLAT_KINDS = ("document", "test", "task", "tab", "view", "section", "subsection")
@@ -437,7 +436,7 @@ def _schema_errors(name: str, document: Mapping[str, Any], root: Path) -> list[s
 
 
 def _methodology_documents(root: Path) -> list[dict[str, Any]]:
-    """Read every methodology document, including multiple versions in one YAML file."""
+    """Read every methodology document, including several in one YAML file."""
     return [
         item.document
         for item in load_methodology(root, include_retired=True)
@@ -455,11 +454,12 @@ def _command_name_errors(rows: list[dict[str, Any]], documents: list[dict[str, A
             (item for item in rows if item["kind"] == "test" and item["id"] == row.get("parent")),
             None,
         )
-        versions = [item for item in documents if item["id"] == (test or {}).get("document")]
-        if not versions:
+        owner = next(
+            (item for item in documents if item["id"] == (test or {}).get("document")), None
+        )
+        if owner is None:
             continue
-        latest = max(versions, key=lambda item: version_key(item["version"]))
-        variants = latest.get("procedure", {}).get("variants", [])
+        variants = owner.get("procedure", {}).get("variants", [])
         variant: dict[str, Any] = next((v for v in variants if v.get("id") == row["workload"]), {})
         command = variant.get("command")
         if (
@@ -664,7 +664,7 @@ def _reference_rows(
 def effective_statistic_id(
     document: Mapping[str, Any],
     metric: Mapping[str, Any],
-    methods: Mapping[tuple[str, str], Mapping[str, Any]],
+    methods: Mapping[str, Mapping[str, Any]],
 ) -> Any:
     """Return the metric statistic, falling back through document inheritance."""
     if metric.get("statistic") is not None:
@@ -680,15 +680,15 @@ def effective_statistic_id(
 
 
 def _statistic_sources(
-    document: Mapping[str, Any], methods: Mapping[tuple[str, str], Mapping[str, Any]]
+    document: Mapping[str, Any], methods: Mapping[str, Mapping[str, Any]]
 ) -> list[Mapping[str, Any]]:
     sources: list[Mapping[str, Any]] = []
     local = document.get("statistics")
     if isinstance(local, Mapping):
         sources.append(local)
     inherited = document.get("inherits")
-    if isinstance(inherited, Mapping):
-        parent = methods.get((str(inherited.get("id", "")), str(inherited.get("version", ""))))
+    if isinstance(inherited, str):
+        parent = methods.get(inherited)
         parent_statistics = parent.get("statistics") if parent else None
         if isinstance(parent_statistics, Mapping):
             sources.append(parent_statistics)
@@ -709,17 +709,14 @@ def _quantity_rule_errors(rows: list[dict[str, Any]], grammar: Mapping[str, Any]
 
 def _metric_binding_errors(
     rows: list[dict[str, Any]],
-    methods: Mapping[tuple[str, str], Mapping[str, Any]],
+    methods: Mapping[str, Mapping[str, Any]],
     root: Path,
-) -> tuple[list[str], set[tuple[str, str, str]]]:
+) -> tuple[list[str], set[tuple[str, str]]]:
     errors = []
-    seen: set[tuple[str, str, str]] = set()
-    bound: set[tuple[str, str, str]] = set()
+    seen: set[tuple[str, str]] = set()
+    bound: set[tuple[str, str]] = set()
     method_schema = json.loads((root / "schemas" / "methodology.schema.json").read_text())
-    metadata_validators = (
-        Draft202012Validator(method_schema["$defs"]["semver"]),
-        Draft202012Validator(method_schema["$defs"]["snake_name"]),
-    )
+    name_validator = Draft202012Validator(method_schema["$defs"]["snake_name"])
     for row in rows:
         reference, label = row.get("metric"), row.get("label")
         if (reference is None) != (label is None):
@@ -728,21 +725,19 @@ def _metric_binding_errors(
             )
         if reference is None:
             continue
-        key = (reference["document"], reference["version"], reference["name"])
-        where = f"names row {row['row']} {row['id']} metric {key[0]}@{key[1]}/{key[2]}"
+        key = (reference["document"], reference["name"])
+        where = f"names row {row['row']} {row['id']} metric {key[0]}/{key[1]}"
         if key in seen:
             errors.append(f"{where}: metric has more than one name binding")
         seen.add(key)
         bound.add(key)
-        if not metadata_validators[0].is_valid(reference["version"]):
-            errors.append(f"{where}: version is not semantic version syntax")
-        if not metadata_validators[1].is_valid(reference["name"]):
+        if not name_validator.is_valid(reference["name"]):
             errors.append(f"{where}: name is not a methodology metric name")
-        method = methods.get((key[0], key[1]))
+        method = methods.get(key[0])
         if method is None:
-            errors.append(f"{where}: methodology document and version do not exist")
+            errors.append(f"{where}: methodology document does not exist")
             continue
-        matches = [metric for metric in method.get("metrics", []) if metric.get("name") == key[2]]
+        matches = [metric for metric in method.get("metrics", []) if metric.get("name") == key[1]]
         if len(matches) != 1:
             errors.append(f"{where}: methodology metric does not resolve uniquely")
     return errors, bound
@@ -764,7 +759,7 @@ def _statistic_reference_errors(
     rows: list[dict[str, Any]],
     document: Mapping[str, Any],
     metric: Mapping[str, Any],
-    methods: Mapping[tuple[str, str], Mapping[str, Any]],
+    methods: Mapping[str, Mapping[str, Any]],
     where: str,
 ) -> list[str]:
     if "statistic" not in metric:
@@ -792,7 +787,7 @@ def _bound_metric_errors(
     rows: list[dict[str, Any]],
     document: Mapping[str, Any],
     metric: Mapping[str, Any],
-    methods: Mapping[tuple[str, str], Mapping[str, Any]],
+    methods: Mapping[str, Mapping[str, Any]],
     where: str,
 ) -> list[str]:
     errors = []
@@ -815,11 +810,11 @@ def _metric_metadata_errors(
     rows: list[dict[str, Any]],
     document: Mapping[str, Any],
     metric: Mapping[str, Any],
-    methods: Mapping[tuple[str, str], Mapping[str, Any]],
-    bound: set[tuple[str, str, str]],
+    methods: Mapping[str, Mapping[str, Any]],
+    bound: set[tuple[str, str]],
 ) -> list[str]:
-    key = (str(document["id"]), str(document["version"]), str(metric.get("name", "")))
-    where = f"{key[0]}@{key[1]}/{key[2]}"
+    key = (str(document["id"]), str(metric.get("name", "")))
+    where = f"{key[0]}/{key[1]}"
     errors = _phase_reference_errors(rows, metric, where)
     errors.extend(_statistic_reference_errors(rows, document, metric, methods, where))
     if key in bound:
@@ -834,7 +829,7 @@ def _metric_label_errors(
     root: Path,
 ) -> list[str]:
     """Resolve source-bound labels and optional metric vocabulary references."""
-    methods = {(str(document["id"]), str(document["version"])): document for document in documents}
+    methods = {str(document["id"]): document for document in documents}
     errors = _quantity_rule_errors(rows, grammar)
     binding_errors, bound = _metric_binding_errors(rows, methods, root)
     errors.extend(binding_errors)

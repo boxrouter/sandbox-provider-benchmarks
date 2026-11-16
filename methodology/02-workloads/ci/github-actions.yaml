@@ -40,9 +40,7 @@ failure_policy:
     destroy: 300
     job_steps: 600
 id: github-actions
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 interpretation:
   caveats:
   - Each step runs under bash as the image's non-root `box` user; the job's own `sudo` lines run as the
@@ -71,12 +69,12 @@ notes:
   cost_summary: The cost covers sandbox creation through confirmed destruction per successful job trial.
   how_it_is_measured: Each pinned public repository job is replayed in a fresh sandbox; step runtimes
     use the sandbox clock.
-  how_to_read: The {param:github-actions.1.1.16.statistics.primary} summarizes successful trials in the
+  how_to_read: The {param:github-actions.statistics.primary} summarizes successful trials in the
     axis unit; {direction:job_time}.
   summary: Each selected repository job runs its recorded steps in a fresh sandbox.
   what_this_measures: The result sums the selected jobs’ step runtimes using the sandbox clock.
 parameters:
-  path: parameters/github-actions/1.1.16/
+  path: parameters/github-actions/
   sha256: c95ec83910058a173925f9dc6848e9b71cc5ed2a4b368d8a9db409831625c983
 procedure:
   concurrency:
@@ -146,12 +144,12 @@ procedure:
       stop_event: The destroy call returns.
   trials: 20
   variants:
-  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.0.label} configuration.
+  - description: The workload uses the {param:github-actions.procedure.variants.0.label} configuration.
     id: all
     label: All Jobs
     notes:
-      summary: '{param:github-actions.1.1.16.notes.summary}'
-      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+      summary: '{param:github-actions.notes.summary}'
+      what_this_measures: '{param:github-actions.notes.what_this_measures}'
     parameters:
       combines:
       - zustand
@@ -160,72 +158,72 @@ procedure:
       - spotify-player
       - jq
       - gson
-  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.1.label} configuration.
+  - description: The workload uses the {param:github-actions.procedure.variants.1.label} configuration.
     id: zustand
     label: Node (zustand)
     notes:
-      summary: '{param:github-actions.1.1.16.notes.summary}'
-      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+      summary: '{param:github-actions.notes.summary}'
+      what_this_measures: '{param:github-actions.notes.what_this_measures}'
     parameters:
       commit: d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
       job: test
       repository: pmndrs/zustand
       steps: 9
       workflow: .github/workflows/test.yml
-  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.2.label} configuration.
+  - description: The workload uses the {param:github-actions.procedure.variants.2.label} configuration.
     id: fastapi
     label: Python (fastapi)
     notes:
-      summary: '{param:github-actions.1.1.16.notes.summary}'
-      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+      summary: '{param:github-actions.notes.summary}'
+      what_this_measures: '{param:github-actions.notes.what_this_measures}'
     parameters:
       commit: 69ddc2badf9da1123bba4d360225ae6b085985f6
       job: test (ubuntu-latest, 3.13, highest, no-deprecation, coverage)
       repository: fastapi/fastapi
       steps: 5
       workflow: .github/workflows/test.yml
-  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.3.label} configuration.
+  - description: The workload uses the {param:github-actions.procedure.variants.3.label} configuration.
     id: gin
     label: Go (gin)
     notes:
-      summary: '{param:github-actions.1.1.16.notes.summary}'
-      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+      summary: '{param:github-actions.notes.summary}'
+      what_this_measures: '{param:github-actions.notes.what_this_measures}'
     parameters:
       commit: 43fe48e8a0f44af783116cdb010725e6bb50255f
       job: ubuntu-latest @ Go 1.27
       repository: gin-gonic/gin
       steps: 4
       workflow: .github/workflows/gin.yml
-  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.4.label} configuration.
+  - description: The workload uses the {param:github-actions.procedure.variants.4.label} configuration.
     id: spotify-player
     label: Rust (spotify-player)
     notes:
-      summary: '{param:github-actions.1.1.16.notes.summary}'
-      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+      summary: '{param:github-actions.notes.summary}'
+      what_this_measures: '{param:github-actions.notes.what_this_measures}'
     parameters:
       commit: 7dc9d17a7bf5671eb6129fdf9127729f659637fc
       job: rust-ci (ubuntu-latest)
       repository: aome510/spotify-player
       steps: 7
       workflow: .github/workflows/ci.yml
-  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.5.label} configuration.
+  - description: The workload uses the {param:github-actions.procedure.variants.5.label} configuration.
     id: jq
     label: C (jq)
     notes:
-      summary: '{param:github-actions.1.1.16.notes.summary}'
-      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+      summary: '{param:github-actions.notes.summary}'
+      what_this_measures: '{param:github-actions.notes.what_this_measures}'
     parameters:
       commit: 49fbca1242c7f46f00b849de76565764e0254a03
       job: linux (amd64)
       repository: jqlang/jq
       steps: 5
       workflow: .github/workflows/ci.yml
-  - description: The workload uses the {param:github-actions.1.1.16.procedure.variants.6.label} configuration.
+  - description: The workload uses the {param:github-actions.procedure.variants.6.label} configuration.
     id: gson
     label: Java (gson)
     notes:
-      summary: '{param:github-actions.1.1.16.notes.summary}'
-      what_this_measures: '{param:github-actions.1.1.16.notes.what_this_measures}'
+      summary: '{param:github-actions.notes.summary}'
+      what_this_measures: '{param:github-actions.notes.what_this_measures}'
     parameters:
       commit: 881d2b55de74dd6c2fded7b2cb307b048117af97
       job: Build on JDK 21 (jdk)
@@ -277,7 +275,6 @@ validity_checks:
 - check: The replay script turns core dumps off (`ulimit -c 0`); this is neither logged nor timed.
   id: replay_script_start
   threat: A crash writes a core dump that changes what a step costs.
-version: 1.1.16
 independence_answers:
   fresh_sandbox:
     status: meets

@@ -30,7 +30,6 @@ def test_timing_rules_and_referenced_values_resolve() -> None:
         item.document["ready_check"]
         for item in documents
         if item.document["id"] == contract["sources"]["common"]["id"]
-        and item.document["version"] == contract["sources"]["common"]["version"]
     )
 
 

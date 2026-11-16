@@ -1,5 +1,4 @@
 id: package-registries
-version: 1.1.16
 effective: '2026-11-08'
 name: '{name:test.package-registries}'
 category: machine_performance
@@ -10,13 +9,11 @@ notes:
   how_it_is_measured: Each selected pinned workload comes from GitHub, npm or PyPI; its command runs after
     setup with package caches cleared. The sandbox clock times it, including downloads, unpacking and
     installation work.
-  how_to_read: The {param:package-registries.1.1.16.statistics.primary} summarizes successful trials in
+  how_to_read: The {param:package-registries.statistics.primary} summarizes successful trials in
     the axis unit; {direction:install_runtime_ms}.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful install.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: install_runtime_ms
   unit: ms
@@ -85,8 +82,8 @@ procedure:
     label: git clone
     description: Full clone of fastapi with its Git history from GitHub.
     notes:
-      summary: '{param:package-registries.1.1.16.notes.summary}'
-      what_this_measures: '{param:package-registries.1.1.16.notes.what_this_measures}'
+      summary: '{param:package-registries.notes.summary}'
+      what_this_measures: '{param:package-registries.notes.what_this_measures}'
     parameters:
       command: full clone of fastapi/fastapi, then checkout of commit 69ddc2badf9da1123bba4d360225ae6b085985f6,
         which is checked
@@ -94,8 +91,8 @@ procedure:
     label: npm ci
     description: Clean install of axios's 687 packages exactly as pinned in its lockfile from npm.
     notes:
-      summary: '{param:package-registries.1.1.16.notes.summary}'
-      what_this_measures: '{param:package-registries.1.1.16.notes.what_this_measures}'
+      summary: '{param:package-registries.notes.summary}'
+      what_this_measures: '{param:package-registries.notes.what_this_measures}'
     parameters:
       command: npm ci from the pinned package.json and package-lock.json of axios/axios at commit e6b79d9cef796ca3a903bb83e51d4752b019fd67
         (687 locked packages, from the npm registry)
@@ -103,8 +100,8 @@ procedure:
     label: pip install -r
     description: Installs fastapi's pinned test dependencies from PyPI into a new virtual environment.
     notes:
-      summary: '{param:package-registries.1.1.16.notes.summary}'
-      what_this_measures: '{param:package-registries.1.1.16.notes.what_this_measures}'
+      summary: '{param:package-registries.notes.summary}'
+      what_this_measures: '{param:package-registries.notes.what_this_measures}'
     parameters:
       command: pip install -r a pinned requirements file with hashes, exported by `uv export --frozen
         --no-dev --group tests --extra all --no-emit-project` from fastapi/fastapi's uv.lock at the clone's
@@ -176,7 +173,7 @@ execution:
   mode: script
   inference: false
 parameters:
-  path: parameters/package-registries/1.1.16/
+  path: parameters/package-registries/
   sha256: 1227fc886dbf7ea6aee736de0fce7a6a3c305d7104929f830ec7053752c36cb7
 interpretation:
   informs: How long a user waits for a pinned project to install in a new sandbox on each provider.

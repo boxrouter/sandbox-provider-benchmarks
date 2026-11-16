@@ -12,11 +12,10 @@ from sandbox_benchmark_verifier.option_hovers import (
     option_hover_errors,
     option_hovers,
 )
-from sandbox_benchmark_verifier.versions import newest
 
 
 def _latest(identifier: str) -> dict[str, Any]:
-    return newest(item.document for item in load_methodology())[identifier]
+    return {item.document["id"]: item.document for item in load_methodology()}[identifier]
 
 
 def test_a_variant_with_a_description_shows_it_and_the_filler_shows_nothing() -> None:

@@ -1,12 +1,11 @@
 id: r2e-gym
-version: 1.1.22
 effective: '2026-11-08'
 name: '{name:test.r2e-gym}'
 category: workload
 notes:
   what_this_measures: The result covers environment reset, snapshot creation, restore, tool calls and
     reward checks; no model runs.
-  how_to_read: The {param:r2e-gym.1.1.22.statistics.primary} summarizes successful trials in the axis unit;
+  how_to_read: The {param:r2e-gym.statistics.primary} summarizes successful trials in the axis unit;
     {direction:tool_time}.
   summary: Rollouts of one coding task share a prepared snapshot. No model is called.
   how_it_is_measured: Recorded rollout trajectories share a snapshotted coding environment; tool calls
@@ -14,9 +13,7 @@ notes:
   cost_summary: The cost covers the first sandbox create through the last confirmed destroy, divided by
     successful trials.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: tool_time
   unit: ms
@@ -60,52 +57,52 @@ procedure:
     label: numpy-masked-method-lookup
     parameters:
       task: namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.0.label} configuration.
   - id: numpy-dda20349d172
     label: numpy-issubdtype-abstract-types
     parameters:
       task: namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.1.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.1.label} configuration.
   - id: numpy-61640a849557
     label: numpy-apply-axis-empty
     parameters:
       task: namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.2.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.2.label} configuration.
   - id: numpy-171a3e5811e4
     label: numpy-unstructured-single-field
     parameters:
       task: namanjain12/numpy_final:171a3e5811e43643788c20075be9ba52efb83b81
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.3.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.3.label} configuration.
   - id: numpy-bb46a495ee52
     label: numpy-masked-median-scalar
     parameters:
       task: namanjain12/numpy_final:bb46a495ee5201fb94c14776f41181343e5b7fb2
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.4.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.4.label} configuration.
   - id: numpy-504b287bdf47
     label: numpy-indices-sparse-option
     parameters:
       task: namanjain12/numpy_final:504b287bdf4745256044f336f17c88ddcb0175dd
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.5.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.5.label} configuration.
   - id: numpy-3c0b4db0b51e
     label: numpy-strided-custom-dtype
     parameters:
       task: namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.6.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.6.label} configuration.
   - id: coveragepy-89f44c12465b
     label: coveragepy-behavior-flag-rename
     parameters:
       task: namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.7.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.7.label} configuration.
   - id: numpy-6b8d55e66e53
     label: numpy-masked-median-multiple
     parameters:
       task: namanjain12/numpy_final:6b8d55e66e532d66e1701ad039b4cda306839b3f
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.8.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.8.label} configuration.
   - id: numpy-ad48eaa76403
     label: numpy-histogram-edge-rounding
     parameters:
       task: namanjain12/numpy_final:ad48eaa76403798c298c2761e53e1e43008ab1b1
-    description: The workload uses the {param:r2e-gym.1.1.22.procedure.variants.9.label} configuration.
+    description: The workload uses the {param:r2e-gym.procedure.variants.9.label} configuration.
   stages:
   - id: setup
     name: '{name:stage.setup}'
@@ -250,7 +247,7 @@ statistics:
 cost:
   method: provider_reported_or_priced
 parameters:
-  path: parameters/r2e-gym/1.1.22/
+  path: parameters/r2e-gym/
   sha256: f195d4340305f72639d16f2c43977ba738bde628b147d3d1ce500990ecf56671
 capabilities:
   required:

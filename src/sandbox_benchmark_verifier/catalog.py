@@ -13,12 +13,12 @@ from typing import Any
 
 from jsonschema import Draft202012Validator, ValidationError
 
-from sandbox_benchmark_verifier.versions import newest, version_key
 from sandbox_benchmark_verifier.yaml_load import load_yaml, load_yaml_all
 
 # Release builds stamp the source commit of their bundled assets.
 METHODOLOGY_COMMIT = "fe55f37c02a2552eac59929d0222cb85d7a1dbd0"
 _PACKAGED_ASSETS = Path(str(files("sandbox_benchmark_verifier").joinpath("_assets")))
+COMMON_ID = "sbs.common"
 SCHEMA_NAMES = ("methodology", "run", "measurement", "aggregate", "reader", "presentation")
 
 
@@ -55,7 +55,7 @@ def _assets() -> Path:
 
 
 def retired_ids(root: Path | None = None) -> frozenset[str]:
-    """Ids on the aliases' ``retired`` list: a retired test's released documents stay in the
+    """Ids on the aliases' ``retired`` list: a retired test's documents stay in the
     repository and the immutability lock, but nothing reads them."""
     path = (root or _assets()) / "names" / "aliases.yaml"
     if not path.is_file():
@@ -70,7 +70,7 @@ def load_methodology(
     """Return all YAML documents in repository path order, preserving multi-document files.
 
     A document whose id is on the aliases' ``retired`` list is skipped unless ``include_retired``:
-    its released versions stay in the immutability lock and the repository, but nothing reads them.
+    it stays in the immutability lock and the repository, but nothing reads it.
 
     Paths are repository relative; each document exposes its source URL through ``source_url``.
     Each call returns fresh parsed dictionaries.
@@ -84,7 +84,7 @@ def load_methodology(
             if document is not None:
                 _require_string_keys(document)
                 if document.get("id") in retired:
-                    continue  # a retired test's released versions stay in the lock, not in use
+                    continue  # a retired test stays in the lock, not in use
                 documents.append(
                     MethodologyDocument(path.relative_to(root).as_posix(), document, source_commit)
                 )
@@ -102,115 +102,50 @@ def load_schema(name: str) -> dict[str, Any]:
     return document
 
 
-def default_context(root: Path | None = None) -> dict[str, str]:
-    """The owner's one declared default common; never inferred from version order."""
-    names = load_yaml(((root or _assets()) / "names/names.yaml").read_text())
-    reference = names.get("catalog_selection", {}).get("default_common")
-    if (
-        not isinstance(reference, dict)
-        or set(reference) != {"id", "version"}
-        or reference["id"] != "sbs.common"
-        or not isinstance(reference["version"], str)
-    ):
-        raise ValueError("catalog selection needs an exact default common reference")
-    version_key(reference["version"])
-    return dict(reference)
-
-
 def ordinary_documents(
-    documents: Sequence[Mapping[str, Any]],
-    *,
-    common: Mapping[str, str],
-    effective: str | None = None,
+    documents: Sequence[Mapping[str, Any]], *, effective: str | None = None
 ) -> dict[str, Mapping[str, Any]]:
-    """Select ordinary versions inside an exact common context before version ordering.
+    """The common and the ordinary documents that inherit it, by id.
 
-    This is a selection, not a compatibility or measurement assertion. All-version catalog
-    loading remains unchanged; callers validate the contributing output graphs separately.
+    This is a selection, not a compatibility or measurement assertion; callers validate the
+    contributing output graphs separately.
     """
-    parent = common_document(documents, common)
+    parent = common_document(documents)
     found: dict[str, Mapping[str, Any]] = {}
     for document in documents:
         if effective is not None and str(document.get("effective", "")) > effective:
             continue
-        if document is not parent and not ordinary_in_context(document, common):
+        if document is not parent and not ordinary_in_context(document):
             continue
         identity = str(document["id"])
-        known = found.get(identity)
-        if known is None or version_key(document["version"]) > version_key(known["version"]):
-            found[identity] = document
-        elif document["version"] == known["version"] and document is not known:
-            raise ValueError(f"ambiguous document reference: {identity}@{document['version']}")
+        if identity in found:
+            raise ValueError(f"ambiguous document reference: {identity}")
+        found[identity] = document
     for document in found.values():
         if errors := context_region_errors(document, parent):
             raise ValueError("; ".join(errors))
     return found
 
 
-def ordinary_in_context(document: Mapping[str, Any], common: Mapping[str, str]) -> bool:
-    """The shared ordinary candidate policy for selection and as-of input validation."""
-    return document.get("inherits") == common
+def ordinary_in_context(document: Mapping[str, Any]) -> bool:
+    """The shared ordinary candidate policy for selection and input validation."""
+    return document.get("inherits") == COMMON_ID
 
 
-def common_document(
-    documents: Sequence[Mapping[str, Any]], reference: Mapping[str, str]
-) -> Mapping[str, Any]:
-    """Validate a context without selecting or inspecting unrelated output graphs."""
-    if (
-        set(reference) != {"id", "version"}
-        or reference["id"] != "sbs.common"
-        or not isinstance(reference["version"], str)
-    ):
-        raise ValueError("selection needs an exact sbs.common context")
-    version_key(reference["version"])
-    parents = [
-        d
-        for d in documents
-        if (d.get("id"), d.get("version")) == (reference["id"], reference["version"])
-    ]
+def common_document(documents: Sequence[Mapping[str, Any]]) -> Mapping[str, Any]:
+    """The one common methodology document."""
+    parents = [d for d in documents if d.get("id") == COMMON_ID]
     if len(parents) != 1:
         raise ValueError("selection common is missing or ambiguous")
     return parents[0]
 
 
-def selection_projection(root: Path, documents: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    """Generate the default context and its exact ordinary refs for artifact consumers."""
-    context = default_context(root)
-    current = dict(ordinary_documents(documents, common=context))
-    # A document outside the default context (a planned one, such as Reliability) is still a page
-    # consumers may draw, so it is listed at its newest version too.
-    path = root / "names" / "aliases.yaml"
-    aliases = load_yaml(path.read_text(encoding="utf-8")) if path.is_file() else {}
-    canonical = (aliases or {}).get("document", {})
-    covered = {canonical.get(identity, identity) for identity in current}
-    current.update(
-        newest(
-            document
-            for document in documents
-            if canonical.get(str(document["id"]), str(document["id"])) not in covered
-        )
-    )
-    return {
-        "default_context": context,
-        "current_documents": {
-            identity: {"id": identity, "version": str(document["version"])}
-            for identity, document in current.items()
-        },
-    }
-
-
 def region_policy(document: Mapping[str, Any], documents: Sequence[Mapping[str, Any]]) -> Any:
-    """The exact leaf override, otherwise its exact inherited region policy."""
+    """The leaf override, otherwise the common's region policy."""
     own = document.get("environment", {})
     if "region_policy" in own:
         return deepcopy(own["region_policy"])
-    inherited = document.get("inherits")
-    parents = [
-        d for d in documents if inherited == {"id": d.get("id"), "version": d.get("version")}
-    ]
-    if len(parents) != 1:
-        raise ValueError("region policy needs a unique exact inherited common")
-    return deepcopy(parents[0].get("environment", {}).get("region_policy"))
+    return deepcopy(common_document(documents).get("environment", {}).get("region_policy"))
 
 
 def context_region_errors(document: Mapping[str, Any], parent: Mapping[str, Any]) -> list[str]:
@@ -233,8 +168,7 @@ def region_request_errors(
     resources: Mapping[str, Any],
 ) -> list[str]:
     """Validate the final merged portable request, without guessing native placement."""
-    inherited = document.get("inherits")
-    parent = common_document(documents, inherited) if isinstance(inherited, Mapping) else document
+    parent = document if document.get("id") == COMMON_ID else common_document(documents)
     errors = context_region_errors(document, parent)
     policy = parent.get("environment", {}).get("region_policy")
     if policy == {"selection": "no_portable_region_request"} and "region" in resources:
@@ -257,17 +191,10 @@ def _region_country_binding(
         Draft202012Validator(schema).evolve(schema=fragment).validate(binding)
     except ValidationError as error:
         raise ValueError("region country policy binding is missing or invalid") from error
-    anchor = common_document(documents, binding["source"])
-    policy = region_policy(anchor, documents)
+    policy = region_policy(common_document(documents), documents)
     if not isinstance(policy, str) or not policy:
         raise ValueError("region country policy binding needs a legacy whole policy value")
     approved = {policy}
-    for reference in binding.get("equivalents", []):
-        equivalent = common_document(documents, reference)
-        policy = region_policy(equivalent, documents)
-        if not isinstance(policy, str) or not policy:
-            raise ValueError("region country policy equivalent needs a whole policy value")
-        approved.add(policy)
     exceptions = binding.get("exceptions", [])
     providers = [entry["provider"] for entry in exceptions]
     if len(set(providers)) != len(providers):
@@ -293,16 +220,12 @@ def region_country_errors(
     Callers compose this with region_request_errors on the unchanged final resource mapping.
     Required evidence is not observed placement; None/empty never satisfies a country policy.
     """
-    inherited = document.get("inherits")
-    if isinstance(inherited, Mapping):
-        parent = common_document(documents, inherited)
-    elif document.get("id") == "sbs.common":
-        version = document.get("version")
-        if not isinstance(version, str):
-            raise ValueError("country admission needs an exact common version")
-        parent = common_document(documents, {"id": "sbs.common", "version": version})
+    if document.get("id") == COMMON_ID:
+        parent = document
+    elif ordinary_in_context(document):
+        parent = common_document(documents)
     else:
-        return ["country admission needs an exact inherited common"]
+        return ["country admission needs an inherited common"]
     if errors := context_region_errors(document, parent):
         return errors
     policy = region_policy(document, documents)

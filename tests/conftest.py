@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
 from sandbox_benchmark_verifier.text import build_text_bundle as _compile_text_bundle
 
@@ -53,30 +52,15 @@ def build_text_bundle() -> Callable[[Path], dict[str, Any]]:
     return _compile_text_bundle
 
 
-def _declare_common(root: Path) -> dict[str, str]:
-    """Give a stand-in tree the one explicit common catalog selection binds to (#755, O12): the
-    repository's declared default (names.yaml `catalog_selection.default_common`) and that
-    common document itself, copied unchanged. A stand-in document joins the selection by
-    inheriting the returned reference."""
-    declared = yaml.safe_load((ROOT / "names" / "names.yaml").read_text(encoding="utf-8"))
-    reference = dict(declared["catalog_selection"]["default_common"])
-    names = root / "names" / "names.yaml"
-    names.parent.mkdir(parents=True, exist_ok=True)
-    identity, version = reference["id"], reference["version"]
-    head = f"catalog_selection:\n  default_common: {{id: {identity}, version: {version}}}\n"
-    names.write_text(head + (names.read_text(encoding="utf-8") if names.exists() else ""))
-    source = next(
-        path
-        for path in sorted((ROOT / "methodology").glob("00-common*.yaml"))
-        if (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("version")
-        == reference["version"]
-    )
+def _declare_common(root: Path) -> str:
+    """Give a stand-in tree the common methodology, copied unchanged. A stand-in document joins
+    the selection by inheriting the returned id."""
     (root / "methodology").mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(source, root / "methodology" / source.name)
-    return reference
+    shutil.copyfile(ROOT / "methodology/00-common.yaml", root / "methodology/00-common.yaml")
+    return "sbs.common"
 
 
 @pytest.fixture
-def declare_common() -> Callable[[Path], dict[str, str]]:
-    """Write the declared default common into a stand-in tree; see `_declare_common`."""
+def declare_common() -> Callable[[Path], str]:
+    """Write the common into a stand-in tree; see `_declare_common`."""
     return _declare_common

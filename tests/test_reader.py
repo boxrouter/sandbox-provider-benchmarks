@@ -14,12 +14,7 @@ import yaml
 from jsonschema import Draft202012Validator
 
 from sandbox_benchmark_verifier import reader, text
-from sandbox_benchmark_verifier.catalog import (
-    default_context,
-    load_methodology,
-    load_schema,
-    ordinary_documents,
-)
+from sandbox_benchmark_verifier.catalog import load_methodology, load_schema
 from sandbox_benchmark_verifier.content import content_criteria
 from sandbox_benchmark_verifier.lock import read_lock
 from sandbox_benchmark_verifier.methodology_page import reader_definition
@@ -31,7 +26,6 @@ from sandbox_benchmark_verifier.reader_steps import (
     variant_commands,
     with_step_notes,
 )
-from sandbox_benchmark_verifier.versions import version_key
 
 pytestmark = pytest.mark.unit
 
@@ -72,65 +66,50 @@ def test_the_reader_schema_refuses_science_keys(key: str) -> None:
 def test_a_fact_may_only_read_the_measured_definition(monkeypatch: pytest.MonkeyPatch) -> None:
     source = _source()
     source["methods"]["sequential-read"]["notes"]["how_to_read"] = (
-        "The {param:sequential-read.1.1.18.statistics.primary} summarizes the trials."
+        "The {param:sequential-read.statistics.primary} summarizes the trials."
     )
     monkeypatch.setattr(reader, "load_reader", lambda _root: source)
-    assert any("pins a document version" in error for error in reader.reader_errors(ROOT))
+    assert any("pins another document" in error for error in reader.reader_errors(ROOT))
     source["methods"]["sequential-read"]["notes"]["how_to_read"] = (
         "Polled every {duration:content.timing.replay.poll_seconds}."
     )
-    assert not any("pins a document version" in error for error in reader.reader_errors(ROOT))
+    assert not any("pins another document" in error for error in reader.reader_errors(ROOT))
 
 
-def _measured(identifier: str, version: str) -> dict[str, Any]:
-    return next(
-        document
-        for document in text._methodologies(ROOT)
-        if (document["id"], document["version"]) == (identifier, version)
-    )
+def _measured(identifier: str) -> dict[str, Any]:
+    return next(document for document in text._methodologies(ROOT) if document["id"] == identifier)
 
 
 def test_current_fio_result_uses_the_current_command_and_its_own_facts(
     bundle: dict[str, Any],
 ) -> None:
     method = bundle["reader"]["methods"]["sequential-read"]
-    versions = bundle["methodologies"]["sequential-read"]
-    version = max(versions, key=version_key)  # older versions are kept for pinned data
-    copy_for_version = reader.reader_text(bundle, "sequential-read", version)
-    assert version in versions
-    assert copy_for_version["panel"]["command"] == method["text"]["panel"]["command"]
-    measured = _measured("sequential-read", version)
-    assert measured["parameters"]["path"] == f"parameters/sequential-read/{version}/"
+    assert bundle["methodologies"]["sequential-read"]
+    assert method["text"]["panel"]["command"]
+    measured = _measured("sequential-read")
+    assert measured["parameters"]["path"] == "parameters/sequential-read/"
     assert bundle["reader"]["source"]["path"] == "reader/methods.yaml"
     assert bundle["schema"] == "boxrouter.bench.text/3"
 
 
 def _pinned(directory: Path, block_size: str) -> str:
     """A pinned fio workload directory: the current sequential-read parameters with the sequential
-    read row at the given block size. Older real versions compare equal to it, bar the row."""
+    read row at the given block size."""
     directory.mkdir(parents=True)
-    workloads = json.loads(
-        (ROOT / "parameters" / "sequential-read" / "1.1.18" / "workloads.json").read_text()
-    )
+    workloads = json.loads((ROOT / "parameters" / "sequential-read" / "workloads.json").read_text())
     workloads[0]["data"]["rows"]["disk-seq-read-1m"]["bs"] = block_size
     (directory / "workloads.json").write_text(json.dumps(workloads), encoding="utf-8")
     return str(directory)
 
 
-def test_a_reader_command_follows_the_arguments_each_version_pinned(
+def test_a_reader_command_follows_the_arguments_the_document_pinned(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     build_text_bundle: Callable[[Path], dict[str, Any]],
 ) -> None:
-    current_version = "1.1.18"
-    current_document = copy.deepcopy(_measured("sequential-read", current_version))
-    new = copy.deepcopy(current_document)
-    current_document["parameters"] = {"path": _pinned(tmp_path / "current", "1m")}
-    new["version"] = "9.9.9"
-    new["parameters"] = {"path": _pinned(tmp_path / "new", "4m")}
-    new["environment"]["size"]["vcpu"] = 8
-    new["timing_boundaries"]["stop"] = "A later version stops on a different rule."
-    new["procedure"]["steps"][2]["action"] = "A later version runs fio with other settings."
+    document = copy.deepcopy(_measured("sequential-read"))
+    document["parameters"] = {"path": _pinned(tmp_path / "pinned", "4m")}
+    document["environment"]["size"]["vcpu"] = 8
     source = _source()
     source["methods"] = {"sequential-read": source["methods"]["sequential-read"]}
     source["methods"]["sequential-read"]["notes"]["how_to_read"] = (
@@ -141,51 +120,15 @@ def test_a_reader_command_follows_the_arguments_each_version_pinned(
     monkeypatch.setattr(
         text,
         "_methodologies",
-        lambda root: (
-            [
-                d
-                for d in real(root)
-                if (d["id"], d["version"]) != ("sequential-read", current_version)
-            ]
-            + [current_document, new]
-        ),
+        lambda root: [d for d in real(root) if d["id"] != "sequential-read"] + [document],
     )
-    method = build_text_bundle(ROOT)["reader"]["methods"]["sequential-read"]
-    current = method["by_version"].get(current_version, method["text"])
-    later = method["by_version"].get("9.9.9", method["text"])
-    assert (
-        current["panel"]["title"] == later["panel"]["title"] == "Disk Speed (fio) · Sequential Read"
-    )
-    assert current["panel"]["command"] == "fio --rw=read --bs=1m"
-    assert later["panel"]["command"] == "fio --rw=read --bs=4m"
-    assert current["notes"]["how_to_read"] == "The value comes from 2 vCPUs."
-    assert later["notes"]["how_to_read"] == "The value comes from 8 vCPUs."
-    # The two fixture versions differ in recorded facts, and the old one still holds its own.
-    assert current_document["timing_boundaries"]["stop"] != new["timing_boundaries"]["stop"]
-    assert (
-        current_document["procedure"]["steps"][2]["action"]
-        != new["procedure"]["steps"][2]["action"]
-    )
-    assert (
-        current_document["environment"]["size"]["vcpu"],
-        new["environment"]["size"]["vcpu"],
-    ) == (2, 8)
+    method = build_text_bundle(ROOT)["reader"]["methods"]["sequential-read"]["text"]
+    assert method["panel"]["title"] == "Disk Speed (fio) · Sequential Read"
+    assert method["panel"]["command"] == "fio --rw=read --bs=4m"
+    assert method["notes"]["how_to_read"] == "The value comes from 8 vCPUs."
 
 
-def test_a_version_the_copy_cannot_describe_is_an_error_never_a_fallback(
-    bundle: dict[str, Any],
-) -> None:
-    for identifier, method in bundle["reader"]["methods"].items():
-        for version in method["unresolved_versions"]:
-            with pytest.raises(reader.ReaderVersionError, match=version):
-                reader.reader_text(bundle, identifier, version)
-    with pytest.raises(reader.ReaderVersionError, match="9.9.9"):
-        reader.reader_text(bundle, "sequential-read", "9.9.9")
-    with pytest.raises(reader.ReaderVersionError, match="no-such-test"):
-        reader.reader_text(bundle, "no-such-test", "1.0.0")
-
-
-def test_an_unresolvable_version_is_recorded_not_replaced_by_newer_facts(
+def test_an_unresolvable_fact_is_an_error_never_a_fallback(
     monkeypatch: pytest.MonkeyPatch,
     build_text_bundle: Callable[[Path], dict[str, Any]],
 ) -> None:
@@ -195,7 +138,7 @@ def test_an_unresolvable_version_is_recorded_not_replaced_by_newer_facts(
         "The {param:measured.statistics.no_such_fact} reads this."
     )
     monkeypatch.setattr(reader, "load_reader", lambda _root: source)
-    with pytest.raises(ValueError, match=r"sequential-read@1\.1\.\d+"):
+    with pytest.raises(ValueError, match=r"sequential-read: "):
         build_text_bundle(ROOT)
 
 
@@ -233,78 +176,56 @@ def test_editing_the_reader_changes_no_scientific_record(
         after["reader"]["methods"]["sequential-read"]["text"]["panel"]["command"]
         == "fio --rw=read --bs=2m"
     )
-    for identifier, versions in before["methodologies"].items():
-        for version, record in versions.items():
-            scientific = {key: value for key, value in record.items() if key != "text"}
-            after_record = after["methodologies"][identifier][version]
-            assert scientific == {
-                key: value for key, value in after_record.items() if key != "text"
-            }
+    for identifier, record in before["methodologies"].items():
+        scientific = {key: value for key, value in record.items() if key != "text"}
+        after_record = after["methodologies"][identifier]
+        assert scientific == {key: value for key, value in after_record.items() if key != "text"}
     assert dict(read_lock(ROOT)) == lock_before
     on_disk = yaml.safe_load((ROOT / "reader/methods.yaml").read_text())
     assert on_disk["methods"]["sequential-read"]["panel"]["command"] != "fio --rw=read --bs=2m"
 
 
-def test_rendered_region_policies_resolve_the_exact_recorded_definition(
+def test_rendered_region_policies_resolve_the_recorded_definition(
     bundle: dict[str, Any],
 ) -> None:
-    documents = {
-        (str(item.document["id"]), str(item.document["version"])): item.document
-        for item in load_methodology(ROOT)
-    }
+    documents = {str(item.document["id"]): item.document for item in load_methodology(ROOT)}
     compared = 0
-    for identifier, versions in bundle["methodologies"].items():
-        for version, row in versions.items():
-            environment = row["reader_definition"].get("environment", {})
-            if "region_policy" not in environment:
-                continue
-            document = documents[(identifier, version)]
-            expected = document.get("environment", {}).get("region_policy")
-            if expected is None:
-                inherited = document["inherits"]
-                expected = documents[(inherited["id"], str(inherited["version"]))]["environment"][
-                    "region_policy"
-                ]
-            assert environment["region_policy"] == expected, (identifier, version)
-            compared += 1
+    for identifier, row in bundle["methodologies"].items():
+        environment = row["reader_definition"].get("environment", {})
+        if "region_policy" not in environment:
+            continue
+        document = documents[identifier]
+        expected = document.get("environment", {}).get("region_policy")
+        if expected is None:
+            expected = documents[document["inherits"]]["environment"]["region_policy"]
+        assert environment["region_policy"] == expected, identifier
+        compared += 1
     assert compared > 0
 
 
 def test_bound_region_policies_coexist_without_a_global_reader_override(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    documents = {
-        (str(item.document["id"]), str(item.document["version"])): item.document
-        for item in load_methodology(ROOT)
-    }
-    versions = ("1.0.18",)
-    future = copy.deepcopy(documents[("sbs.common", versions[-1])])
-    future["version"] = "1.0.999"
-    future["environment"]["region_policy"] = {"selection": "no_portable_region_request"}
-    documents[("sbs.common", future["version"])] = future
+    documents = {str(item.document["id"]): item.document for item in load_methodology(ROOT)}
     definitions: dict[str, Any] = {}
-    for version in (*versions, future["version"]):
-        identifier = f"synthetic-{version}"
-        document = {
-            "id": identifier,
-            "version": "1.0.0",
-            "inherits": {"id": "sbs.common", "version": version},
-            "environment": {"network": "unknown"},
-        }
-        documents[(identifier, "1.0.0")] = document
-        definitions[identifier] = document
+    plain: dict[str, Any] = {
+        "id": "synthetic-plain",
+        "inherits": "sbs.common",
+        "environment": {"network": "unknown"},
+    }
     override: dict[str, Any] = {
         "id": "synthetic-override",
-        "version": "1.0.0",
-        "inherits": {"id": "sbs.common", "version": future["version"]},
+        "inherits": "sbs.common",
         "environment": {"region_policy": "An explicit recorded leaf policy."},
     }
-    definitions[override["id"]] = override
+    for document in (plain, override):
+        documents[document["id"]] = document
+        definitions[document["id"]] = document
     original = copy.deepcopy(documents)
     lock_before = read_lock(ROOT)
     policy = content_criteria()["methodology_page"]
     rows = {
-        identifier: {"1.0.0": {"reader_definition": reader_definition(document, documents, policy)}}
+        identifier: {"reader_definition": reader_definition(document, documents, policy)}
         for identifier, document in definitions.items()
     }
     source = _source()
@@ -312,15 +233,13 @@ def test_bound_region_policies_coexist_without_a_global_reader_override(
     monkeypatch.setattr(reader, "load_reader", lambda _root: source)
     reader.apply_reader_views(ROOT, rows, source)
     for identifier, document in definitions.items():
-        shown = rows[identifier]["1.0.0"]["reader_definition"]
-        inherited = document["inherits"]
+        shown = rows[identifier]["reader_definition"]
         expected = document["environment"].get(
-            "region_policy",
-            documents[(inherited["id"], inherited["version"])]["environment"]["region_policy"],
+            "region_policy", documents["sbs.common"]["environment"]["region_policy"]
         )
         assert shown["environment"]["region_policy"] == expected
         if identifier != override["id"]:
-            assert shown["reader_sources"]["environment.region_policy"] == inherited
+            assert shown["reader_sources"]["environment.region_policy"] == {"id": "sbs.common"}
     assert documents == original
     assert read_lock(ROOT) == lock_before
 
@@ -384,10 +303,16 @@ def test_an_untimed_item_loses_its_marker_word_because_the_tag_says_it() -> None
     ("note", "message"),
     [
         (
-            "[[steps: create, run]]A; then [[steps: run, create]]B.",
-            "step 'run' is in items 1 and 2",
+            "[[steps: create]]A; then [[steps: create]]B; then [[steps: run]]C.",
+            "step 'create' is in items 1 and 2",
         ),
         ("[[steps: create, check]]A.", "joins timed and untimed steps"),
+        # Each timed step starts its own line (Andre, 2026-11-11: Previews joined start-server and
+        # server-listening on one line where Snapshots draws one step per line).
+        (
+            "[[steps: create, run]]A; then [[steps: check]]B.",
+            "joins the timed steps create, run",
+        ),
         ("[[steps: create]]A; then [[steps: check]]B.", "timed steps without an item: run"),
         (
             "[[steps: create, nowhere]]A; then [[steps: run]]B.",
@@ -436,14 +361,10 @@ def test_a_sentence_that_writes_one_before_a_plural_noun_is_flagged() -> None:
                 "procedure": "Up to 1 trials run. Sandbox 1 starts cold. 1 GiB, 1 process, 1 class."
             }
         },
-        "by_version": {"1.0.0": {"notes": {"limitations": ["Each trace ran 1 times."]}}},
     }
     errors = reader.reader_count_errors({"methods": {"demo": method}})
     tail = "is a plural after one; word the count so it reads right for any number"
-    assert errors == [
-        f"demo.notes.procedure: '1 trials' {tail}",
-        f"demo@1.0.0.notes.limitations[0]: '1 times' {tail}",
-    ]
+    assert errors == [f"demo.notes.procedure: '1 trials' {tail}"]
 
 
 def test_a_sentence_that_prints_a_bare_integer_of_seven_digits_is_flagged() -> None:
@@ -455,14 +376,10 @@ def test_a_sentence_that_prints_a_bare_integer_of_seven_digits_is_flagged() -> N
                 " 2 GiB are fine."
             }
         },
-        "by_version": {"1.0.0": {"notes": {"limitations": ["A `1073741824` marker."]}}},
     }
     errors = reader.reader_integer_errors({"methods": {"demo": method}})
     tail = "is a bare integer; write a size with a unit or group the digits"
-    assert errors == [
-        f"demo.notes.procedure: '2147483648' {tail}",
-        f"demo@1.0.0.notes.limitations[0]: '1073741824' {tail}",
-    ]
+    assert errors == [f"demo.notes.procedure: '2147483648' {tail}"]
 
 
 def test_an_untimed_marker_is_an_untimed_item_with_no_step() -> None:
@@ -484,8 +401,8 @@ def test_an_untimed_marker_is_an_untimed_item_with_no_step() -> None:
 
 def test_one_item_for_a_definition_of_several_steps_is_refused() -> None:
     steps: list[dict[str, Any]] = [
-        {"id": "create", "timer": {"x": 1}},
-        {"id": "run", "timer": {"x": 1}},
+        {"id": "create", "timer": None},
+        {"id": "run", "timer": None},
     ]
     with pytest.raises(ValueError, match="one item for a definition of 2 steps"):
         trial_step_items("[[steps: create, run]]Do both.", steps, strict=True)
@@ -543,7 +460,7 @@ def test_timed_parts_are_the_headline_steps_timers_in_either_timer_style() -> No
         (["create", "missing"], "the definition has no step missing"),
     ],
 )
-def test_a_headline_step_must_be_a_timed_step_of_the_newest_definition(
+def test_a_headline_step_must_be_a_timed_step_of_the_definition(
     headline: list[str], message: str
 ) -> None:
     with pytest.raises(ValueError, match=message):
@@ -724,11 +641,10 @@ def test_one_metric_has_one_name_on_its_page(bundle: dict[str, Any]) -> None:
         opening = re.split(r" is (?:the|a|an) | is ", sentence, maxsplit=1)[0]
         if not opening:
             continue
-        versions = bundle["methodologies"][method["document"]]
-        newest = versions[max(versions, key=version_key)]
+        row = bundle["methodologies"][method["document"]]
         labels = [
             metric["reader_name"]
-            for metric in newest.get("reader_definition", {}).get("metrics", [])
+            for metric in row.get("reader_definition", {}).get("metrics", [])
             if metric.get("reader_name") and ":" not in metric["reader_name"]
         ]
         lead = [word.casefold() for word in opening.split()[:2]]
@@ -766,9 +682,8 @@ def test_no_step_item_carries_a_time_limit_and_the_only_pill_label_is_timed(
 ) -> None:
     """only Timed pills, with no time; limits stay in the definitions."""
     for name, method in bundle["reader"]["methods"].items():
-        for version in [method["text"], *method.get("by_version", {}).values()]:
-            for item in version.get("notes", {}).get("step_items", []):
-                assert "limit" not in item, (name, item)
+        for item in method["text"].get("notes", {}).get("step_items", []):
+            assert "limit" not in item, (name, item)
     assert bundle["content_criteria"]["methodology_page"]["steps"] == {"timed": "Timed"}
 
 
@@ -793,9 +708,8 @@ def test_failures_draws_every_step_time_limit_once_as_a_table(bundle: dict[str, 
     )
     rows = 0
     for name, method in bundle["reader"]["methods"].items():
-        versions = bundle["methodologies"][method["document"]]
-        newest = versions[max(versions, key=version_key)]
-        steps = newest["reader_definition"].get("procedure", {}).get("steps", [])
+        definition = bundle["methodologies"][method["document"]]["reader_definition"]
+        steps = definition.get("procedure", {}).get("steps", [])
         limited = [step for step in steps if step.get("timeout_seconds") is not None]
         table = method["text"]["notes"].get("time_limits", [])
         assert len(table) == len(limited), name
@@ -813,10 +727,9 @@ def test_reader_prose_leaves_every_step_time_limit_to_the_failures_table(
     """a step's time limit is drawn once, in the Time Limit table."""
     limited = set()
     for method in bundle["reader"]["methods"].values():
-        versions = bundle["methodologies"][method["document"]]
-        for version in versions.values():
-            steps = version["reader_definition"].get("procedure", {}).get("steps", [])
-            limited |= {step["id"] for step in steps if step.get("timeout_seconds") is not None}
+        definition = bundle["methodologies"][method["document"]]["reader_definition"]
+        steps = definition.get("procedure", {}).get("steps", [])
+        limited |= {step["id"] for step in steps if step.get("timeout_seconds") is not None}
     assert _stated_limits((ROOT / "reader" / "methods.yaml").read_text(), limited) == []
 
 
@@ -907,20 +820,19 @@ def test_every_typed_commit_is_one_the_methodology_records() -> None:
 
 
 def test_a_marked_definition_field_is_a_link_in_the_reader_view(bundle: dict[str, Any]) -> None:
-    for row in bundle["methodologies"]["terminal-bench-4-0"].values():
-        view = row["reader_definition"]["environment"]["image"]["reference"]
-        assert "@[sha256](hash:" in view
+    row = bundle["methodologies"]["terminal-bench-4-0"]
+    view = row["reader_definition"]["environment"]["image"]["reference"]
+    assert "@[sha256](hash:" in view
 
 
-def test_every_r2e_gym_task_links_to_its_commit_under_its_newest_name(
+def test_every_r2e_gym_task_links_to_its_commit_under_its_name(
     bundle: dict[str, Any],
 ) -> None:
-    versions = bundle["methodologies"]["r2e-gym"].values()
-    for row in versions:
-        for variant in row["reader_definition"]["procedure"]["variants"]:
-            commit = variant["parameters"]["task"].partition(":")[2]
-            assert variant["link"].endswith(f"/commit/{commit}")
-            assert re.fullmatch(r"(numpy|coveragepy)-[a-z-]+", variant["label"])
+    row = bundle["methodologies"]["r2e-gym"]
+    for variant in row["reader_definition"]["procedure"]["variants"]:
+        commit = variant["parameters"]["task"].partition(":")[2]
+        assert variant["link"].endswith(f"/commit/{commit}")
+        assert re.fullmatch(r"(numpy|coveragepy)-[a-z-]+", variant["label"])
 
 
 def test_the_r2e_gym_table_is_task_repository_and_linked_commit(bundle: dict[str, Any]) -> None:
@@ -937,39 +849,6 @@ def test_package_registries_links_the_commit_it_checks_out(bundle: dict[str, Any
     workload = bundle["reader"]["methods"]["package-registries"]["text"]["notes"]["workload"]
     url = "https://github.com/fastapi/fastapi/commit/69ddc2badf9da1123bba4d360225ae6b085985f6"
     assert f"checks out the pinned [commit]({url})." in workload
-
-
-def test_default_context_text_survives_a_higher_other_cohort_version(
-    monkeypatch: pytest.MonkeyPatch,
-    build_text_bundle: Callable[[Path], dict[str, Any]],
-) -> None:
-    methods = text._methodologies(ROOT)
-    originals = copy.deepcopy(methods)
-    context = default_context(ROOT)
-    current = ordinary_documents(methods, common=context)
-    future_common = copy.deepcopy(dict(current["sbs.common"]))
-    future_common["version"] = "1.0.999"
-    future_common["environment"]["region_policy"] = {"selection": "no_portable_region_request"}
-    future_leaf = copy.deepcopy(dict(current["github-actions"]))
-    future_leaf["version"] = "9.0.0"
-    future_leaf["inherits"] = {"id": "sbs.common", "version": "1.0.999"}
-    future_leaf["environment"].pop("region_policy", None)
-    baseline = build_text_bundle(ROOT)
-    monkeypatch.setattr(
-        text, "_methodologies", lambda _root: [*methods, future_common, future_leaf]
-    )
-    expanded = build_text_bundle(ROOT)
-    assert expanded["default_context"] == context
-    for identity in ("github-actions", "time-index", "sbs.common"):
-        assert expanded["current_documents"][identity] == baseline["current_documents"][identity]
-    for identifier in ("ci-jobs", "time-index", "common"):
-        assert (
-            expanded["reader"]["methods"][identifier]["text"]
-            == baseline["reader"]["methods"][identifier]["text"]
-        )
-    shown = expanded["methodologies"]["github-actions"]["9.0.0"]["reader_definition"]
-    assert shown["environment"]["region_policy"] == future_common["environment"]["region_policy"]
-    assert methods == originals
 
 
 OVERVIEW_COMPOSITES = ("time-index", "cost-index", "time-vs-cost")
@@ -999,9 +878,8 @@ def test_the_overview_page_has_one_metrics_paragraph_per_composite(bundle: dict[
         paragraph = methods[name]["text"]["notes"]["metric"]
         assert "\n\n" not in paragraph.strip(), name
         assert "metrics" not in methods[name]["text"]["notes"], name
-    versions = bundle["methodologies"]["time-index"]
-    newest = versions[max(versions, key=version_key)]
-    tests = [metric.get("test") for metric in newest["reader_definition"]["metrics"]]
+    row = bundle["methodologies"]["time-index"]
+    tests = [metric.get("test") for metric in row["reader_definition"]["metrics"]]
     assert sorted(set(tests)) == sorted(OVERVIEW_COMPOSITES)
 
 
@@ -1016,38 +894,22 @@ def test_no_sentence_appears_twice_on_the_overview_page(bundle: dict[str, Any]) 
     assert [s for at, s in enumerate(sentences) if s in sentences[:at]] == []
 
 
-@pytest.mark.parametrize("common_version", ["1.0.10", "1.0.13"])
-def test_page_member_timers_and_parts_follow_each_measured_host(common_version: str) -> None:
-    common = {"id": "sbs.common", "version": common_version}
-    host: dict[str, Any] = {
-        "id": "host",
-        "version": "1.0.0",
-        "effective": "2026-10-31",
-        "inherits": common,
-    }
+def test_page_member_timers_and_parts_follow_the_measured_host() -> None:
+    common = {"id": "sbs.common"}
+    host: dict[str, Any] = {"id": "host", "effective": "2026-10-31", "inherits": "sbs.common"}
     step: dict[str, Any] = {
         "id": "call",
         "name": "Measured call",
-        "timer": {"start_event": f"start {common_version}", "stop_event": f"stop {common_version}"},
+        "timer": {"start_event": "start event", "stop_event": "stop event"},
     }
     member: dict[str, Any] = {
         "id": "member",
-        "version": "1.0.0",
         "effective": "2026-10-30",
-        "inherits": common,
+        "inherits": "sbs.common",
         "procedure": {"steps": [step]},
     }
-    other = copy.deepcopy(member)
-    other.update(version="9.0.0", inherits={"id": "sbs.common", "version": "1.0.999"})
-    other["procedure"]["steps"] = [
-        {"id": "wrong", "timer": {"start_event": "wrong start", "stop_event": "wrong stop"}}
-    ]
-    later = copy.deepcopy(other)
-    later.update(version="1.0.1", inherits=common, effective="2026-11-01")
     parent = {**common, "effective": "2026-01-01"}
-    documents: dict[tuple[str, str], dict[str, Any]] = {
-        (doc["id"], doc["version"]): doc for doc in [parent, host, member, other, later]
-    }
+    documents: dict[str, dict[str, Any]] = {doc["id"]: doc for doc in [parent, host, member]}
     tests = {"member": {"page": "host"}}
     document_ids = {"member": "member"}
     original = copy.deepcopy(documents)
@@ -1061,13 +923,7 @@ def test_page_member_timers_and_parts_follow_each_measured_host(common_version: 
         tests=tests,
         document_ids=document_ids,
         documents=documents,
-    ) == [
-        {
-            "part": "Measured call",
-            "starts": f"start {common_version}",
-            "ends": f"stop {common_version}",
-        }
-    ]
+    ) == [{"part": "Measured call", "starts": "start event", "ends": "stop event"}]
     assert documents == original
 
 
@@ -1081,3 +937,29 @@ def test_a_composite_page_draws_each_composites_metrics_paragraph(bundle: dict[s
     ):
         assert "metrics" in sources
         assert "notes.metrics" not in sources
+
+
+def test_sequential_tti_reads_its_sandbox_count_from_the_data_and_states_it_nowhere_else(
+    bundle: dict[str, Any],
+) -> None:
+    """The count is `{measured:...}` in the notes web draws, and the opening, the introduction and
+    the metric (the no-JavaScript lead) carry no token and no count: the pinned document's count may
+    belong to a later dataset than the one drawn."""
+    notes = bundle["reader"]["methods"]["sequential-tti"]["text"]["notes"]
+    for name in ("setup", "trial_steps", "statistics_rules", "failure_policy"):
+        assert (
+            "{measured:procedure.sandboxes_per_trial}" in notes[name]
+            or "{measured:procedure.trials*procedure.sandboxes_per_trial}" in notes[name]
+        )
+        assert "{param:measured.procedure.sandboxes_per_trial}" not in notes[name]
+        assert (
+            "{product:measured.procedure.trials*measured.procedure.sandboxes_per_trial}"
+            not in notes[name]
+        )
+    count = re.compile(
+        r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:sequential\s+)?sandboxes\b",
+        re.I,
+    )
+    for name in ("opening", "introduction", "metric"):
+        assert "{measured:" not in notes[name]
+        assert not count.search(notes[name]), notes[name]

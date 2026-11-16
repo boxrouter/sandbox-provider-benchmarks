@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from sandbox_benchmark_verifier.catalog import default_context, load_methodology, ordinary_documents
+from sandbox_benchmark_verifier.catalog import load_methodology, ordinary_documents
 from sandbox_benchmark_verifier.clocks import (
     derived_term_kinds,
     formula_terms,
@@ -75,7 +75,7 @@ def test_a_derived_pipeline_time_with_job_host_calls_includes_network_latency() 
     """r2e-gym's own metrics are sandbox runtimes, but the pipeline time its charts rank adds the
     create, snapshot, restore and destroy calls, which the job host times."""
     documents = [row.document for row in load_methodology(ROOT)]
-    document = ordinary_documents(documents, common=default_context(ROOT))["r2e-gym"]
+    document = ordinary_documents(documents)["r2e-gym"]
     assert all(
         "runtime(" in m["formula"] and "total(" not in m["formula"] for m in document["metrics"]
     )
@@ -90,7 +90,7 @@ def test_rates_and_counts_never_include_network_latency() -> None:
 
 def test_the_derived_set_for_todays_benchmarks_is_pinned() -> None:
     documents = [row.document for row in load_methodology(ROOT)]
-    current = ordinary_documents(documents, common=default_context(ROOT))
+    current = ordinary_documents(documents)
     derived = {
         identifier
         for identifier, document in current.items()
@@ -104,8 +104,7 @@ def test_the_text_bundle_carries_each_flag_and_the_region_exceptions(
 ) -> None:
     """Web reads both from the bundle: which tests include network latency, and which providers
     run outside the job host's US region."""
-    for identifier, reference in bundle["current_documents"].items():
-        entry = bundle["methodologies"][identifier][reference["version"]]
+    for identifier, entry in bundle["methodologies"].items():
         assert entry["includes_network_latency"] is (identifier in INCLUDES_NETWORK_LATENCY)
     assert [entry["provider"] for entry in bundle["region_exceptions"]] == ["boat"]
     for entry in bundle["region_exceptions"]:

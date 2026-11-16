@@ -1,12 +1,11 @@
 id: terminal-bench-4-0
-version: 1.1.19
 effective: '2026-11-08'
 name: '{name:test.terminal-bench-4-0}'
 category: workload
 notes:
   what_this_measures: The result sums command and file-edit runtimes for a recorded session using the
     sandbox clock. Model speed is excluded.
-  how_to_read: The {param:terminal-bench-4-0.1.1.19.statistics.primary} summarizes successful trials in
+  how_to_read: The {param:terminal-bench-4-0.statistics.primary} summarizes successful trials in
     the axis unit; {direction:tool_time}.
   summary: Each Terminal-Bench trace is one agent's full tool-use trace on a terminal task.
   how_it_is_measured: Recorded sessions come from the {name:test.terminal-bench-4-0} public leaderboard.
@@ -15,9 +14,7 @@ notes:
   cost_summary: The cost covers sandbox creation through confirmed destruction, divided by successful
     sessions.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: tool_time
   unit: ms
@@ -56,7 +53,7 @@ procedure:
     label: Claude Opus 5.5 max
     parameters:
       config: claude-opus-5-5-max
-    description: The workload uses the {param:terminal-bench-4-0.1.1.19.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:terminal-bench-4-0.procedure.variants.0.label} configuration.
   stages:
   - id: read
     name: '{name:stage.read}'
@@ -141,7 +138,7 @@ statistics:
 cost:
   method: provider_reported_or_priced
 parameters:
-  path: parameters/terminal-bench-4-0/1.1.19/
+  path: parameters/terminal-bench-4-0/
   sha256: 6d6248ccfeed6866fe4de86bd9c4b12e1ed2de742e12ba12cc89250b765cf7c5
 capabilities:
   required: []
@@ -169,11 +166,10 @@ interpretation:
     had no error, ran nothing in the background, had no command time out, called no subagent, tried no
     network install or download, and called none of the agent''s own programs (`rg`, `node`, `npm`, `npx`,
     `claude`). For each task and configuration the earliest eligible session is taken: 40 sessions, with
-    1,965 commands and 290 file edits. Since version 3 of the workload set only the ten Claude Opus 5.5
-    max sessions are replayed, 303 steps; version 2 replayed four configurations once each. Sonnet 5 max
+    1,965 commands and 290 file edits. Only the ten Claude Opus 5.5
+    max sessions are replayed, 303 steps. Sonnet 5 max
     has 60% of the 40 sessions'' steps, 700 of them in one Coq session.'
-  - Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest and workload
-    version; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []` clears the base image's
+  - Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest and workload; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []` clears the base image's
     CMD and Modal starts a sandbox with the image's CMD. This lets it run on Modal too.
   - 'The sessions are fetched by trial id from the endpoints in the parameters'' protocol.json and are
     not republished: their licence is not stated.'

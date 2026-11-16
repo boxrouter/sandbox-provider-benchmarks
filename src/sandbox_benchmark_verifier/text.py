@@ -71,7 +71,6 @@ from sandbox_benchmark_verifier.status_footer import (
     status_label_owner_errors,
 )
 from sandbox_benchmark_verifier.text_ids import index_metric_id_warnings, raw_token_warnings
-from sandbox_benchmark_verifier.versions import version_key
 from sandbox_benchmark_verifier.vocabulary import retired_word_errors
 from sandbox_benchmark_verifier.yaml_load import load_yaml
 
@@ -104,7 +103,6 @@ def _measured_definition(document: Mapping[str, Any]) -> dict[str, Any]:
     """Canonical scientific fields shared by fingerprints and reader compatibility."""
     method: dict[str, Any] = json.loads(json.dumps(document))
     for key in (
-        "version",
         "effective",
         "description",
         "headline",
@@ -158,7 +156,7 @@ def _name_slot(document: Mapping[str, Any], names: Mapping[str, str]) -> dict[st
 
 def _slot_text(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     document: Mapping[str, Any],
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     names: Mapping[str, str],
     directions: Mapping[str, str],
     sources: Mapping[str, Mapping[str, Any]],
@@ -237,7 +235,7 @@ def _slot_text(  # pylint: disable=too-many-arguments,too-many-positional-argume
 
 
 def _resolve_slot_references(value: Any, resolve: Callable[[str], str]) -> Any:
-    """Resolve explicit document/version references with the shared placeholder resolver."""
+    """Resolve explicit document references with the shared placeholder resolver."""
     if isinstance(value, str):
         return resolve(value)
     if isinstance(value, dict):
@@ -247,51 +245,16 @@ def _resolve_slot_references(value: Any, resolve: Callable[[str], str]) -> Any:
     return value
 
 
-def _reader_versions(
-    aliases: Mapping[str, Any],
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
-    names: Mapping[str, str],
-) -> dict[tuple[str, str], str]:
-    """Validate explicit one-hop reader revisions without selecting compatible candidates."""
-    bindings: dict[tuple[str, str], str] = {}
-    for reference in aliases.get("reader_versions", []):
-        measured = (reference["id"], reference["version"])
-        reader_version = reference["reader_version"]
-        if measured in bindings:
-            raise ValueError(f"duplicate or conflicting reader revision for {measured!r}")
-        bindings[measured] = reader_version
-    for measured, reader_version in bindings.items():
-        reader = (measured[0], reader_version)
-        if measured not in documents or reader not in documents:
-            raise ValueError(
-                f"unknown reader revision document/version: {measured!r} -> {reader!r}"
-            )
-        if reader in bindings:
-            raise ValueError(f"reader revisions must be direct: {measured!r} -> {reader!r}")
-        original, revised = documents[measured], documents[reader]
-        if _named(_measured_definition(original), names) != _named(
-            _measured_definition(revised), names
-        ) or (
-            _metric_statistics(original, documents) != _metric_statistics(revised, documents)
-            or original.get("parameters") != revised.get("parameters")
-        ):
-            raise ValueError(
-                f"reader revision changes measured semantics: {measured!r} -> {reader!r}"
-            )
-    return bindings
-
-
 def _named(value: Any, names: Mapping[str, str]) -> Any:
     """A definition with its canonical-name placeholders written out, so a reader revision may
-    reference a name instead of repeating it."""
-    return _resolve_slot_references(
-        value, partial(resolve_template, names=names, documents={}, directions={})
-    )
+    reference a name instead of repeating it. A value placeholder (``{duration:...}``) stays as
+    written: the definition's own parameter is hashed, and the reader draws its value."""
+    return resolve_name_references(value, documents={}, names=names, names_only=True)
 
 
 def _metric_statistics(
     document: Mapping[str, Any],
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
 ) -> list[str | None]:
     return [
         effective_statistic_id(document, metric, documents)
@@ -320,17 +283,17 @@ def _direction_labels(tables: Any) -> Mapping[str, str]:
 def _reader_bundle(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     root: Path,
     tables: Tables,
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     names: Mapping[str, str],
     replacements: Mapping[str, str],
     parameters: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """The current reader copy compiled against each measured version of its method."""
+    """The current reader copy compiled against the measured document of its method."""
     directions = tables.metric_label_grammar.get("tokens", {}).get("directions", {})
-    known_documents = {identifier for identifier, _ in documents}
+    known_documents = set(documents)
     common_documents = {
         identifier
-        for (identifier, _), document in documents.items()
+        for identifier, document in documents.items()
         if document.get("category") == "common"
     }
     document_ids = {
@@ -361,10 +324,10 @@ def _reader_bundle(  # pylint: disable=too-many-arguments,too-many-positional-ar
     def project(carrier: Mapping[str, Any], *, labels: bool = True) -> dict[str, Any]:
         """The reader slots of one carrier: headline, notes, panel (no labels in a table cell)."""
         # The carrier holds its pinned workload, so notes read the same rows the panel text does.
-        # References to the version's own notes (a variant's notes read them) still resolve.
-        own = documents[carrier["id"], str(carrier["version"])].get("notes", {})
+        # References to the document's own notes (a variant's notes read them) still resolve.
+        own = documents[carrier["id"]].get("notes", {})
         pinned = {**carrier, "notes": {**own, **carrier.get("notes", {})}}
-        sources = {**parameters, f"{carrier['id']}.{carrier['version']}": pinned}
+        sources = {**parameters, str(carrier["id"]): pinned}
         text = _slot_text(carrier, documents, names, directions, sources, labels=labels)
         projected: dict[str, Any] = resolve_name_references(
             {key: text[key] for key in ("headline", "notes", "panel") if key in text},
@@ -400,7 +363,7 @@ def _region_exceptions(names_doc: Any) -> list[Any]:
 
 
 def build_text_bundle(root: Path) -> dict[str, Any]:
-    """Return deterministic slot text for every methodology version and name row."""
+    """Return deterministic slot text for every methodology document and name row."""
     with compiler_tables_cache(root, DIGEST_ALGORITHMS):
         return _build_text_bundle(root)
 
@@ -413,24 +376,17 @@ def _build_text_bundle(root: Path) -> dict[str, Any]:
     canonical_names = canonical_name_map(tables)
     name_replacements = projection_references(root)
     methods = _methodologies(root)
-    methods.sort(key=lambda item: (str(item.get("id", "")), str(item.get("version", ""))))
+    methods.sort(key=lambda item: str(item.get("id", "")))
     indexed_methods: dict[str, dict[str, Any]] = {}
-    documents = {(str(method["id"]), str(method["version"])): method for method in methods}
-    reader_versions = _reader_versions(tables.aliases, documents, canonical_names)
-    parameters: dict[str, Mapping[str, Any]] = {
-        f"{identifier}.{version}": doc for (identifier, version), doc in documents.items()
-    }
+    documents = {str(method["id"]): method for method in methods}
     # Fresh copies, as a second _methodologies(root) call returns them (one parse serves both).
-    parameters.update(
-        copy.deepcopy(_latest_documents(methods, common=catalog.default_context(root)))
-    )
+    parameters: dict[str, Mapping[str, Any]] = copy.deepcopy(_ordinary_documents(methods))
     parameters["content"] = content_criteria()
     parameters["reader"] = {"common": reader_common(root)}
     parameters["procedure_references"] = procedures.projection(root, methods, tables)
     for method in methods:
         identifier = str(method["id"])
-        version = str(method["version"])
-        indexed_methods.setdefault(identifier, {})[version] = {
+        indexed_methods[identifier] = {
             "owner": {"public_method_url": _public_method_url(identifier, tables)},
             "semantic_digest": semantic_digest(method, canonical_names),
             "cost": inherited_cost(method, documents) if "cost" in method else {},
@@ -467,25 +423,21 @@ def _build_text_bundle(root: Path) -> dict[str, Any]:
                 parameters,
             ),
         }
-        indexed_methods[identifier][version] = resolve_name_references(
-            indexed_methods[identifier][version],
+        indexed_methods[identifier] = resolve_name_references(
+            indexed_methods[identifier],
             documents=parameters,
             names=canonical_names,
             references=name_replacements,
             directions=_direction_labels(tables),
         )
         omit_paths(
-            indexed_methods[identifier][version]["text"],
+            indexed_methods[identifier]["text"],
             parameters["content"]["methodology_page"].get("retired_reader_paths", []),
         )
-        if (identifier, version) in parameters["procedure_references"]["references"]:
-            indexed_methods[identifier][version]["procedure"] = parameters["procedure_references"][
+        if identifier in parameters["procedure_references"]["references"]:
+            indexed_methods[identifier]["procedure"] = parameters["procedure_references"][
                 "references"
-            ][identifier, version]
-        if (identifier, version) in reader_versions:
-            indexed_methods[identifier][version]["reader_version"] = reader_versions[
-                identifier, version
-            ]
+            ][identifier]
     bundle = {
         "schema": "boxrouter.bench.text/3",
         "procedures_public": parameters["procedure_references"]["procedures_public"],
@@ -497,7 +449,7 @@ def _build_text_bundle(root: Path) -> dict[str, Any]:
         "metric_label_grammar": names_doc.get("metric_label_grammar")
         if isinstance(names_doc, Mapping)
         else None,
-        **catalog.selection_projection(root, methods),
+        "default_context": catalog.COMMON_ID,
         "region_exceptions": _region_exceptions(names_doc),
         "methodologies": indexed_methods,
         "reader": _reader_bundle(
@@ -605,18 +557,14 @@ def _warn_sentence(warnings: list[str], path: str, value: Any, limit: int) -> No
         warnings.append(f"text is not a complete sentence {path}")
 
 
-def _latest_documents(
-    documents: Iterable[Mapping[str, Any]], *, common: Mapping[str, str] | None = None
-) -> dict[str, Mapping[str, Any]]:
-    """Ordinary defaults in the owner's bound context; exact-version records remain separate."""
-    return catalog.ordinary_documents(
-        list(documents), common=catalog.default_context() if common is None else common
-    )
+def _ordinary_documents(documents: Iterable[Mapping[str, Any]]) -> dict[str, Mapping[str, Any]]:
+    """The common and the ordinary documents that inherit it."""
+    return catalog.ordinary_documents(list(documents))
 
 
 def _style_documents(root: Path) -> dict[str, Mapping[str, Any]]:
     """Selected defaults with their exact pinned workloads for reader checks."""
-    every = {(str(doc["id"]), str(doc.get("version"))): doc for doc in _methodologies(root)}
+    every = {str(doc["id"]): doc for doc in _methodologies(root)}
     return {
         name: (
             {
@@ -626,9 +574,7 @@ def _style_documents(root: Path) -> dict[str, Mapping[str, Any]]:
             if isinstance(doc.get("parameters"), Mapping) and "path" in doc["parameters"]
             else doc
         )
-        for name, doc in _latest_documents(
-            _methodologies(root), common=catalog.default_context(root)
-        ).items()
+        for name, doc in _ordinary_documents(_methodologies(root)).items()
     }
 
 
@@ -638,7 +584,7 @@ def _document_rows(root: Path, rows: list[Any]) -> dict[str, Mapping[str, Any]]:
         load_yaml(aliases_path.read_text(encoding="utf-8")) if aliases_path.is_file() else {}
     )
     document_aliases = aliases_doc.get("document", {}) if isinstance(aliases_doc, Mapping) else {}
-    latest = _latest_documents(_methodologies(root), common=catalog.default_context(root))
+    latest = _ordinary_documents(_methodologies(root))
     mapped: dict[str, Mapping[str, Any]] = {}
     for row in rows:
         if isinstance(row, Mapping) and isinstance(row.get("document"), str):
@@ -650,10 +596,7 @@ def _document_rows(root: Path, rows: list[Any]) -> dict[str, Mapping[str, Any]]:
             ]
             if candidates:
                 # This audits the current owner definition; it grants no reader compatibility.
-                mapped[f"{row.get('kind')}:{row.get('id')}"] = max(
-                    candidates,
-                    key=lambda document: version_key(document["version"]),
-                )
+                mapped[f"{row.get('kind')}:{row.get('id')}"] = candidates[0]
     return mapped
 
 
@@ -887,7 +830,7 @@ def content_warnings(
     """Audit current source text using the exported content criteria."""
     warnings: list[str] = []
     source_documents: dict[str, Mapping[str, Any]] = {
-        f"{doc['id']}.{doc['version']}": doc for doc in _methodologies(root)
+        str(doc["id"]): doc for doc in _methodologies(root)
     }
     source_criteria = content_criteria() if criteria is None else criteria
     source_documents["content"] = source_criteria
@@ -916,7 +859,7 @@ def _row_text(
     bundle: Mapping[str, Any], row: Mapping[str, Any], document: Mapping[str, Any]
 ) -> dict[str, Any]:
     """A document with its measured text, and the current reader copy over it (what pages draw)."""
-    measured = bundle["methodologies"][document["id"]][str(document["version"])]["text"]
+    measured = bundle["methodologies"][document["id"]]["text"]
     current = bundle["reader"]["methods"].get(str(row["id"]), {}).get("text", {})
     return {**document, **measured, **current}
 
@@ -955,9 +898,7 @@ def _text_warnings(root: Path) -> list[str]:
                 _document_row_warnings(
                     warnings, row, _row_text(bundle, row, document), rows, criteria=criteria
                 )
-    for document in _latest_documents(
-        _methodologies(root), common=catalog.default_context(root)
-    ).values():
+    for document in _ordinary_documents(_methodologies(root)).values():
         if document.get("category") == "common" and document.get("id") == "sbs.common":
             _common_warnings(warnings, document)
     for identity, metric in bundle["metric_labels"]["metrics"].items():

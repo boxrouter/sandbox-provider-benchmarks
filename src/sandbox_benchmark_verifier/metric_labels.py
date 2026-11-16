@@ -9,7 +9,6 @@ from collections.abc import Mapping
 from typing import Any
 
 from sandbox_benchmark_verifier.chart_bindings import compile_chart_bindings
-from sandbox_benchmark_verifier.versions import version_key
 
 _SLOT = re.compile(r"\{([\w.]+)(\?)?\}")
 
@@ -115,11 +114,10 @@ def _declared_quantities(
     bundle: Mapping[str, Any], grammar: Mapping[str, Any]
 ) -> dict[str, set[str]]:
     found: dict[str, set[str]] = {}
-    for versions in bundle["methodologies"].values():
-        for entry in versions.values():
-            for metric in entry["text"].get("metrics", []):
-                if metric.get("unit") and metric.get("quantity") in grammar["quantities"]:
-                    found.setdefault(metric["unit"], set()).add(metric["quantity"])
+    for entry in bundle["methodologies"].values():
+        for metric in entry["text"].get("metrics", []):
+            if metric.get("unit") and metric.get("quantity") in grammar["quantities"]:
+                found.setdefault(metric["unit"], set()).add(metric["quantity"])
     return found
 
 
@@ -160,8 +158,7 @@ def compile_metric_labels(bundle: Mapping[str, Any], aliases: Mapping[str, Any])
     mapped = aliases.get("document", {})
     quantities = _declared_quantities(bundle, grammar)
     metrics: dict[str, Any] = {}
-    for document_id, versions in bundle["methodologies"].items():
-        entry = versions[max(versions, key=version_key)]
+    for document_id, entry in bundle["methodologies"].items():
         canonical = mapped.get(document_id, document_id)
         identities = {
             str(row["kind"]): str(row["name"])

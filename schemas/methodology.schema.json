@@ -2,27 +2,22 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://boxrouter.ai/schemas/sbs/0.1/methodology.schema.json",
   "title": "SBS methodology document",
-  "description": "One Sandbox Benchmark Spec (SBS) methodology: what a benchmark measures and how, with no run-specific region, date or provider. Runs, measurements and aggregates cite a methodology by id and version.",
+  "description": "One Sandbox Benchmark Spec (SBS) methodology: what a benchmark measures and how, with no run-specific region, date or provider. Runs, measurements and aggregates cite a methodology by id.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "version", "effective", "name", "category"],
+  "required": ["id", "effective", "name", "category"],
   "properties": {
     "id": {
       "$ref": "#/$defs/methodology_id",
       "description": "Stable dotted identifier. Runs, measurements and aggregates cite it; it never changes when the document is edited.",
       "examples": ["sandbox.create.sequential_tti"]
     },
-    "version": {
-      "$ref": "#/$defs/semver",
-      "description": "Semantic version of this methodology. Any change to what is measured or how bumps it; results from different versions are never combined.",
-      "examples": ["1.0.0"]
-    },
     "effective": {
       "type": "string",
       "format": "date",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
       "x-unit": "UTC date",
-      "description": "Date (UTC, YYYY-MM-DD) from which this version applies.",
+      "description": "Date (UTC, YYYY-MM-DD) from which this document applies.",
       "examples": ["2026-10-25"]
     },
     "name": {
@@ -129,7 +124,6 @@
       "description": "The public source of provider capability declarations and how the benchmark page uses them.",
       "properties": {
         "repository": { "type": "string", "format": "uri", "description": "SPS repository URL." },
-        "release": { "type": "string", "pattern": "^v\\d+\\.\\d+\\.\\d+$", "description": "Pinned SPS release; versions before sbs.common 1.0.14 carry one." },
         "declaration_path": { "type": "string", "description": "Repository-relative declaration path pattern." },
         "use": { "type": "string", "minLength": 1, "description": "How the benchmark page uses declarations." }
       }
@@ -149,14 +143,13 @@
         "inputs": {
           "type": "array",
           "minItems": 1,
-          "description": "The complete exact input vector: each input's canonical id and its version in force on this index's effective date.",
+          "description": "The complete exact input vector: each input's canonical id.",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "version", "quantity"],
+            "required": ["id", "quantity"],
             "properties": {
               "id": { "$ref": "#/$defs/methodology_id", "description": "Id of the input methodology.", "examples": ["workload.coding.deepswe"] },
-              "version": { "$ref": "#/$defs/semver", "description": "Version of the input methodology.", "examples": ["1.0.0"] },
               "quantity": { "type": "string", "description": "The value taken from that benchmark's result, in plain words.", "examples": ["Typical time per trace."] }
             }
           }
@@ -276,22 +269,9 @@
       }
     },
     "inherits": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "version"],
-      "description": "The common methodology whose defaults (statistics, cost, failure policy, trial policy) apply wherever this document is silent.",
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/methodology_id",
-          "description": "Id of the inherited methodology.",
-          "examples": ["sbs.common"]
-        },
-        "version": {
-          "$ref": "#/$defs/semver",
-          "description": "Version of the inherited methodology.",
-          "examples": ["1.0.0"]
-        }
-      }
+      "$ref": "#/$defs/methodology_id",
+      "description": "Id of the common methodology whose defaults (statistics, cost, failure policy, trial policy) apply wherever this document is silent.",
+      "examples": ["sbs.common"]
     },
     "independence": {
       "type": "object",
@@ -320,9 +300,7 @@
           "required": ["scope", "significance", "verdict", "checks"],
           "properties": {
             "scope": { "type": "string", "minLength": 1 },
-            "material_effect": { "type": "number", "exclusiveMinimum": 0, "description": "Version 1.0.7 only: one effect size for every check." },
-            "outliers": { "type": "object", "description": "Version 1.0.7 only: the outlier rule, stated beside the checks." },
-            "min_trials": { "type": "integer", "minimum": 1, "description": "Fewest successful trials a pair needs to be checked (from version 1.0.8)." },
+            "min_trials": { "type": "integer", "minimum": 1, "description": "Fewest successful trials a pair needs to be checked." },
             "significance": {
               "type": "object",
               "additionalProperties": false,
@@ -790,7 +768,7 @@
             "warm": {
               "type": "string",
               "description": "Which measurements count as warm.",
-              "examples": ["Sandbox 10 of a trial."]
+              "examples": ["The last sandbox of a trial."]
             }
           }
         },
@@ -798,18 +776,13 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "with",
-            "version"
+            "with"
           ],
           "description": "Marks a document measured in the same trial as another (files list, write and read; CPU and memory; disk rows). The named owner holds the `parameters`; this document holds none.",
           "properties": {
             "with": {
               "$ref": "#/$defs/methodology_id",
               "description": "Id of the owning methodology."
-            },
-            "version": {
-              "$ref": "#/$defs/semver",
-              "description": "Version of the owning methodology."
             }
           }
         },
@@ -940,7 +913,7 @@
                     "properties": {
                       "start_event": {
                         "type": "string",
-                        "description": "Event that starts the step's timer. Versions before the hover system state the timer this way; later versions use `from`, `sent` and `until`.",
+                        "description": "Event that starts the step's timer.",
                         "examples": ["The create request is dispatched."]
                       },
                       "stop_event": {
@@ -1071,14 +1044,14 @@
         "path",
         "sha256"
       ],
-      "description": "The directory of exact workload parameters this methodology version pins: `workloads.json`, optionally `protocol.json` and `assets/`. A parameters directory belongs to one id and version and never changes once released.",
+      "description": "The directory of exact workload parameters this methodology pins: `workloads.json`, optionally `protocol.json` and `assets/`. A parameters directory belongs to one id.",
       "properties": {
         "path": {
           "type": "string",
-          "pattern": "^parameters/[a-z0-9][a-z0-9_.-]*/[^/]+/$",
-          "description": "Repository-relative directory, `parameters/<methodology id>/<version>/`.",
+          "pattern": "^parameters/[a-z0-9][a-z0-9_.-]*/$",
+          "description": "Repository-relative directory, `parameters/<methodology id>/`.",
           "examples": [
-            "parameters/workload.coding.deepswe/1.1.0/"
+            "parameters/workload.coding.deepswe/"
           ]
         },
         "sha256": {
@@ -1231,12 +1204,6 @@
             }
           },
           "examples": [{"default": "median", "options": ["median", "mean", "p95"]}]
-        },
-        "missing_unit_penalty": {
-          "type": "number",
-          "exclusiveMinimum": 1,
-          "description": "Retired from time-index 1.1.17 and cost-index 1.1.15, which fill a missing unit with the slowest time (or highest cost) any provider had, with no factor. Earlier, immutable versions still carry it.",
-          "examples": [1.2]
         },
         "percentile_method": {
           "type": "string",
@@ -1410,23 +1377,8 @@
               "type": "string",
               "description": "Where the versions that select that method are recorded.",
               "examples": ["The price and rules versions recorded in the publication; they select each sandbox's method."]
-            },
-            "function": {
-              "type": "string",
-              "description": "Only in versions released before sbs.common 1.0.6: the function that turns usage into a cost.",
-              "examples": ["price()"]
-            },
-            "price_sheet_version": {
-              "type": "string",
-              "description": "Only in versions released before sbs.common 1.0.6: where the price-sheet version used is recorded.",
-              "examples": ["recorded in the run manifest"]
             }
           }
-        },
-        "billed_span": {
-          "type": "string",
-          "description": "Only in versions released before sbs.common 1.0.6, and no longer defined: the provider's records set the billed period, differently for each provider.",
-          "examples": ["From the create request to the confirmed destroy."]
         },
         "counted_sandboxes": {
           "type": "string",
@@ -1610,10 +1562,9 @@
     "methodology_ref": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "version", "quantity"],
+      "required": ["id", "quantity"],
       "properties": {
         "id": { "$ref": "#/$defs/methodology_id" },
-        "version": { "$ref": "#/$defs/semver" },
         "quantity": { "type": "string" }
       }
     },
@@ -1630,10 +1581,6 @@
     "snake_name": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9_-]*$"
-    },
-    "semver": {
-      "type": "string",
-      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
     },
     "unit": {
       "enum": ["points", "ms", "s", "MIPS", "GB/s", "MB/s", "MiB/s", "links/s", "IOPS", "USD", "count", "percent", "ratio", "B", "KiB", "MiB", "GiB"]

@@ -9,7 +9,6 @@ import yaml
 
 from sandbox_benchmark_verifier.content import content_criteria
 from sandbox_benchmark_verifier.names import load_tables
-from sandbox_benchmark_verifier.versions import version_key
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,8 +20,8 @@ def _latest_variants(document_id: str) -> list[dict[str, str]]:
         for document in yaml.safe_load_all(path.read_text(encoding="utf-8"))
         if isinstance(document, dict) and document.get("id") == document_id
     ]
-    latest = max(documents, key=lambda item: version_key(item["version"]))
-    variants: list[dict[str, str]] = latest["procedure"]["variants"]
+    [document] = documents
+    variants: list[dict[str, str]] = document["procedure"]["variants"]
     return variants
 
 
@@ -66,9 +65,14 @@ def test_the_named_starts_are_sandboxes_of_the_trial_and_each_is_named() -> None
         for document in yaml.safe_load_all(path.read_text(encoding="utf-8"))
         if isinstance(document, dict) and document.get("id") == "sequential-tti"
     ]
-    latest = max(documents, key=lambda item: version_key(item["version"]))
-    sandboxes = latest["procedure"]["sandboxes_per_trial"]
-    numbers = [start["sandbox"] for start in selector["starts"]]
+    [document] = documents
+    sandboxes = document["procedure"]["sandboxes_per_trial"]
+    starts = [start["sandbox"] for start in selector["starts"]]
+    # A start is a sandbox number, or "last" (the trial's last sandbox, which the reader resolves
+    # against the data's highest n-* variant). text.json keeps "last" as written, so a dataset of
+    # any sandboxes_per_trial reads it correctly; the Warm start is the one written "last".
+    numbers = [start for start in starts if start != "last"]
     assert numbers == sorted(set(numbers))
     assert all(1 <= number <= sandboxes for number in numbers)
+    assert starts[-1] == "last" and starts.count("last") == 1
     assert all(start["label"] and start["short"] for start in selector["starts"])

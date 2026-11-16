@@ -1,21 +1,18 @@
 id: delayed-resume
-version: 1.2.16
 effective: '2026-11-08'
 name: '{name:test.delayed-resume}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures the first marker read after the selected idle wait; an explicit
     resume is included when used.
-  how_to_read: The {param:delayed-resume.1.2.16.statistics.primary} summarizes successful trials in the
+  how_to_read: The {param:delayed-resume.statistics.primary} summarizes successful trials in the
     axis unit; {direction:resume_to_data_back}.
   summary: A sandbox reads a fixed marker after the selected idle wait.
   how_it_is_measured: A job-host monotonic clock starts at explicit resume, or at the first read when
     resume is implicit, and stops when the marker returns. Each trial uses a fresh sandbox.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful round.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: resume_to_data_back
   unit: ms
@@ -56,8 +53,8 @@ procedure:
       wait_seconds: 0
     description: Resume the sandbox immediately; no idle interval follows the pause.
     notes:
-      summary: '{param:delayed-resume.1.2.16.notes.summary}'
-      what_this_measures: '{param:delayed-resume.1.2.16.notes.what_this_measures}'
+      summary: '{param:delayed-resume.notes.summary}'
+      what_this_measures: '{param:delayed-resume.notes.what_this_measures}'
   - id: wait-60s
     label: Resumed after 60 s
     parameters:
@@ -66,8 +63,8 @@ procedure:
       wait_seconds: 60
     description: The paused sandbox receives no commands during its shorter idle interval.
     notes:
-      summary: '{param:delayed-resume.1.2.16.notes.summary}'
-      what_this_measures: '{param:delayed-resume.1.2.16.notes.what_this_measures}'
+      summary: '{param:delayed-resume.notes.summary}'
+      what_this_measures: '{param:delayed-resume.notes.what_this_measures}'
   - id: wait-15min
     label: Resumed after 15 min
     parameters:
@@ -76,8 +73,8 @@ procedure:
       wait_seconds: 900
     description: During the longer wait, leave the paused sandbox untouched before resume.
     notes:
-      summary: '{param:delayed-resume.1.2.16.notes.summary}'
-      what_this_measures: '{param:delayed-resume.1.2.16.notes.what_this_measures}'
+      summary: '{param:delayed-resume.notes.summary}'
+      what_this_measures: '{param:delayed-resume.notes.what_this_measures}'
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -183,7 +180,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/delayed-resume/1.2.16/
+  path: parameters/delayed-resume/
   sha256: 64de08afbcb2e1599d7bc4b68025e6fd1dc6e0799ebfc24deaa427bccf8785b6
 capabilities:
   optional:
@@ -263,14 +260,13 @@ independence_answers:
 
 ---
 id: pause-resume
-version: 1.2.16
 effective: '2026-11-08'
 name: '{name:test.pause-resume}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures pause, resume and the return of readable data for the selected
     data shape.
-  how_to_read: The {param:pause-resume.1.2.16.statistics.primary} is shown in {unit:resume_to_data_back};
+  how_to_read: The {param:pause-resume.statistics.primary} is shown in {unit:resume_to_data_back};
     {direction:resume_to_data_back}.
   summary: A sandbox pauses and resumes before reading the selected data.
   how_it_is_measured: A job-host monotonic clock times pause and resume calls, then the first read after
@@ -278,9 +274,7 @@ notes:
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, divided by successful
     units.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: resume_to_data_back
   unit: ms
@@ -334,8 +328,8 @@ procedure:
       seed: 20261004
     description: Only the seeded marker file is loaded; no bulk payload is added.
     notes:
-      summary: '{param:pause-resume.1.2.16.notes.summary}'
-      what_this_measures: '{param:pause-resume.1.2.16.notes.what_this_measures}'
+      summary: '{param:pause-resume.notes.summary}'
+      what_this_measures: '{param:pause-resume.notes.what_this_measures}'
   - id: memory-1gib
     label: 1 GiB in memory
     parameters:
@@ -343,8 +337,8 @@ procedure:
       seed: 20261004
     description: A live process keeps the generated payload resident in RAM across the pause.
     notes:
-      summary: '{param:pause-resume.1.2.16.notes.summary}'
-      what_this_measures: '{param:pause-resume.1.2.16.notes.what_this_measures}'
+      summary: '{param:pause-resume.notes.summary}'
+      what_this_measures: '{param:pause-resume.notes.what_this_measures}'
   - id: storage-1gib
     label: 1 GiB on disk
     parameters:
@@ -352,8 +346,8 @@ procedure:
       seed: 20261004
     description: Write the generated payload to disk before pausing the sandbox.
     notes:
-      summary: '{param:pause-resume.1.2.16.notes.summary}'
-      what_this_measures: '{param:pause-resume.1.2.16.notes.what_this_measures}'
+      summary: '{param:pause-resume.notes.summary}'
+      what_this_measures: '{param:pause-resume.notes.what_this_measures}'
   - id: storage-2gib
     label: 2 GiB on disk
     parameters:
@@ -361,8 +355,8 @@ procedure:
       seed: 20261004
     description: The larger disk case leaves a generated file in place through pause.
     notes:
-      summary: '{param:pause-resume.1.2.16.notes.summary}'
-      what_this_measures: '{param:pause-resume.1.2.16.notes.what_this_measures}'
+      summary: '{param:pause-resume.notes.summary}'
+      what_this_measures: '{param:pause-resume.notes.what_this_measures}'
   - id: storage-4gib
     label: 4 GiB on disk
     parameters:
@@ -370,8 +364,8 @@ procedure:
       seed: 20261004
     description: After resume, verify the generated disk payload against its recorded digest.
     notes:
-      summary: '{param:pause-resume.1.2.16.notes.summary}'
-      what_this_measures: '{param:pause-resume.1.2.16.notes.what_this_measures}'
+      summary: '{param:pause-resume.notes.summary}'
+      what_this_measures: '{param:pause-resume.notes.what_this_measures}'
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -478,7 +472,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/pause-resume/1.2.16/
+  path: parameters/pause-resume/
   sha256: 31f502c6ac3766306d6ba2cea7c68e6a07f268dbbecad43dadad7641b4f1df7d
 capabilities:
   required:
@@ -495,12 +489,11 @@ interpretation:
   caveats:
   - The memory workload requires a pause that keeps memory; a provider whose pause keeps files only is
     shown as not offered.
-  - Since version 13, `data-back`, a plain read of the file, is the only command sent after the resume;
-    there is no read before the pause, no checksum and no restore-added value. Version 12's results are
-    not pooled with it.
-  - Since version 16, the untimed load is started in the background and its status read every 10 s until
-    it exits, because a load takes up to 58 s and a call that waits more than about 120 s can be cut by
-    a provider's gateway. Version 15's results are not pooled with it.
+  - '`data-back`, a plain read of the file, is the only command sent after the resume; there is no read
+    before the pause, no checksum and no restore-added value.'
+  - The untimed load is started in the background and its status read every 10 s until it exits, because
+    a load takes up to 58 s and a call that waits more than about 120 s can be cut by a provider's
+    gateway.
 validity_checks:
 - id: data_read_back
   threat: A resume that loses the data would still return quickly.

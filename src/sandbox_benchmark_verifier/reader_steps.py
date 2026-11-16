@@ -67,6 +67,11 @@ def _check_step_items(
                 f"notes.trial_steps: item {index + 1} joins timed and untimed steps; "
                 "give each its own item, and mark an action with no step [[untimed]]"
             )
+        if len(joined := [step_id for step_id in ids if timed.get(step_id)]) > 1:
+            raise ValueError(
+                f"notes.trial_steps: item {index + 1} joins the timed steps {', '.join(joined)}; "
+                "give each timed step its own item, so each starts its own line"
+            )
         if timed.get(ids[0]) and _SAYS_UNTIMED.search(wording.strip()):
             raise ValueError(
                 f"notes.trial_steps: item {index + 1} is tagged timed but says it is "
@@ -111,7 +116,9 @@ def trial_step_items(
     definition keeps each step's limit.
 
     With ``strict`` (the newest version) the items must cover the definition's steps: every timed
-    step in exactly one item, no step in two, every item naming a step the definition has. A
+    step in exactly one item and no item with two timed steps (each timed step starts its own
+    line in Details and on the methodology page; Andre, 2026-11-11), no step in two, every item
+    naming a step the definition has. A
     method without markers keeps its note whole when the definition has no steps to list. A page
     that holds several tests also counts a step as timed when the definition of another test on the
     page times a step of that id (``timed_by_members``).

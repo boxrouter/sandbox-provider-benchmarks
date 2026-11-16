@@ -1,21 +1,18 @@
 id: reconnect
-version: 1.1.13
 effective: '2026-11-08'
 name: '{name:test.reconnect}'
 category: sandbox_operation
 notes:
   what_this_measures: The result records attach lookup and the first command’s runtime and surrounding
     latency in a fresh client process.
-  how_to_read: The {param:reconnect.1.1.13.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:reconnect.statistics.primary} summarizes successful trials in the axis
     unit; {direction:reconnect_time}.
   summary: A fresh client process attaches to an existing sandbox and runs its first command.
   how_it_is_measured: A job-host monotonic clock times each round from attach lookup until the first `true`
     result and sandbox clock readings return. Each round attaches from a fresh process and runs `true`.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful round.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: reconnect_time
   unit: ms
@@ -81,7 +78,7 @@ procedure:
     command: 'true'
     parameters:
       rounds: 10
-    description: The workload uses the {param:reconnect.1.1.13.procedure.variants.0.label} configuration.
+    description: The workload uses the {param:reconnect.procedure.variants.0.label} configuration.
   steps:
   - id: create
     name: '{name:stage.create}'
@@ -156,7 +153,7 @@ failure_policy:
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
-  path: parameters/reconnect/1.1.13/
+  path: parameters/reconnect/
   sha256: 7e7bb0c04d39980a1a5b2bf42d6258ad9c00c9392729f21762427403d15f2a5b
 interpretation:
   what_to_do: Compare what a stateless worker, or an agent restarted after a crash or a deploy, pays before

@@ -72,12 +72,6 @@
           "pattern": "^([a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+|[a-z0-9][a-z0-9-]*)$",
           "description": "Methodology id.",
           "examples": ["sandbox.create.sequential_tti"]
-        },
-        "version": {
-          "type": "string",
-          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
-          "description": "Accepted for one release while the runner stops sending it, and ignored; removed after.",
-          "examples": ["1.0.0"]
         }
       }
     },
@@ -164,6 +158,11 @@
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9_-]*$",
       "description": "Page test identity when several tests share one methodology."
+    },
+    "composite_owner": {
+      "enum": ["provider", "unknown", "core", "binding", "account", "script", "external", "trace", "benchmark"],
+      "description": "On a failed or excluded attempt, who owns it for the workload value: the provider, or someone else, which omits the attempt's unit for every provider unless a later successful rerun replaces it. `unknown` and an absent field count as the provider's. Absent on a success.",
+      "examples": ["core"]
     },
     "workload": {"type": "string", "description": "Workload or upstream trial identity only; never command or trajectory text."}
   }

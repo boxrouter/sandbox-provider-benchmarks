@@ -1,23 +1,20 @@
 id: stream-triad
-version: 1.1.18
 effective: '2026-11-08'
 name: '{name:test.stream-triad}'
 category: machine_performance
 panel:
-  command: OMP_NUM_THREADS={param:stream-triad.1.1.18.environment.size.vcpu} stream
+  command: OMP_NUM_THREADS={param:stream-triad.environment.size.vcpu} stream
   quantities: sustainable memory bandwidth
 notes:
   what_this_measures: The result is sustained memory bandwidth over arrays larger than cache. It does
     not measure CPU compute speed.
   how_it_is_measured: The bandwidth tool runs repeated passes over arrays larger than cache with as many
     threads as requested vCPUs; its own clock supplies the best Triad rate.
-  how_to_read: The {param:stream-triad.1.1.18.statistics.primary} summarizes successful trials in the axis
+  how_to_read: The {param:stream-triad.statistics.primary} summarizes successful trials in the axis
     unit; {direction:triad_gigabytes_per_second}.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: triad_gigabytes_per_second
   unit: GB/s
@@ -86,7 +83,6 @@ procedure:
   cadence: Manual.
   shared_trial:
     with: 7-zip-1-thread
-    version: 1.1.18
 timing_boundaries:
   start: STREAM begins in the sandbox after untimed CPU facts and verified tool installation.
   stop: STREAM exits after 20 passes; use its best Triad rate in decimal GB/s.

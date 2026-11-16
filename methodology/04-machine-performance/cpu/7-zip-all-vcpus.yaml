@@ -1,23 +1,20 @@
 id: 7-zip-all-vcpus
-version: 1.1.18
 effective: '2026-11-08'
 name: '{name:test.7-zip-all-vcpus}'
 category: machine_performance
 panel:
-  command: 7zzs b -mmt{param:7-zip-all-vcpus.1.1.18.environment.size.vcpu}
+  command: 7zzs b -mmt{param:7-zip-all-vcpus.environment.size.vcpu}
   quantities: compression and decompression speed
 notes:
   what_this_measures: The result is the compression and decompression rating with as many threads as requested
     vCPUs.
   how_it_is_measured: The compression and decompression tool runs with as many threads as requested vCPUs
     and reports its own rating using its own clock.
-  how_to_read: The {param:7-zip-all-vcpus.1.1.18.statistics.primary} summarizes successful trials in the
+  how_to_read: The {param:7-zip-all-vcpus.statistics.primary} summarizes successful trials in the
     axis unit; {direction:total_mips}.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful trial.
   cost_how_to_read: Only successful trials contribute to the cost value.
-inherits:
-  id: sbs.common
-  version: 1.0.18
+inherits: sbs.common
 metrics:
 - name: total_mips
   unit: MIPS
@@ -84,7 +81,7 @@ procedure:
       CPU usage and 7-Zip''s own frequency estimate are recorded too.'
     timer:
       start_event: 7-Zip's benchmark begins.
-      stop_event: 7zzs b -mmt<requested vCPU> exits; its rating is 7-Zip's own total MIPS over compress
+      stop_event: 7zzs b, run with one thread per requested vCPU, exits; its rating is 7-Zip's own total MIPS over compress
         and decompress, by its own clock.
     timeout_seconds: 300
     record_steps:
@@ -99,7 +96,6 @@ procedure:
   cadence: Manual.
   shared_trial:
     with: 7-zip-1-thread
-    version: 1.1.18
 timing_boundaries:
   start: 7-Zip's benchmark begins in the sandbox.
   stop: 7-Zip exits and prints its totals. The figure is 7-Zip's own; the job host times

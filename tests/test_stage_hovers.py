@@ -17,7 +17,6 @@ from sandbox_benchmark_verifier import stage_hovers as module
 from sandbox_benchmark_verifier import text
 from sandbox_benchmark_verifier.catalog import _assets, load_methodology
 from sandbox_benchmark_verifier.stage_hovers import stage_hover_errors, stage_hovers
-from sandbox_benchmark_verifier.versions import newest
 
 pytestmark = pytest.mark.unit
 
@@ -34,7 +33,7 @@ def _document(identifier: str, version: str) -> dict[str, Any]:
 
 
 def _latest(identifier: str) -> dict[str, Any]:
-    return newest(row.document for row in load_methodology())[identifier]
+    return {row.document["id"]: row.document for row in load_methodology()}[identifier]
 
 
 def test_the_text_compiler_builds_the_name_tables_once_per_root(mocker: MockerFixture) -> None:
@@ -82,17 +81,15 @@ def test_the_approved_examples_read_exactly() -> None:
     assert burst["end"] == ("First successful `true` return; retried if sandbox isn't ready")
 
 
-def _newest_versions() -> list[dict[str, Any]]:
+def _documents() -> list[dict[str, Any]]:
     """The newest version of each document: the reader copy describes it, while an older version
     is an immutable record that may declare other stages or time a step on another clock."""
-    return list(newest(row.document for row in load_methodology()).values())
+    return [row.document for row in load_methodology()]
 
 
 def test_the_owner_documents_pass_the_stage_checks() -> None:
     errors = [
-        error
-        for document in _newest_versions()
-        for error in stage_hover_errors(document, limit=140)
+        error for document in _documents() for error in stage_hover_errors(document, limit=140)
     ]
     assert errors == []
 
@@ -204,12 +201,12 @@ def test_a_boundary_clock_is_one_of_the_methods_names_clocks(
 
 
 def _current_documents() -> dict[str, dict[str, Any]]:
-    """The newest version of each current document; the dotted 1.0 ids are the retired series."""
-    return newest(
-        row.document
+    """Each current document; the dotted 1.0 ids are the retired series."""
+    return {
+        row.document["id"]: row.document
         for row in load_methodology()
         if "." not in row.document["id"] and row.document.get("timing_boundaries")
-    )
+    }
 
 
 CLOCK_CLAUSE = re.compile(r"(?i)\bby\s+(?:the\s+|its\s+)?[\w' -]*?\bclock\b|\b\w+-clock\b")

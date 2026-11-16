@@ -14,7 +14,6 @@ from sandbox_benchmark_verifier.catalog import (
     ordinary_documents,
 )
 from sandbox_benchmark_verifier.text_predicates import lookup
-from sandbox_benchmark_verifier.versions import version_key
 
 
 def omit_paths(definition: dict[str, Any], paths: Sequence[str]) -> None:
@@ -43,7 +42,7 @@ def drop_unknown(value: Any) -> None:
 
 
 def inherited_cost(
-    document: Mapping[str, Any], documents: Mapping[tuple[str, str], Mapping[str, Any]]
+    document: Mapping[str, Any], documents: Mapping[str, Mapping[str, Any]]
 ) -> dict[str, Any]:
     """A document's cost block with the common methodology's statement filled in where it is silent.
 
@@ -51,17 +50,11 @@ def inherited_cost(
     cost, or whose cost is not applicable, keeps its own block.
     """
     cost = deepcopy(dict(document.get("cost") or {}))
-    # Definitions released before sbs.common 1.0.6 state their whole cost block themselves.
     inherited = document.get("inherits")
-    parent = (
-        documents.get((inherited["id"], str(inherited["version"])))
-        if isinstance(inherited, dict)
-        else None
-    )
+    parent = documents.get(inherited) if isinstance(inherited, str) else None
     common = (parent or {}).get("cost")
-    stated_by_common = parent is not None and (version_key(parent["version"]) >= (1, 0, 6))
     if (
-        stated_by_common
+        parent is not None
         and isinstance(common, dict)
         and cost
         and cost.get("method") == common.get("method")
@@ -104,18 +97,18 @@ def _page_metric_name(
 def member_documents(
     definition: Mapping[str, Any],
     host: str,
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     rows: Sequence[Mapping[str, Any]],
     document_aliases: Mapping[str, str],
 ) -> list[tuple[str, Mapping[str, Any]]]:
-    """Page members as of this exact host, selected inside its inherited common first."""
+    """Page members as of this host, selected inside its inherited common first."""
     members = [row for row in rows if row["kind"] in PAGE_KINDS and row.get("page") == host]
     if not members:
         return []
     inherited = definition.get("inherits")
-    if not isinstance(inherited, Mapping):
-        raise ValueError("page members need the host's exact inherited common")
-    parent = common_document(list(documents.values()), inherited)
+    if not isinstance(inherited, str):
+        raise ValueError("page members need the host's inherited common")
+    parent = common_document(list(documents.values()))
     if str(parent["effective"]) > str(definition["effective"]):
         raise ValueError("page member common takes effect after its host")
     if errors := context_region_errors(definition, parent):
@@ -130,21 +123,17 @@ def member_documents(
         ]
         selected = ordinary_documents(
             [parent, *({**candidate, "id": identity} for candidate in candidates)],
-            common=inherited,
             effective=str(definition["effective"]),
         ).get(identity)
         if selected:
-            original = next(
-                candidate for candidate in candidates if candidate["version"] == selected["version"]
-            )
-            found.append((row["id"], original))
+            found.append((row["id"], candidates[0]))
     return found
 
 
 def _with_page_members(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     definition: dict[str, Any],
     host: str,
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     rows: Sequence[Mapping[str, Any]],
     document_aliases: Mapping[str, str],
     policy: Mapping[str, Any],
@@ -157,14 +146,13 @@ def _with_page_members(  # pylint: disable=too-many-arguments,too-many-positiona
     (rule grouped-page-named-metrics).
 
     The tests are those whose names row says their page is the host test's. Each contributes its
-    document's version in force when this version took effect; a version that predates every
-    version of a member draws no member.
+    document if the document was in force when the host took effect.
     """
     metrics: list[dict[str, Any]] = []
     variants: list[dict[str, Any]] = []
-    for test, newest in member_documents(definition, host, documents, rows, document_aliases):
-        held = newest.get("metrics", [])
-        variants.extend(deepcopy(list(newest.get("procedure", {}).get("variants", []))))
+    for test, member in member_documents(definition, host, documents, rows, document_aliases):
+        held = member.get("metrics", [])
+        variants.extend(deepcopy(list(member.get("procedure", {}).get("variants", []))))
         metrics.extend(
             {
                 **deepcopy(dict(metric)),
@@ -191,7 +179,7 @@ def _with_page_members(  # pylint: disable=too-many-arguments,too-many-positiona
 
 def reader_definition(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     document: Mapping[str, Any],
-    documents: Mapping[tuple[str, str], Mapping[str, Any]],
+    documents: Mapping[str, Mapping[str, Any]],
     policy: Mapping[str, Any],
     canonical_id: str | None = None,
     names: Sequence[Mapping[str, Any]] = (),
@@ -201,17 +189,17 @@ def reader_definition(  # pylint: disable=too-many-arguments,too-many-positional
     definition = deepcopy(dict(document))
     provenance: dict[str, Any] = {}
     inherited = definition.get("inherits")
-    if isinstance(inherited, dict):
-        parent = documents.get((inherited["id"], str(inherited["version"])))
+    if isinstance(inherited, str):
+        parent = documents.get(inherited)
         if parent is None:
-            raise ValueError(f"unknown inherited methodology: {inherited['id']}")
+            raise ValueError(f"unknown inherited methodology: {inherited}")
 
         def fill(target: dict[str, Any], source: Mapping[str, Any], path: str) -> None:
             for key, value in source.items():
                 child_path = f"{path}.{key}" if path else key
                 if key not in target:
                     target[key] = deepcopy(value)
-                    provenance[child_path] = dict(inherited)
+                    provenance[child_path] = {"id": inherited}
                 elif isinstance(target[key], dict) and isinstance(value, dict):
                     fill(target[key], value, child_path)
 

@@ -12,9 +12,7 @@ shared:
       clock readings return. Calls run sequentially in one sandbox.
     cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful call.
     cost_how_to_read: Only successful trials contribute to the cost value.
-  inherits:
-    id: sbs.common
-    version: 1.0.18
+  inherits: sbs.common
   environment:
     size:
       vcpu: 2
@@ -44,7 +42,7 @@ shared:
       command: 'true'
       parameters:
         calls: 100
-      description: The workload uses the {param:exec-latency.1.2.12.procedure.variants.0.label} configuration.
+      description: The workload uses the {param:exec-latency.procedure.variants.0.label} configuration.
     steps:
     - id: create
       name: '{name:stage.create}'
@@ -100,7 +98,7 @@ shared:
     exclusions:
     - A failure shown not to be the provider's; retain the trial with its reason.
   parameters:
-    path: parameters/exec-latency-2vcpu-8gib/1.0.3/
+    path: parameters/exec-latency-2vcpu-8gib/
     sha256: f97b44012d461bfe429c9918e4d9b3c7bf43b8cc030f84115a43424d1363da79
   interpretation:
     what_to_do: Use the latency to judge the floor under every command an agent runs through a provider.
@@ -114,8 +112,6 @@ shared:
     - BoxRouter keeps idle connections for 300 s, so a call that follows a pause may pay a new connection.
     - A run is 100 trials, so each provider's figures come from 100 sandboxes and 10,000 calls. Until
       2026-10-26 a run was 10 trials; the trial itself did not change.
-    - Version 4 of the earlier test measures only the calls through BoxRouter and makes 100 calls instead
-      of 20; version 3's results are not pooled with it.
   validity_checks:
   - id: clock_cross_check
     threat: A wrong sandbox clock reading would skew the runtime and the latency.
@@ -179,14 +175,13 @@ shared:
 views:
   per-call:
     id: exec-latency
-    version: 1.2.12
     effective: '2026-11-08'
     name: Exec Latency
     notes:
       summary: Time to send a single exec `true` call.
       what_this_measures: The result is the round-trip latency of one call to a command that runs for
         almost no time, from the call until its result and the sandbox clock readings return.
-      how_to_read: The {param:exec-latency.1.2.12.statistics.primary} summarizes every call of every successful
+      how_to_read: The {param:exec-latency.statistics.primary} summarizes every call of every successful
         trial, pooled, in the axis unit; {direction:total_time}.
     metrics:
     - name: total_time
@@ -214,15 +209,14 @@ views:
         seed: 0
   per-100-calls:
     id: exec-latency-per-100-calls
-    version: 1.0.11
     effective: '2026-11-08'
     name: '{name:test.exec-latency-per-100-calls}'
     notes:
-      summary: Total time to send {param:exec-latency.1.2.12.procedure.variants.0.parameters.calls} individual
+      summary: Total time to send {param:exec-latency.procedure.variants.0.parameters.calls} individual
         exec `true` calls.
       what_this_measures: The result is the round-trip latency of one trial's consecutive calls to a command
         that runs for almost no time, added up.
-      how_to_read: The {param:exec-latency.1.2.12.statistics.primary} summarizes the successful trials
+      how_to_read: The {param:exec-latency.statistics.primary} summarizes the successful trials
         in the axis unit; {direction:total_time}.
     metrics:
     - name: total_time

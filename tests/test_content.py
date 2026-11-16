@@ -41,7 +41,6 @@ def test_a_slot_with_any_unresolved_placeholder_kind_fails(kind: str) -> None:
 def test_source_rules_reject_numeric_facts_and_duplicate_slots() -> None:
     document = {
         "id": "demo",
-        "version": "1.0.0",
         "notes": {
             "introduction": "The test runs 10 trials.",
             "setup": "The test runs 10 trials.",
@@ -49,7 +48,7 @@ def test_source_rules_reject_numeric_facts_and_duplicate_slots() -> None:
     }
     errors = document_content_errors(document, documents={}, names={})
     assert any("numeric fact requires a parameter placeholder" in error for error in errors)
-    assert any("duplicates demo@1.0.0.notes.introduction" in error for error in errors)
+    assert any("duplicates demo.notes.introduction" in error for error in errors)
 
 
 def capture() -> dict[str, Any]:
