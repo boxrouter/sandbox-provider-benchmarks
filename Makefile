@@ -31,8 +31,7 @@ lint-pyright:
 lint-pylint:
 	$(UV) run --locked pylint src/sandbox_benchmark_verifier
 
-check:
-	@$(call stage,lint,$(MAKE) --no-print-directory lint)
+check: lint
 	@$(call stage,procedures,$(UV) run --locked python -m sandbox_benchmark_verifier.procedures)
 	@$(call stage,pytest,$(UV) run --locked pytest -n $(PYTEST_WORKERS))
 	@$(call stage,text,$(UV) run --locked sandbox-benchmark-verify text)
