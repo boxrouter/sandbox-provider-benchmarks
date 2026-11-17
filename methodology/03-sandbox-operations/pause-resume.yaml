@@ -311,7 +311,7 @@ environment:
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
   network: unknown
-  lifetime_seconds: 300
+  lifetime_seconds: 3600
 clocks:
   operation: Job-host monotonic clock around each operation.
   command_runtime: Sandbox clock readings around the read after resume.
