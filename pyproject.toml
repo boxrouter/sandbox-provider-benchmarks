@@ -50,6 +50,7 @@ packages = ["src/sandbox_benchmark_verifier"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+tmp_path_retention_policy = "failed"
 markers = ["unit: offline behavior tests"]
 
 [tool.mypy]
