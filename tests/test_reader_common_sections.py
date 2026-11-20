@@ -92,7 +92,6 @@ def test_common_draws_its_sections_in_the_order_of_a_trials_life() -> None:
         "failures",
         "statistics",
         "provider-scores",
-        "independence",
     ]
     assert page["sections"]["trial-lifecycle"]["name"] == "Trial Lifecycle"
 

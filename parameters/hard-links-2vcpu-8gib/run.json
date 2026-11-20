@@ -1,0 +1,53 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "hard-links-2vcpu-8gib",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 8
+  },
+  "lifetime_s": 600,
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "timeout_s": 300
+    },
+    {
+      "id": "mount-facts",
+      "op": "exec",
+      "untimed": true,
+      "command": "mkdir -p /workspace/hardlink && cd /workspace/hardlink || exit 1\nfstype=$(findmnt -no FSTYPE -T .); echo \"fstype $fstype\"\necho \"source $(findmnt -no SOURCE -T .)\"\ntarget=$(findmnt -no TARGET -T .)\necho \"mount_line $(awk -v t=\"$target\" '$2 == t' /proc/mounts | tail -n 1)\"\necho \"mounts $(wc -l < /proc/mounts)\"\nupper=$(findmnt -no OPTIONS -T . | tr , '\\n' | sed -n 's/^upperdir=//p')\nupper_fstype=\"\"; [ -n \"$upper\" ] && upper_fstype=$(findmnt -no FSTYPE -T \"$upper\" 2>/dev/null)\n[ -n \"$upper_fstype\" ] && echo \"upper_fstype $upper_fstype\"\necho \"inodes_free $(df --output=iavail . | tail -n 1 | tr -d ' ')\"\nfree=$(df -B1 --output=avail . | tail -n 1 | tr -d ' ')\necho \"disk_free_bytes $free\"\nawk '/^MemAvailable:/ {print \"mem_available_kib\", $2}' /proc/meminfo\necho \"kernel $(uname -r)\"\ncase \"$free\" in (*[!0-9]*|'') ;; (*) [ \"$free\" -lt {param:free_bytes} ] && { echo \"missed: not enough free disk\"; exit 1; } ;; esac\nlimit=$(cat /sys/fs/cgroup/memory.max 2>/dev/null)\n[ -n \"$limit\" ] && echo \"cgroup_memory.max $limit\"\nshmem() { awk '$1 == \"shmem\" {print $2}' /sys/fs/cgroup/memory.stat 2>/dev/null; }\nif [ -n \"$limit\" ] && [ \"$limit\" != \"max\" ] && [ \"$limit\" -lt 1152921504606846976 ] 2>/dev/null; then\n  before=$(shmem); scale=1\nelse\n  before=$(awk '/^Shmem:/ {print $2}' /proc/meminfo); scale=1024\nfi\necho \"before_memory_bytes $(( ${before:-0} * scale ))\"\ndd if=/dev/zero of=memory-probe bs=1M count=$(( {param:probe_bytes} / 1048576 )) status=none || exit 1\nif [ \"$scale\" = 1 ]; then after=$(shmem); else after=$(awk '/^Shmem:/ {print $2}' /proc/meminfo); fi\nrm -f memory-probe\necho \"after_memory_bytes $(( ${after:-0} * scale ))\"\nrise=\"\"\ncase \"$before$after\" in (*[!0-9]*|'') ;; (*) rise=$(( (after - before) * scale )) ;; esac\necho \"memory_rise_bytes ${rise:-unknown}\"\ninmem=not_fired\nif [ \"$fstype\" = tmpfs ] || [ \"$fstype\" = ramfs ] || [ \"$upper_fstype\" = tmpfs ] || [ \"$upper_fstype\" = ramfs ]; then\n  inmem=fired\nelif [ -z \"$rise\" ]; then\n  if [ \"$fstype\" = overlay ] && [ -z \"$upper_fstype\" ]; then inmem=inconclusive; fi\nelif [ \"$rise\" -ge 214748365 ]; then\n  inmem=fired\nfi\necho \"files_in_memory $inmem\"",
+      "timeout_s": 90
+    },
+    {
+      "id": "download-stress-ng",
+      "op": "exec",
+      "untimed": true,
+      "command": "curl -fsSL https://github.com/boxrouter/bench-assets/releases/download/tools-v1/{param:tool.asset} -o /workspace/hardlink/stress-ng.xz && echo '9b0aee365030676a9c64f5a9ed88da9cf90e4c4055839fe830aa481583bc3b25  /workspace/hardlink/stress-ng.xz' | sha256sum -c -",
+      "timeout_s": 120
+    },
+    {
+      "id": "install-stress-ng",
+      "op": "exec",
+      "untimed": true,
+      "command": "cd /workspace/hardlink || exit 1\nxz -d -f stress-ng.xz || exit 1\nchmod +x stress-ng || exit 1\nsha=$(sha256sum stress-ng | cut -d' ' -f1) || exit 1\necho \"stress-ng_sha256 $sha\"\n./stress-ng --version 2>/dev/null | head -n 1 | sed 's/^/stress-ng_version /'\n[ \"$sha\" = \"{param:tool.sha256}\" ]",
+      "timeout_s": 30
+    },
+    {
+      "id": "hardlink",
+      "op": "script",
+      "script": "{param:command} && cat /workspace/hardlink/out.yaml && echo \"inodes_free_after $(df --output=iavail . | tail -n 1 | tr -d ' ')\"",
+      "parse": "hardlinks",
+      "timeout_s": 120
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

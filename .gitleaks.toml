@@ -12,9 +12,9 @@ regexTarget = "line"
 regexes = ['''^\s*"GPG_KEY": "[0-9A-Fa-f]{40}",?\s*$''']
 
 [[allowlists]]
-description = "The source commit pins a public repository revision, not an authentication credential."
+description = "The trace hub's publishable client key is public by design (run-definition schema: fetch_key)."
 targetRules = ["generic-api-key"]
 condition = "AND"
-paths = ['''(^|/)reference-tests/network/run\.py$''']
-regexTarget = "match"
-regexes = ['''FASTAPI_COMMIT = "[0-9a-f]{40}"''']
+paths = ['''(^|/)parameters/terminal-bench-4-0/run\.json$''']
+regexTarget = "line"
+regexes = ['''^\s*"fetch_key": "sb_publishable_[A-Za-z0-9_-]+",?\s*$''']

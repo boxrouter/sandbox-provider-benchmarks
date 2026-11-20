@@ -108,11 +108,6 @@
       "order": 9,
       "sources": []
     },
-    "independence": {
-      "name": "Independence",
-      "order": 10,
-      "sources": []
-    },
     "cost-sources": {
       "name": "Cost Sources and Evidence",
       "order": 20,
@@ -219,15 +214,6 @@
         }
       ]
     },
-    "independence": {
-      "order": 6,
-      "sources": [
-        "notes.independence",
-        "notes.independence_rules",
-        "notes.run_check",
-        "notes.run_checks"
-      ]
-    },
     "sandbox": {
       "name": "Test Environment",
       "order": 0,
@@ -326,6 +312,8 @@
     "datasets": "Datasets",
     "declaration_path": "Declaration File",
     "deadline_seconds": "Deadline",
+    "default_off": "Starts Switched Off",
+    "default_view": "Default View",
     "delete_snapshot": "Delete Snapshot",
     "description": "Description",
     "destroy": "{name:stage.destroy}",
@@ -362,6 +350,7 @@
     "install": "{name:stage.install}",
     "interpretation": "Interpretation",
     "interval": "Interval",
+    "kind": "Kind",
     "launch_spread_ms": "Launch Spread (ms)",
     "jitter_fraction": "Jitter",
     "job": "Job",
@@ -395,6 +384,7 @@
     "note": "Reported When Fired",
     "notes": "Notes",
     "notes.stage_rule": "Stage Segments and Derived Views",
+    "on_idle": "On Idle",
     "open_preview": "Open {name:stage.preview}",
     "operation": "Operation",
     "optional": "Optional",
@@ -402,6 +392,7 @@
     "p95": "95th Percentile",
     "panel": "Panel",
     "parameters": "Parameters",
+    "parent": "Parent",
     "part": "Timed Part",
     "path": "Path",
     "pause": "{name:stage.pause}",
@@ -410,6 +401,7 @@
     "per_input_value": "Per Input Value",
     "per_success": "Per Success",
     "percentile_method": "Percentile Method",
+    "phase": "Phase",
     "plots": "Plots",
     "policy": "Policy",
     "poll_gap_seconds": "Polling Gap",
@@ -450,6 +442,7 @@
     "retry_on": "Retry Conditions",
     "reward": "{name:stage.reward}",
     "rounds": "Rounds",
+    "sandbox": "Sandbox",
     "sandboxes": "Sandboxes",
     "sandboxes_at_once": "Concurrent Sandboxes",
     "sandboxes_per_trial": "Sandboxes per Trial",
@@ -465,6 +458,7 @@
     "sevenzip_one_thread": "7-Zip With One Thread",
     "sha256": "SHA-256",
     "shared_trial": "Shared Trial",
+    "show": "Shown As",
     "size": "Size",
     "skipped_by_benchmarks": "Skipped by Benchmarks",
     "skipped_on_restore_by_benchmarks": "Skipped on Restore by Benchmarks",
@@ -542,6 +536,7 @@
     "sequential-read": "{name:test.sequential-read}",
     "sequential-write": "{name:test.sequential-write}",
     "stream-triad": "{name:test.stream-triad}",
+    "idle_shutdown": "Idle Shutdown",
     "ids": "Methods",
     "default": "Default",
     "options": "Options",
@@ -566,10 +561,7 @@
     "empty_account": "Empty Account",
     "equal_concurrency": "Equal Concurrency",
     "fresh_sandbox": "Fresh Sandbox",
-    "independence": "Independence",
-    "independence_answers": "Independence",
     "job_host": "Job Host",
-    "network_path": "Network Path",
     "measures": "Measures",
     "placement_facts": "Placement Facts",
     "principle": "Principle",
@@ -627,7 +619,6 @@
     "calculation": "Calculation",
     "clocks.headline": "Clock",
     "statistics.primary": "Statistic",
-    "network_path_attempts": "Network Path Attempts",
     "connection_idle_exceptions": "Idle Connection Exceptions",
     "file_transfer_idle_seconds": "File Transfer Idle Time",
     "power": "Power",
@@ -641,8 +632,6 @@
     "notes.top_ups": "Top-Ups",
     "notes.per_unit_statistics": "Per-Unit Statistics",
     "notes.workload_value": "Multi-Unit Workload Value",
-    "notes.independence_rules": "Execution Rules",
-    "notes.run_check": "Statistical Run Checks",
     "status_label": "Status",
     "status_meaning": "Meaning",
     "check_name": "Check",
@@ -768,6 +757,7 @@
     "description",
     "metrics.description",
     "metrics.formula",
+    "metrics.phase",
     "metrics.primary.formula",
     "metrics.secondary.formula",
     "composition.inclusion",
@@ -777,6 +767,7 @@
     "composition.weighting",
     "timing_boundaries",
     "procedure.steps",
+    "default_view",
     "procedure.stages",
     "procedure.warm_cold_policy",
     "procedure.cadence",
@@ -786,7 +777,6 @@
     "environment.image.modification",
     "environment.job_host",
     "environment.network",
-    "environment.network_path",
     "environment.region_policy",
     "parameters.pinned_file",
     "capability_source.use",
@@ -796,8 +786,6 @@
     "validity_checks",
     "statistics.percentile_method",
     "statistics.ranking.failing_often",
-    "independence",
-    "independence_answers",
     "reader_sources",
     "composition.formulas",
     "composition.display_levels.id",
@@ -873,7 +861,7 @@
     "not_recorded": "This publication did not record the versions that priced its costs. The method of the pinned pricing release is shown."
   },
   "common_api": {
-    "before_link": "All providers are benchmarked through BoxRouter's unified sandbox API, which standardizes operation behavior across providers. See ",
+    "before_link": "All providers are measured under the same operation definitions, which standardize operation behavior across providers. See ",
     "link": "Provider support",
     "after_link": " for the guarantees.",
     "href": "/docs/provider-support"
@@ -1434,7 +1422,7 @@
     "source.ids": "code",
     "environment.size": "machine_size",
     "provider": "provider_id",
-  "ports": "plain_number"
+    "ports": "plain_number"
   },
   "machine_size": "{vcpu} vCPU / {memory_gib} GiB",
   "standard_image": {

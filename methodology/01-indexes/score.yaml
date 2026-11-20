@@ -38,14 +38,18 @@ composition:
   inclusion: Only providers that have a result of their own in at least one workload of the scope. A provider
     with results but no provider-sourced cost in a workload has no cost score for it.
   not_displayed:
-  - condition: At least one counted trial of the provider in a workload has no provider-sourced cost.
+  - id: trial-without-provider-cost
+    condition: At least one counted trial of the provider in a workload has no provider-sourced cost.
     reason: The page names how many of the counted trials have no provider-sourced cost; the provider
       has no cost, never a zero or a range.
-  - condition: A unit's cost on the chosen statistic is zero.
+  - id: zero-unit-cost
+    condition: A unit's cost on the chosen statistic is zero.
     reason: A unit costs nothing, so the geometric mean is undefined and the provider has no cost.
-  - condition: No unit of a workload was completed by any measured provider.
+  - id: no-unit-completed
+    condition: No unit of a workload was completed by any measured provider.
     reason: No unit was completed by any provider, so no workload cost exists.
-  - condition: A workload has no provider-sourced cost for the provider.
+  - id: no-provider-cost
+    condition: A workload has no provider-sourced cost for the provider.
     reason: The page gives "a workload has no provider-sourced cost for it".
   scopes:
   - id: execution
@@ -126,13 +130,15 @@ composition:
   aggregation: arithmetic_mean
   weighting: Equal weight per workload; a workload a provider has no result on adds 0.
   inclusion: Only providers that have a result of their own in at least one workload of the scope. The
-    composite applies no ranking floor or failing-often rule of its own.
+    composite adds no completeness gate or failing-often rule of its own.
   not_displayed:
-  - condition: The provider has no result of its own in any workload of the scope, for example because
+  - id: no-result
+    condition: The provider has no result of its own in any workload of the scope, for example because
       it was not measured there.
     reason: The page lists the provider under "Not displayed" without a stated reason on this view; if
       no provider qualifies it says that no provider has a result in any of the benchmarks in the composite.
-  - condition: No unit of a workload was completed by any measured provider.
+  - id: no-unit-completed
+    condition: No unit of a workload was completed by any measured provider.
     reason: The workload has no time for any provider, so no provider has a composite value.
   scopes:
   - id: execution
@@ -272,9 +278,11 @@ composition:
     out for every provider.'
   inclusion: Every provider, at every level that has a child with a value for some provider.
   not_displayed:
-  - condition: No child of a level has a value for any provider.
+  - id: no-child-value
+    condition: No child of a level has a value for any provider.
     reason: The level has no score for any provider.
-  - condition: A cost score's unit lacks a provider-sourced cost for the provider.
+  - id: unit-without-provider-cost
+    condition: A cost score's unit lacks a provider-sourced cost for the provider.
     reason: The provider has no cost score for the workload, as on the cost score.
   levels:
   - id: workload_time

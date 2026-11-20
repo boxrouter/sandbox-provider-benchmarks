@@ -1,0 +1,91 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "delayed-resume",
+  "version": 2,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 4
+  },
+  "lifetime_s": 1500,
+  "modes": [
+    {
+      "id": "pause",
+      "requirements": {
+        "pause_resume": {}
+      }
+    },
+    {
+      "id": "idle",
+      "requirements": {
+        "idle_shutdown": {
+          "on_idle": "paused"
+        }
+      },
+      "skip": [
+        "pause",
+        "resume"
+      ],
+      "standby": {
+        "after": "control",
+        "before": "data-back",
+        "min_s": 5
+      },
+      "not_for": {
+        "wait-0s": "no pause to call, and the sandbox does not stand by within 0 s"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "sandbox": 1,
+      "timeout_s": 300
+    },
+    {
+      "id": "load",
+      "op": "script",
+      "script": "set -e\nmkdir -p /workspace/delayed-resume\ncd /workspace/delayed-resume\npython3 -c \"import random,sys; sys.stdout.buffer.write(random.Random({param:seed}).randbytes({param:bytes}))\" > marker.bin\nsync\nsha256sum marker.bin > sums\n",
+      "timeout_s": 300
+    },
+    {
+      "id": "control",
+      "op": "exec",
+      "command": "cd /workspace/delayed-resume && dd if=marker.bin bs=4M of=/dev/null status=none",
+      "clock_reads": true,
+      "timeout_s": 300
+    },
+    {
+      "id": "pause",
+      "op": "pause",
+      "timeout_s": 300
+    },
+    {
+      "id": "resume",
+      "op": "resume",
+      "delay_s": "{param:wait_s}",
+      "timeout_s": 300
+    },
+    {
+      "id": "data-back",
+      "op": "exec",
+      "command": "cd /workspace/delayed-resume && dd if=marker.bin bs=4M of=/dev/null status=none",
+      "clock_reads": true,
+      "timeout_s": 300
+    },
+    {
+      "id": "verify",
+      "op": "exec",
+      "command": "cd /workspace/delayed-resume && sha256sum -c sums",
+      "timeout_s": 300
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

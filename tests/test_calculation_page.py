@@ -81,4 +81,4 @@ def test_a_score_section_follows_statistics_in_common() -> None:
     order = sorted(
         page["common_sections"], key=lambda key: page["common_sections"][key].get("order", 99)
     )
-    assert order.index("statistics") < order.index("provider-scores") < order.index("independence")
+    assert order.index("statistics") < order.index("provider-scores")

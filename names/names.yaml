@@ -247,10 +247,10 @@ names:
   - {row: 38, kind: "stage", id: "build", name: "Build", parent: "ci-jobs"}
   - {row: 39, kind: "tab", id: "create", name: "Create", parent: "sandbox-operations"}
   - {row: 40, kind: "test", id: "sequential-tti", name: "Sequential TTI", parent: "create", document: "sequential-tti", selector: {label: "First Command", mode: chooses}, rejected_labels: [Startup Time, Cold Startup Time, Cold Start], presentation: {panel: "sequential-start"}}
-  - {row: 41, kind: "variant", id: "true", name: "true", parent: "sequential-tti", workload: "true"}
-  - {row: 41, kind: "variant", id: "python3", name: "python3 -c import", parent: "sequential-tti", workload: "python3"}
-  - {row: 41, kind: "variant", id: "node", name: "node -e require", parent: "sequential-tti", workload: "node"}
-  - {row: 41, kind: "variant", id: "git", name: "git --version", parent: "sequential-tti", workload: "git"}
+  - {row: 41, kind: "variant", id: "true", name: "true", parent: "sequential-tti", workload: "true", short: "true"}
+  - {row: 41, kind: "variant", id: "python3", name: "python3 -c import", parent: "sequential-tti", workload: "python3", short: "python3"}
+  - {row: 41, kind: "variant", id: "node", name: "node -e require", parent: "sequential-tti", workload: "node", short: "node"}
+  - {row: 41, kind: "variant", id: "git", name: "git --version", parent: "sequential-tti", workload: "git", short: "git"}
   - {row: 42, kind: "test", id: "burst-tti", name: "Burst TTI", status: "off", parent: "create", document: "burst-tti", selector: {label: "Parallel Sandboxes", mode: chooses}, rejected_labels: [Startup Time, Cold Startup Time, Cold Start], presentation: {panel: "burst-start"}}
   - {row: 43, kind: "variant", id: "n5", name: "5 sandboxes", parent: "burst-tti", workload: "n5"}
   - {row: 43, kind: "variant", id: "n10", name: "10 sandboxes", parent: "burst-tti", workload: "n10"}

@@ -1,0 +1,86 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "7-zip-1-thread",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 4
+  },
+  "lifetime_s": 1200,
+  "shuffle": [
+    "cpu-7zip-1t",
+    "cpu-7zip-mt",
+    "stream-triad"
+  ],
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "timeout_s": 300
+    },
+    {
+      "id": "tools-directory",
+      "op": "exec",
+      "untimed": true,
+      "command": "mkdir -p /workspace/cpu",
+      "timeout_s": 30
+    },
+    {
+      "id": "cpu-facts",
+      "op": "exec",
+      "untimed": true,
+      "command": "echo \"nproc $(nproc)\"\nawk -F': ' '/^model name/ {print \"cpu_model \" $2; exit}' /proc/cpuinfo\nflags=\" $(awk -F': ' '/^flags/ {print $2; exit}' /proc/cpuinfo) \"\nfor f in sha_ni avx2 avx512f; do\n  case $flags in *\" $f \"*) echo \"cpu_$f true\" ;; *) echo \"cpu_$f false\" ;; esac\ndone\nl3=$(cat /sys/devices/system/cpu/cpu0/cache/index3/size 2>/dev/null) && echo \"l3_cache $l3\"\n[ -r /sys/fs/cgroup/cpu.max ] && echo \"cgroup_cpu.max $(cat /sys/fs/cgroup/cpu.max)\"\nawk '/^MemTotal:/ {print \"mem_total_kib\", $2}' /proc/meminfo\n",
+      "timeout_s": 30
+    },
+    {
+      "id": "download-7zzs",
+      "op": "exec",
+      "untimed": true,
+      "command": "curl -fsSL https://github.com/boxrouter/bench-assets/releases/download/tools-v1/7zzs-25.01-linux-x64-static -o /workspace/cpu/7zzs && echo '5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422  /workspace/cpu/7zzs' | sha256sum -c -",
+      "timeout_s": 120
+    },
+    {
+      "id": "download-stream",
+      "op": "exec",
+      "untimed": true,
+      "command": "curl -fsSL https://github.com/boxrouter/bench-assets/releases/download/tools-v1/stream-5.10-80m-linux-x86_64-static -o /workspace/cpu/stream && echo '26b6dd2daf8a6f61eaeaebd9bc0c5cece91ec2d425069327034b7be1dbfc35d3  /workspace/cpu/stream' | sha256sum -c -",
+      "timeout_s": 120
+    },
+    {
+      "id": "install-tools",
+      "op": "exec",
+      "untimed": true,
+      "timeout_s": 30,
+      "command": "cd /workspace/cpu && chmod +x 7zzs stream && echo '5ef56fbef44a9b618036a90039d4a709a18e0950d7939112114f5c43674c5422  7zzs' | sha256sum -c - && echo '26b6dd2daf8a6f61eaeaebd9bc0c5cece91ec2d425069327034b7be1dbfc35d3  stream' | sha256sum -c -"
+    },
+    {
+      "id": "cpu-7zip-1t",
+      "op": "script",
+      "script": "cd /workspace/cpu && ./7zzs b -mmt1",
+      "parse": "7zip",
+      "timeout_s": 300
+    },
+    {
+      "id": "cpu-7zip-mt",
+      "op": "script",
+      "script": "cd /workspace/cpu && ./7zzs b -mmt2",
+      "parse": "7zip",
+      "timeout_s": 300
+    },
+    {
+      "id": "stream-triad",
+      "op": "script",
+      "script": "cd /workspace/cpu && OMP_NUM_THREADS=2 ./stream",
+      "parse": "stream",
+      "timeout_s": 120
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

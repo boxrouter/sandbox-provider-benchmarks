@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from sandbox_benchmark_verifier import catalog, procedures, reader_style
+from sandbox_benchmark_verifier import catalog, reader_style, run_references
 from sandbox_benchmark_verifier.catalog import _assets
 from sandbox_benchmark_verifier.clocks import includes_network_latency
 from sandbox_benchmark_verifier.content import (
@@ -383,7 +383,7 @@ def _build_text_bundle(root: Path) -> dict[str, Any]:
     parameters: dict[str, Mapping[str, Any]] = copy.deepcopy(_ordinary_documents(methods))
     parameters["content"] = content_criteria()
     parameters["reader"] = {"common": reader_common(root)}
-    parameters["procedure_references"] = procedures.projection(root, methods, tables)
+    parameters["procedure_references"] = run_references.projection(root, methods, tables)
     for method in methods:
         identifier = str(method["id"])
         indexed_methods[identifier] = {

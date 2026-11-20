@@ -24,7 +24,7 @@ def test_the_composites_carry_no_penalty_and_fill_inside_each_workload(identifie
     # and only when the failure is the provider's own.
     assert "any provider had on it" in composition["per_input_value"]
     assert "owner other than the provider" in composition["per_input_value"]
-    assert re.search(r"takes (the|its)", composition["inclusion"])
+    assert re.search(r"takes (the|its|that workload's)", composition["inclusion"])
     assert not re.search(r"(?i)penalty|multipl", str(composition))
 
 

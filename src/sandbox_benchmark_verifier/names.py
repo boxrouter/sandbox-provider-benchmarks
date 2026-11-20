@@ -44,7 +44,6 @@ from sandbox_benchmark_verifier.name_row_checks import (
     with_page_titles,
 )
 from sandbox_benchmark_verifier.name_scans import clock_name_errors, retired_word_errors
-from sandbox_benchmark_verifier.new_benchmark import PRE_TEMPLATE_IDS, pre_template_ids
 from sandbox_benchmark_verifier.placeholders import resolve_template
 from sandbox_benchmark_verifier.text_predicates import OPERATORS
 from sandbox_benchmark_verifier.unit_forms import unit_form_errors
@@ -926,20 +925,13 @@ def label_case_errors(root: Path) -> list[str]:
 
 
 def _unnamed_document_errors(root: Path, tables: Tables, documents: set[str]) -> list[str]:
-    """Every document id has a names row, an alias row or a retired entry.
-
-    An id absent from the pre-template list is a benchmark before graduation; graduation adds
-    its names row (runner graduation lint).
-    """
+    """Every document id has a names row, an alias row or a retired entry."""
+    del root
     named = {row["id"] for row in tables.names} | set(tables.aliases.get("retired", []))
     mapped = set(tables.aliases.get("document", {}))
-    listed = root / PRE_TEMPLATE_IDS
-    before_graduation = (
-        documents - set(pre_template_ids(root)["ids"]) if listed.is_file() else set()
-    )
     return [
         f"alias document {old}: released document has no alias row"
-        for old in sorted(documents - named - mapped - before_graduation)
+        for old in sorted(documents - named - mapped)
     ]
 
 

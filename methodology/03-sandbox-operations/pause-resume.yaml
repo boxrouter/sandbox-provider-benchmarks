@@ -32,6 +32,9 @@ environment:
 clocks:
   operation: Job-host monotonic clock around calls and the idle interval.
   command_runtime: Sandbox clock readings from the pre-wait and post-wait marker reads.
+default_view:
+  metric: resume_to_data_back
+  variant: wait-15min
 procedure:
   mode: single
   trials: 20
@@ -51,7 +54,8 @@ procedure:
       bytes: 4096
       seed: 20261004
       wait_seconds: 0
-    description: Resume the sandbox immediately; no idle interval follows the pause.
+    description: Resume at once, with no idle interval after the pause; not applicable without a pause
+      call, as the sandbox cannot stand by in 0 s.
     notes:
       summary: '{param:delayed-resume.notes.summary}'
       what_this_measures: '{param:delayed-resume.notes.what_this_measures}'
@@ -78,6 +82,8 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a fresh sandbox and pass the untimed ready check.
     timer: null
     timeout_seconds: 300
@@ -85,6 +91,8 @@ procedure:
     - create
   - id: control
     name: Read before wait
+    label: Read before
+    show: table
     action: Read the 4 KiB marker and record the sandbox clock immediately before the idle interval.
     timer: null
     timeout_seconds: 300
@@ -92,7 +100,10 @@ procedure:
     - control
   - id: pause
     name: '{name:stage.pause}'
-    action: Call pause where the provider supports an explicit pause; otherwise leave the sandbox idle.
+    label: '{name:stage.pause}'
+    show: hidden
+    action: Call pause where the provider supports an explicit pause; otherwise, where the provider
+      declares that an idle sandbox pauses by itself, leave the sandbox idle.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -104,6 +115,8 @@ procedure:
     timeout_seconds: 900
   - id: resume
     name: '{name:stage.resume}'
+    label: '{name:stage.resume}'
+    show: stack
     action: Call resume immediately after the wait where explicit pause is supported.
     timer:
       from: the resume request
@@ -114,6 +127,8 @@ procedure:
     - resume
   - id: data_back
     name: Read after wait
+    label: '{name:stage.read}'
+    show: stack
     action: Read the same marker; when there is no explicit resume operation, this first read wakes the
       sandbox.
     timer:
@@ -124,6 +139,8 @@ procedure:
     - data-back
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox and confirm it is gone.
     timer: null
     timeout_seconds: 300
@@ -156,7 +173,6 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 18
 cost:
   method: provider_reported_or_priced
 failure_policy:
@@ -185,6 +201,8 @@ parameters:
 capabilities:
   optional:
     pause_resume: {}
+    idle_shutdown:
+      on_idle: paused
 interpretation:
   what_to_do: Compare resume modes and wait lengths when choosing a provider for work that pauses between
     tool calls.
@@ -197,7 +215,10 @@ interpretation:
   - A wait past the connection idle timeout may include a TCP and TLS handshake in the return time.
   caveats:
   - Providers that support pause and resume receive explicit pause and resume calls. A provider without
-    it is left idle and may enter standby by itself; its wake occurs during the first read after the wait.
+    them that declares an idle sandbox pauses by itself is left idle; its wake occurs during the first
+    read after the wait. A provider with neither is not offered.
+  - A provider that is left idle is not applicable at the 0 s wait, because its sandbox cannot stand by
+    within 0 s and a read at once would compare a running sandbox with a resumed one.
   - If the evidence of idle standby is missing, or a positive wait did not enter standby, the affected
     resume metric is withheld.
 validity_checks:
@@ -207,14 +228,14 @@ validity_checks:
     reads finish without an error.
 - id: standby_evidence
   threat: A provider that never went to sleep would look like a fast resume.
-  check: The observed `frozen_s` value compares the job-host gap with the sandbox clock readings, from
-    the end of `control`, the last command before the wait, to the start of `data-back`. Through
-    BoxRouter that gap spans separate requests, so `frozen_s` stays Unknown and the check uses
-    `standby_lower_bound_s` instead, a value that is not published. It is the job host's monotonic
-    gap from the return of the `control` request to the send of the `data-back` request, less the
-    sandbox clock's progress over the same interval. That gap holds no BoxRouter or network time
-    outside the guest readings, so it is never longer than the true gap between them, and a positive
-    value proves the sandbox was frozen at least that long. It is a validity check only. It is never
+  check: Where the sandbox is left idle, both marker reads also record the sandbox's uptime, which
+    stands still while the sandbox is frozen, just before and just after the read. The check uses
+    `standby_lower_bound_s`, a value that is not published. It is the job host's monotonic gap from
+    the return of the `control` request to the send of the `data-back` request, less the uptime's
+    progress from the end of `control`, the last command before the wait, to the start of
+    `data-back`. The uptime readings lie outside that gap, so the value never exceeds the time the
+    sandbox was frozen. A trial whose value is under 5 s, or whose uptime could not be read, fails
+    as the provider's, and its resume metric is withheld. It is a validity check only. It is never
     a latency and is never added to or subtracted from a published time.
 source:
   name: deterministic 4 KiB marker workload
@@ -227,44 +248,6 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Each trial uses a fresh sandbox and one data workload; nothing warm is repeated. The provider's
-      image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
-
 ---
 id: pause-resume
 effective: '2026-11-08'
@@ -315,6 +298,9 @@ environment:
 clocks:
   operation: Job-host monotonic clock around each operation.
   command_runtime: Sandbox clock readings around the read after resume.
+default_view:
+  metric: pause_to_data_back
+  variant: storage-2gib
 procedure:
   mode: single
   trials: 20
@@ -376,6 +362,8 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a fresh sandbox and pass the untimed ready check.
     timer: null
     timeout_seconds: 300
@@ -389,6 +377,8 @@ procedure:
     timeout_seconds: 900
   - id: pause
     name: '{name:stage.pause}'
+    label: '{name:stage.pause}'
+    show: stack
     action: Request pause after the 60 s settle, with data loaded and no intervening request.
     timer:
       from: the pause request
@@ -399,6 +389,8 @@ procedure:
     - pause
   - id: resume
     name: '{name:stage.resume}'
+    label: '{name:stage.resume}'
+    show: stack
     action: Request resume immediately after pause returns, with no intervening request.
     timer:
       from: the resume request
@@ -409,6 +401,8 @@ procedure:
     - resume
   - id: data_back
     name: Read data after resume
+    label: '{name:stage.read}'
+    show: stack
     action: Read the marker or disk data directly where supported; for memory, verify the original holder
       PID and buffer hash.
     timer:
@@ -419,6 +413,8 @@ procedure:
     - data-back
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Check boot id and available memory, then destroy the sandbox and confirm it is gone.
     timer: null
     timeout_seconds: 300
@@ -436,6 +432,7 @@ procedure:
     - resume
   - id: read
     name: '{name:stage.read}'
+    default_off: true
     record_steps:
     - data-back
 timing_boundaries:
@@ -455,7 +452,6 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 18
 cost:
   method: provider_reported_or_priced
 failure_policy:
@@ -480,7 +476,7 @@ failure_policy:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
   path: parameters/pause-resume/
-  sha256: 31f502c6ac3766306d6ba2cea7c68e6a07f268dbbecad43dadad7641b4f1df7d
+  sha256: ea56d588b59bff66022401273b083c0bb2d00ff4d3c8607939c8b551a53684b4
 capabilities:
   required:
   - pause_resume
@@ -491,7 +487,7 @@ interpretation:
     in-memory data or data stored on disk. The pause, resume and first-answer spans locate restore costs.
   limits:
   - This measures one sandbox's pause and restore path, not a concurrency test.
-  - Results apply to these data shapes and providers whose bindings expose pause and resume.
+  - Results apply only to these data shapes and to providers that expose pause and resume.
   - The in-memory workload's read includes hashing its buffer.
   caveats:
   - The memory workload requires a pause that keeps memory; a provider whose pause keeps files only is
@@ -518,7 +514,7 @@ source:
   version: unknown
   ids:
   - pause-resume/empty sha256:f431302a992dacd8
-  - pause-resume/memory-1gib sha256:ea944b511947a5a3
+  - pause-resume/memory-1gib sha256:f7ae360ce2516c40
   - pause-resume/storage-1gib sha256:dc223fe77775e638
   - pause-resume/storage-2gib sha256:01b1c0b73cbbf055
   - pause-resume/storage-4gib sha256:a120e67ae400cf3d
@@ -526,40 +522,3 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Each trial uses a fresh sandbox and one data workload; nothing warm is repeated. The provider's
-      image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

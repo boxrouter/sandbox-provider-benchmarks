@@ -27,7 +27,7 @@ def tree_digest(directory: Path) -> str:
     lines = [
         f"{item.relative_to(directory).as_posix()}\0{hashlib.sha256(item.read_bytes()).hexdigest()}"
         for item in sorted(directory.rglob("*"))
-        if item.is_file()
+        if item.is_file() and item.name != "run.json"  # runner file, not methodology
     ]
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
 

@@ -39,10 +39,12 @@ composition:
   weighting: Equal weight per workload, as in {name:index.time-index} and {name:index.cost-index}.
   inclusion: Only providers with both a {name:index.cost-index} value and a time over the cost set.
   not_displayed:
-  - condition: The provider has no {name:index.cost-index} value or no time over the cost set.
+  - id: no-cost-index-value
+    condition: The provider has no {name:index.cost-index} value or no time over the cost set.
     reason: The page lists the provider under "Not displayed" with the {name:index.cost-index} reason,
       for example how many trials lack a provider-sourced cost.
-  - condition: No provider qualifies.
+  - id: no-provider-qualifies
+    condition: No provider qualifies.
     reason: The page shows an empty state instead of a chart.
   plots:
     x:

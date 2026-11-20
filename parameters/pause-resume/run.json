@@ -1,0 +1,60 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "pause-resume",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 4,
+    "disk_gib": 6
+  },
+  "lifetime_s": 2700,
+  "requirements": {
+    "pause_resume": {}
+  },
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "sandbox": 1,
+      "timeout_s": 300
+    },
+    {
+      "id": "load",
+      "op": "script",
+      "script": "set -e\nmkdir -p /workspace/pause-resume\ncd /workspace/pause-resume\ncat > guest.py <<'GUEST_EOF'\nimport hashlib\nimport os\nimport random\nimport signal\nimport subprocess\nimport sys\nimport time\n\n\ndef blocks(size, seed):\n    rng = random.Random(seed)\n    while size > 0:\n        n = min(size, 1 << 24)\n        yield rng.randbytes(n)\n        size -= n\n\n\ndef write(path, size, seed):\n    digest = hashlib.sha256()\n    with open(path, \"wb\") as f:\n        for block in blocks(size, seed):\n            f.write(block)\n            digest.update(block)\n        f.flush()\n        os.fsync(f.fileno())\n    with open(\"sums\", \"w\") as f:\n        f.write(f\"{digest.hexdigest()}  {path}\\n\")\n\n\ndef hold(size, seed):\n    buf = bytearray(size)\n    at = 0\n    for block in blocks(size, seed):\n        buf[at:at + len(block)] = block\n        at += len(block)\n\n    def line():\n        return f\"{os.getpid()} {hashlib.sha256(buf).hexdigest()}\\n\"\n\n    def answer(*_):\n        with open(\"answer\", \"w\") as f:\n            f.write(line())\n\n    signal.signal(signal.SIGUSR1, answer)\n    with open(\"ready.tmp\", \"w\") as f:\n        f.write(line())\n    os.rename(\"ready.tmp\", \"ready\")\n    while True:\n        signal.pause()\n\n\ndef direct_ok(path):\n    try:\n        fd = os.open(path, os.O_RDONLY | os.O_DIRECT)\n    except OSError:\n        return False\n    try:\n        mem = mmap_block()\n        os.readv(fd, [mem])\n        return True\n    except OSError:\n        return False\n    finally:\n        os.close(fd)\n\n\ndef mmap_block():\n    import mmap\n    return mmap.mmap(-1, 1 << 20)\n\n\ndef main():\n    mode, kind, size, seed = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])\n    if mode == \"hold\":\n        hold(size, seed)\n    if kind == \"empty\":\n        write(\"marker.bin\", size, seed)\n        back = \"dd if=marker.bin bs=4M of=/dev/null status=none\"\n        check = \"sha256sum -c sums\"\n    elif kind == \"storage\":\n        write(\"data.bin\", size, seed)\n        flag = \" iflag=direct\" if direct_ok(\"data.bin\") else \"\"\n        print(\"direct_reads\", \"true\" if flag else \"false\")\n        dropped = subprocess.run(\n            [\"sudo\", \"-n\", \"sh\", \"-c\", \"sync; echo 3 > /proc/sys/vm/drop_caches\"],\n            capture_output=True).returncode == 0\n        print(\"page_cache_dropped\", \"true\" if dropped else \"false\")\n        back = f\"dd if=data.bin{flag} bs=4M of=/dev/null status=none\"\n        check = \"sha256sum -c sums\"\n    else:\n        os.mkfifo(\"answer\")\n        log = open(\"holder.log\", \"w\")\n        holder = subprocess.Popen(\n            [sys.executable, __file__, \"hold\", kind, str(size), str(seed)],\n            stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,\n            start_new_session=True)\n        for _ in range(1200):\n            if os.path.exists(\"ready\"):\n                break\n            if holder.poll() is not None:\n                sys.exit(\"holder exited: \" + open(\"holder.log\").read())\n            time.sleep(0.1)\n        else:\n            sys.exit(\"holder not ready\")\n        print(\"holder\", open(\"ready\").read().strip())\n        back = \"kill -USR1 $(cut -d' ' -f1 ready) && cat answer > got\"\n        check = \"cmp ready got\"\n    with open(\"back.sh\", \"w\") as f:\n        f.write(back + \"\\n\")\n    with open(\"check.sh\", \"w\") as f:\n        f.write(check + \"\\n\")\n\n\nmain()\nGUEST_EOF\npython3 guest.py load {param:kind} {param:bytes} {param:seed}\n",
+      "timeout_s": 900
+    },
+    {
+      "id": "pause",
+      "op": "pause",
+      "delay_s": 60,
+      "timeout_s": 300
+    },
+    {
+      "id": "resume",
+      "op": "resume",
+      "timeout_s": 300
+    },
+    {
+      "id": "data-back",
+      "op": "exec",
+      "command": "cd /workspace/pause-resume && sh back.sh",
+      "clock_reads": true,
+      "timeout_s": 900
+    },
+    {
+      "id": "verify",
+      "op": "exec",
+      "command": "cd /workspace/pause-resume && sh check.sh",
+      "timeout_s": 900
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

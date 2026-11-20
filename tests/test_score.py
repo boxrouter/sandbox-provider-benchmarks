@@ -3,22 +3,33 @@
 """The score ranking: its definition documents, axis words, templates and flag rule."""
 
 import copy
+import math
 import re
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from sandbox_benchmark_verifier.cli import summary_value
 from sandbox_benchmark_verifier.content import content_criteria
 from sandbox_benchmark_verifier.methodology_page import reader_definition
 from sandbox_benchmark_verifier.names import load_tables, resolve
+from sandbox_benchmark_verifier.stats import nearest_rank
 from sandbox_benchmark_verifier.subtitles import score_fact_errors, template_errors
 from sandbox_benchmark_verifier.text import _methodologies
 
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def summary_value(statistic: str, values: Sequence[float]) -> float:
+    """The statistics the score tests compare, by their nearest-rank definitions."""
+    if statistic == "p95":
+        return nearest_rank(values, 0.95)
+    if statistic == "slowest":
+        return max(values)
+    return math.fsum(values) / len(values)
 
 
 def _document(identifier: str) -> dict[str, Any]:

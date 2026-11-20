@@ -1,0 +1,103 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "previews",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 4
+  },
+  "lifetime_s": 900,
+  "requirements": {
+    "previews": {
+      "access": [
+        "public"
+      ],
+      "ports": [
+        5173
+      ]
+    }
+  },
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "timeout_s": 300
+    },
+    {
+      "id": "directory",
+      "op": "exec",
+      "command": "mkdir -p /workspace/previews",
+      "timeout_s": 120,
+      "untimed": true
+    },
+    {
+      "id": "download",
+      "op": "exec",
+      "untimed": true,
+      "command": "cd /workspace/previews && curl -fsSL --retry 3 -o {param:app.name}.xz https://github.com/boxrouter/bench-assets/releases/download/tools-v1/{param:app.asset} && echo 'ed3854b0f805f2b3bd6b8a1eb1aa512cc600fadbf0ef634b21d861ed203bfa2f  {param:app.name}.xz' | sha256sum -c -",
+      "timeout_s": 300
+    },
+    {
+      "id": "unpack",
+      "op": "exec",
+      "command": "cd /workspace/previews && xz -d -f {param:app.name}.xz && echo '{param:app.sha256}  {param:app.name}' | sha256sum -c - && tar -xf {param:app.name} && node --version",
+      "timeout_s": 120,
+      "untimed": true
+    },
+    {
+      "id": "open-preview",
+      "op": "preview_request",
+      "port": "{param:port}",
+      "timeout_s": 60
+    },
+    {
+      "id": "start-server",
+      "op": "start_process",
+      "command": "cd /workspace/previews/{param:app.directory}\nD=/workspace/previews\nread u _ < /proc/uptime\necho \"$EPOCHREALTIME $u\" > $D/launched\n(\n  deadline=$((SECONDS + {param:limit_s}))\n  until [ \"$(curl -s --max-time 2 -w ' %{http_code}' http://127.0.0.1:{param:port}{param:path})\" = '{param:body} 200' ]; do\n    [ $SECONDS -ge $deadline ] && exit 1\n    sleep {param:local_gap_s}\n  done\n  read u _ < /proc/uptime\n  echo \"$EPOCHREALTIME $u\" > $D/listening.tmp && mv $D/listening.tmp $D/listening\n) > /dev/null 2>&1 &\nexec {param:server} > $D/server.log 2>&1",
+      "timeout_s": 60
+    },
+    {
+      "id": "url-poll",
+      "op": "http_get",
+      "port": "{param:port}",
+      "path": "{param:path}",
+      "until_status": 200,
+      "expect_body": "{param:body}",
+      "timeout_s": 120
+    },
+    {
+      "id": "server-listening",
+      "op": "script",
+      "clock": "sandbox",
+      "parse": "server-listening",
+      "script": "D=/workspace/previews\ndeadline=$((SECONDS + 30))\nuntil [ -s $D/listening ]; do\n  [ $SECONDS -ge $deadline ] && { echo 'not listening'; exit 1; }\n  sleep 0.05\ndone\necho \"launched $(cat $D/launched)\"\necho \"listening $(cat $D/listening)\"",
+      "timeout_s": 60
+    },
+    {
+      "id": "request",
+      "op": "http_get",
+      "port": "{param:port}",
+      "path": "{param:path}",
+      "expect_body": "{param:body}",
+      "repeat": "{param:requests}",
+      "timeout_s": 30
+    },
+    {
+      "id": "websocket",
+      "op": "websocket_connect",
+      "port": "{param:port}",
+      "subprotocol": "{param:websocket.subprotocol}",
+      "expect": "{param:websocket.expect}",
+      "optional": true,
+      "timeout_s": 10
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

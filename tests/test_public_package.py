@@ -6,7 +6,6 @@ import importlib
 import json
 import runpy
 import subprocess
-import tomllib
 from importlib.metadata import PathDistribution
 from pathlib import Path
 
@@ -107,15 +106,15 @@ def test_nested_components_keep_their_own_source_licences(tmp_path: Path) -> Non
         check(tmp_path, {"Apache-2.0"})
 
 
-def test_procedure_license_is_exact_and_scoped_to_its_component(tmp_path: Path) -> None:
+def test_a_component_license_is_exact_and_scoped_to_its_component(tmp_path: Path) -> None:
     subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True)
     (tmp_path / "LICENSE").write_text("test licence\n")
-    procedures = tmp_path / "procedures"
-    procedures.mkdir()
-    (procedures / "pyproject.toml").write_text(
+    component = tmp_path / "component"
+    component.mkdir()
+    (component / "pyproject.toml").write_text(
         '[project]\nlicense = "LicenseRef-PolyForm-Shield-1.0.0"\n'
     )
-    procedure = procedures / "cpu.py"
+    procedure = component / "cpu.py"
     identifier = "SPDX-License-" + "Identifier: "
     procedure.write_text(
         "# SPDX-FileCopyrightText: BoxRouter, Inc.\n"
@@ -140,24 +139,3 @@ def test_procedure_license_is_exact_and_scoped_to_its_component(tmp_path: Path) 
     )
     with pytest.raises(SystemExit, match="identifier does not match the project license"):
         check(tmp_path, {"Apache-2.0"})
-
-
-def test_procedure_license_text_and_reuse_scope_are_export_root_visible() -> None:
-    root = Path(__file__).parents[1]
-    license_name = "LicenseRef-PolyForm-Shield-1.0.0.txt"
-    assert (root / "LICENSES" / license_name).is_file()
-    assert not (root / "procedures" / "LICENSES" / license_name).exists()
-
-    reuse = tomllib.loads((root / "REUSE.toml").read_text(encoding="utf-8"))
-    annotations = [
-        row
-        for row in reuse["annotations"]
-        if row.get("SPDX-License-Identifier") == "LicenseRef-PolyForm-Shield-1.0.0"
-    ]
-    assert annotations == [
-        {
-            "path": "procedures/**",
-            "SPDX-FileCopyrightText": "BoxRouter, Inc.",
-            "SPDX-License-Identifier": "LicenseRef-PolyForm-Shield-1.0.0",
-        }
-    ]

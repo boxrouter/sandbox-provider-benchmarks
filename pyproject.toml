@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sandbox-benchmark-verifier"
-version = "0.4.397"
+version = "0.4.402"
 description = "Public benchmark methodology and dataset verifier"
 readme = "README.md"
 license = "Apache-2.0"
-license-files = ["LICENSE", "LICENSE-CC-BY-4.0", "LICENSES/MIT.txt", "LICENSES/LicenseRef-PolyForm-Shield-1.0.0.txt", "NOTICE"]
+license-files = ["LICENSE", "LICENSE-CC-BY-4.0", "LICENSES/MIT.txt", "NOTICE"]
 requires-python = ">=3.11,<3.15"
 dependencies = ["jsonschema>=4.26,<5", "pyyaml>=6.0.3,<7"]
 
@@ -45,7 +45,6 @@ packages = ["src/sandbox_benchmark_verifier"]
 "contracts" = "sandbox_benchmark_verifier/_assets/contracts"
 "conventions" = "sandbox_benchmark_verifier/_assets/conventions"
 "reader" = "sandbox_benchmark_verifier/_assets/reader"
-"procedures" = "sandbox_benchmark_verifier/_assets/procedures"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -59,7 +58,7 @@ strict = true
 files = ["src/sandbox_benchmark_verifier", "tests", "scripts"]
 
 [tool.pyright]
-include = ["src/sandbox_benchmark_verifier", "tests", "scripts", "reference-tests"]
+include = ["src/sandbox_benchmark_verifier", "tests", "scripts"]
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.11"

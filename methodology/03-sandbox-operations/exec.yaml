@@ -39,6 +39,9 @@ environment:
 clocks:
   operation: Job-host monotonic clock around each command call.
   command_runtime: Sandbox clock read immediately before and after true.
+default_view:
+  metric: total_time
+  variant: 'true'
 procedure:
   mode: single
   trials: 100
@@ -61,6 +64,8 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a fresh sandbox from the pinned standard image.
     timer: null
     timeout_seconds: 300
@@ -68,6 +73,8 @@ procedure:
     - create
   - id: 'true'
     name: true calls
+    label: 'true'
+    show: stack
     action: Send 100 true commands one at a time, with each call's sandbox clock readings returned to
       the job host.
     timer:
@@ -79,6 +86,8 @@ procedure:
     - 'true'
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox and confirm it is gone.
     timer: null
     timeout_seconds: 300
@@ -94,7 +103,6 @@ statistics:
   - mean
   ranking:
     ranked: true
-    min_successes: 5
   percentile_method: Nearest rank over every call of every successful trial, pooled; calls of a trial
     that failed partway are left out, as they are from the per-trial sums; no trimming.
   sample: pooled_calls
@@ -126,43 +134,6 @@ failure_policy:
   - A malformed measurement record or failure in benchmark-side timing and parsing.
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Later calls reuse the session's warmed state, as a user's calls do; nothing is cleared between
-      calls. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
 parameters:
   path: parameters/exec-latency-2vcpu-8gib/
   sha256: f97b44012d461bfe429c9918e4d9b3c7bf43b8cc030f84115a43424d1363da79
@@ -170,13 +141,13 @@ interpretation:
   what_to_do: Use this latency to judge the per-call overhead floor under every command that an agent
     runs in a 2 vCPU and 8 GiB sandbox, and compare results only against other runs in the 2 vCPU and
     8 GiB cell.
-  informs: The result shows how long the shortest command, true, takes to complete a round trip through
-    BoxRouter in a 2 vCPU and 8 GiB sandbox. A high latency points to overhead in the provider's command
+  informs: The result shows how long the shortest command, true, takes to complete a round trip to and
+    from a 2 vCPU and 8 GiB sandbox. A high latency points to overhead in the provider's command
     execution API or its in-sandbox daemon.
   limits:
   - The measured latency includes the network path between the job host and the provider's configured
     region, so a provider in a more distant region pays for that network distance.
-  - Only command calls sent through BoxRouter in the 2 vCPU and 8 GiB cell are measured; the result is
+  - Only command calls sent from the client host in the 2 vCPU and 8 GiB cell are measured; the result is
     not equivalent to 2 vCPU and 4 GiB or 4 vCPU and 8 GiB results and is not pooled with them.
   caveats:
   - Each trial creates one fresh sandbox and runs 100 calls sequentially after an untimed readiness check,

@@ -1,112 +1,215 @@
 [
   {
+    "commit": "cb1b3b671d0ee9fa9da9f7b02f86967953ffd10a",
     "data": {
       "config": "claude-opus-5-high",
       "task": "abs-stepped-slices",
       "trial": "abs-stepped-slices__WkdQbBj"
     },
+    "env": {},
     "id": "abs-stepped-slices-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7d5m4ed35zfp7gyhx7wdahed82yw72-v1.1@sha256:3a4d47f5281269305343c83729836ac2f3172811aee72681e472a4196178eda1",
     "label": "Claude Opus 5 high: abs-stepped-slices",
-    "version": "sha256:f087083622779b7b"
+    "reason": "needs the Go toolchain (the task image had Go 1.25.5); the standard image has none",
+    "replayable": false,
+    "repo": "https://github.com/abs-lang/abs",
+    "setup": [
+      "go mod download",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "abs-stepped-slices",
+    "version": "sha256:076094f689d37405",
+    "workdir": "/app"
   },
   {
+    "commit": "0bdc95715fa58f64e3fd6e63b0f89be8733cbbab",
     "data": {
       "config": "claude-opus-5-high",
       "task": "actionlint-action-pinning-lint",
       "trial": "actionlint-action-pinning-lint__a6gMP39"
     },
+    "env": {},
     "id": "actionlint-action-pinning-lint-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh79dnvkvq8j9bs22ededmsc79823akj-v1.1@sha256:522a6e93a31656d03cc79474dafc5542bb27109051914d5566d7d29789c2a1a6",
     "label": "Claude Opus 5 high: actionlint-action-pinning-lint",
-    "version": "sha256:c9ac5eeb44119973"
+    "reason": "needs the Go toolchain (the task image had Go 1.25.5); the standard image has none",
+    "replayable": false,
+    "repo": "https://github.com/rhysd/actionlint",
+    "setup": [
+      "go mod download",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "actionlint-action-pinning-lint",
+    "version": "sha256:12aba524afcdbba8",
+    "workdir": "/app"
   },
   {
+    "commit": "a691069fcadf9131e5f7a5a130a022dc678f3e1d",
     "data": {
       "config": "claude-opus-5-high",
       "task": "adaptix-name-mapping-aliases",
       "trial": "adaptix-name-mapping-aliases__QsGLDd8"
     },
+    "env": {},
     "id": "adaptix-name-mapping-aliases-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh73dq4n55jdxasppe6jjmth4183d47n-v1.1@sha256:528654670f3c591e6491fc6fa01a0b8905bc8dee1b0557c5e76231bcc206f8fe",
     "label": "Claude Opus 5 high: adaptix-name-mapping-aliases",
-    "version": "sha256:b243205dd133f072"
+    "replayable": true,
+    "repo": "https://github.com/reagento/adaptix",
+    "setup": [
+      "pip install -e tests/tests_helpers && pip install -r requirements/test_extra_new.txt",
+      "pip install -e .",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "adaptix-name-mapping-aliases",
+    "version": "sha256:56e5736a0de7b7fe",
+    "workdir": "/app"
   },
   {
+    "commit": "b73fea2e0682803bda7531c93cd1dfb360839175",
     "data": {
       "config": "claude-opus-5-high",
       "task": "aiomonitor-task-snapshots-diff",
       "trial": "aiomonitor-task-snapshots-diff__8j54cmk"
     },
+    "env": {
+      "SETUPTOOLS_SCM_PRETEND_VERSION": "0.7.1"
+    },
     "id": "aiomonitor-task-snapshots-diff-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh75rc2q0zhmsqwk7wewfwwtrx830v2n-v1.1@sha256:e0c8b4e4044d5831693b4f6a6da483b255a889b71376574fba9e3c93d36ceb7c",
     "label": "Claude Opus 5 high: aiomonitor-task-snapshots-diff",
-    "version": "sha256:fd10d66865ffaa04"
+    "replayable": true,
+    "repo": "https://github.com/aio-libs/aiomonitor",
+    "setup": [
+      "pip install --no-cache-dir aioconsole==0.8.1 aiohttp==3.10.10 aiotools==1.7.0 attrs==24.2.0 build==1.2.2.post1 'click>=8.0' docutils==0.21.2 ipdb==0.13.13 'janus>=1.0' 'jinja2>=3.1.2' mypy==1.13.0 pre-commit==3.5.0 'prompt_toolkit>=3.0' pytest==8.3.3 pytest-asyncio==0.24.0 pytest-aiohttp==1.0.5 pytest-cov==4.0.0 pytest-sugar==0.9.7 ruff==0.7.2 telnetlib3==2.0.4 terminaltables==3.1.10 towncrier==24.8.0 'trafaret>=2.1.1' types-requests 'typing-extensions>=4.1' uvloop==0.21.0",
+      "pip install -e .",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "aiomonitor-task-snapshots-diff",
+    "version": "sha256:6bf40b1f1933924b",
+    "workdir": "/app"
   },
   {
+    "commit": "82ac179c1de4c216c4e333093044fac643303f0c",
     "data": {
       "config": "claude-opus-5-high",
       "task": "awilix-async-container-initialization",
       "trial": "awilix-async-container-initializ__47C93q4"
     },
+    "env": {},
     "id": "awilix-async-container-initialization-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh70bg8gy4xks4eyh1s71ecmk9822p9c-v1.1@sha256:748294a8ece567691f0a628d03c3531024d9f5e1acd13d5c6dd1ecba490831e6",
     "label": "Claude Opus 5 high: awilix-async-container-initialization",
-    "version": "sha256:92d25a2705014f38"
+    "replayable": true,
+    "repo": "https://github.com/jeffijoe/awilix",
+    "setup": [
+      "npm install --include=dev",
+      "git checkout -- package-lock.json",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "awilix-async-container-initialization",
+    "version": "sha256:0984816fb9de12ec",
+    "workdir": "/app"
   },
   {
+    "commit": "132a437c40cffbdfbe474ca808c8debde59e2633",
     "data": {
       "config": "claude-opus-5-high",
       "task": "cliffy-config-file-parsing",
       "trial": "cliffy-config-file-parsing__4hZVvuS"
     },
+    "env": {
+      "DENO_DIR": "/deno-cache"
+    },
     "id": "cliffy-config-file-parsing-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh72088pg9vkc6peacnkc35yy9832jff-v1.1@sha256:0a8dd8f1270ec4bb88efadad3021762e1d07274f686276c8a484d26a00bd91b5",
     "label": "Claude Opus 5 high: cliffy-config-file-parsing",
-    "version": "sha256:0a6e9c510062295e"
+    "reason": "needs the Deno 2.0.0 runtime; the standard image has none",
+    "replayable": false,
+    "repo": "https://github.com/c4spar/cliffy",
+    "setup": [
+      "deno cache --allow-import command/mod.ts flags/mod.ts && deno cache --allow-import jsr:@std/assert jsr:@std/path jsr:@std/fs jsr:@std/encoding jsr:@std/fmt/colors && deno cache --allow-import jsr:@std/testing/mock jsr:@std/testing/bdd jsr:@std/testing/snapshot && deno cache --allow-import npm:sinon npm:@types/node && for f in command/test/command/*.ts command/test/option/*.ts command/test/type/*.ts flags/test/*.ts; do deno cache --allow-import \"$f\" 2>/dev/null || true; done",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "cliffy-config-file-parsing",
+    "version": "sha256:afe1cd2ab2daa474",
+    "workdir": "/app"
   },
   {
+    "commit": "ec052921917ef201e73cc8e275dc91c5706b345f",
     "data": {
       "config": "claude-opus-5-high",
       "task": "mobly-grouped-test-barriers",
       "trial": "mobly-grouped-test-barriers__r7B3jQD"
     },
+    "env": {},
     "id": "mobly-grouped-test-barriers-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh74b2m0tjfn59vq8btqrj774s821570-v1.1@sha256:e7f48723e4bf9244cbe5206fdcb204456383c31f43c5a16da98efadda057998f",
     "label": "Claude Opus 5 high: mobly-grouped-test-barriers",
-    "version": "sha256:0011df0d4fb7c5aa"
+    "replayable": true,
+    "repo": "https://github.com/google/mobly",
+    "setup": [
+      "pip install --no-cache-dir portpicker pyyaml mock pytest pytz",
+      "pip install --no-cache-dir -e .",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "mobly-grouped-test-barriers",
+    "version": "sha256:a57891d0e881a382",
+    "workdir": "/app"
   },
   {
+    "commit": "3cad0da7a51b1206c6f01e3f4fbb44b976d5275c",
     "data": {
       "config": "claude-opus-5-high",
       "task": "tengo-callable-instance-isolation",
       "trial": "tengo-callable-instance-isolatio__a3D7Hmk"
     },
+    "env": {},
     "id": "tengo-callable-instance-isolation-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7ajwvesks1d5kkpeqx7y79sd8238zn-v1.1@sha256:4ef42ab32e07164ff16f4af59da104016a605cf436c6fde1be8c68745740582f",
     "label": "Claude Opus 5 high: tengo-callable-instance-isolation",
-    "version": "sha256:40979d853690854b"
+    "reason": "needs the Go toolchain and gcc for `go test -race`; the standard image has neither",
+    "replayable": false,
+    "repo": "https://github.com/d5/tengo",
+    "setup": [
+      "go mod download",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "tengo-callable-instance-isolation",
+    "version": "sha256:1388e1c09f65e864",
+    "workdir": "/app"
   },
   {
+    "commit": "3cad0da7a51b1206c6f01e3f4fbb44b976d5275c",
     "data": {
       "config": "claude-opus-5-high",
       "task": "tengo-destructuring-bindings",
       "trial": "tengo-destructuring-bindings__4mFguwj"
     },
+    "env": {},
     "id": "tengo-destructuring-bindings-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7ajwvesks1d5kkpeqx7y79sd8238zn-v1.1@sha256:4ef42ab32e07164ff16f4af59da104016a605cf436c6fde1be8c68745740582f",
     "label": "Claude Opus 5 high: tengo-destructuring-bindings",
-    "version": "sha256:7532bd8041c72204"
+    "reason": "needs the Go toolchain (the task image had Go 1.25.5); the standard image has none",
+    "replayable": false,
+    "repo": "https://github.com/d5/tengo",
+    "setup": [
+      "go mod download",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "tengo-destructuring-bindings",
+    "version": "sha256:f58cc5aa8a1f4a94",
+    "workdir": "/app"
   },
   {
+    "commit": "7795050a749bd1111cbbdd9d0219b27226a8e710",
     "data": {
       "config": "claude-opus-5-high",
       "task": "yjs-map-conflict-detection",
       "trial": "yjs-map-conflict-detection__UzpR3vW"
     },
+    "env": {},
     "id": "yjs-map-conflict-detection-claude-opus-5-high",
-    "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605:kh7fwz4nedevfex8ssk2p8xbt9836scp-v1.1@sha256:91b1986f864befaef716579fa641d57051257ea5484515f9befd30a4f5d800ef",
     "label": "Claude Opus 5 high: yjs-map-conflict-detection",
-    "version": "sha256:b2c2f515c2da49df"
+    "replayable": true,
+    "repo": "https://github.com/yjs/yjs",
+    "setup": [
+      "npm ci --include=dev",
+      "git config core.hooksPath /dev/null"
+    ],
+    "short": "yjs-map-conflict-detection",
+    "version": "sha256:a2a6a6f472869039",
+    "workdir": "/app"
   }
 ]

@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/bench/results.schema.json",
+  "title": "Benchmark results",
+  "description": "results.json: what `bench summarize` derives from one run's run.jsonl, and the only data the benchmarks pages read. Labels, units, better direction, step order and colours come from the pinned methodology release; this file carries ids and numbers. Every property's description ends with `Read by:` and the ids of the readers (see `readers`) that draw it. Read by: build.",
+  "schema_version": "1.11.0",
+  "readers": {
+    "build": "The web build: pin and version checks, the join keys every panel selects cells by, the provider pages and sitemap it draws.",
+    "downloads": "/benchmarks/results.json, run.jsonl, results.md and llms.txt, and their immutable run addresses.",
+    "run-chip": "The run date chip, the partial-run banner and the region label.",
+    "bars": "Every panel's bar headline: Median, Mean, p95 or Slowest, the 95% CI band, Box and Spread.",
+    "hover": "Hover cards, the readout and drill-down rows.",
+    "steps": "Stacked step segments, the lone step, step switches and drill-down step rows.",
+    "stages": "DeepSWE, Terminal-Bench and GitHub Actions stage segments and command rows.",
+    "start-time": "Sequential TTI's sandbox picker, All TTI runs and the Cold Startup hero.",
+    "cost": "Cost views, the cost Box and Spread, and the Reported or Calculated label.",
+    "frontier": "The Time vs Cost frontier.",
+    "suites": "The All traces, jobs and tasks views, the suite p95, and unit rows on provider pages.",
+    "failures": "Failure lines under charts and the failure list with its evidence.",
+    "states": "Not displayed, the Incomplete marker and \"Benchmark in development\".",
+    "indexes": "The Speed Index and Cost Index (overview hero and panel) and the Providers table's index columns.",
+    "score-tree": "The provider page's score tree."
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run", "cells", "pools", "indexes"],
+  "properties": {
+    "schema": {
+      "const": "boxrouter.bench.results/1",
+      "description": "Format id with the major version; the web accepts exactly one major. Read by: build."
+    },
+    "run": {"$ref": "#/$defs/Run", "description": "The run the file was summarized from. Read by: run-chip, downloads."},
+    "cells": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Cell"},
+      "description": "One cell per provider x methodology document x variant the config planned, sorted by document, variant and provider. Read by: build, bars, states."
+    },
+    "pools": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Pool"},
+      "description": "One pool per provider and replay-suite document, over that document's variants in this run. Read by: suites, frontier."
+    },
+    "indexes": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Index"},
+      "description": "The cross-cell values of the methodology's 01-indexes documents (decision D1a). Read by: indexes, score-tree."
+    }
+  },
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "description": "A methodology or provider id, never a sentence. Read by: build."
+    },
+    "Run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "started_at", "ended_at", "region", "methodology", "config_sha256", "lines_sha256", "lines", "summarize"],
+      "description": "The one run every number in the file comes from. Read by: run-chip, downloads.",
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "description": "The run id; names the immutable download addresses. Read by: run-chip, downloads."},
+        "started_at": {"type": "string", "format": "date-time", "description": "UTC start of the run's first trial. Read by: run-chip, downloads."},
+        "ended_at": {"type": "string", "format": "date-time", "description": "UTC end of the run's last trial; the date the chip shows. Read by: run-chip, downloads."},
+        "region": {"type": "string", "minLength": 1, "description": "The runner host's region, for the \"measured from\" line. Read by: run-chip."},
+        "methodology": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "Methodology release the formulas came from; the build refuses a pin whose version differs from the pinned methodology text. Read by: build."},
+        "config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the resolved workloads.yaml. Read by: downloads."},
+        "lines_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the run.jsonl bytes summarized. Read by: downloads."},
+        "lines": {"type": "integer", "minimum": 0, "description": "Number of lines in run.jsonl. Read by: downloads."},
+        "summarize": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "Version of `bench summarize` that wrote the file. Read by: downloads."}
+      }
+    },
+    "Cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "document", "variant", "state", "trials", "failures"],
+      "description": "One provider x document x variant. Read by: build, bars, states.",
+      "properties": {
+        "provider": {"$ref": "#/$defs/Id", "description": "Provider id; part of every panel's join key. Read by: build."},
+        "document": {"$ref": "#/$defs/Id", "description": "Methodology document id; part of every panel's join key. Read by: build."},
+        "variant": {"anyOf": [{"$ref": "#/$defs/Id"}, {"type": "null"}], "description": "Methodology variant id, or null for a document without variants; part of every panel's join key. Read by: build."},
+        "state": {"$ref": "#/$defs/State", "description": "complete: at least N successes. partial: attempted, fewer than N, failures listed. missing: planned, no line. unsupported: the provider does not offer what the workload requires. Read by: states."},
+        "trials": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["planned", "attempted", "succeeded", "failed", "excluded", "uncertain"],
+          "description": "Trial counts. Read by: hover, states, failures, run-chip.",
+          "properties": {
+            "planned": {"type": "integer", "minimum": 0, "description": "N, the successes the config planned; the \"of N\" in \"k of N\". Read by: hover, states."},
+            "attempted": {"type": "integer", "minimum": 0, "description": "Trials with a line; the length of every `values` array in the cell. Read by: hover."},
+            "succeeded": {"type": "integer", "minimum": 0, "description": "Successful trials; the k in \"k of N\". Read by: hover, states."},
+            "failed": {"type": "integer", "minimum": 0, "description": "Trials that did not succeed whose owner is the provider or unknown (RULES.md 10). Read by: failures, hover."},
+            "excluded": {"type": "integer", "minimum": 0, "description": "Trials that did not succeed whose owner is BoxRouter. Read by: failures, hover."},
+            "uncertain": {"type": "integer", "minimum": 0, "description": "Trials whose outcome is uncertain, counted apart. Read by: run-chip."},
+            "timing_excluded": {"type": "integer", "minimum": 0, "description": "Successes with a step without a trusted provider time. Read by: run-chip."}
+          }
+        },
+        "failures": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Failure"},
+          "description": "Failed and excluded trials grouped by step, outcome and owner; empty when none. Read by: failures."
+        },
+        "unsupported": {"type": "object", "additionalProperties": false, "required": ["code", "reason"], "description": "Unsupported cells: the line's code (`not_applicable`, `size_larger_than_asked`, a refusal's) and reason. Read by: states.", "properties": {
+          "code": {"type": ["string", "null"], "description": "Read by: states."},
+          "reason": {"type": ["string", "null"], "description": "Read by: states."}
+        }},
+        "metrics": {"$ref": "#/$defs/SeriesMap", "description": "One series per methodology metric name. Read by: bars, hover."},
+        "steps": {"$ref": "#/$defs/SeriesMap", "description": "One series per procedure step id. Read by: steps, hover."},
+        "unmeasured": {"type": "object", "additionalProperties": false, "description": "Series that leave out successes lacking a trusted provider time. Read by: hover.", "properties": {
+          "metrics": {"type": "object", "additionalProperties": {"type": "object", "additionalProperties": false, "required": ["trials", "reasons"], "properties": {
+            "trials": {"type": "integer", "minimum": 1, "description": "Successes left out. Read by: hover."},
+            "reasons": {"type": "array", "items": {"enum": ["no-provider-time", "provider-timing-coverage"]}, "description": "No provider time, or flagged by the coverage cross-check. Read by: hover."}
+          }}, "description": "By metric name. Read by: hover."},
+          "steps": {"$ref": "#/$defs/Cell/properties/unmeasured/properties/metrics", "description": "By step id. Read by: hover."}
+        }},
+        "stages": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/Id"},
+          "additionalProperties": {"$ref": "#/$defs/Stage"},
+          "description": "Replay suites: one series per stage id, with its commands. Read by: stages."
+        },
+        "sandboxes": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Sandbox"},
+          "description": "Per-sandbox documents (sequential-tti, burst): item k is sandbox position k+1. Read by: start-time."
+        },
+        "cost": {"$ref": "#/$defs/Cost", "description": "Present only where the methodology publishes cost for the document. Read by: cost, frontier."}
+      }
+    },
+    "State": {
+      "enum": ["complete", "partial", "missing", "unsupported"],
+      "description": "Coverage state. Read by: states."
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "outcome", "owner", "count", "trials"],
+      "description": "Trials that ended the same way at the same step. Read by: failures.",
+      "properties": {
+        "step": {"anyOf": [{"$ref": "#/$defs/Id"}, {"type": "null"}], "description": "Step id where the trial ended, or null when no step failed. Read by: failures."},
+        "outcome": {"enum": ["failure", "timeout", "uncertain"], "description": "How the step ended; the methodology's reason template gives the words. Read by: failures."},
+        "owner": {"enum": ["provider", "boxrouter", "unknown"], "description": "provider: counted as failed; otherwise excluded. Read by: failures."},
+        "count": {"type": "integer", "minimum": 1, "description": "Number of trials in the group. Read by: failures."},
+        "trials": {
+          "type": "array",
+          "description": "The evidence rows. Read by: failures.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "sandbox_ids", "error"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1, "description": "Trial id from the line. Read by: failures."},
+              "sandbox_ids": {"type": "array", "items": {"type": "string"}, "description": "Sandbox ids the trial used. Read by: failures."},
+              "error": {"type": ["string", "null"], "description": "Sanitized error text from the line. Read by: failures."}
+            }
+          }
+        }
+      }
+    },
+    "SeriesFields": {
+      "type": "object",
+      "required": ["n", "median", "p25", "p75", "p95", "min", "max", "mean", "ci"],
+      "description": "The statistics of one quantity over a cell's successes: the methodology's nearest rank, nothing trimmed, each number rounded once to 5 significant figures. Every statistic is null when n is 0. Read by: bars, hover.",
+      "properties": {
+        "n": {"type": "integer", "minimum": 0, "description": "Successes the statistics are over; samples for a per-call metric. Read by: hover."},
+        "median": {"type": ["number", "null"], "description": "Median; the lower middle value of an even count. Read by: bars."},
+        "p25": {"type": ["number", "null"], "description": "Nearest rank at 0.25, the Box's lower edge. Read by: bars."},
+        "p75": {"type": ["number", "null"], "description": "Nearest rank at 0.75, the Box's upper edge. Read by: bars."},
+        "p99": {"type": ["number", "null"], "description": "Per-call metric only: the worse-side p99. Read by: hover."},
+        "p95": {"type": ["number", "null"], "description": "Worse-side tail (p5 where higher is better); null below the methodology's tail floor of 20 successes, when the page shows Slowest or Lowest. Read by: bars, hover."},
+        "min": {"type": ["number", "null"], "description": "Smallest value; Lowest, Box and Spread. Read by: bars."},
+        "max": {"type": ["number", "null"], "description": "Largest value; Slowest, Box and Spread. Read by: bars."},
+        "mean": {"type": ["number", "null"], "description": "Arithmetic mean; the Mean statistic, and the headline of cost. Read by: bars, cost."},
+        "ci": {
+          "anyOf": [{"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2}, {"type": "null"}],
+          "description": "The methodology's seeded bootstrap 95% interval [low, high] of the median (of the mean for cost); null below 2 successes. Read by: bars, hover."
+        },
+        "values": {
+          "type": "array",
+          "items": {"type": ["number", "null"]},
+          "description": "One entry per attempted trial in run order (started_at, then trial id), null for a trial without a success; index i is the same trial in every series of the cell. Absent in the head. Read by: bars, steps, start-time, hover."
+        }
+      }
+    },
+    "Series": {
+      "$ref": "#/$defs/SeriesFields",
+      "unevaluatedProperties": false,
+      "description": "One quantity's statistics and per-trial values. Read by: bars, hover."
+    },
+    "SeriesMap": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/Id"},
+      "additionalProperties": {"$ref": "#/$defs/Series"},
+      "description": "Series by methodology id. Read by: bars, steps, hover."
+    },
+    "Stage": {
+      "$ref": "#/$defs/SeriesFields",
+      "unevaluatedProperties": false,
+      "description": "A replay stage's series, with the commands run in it. Read by: stages.",
+      "properties": {
+        "commands": {
+          "type": "array",
+          "description": "Command rows of the stage. Read by: stages.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "count"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1, "description": "The program as the replay line names it. Read by: stages."},
+              "count": {"type": "integer", "minimum": 0, "description": "Calls of the program in the stage. Read by: stages."}
+            }
+          }
+        }
+      }
+    },
+    "Sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metrics", "steps"],
+      "description": "One sandbox position's series, aligned by trial with the cell's. Read by: start-time.",
+      "properties": {
+        "metrics": {"$ref": "#/$defs/SeriesMap", "description": "Metric series of this position. Read by: start-time."},
+        "steps": {"$ref": "#/$defs/SeriesMap", "description": "Step series of this position. Read by: start-time."}
+      }
+    },
+    "Cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "unknown"],
+      "description": "Provider cost as read, never estimated. Read by: cost, frontier.",
+      "properties": {
+        "label": {"enum": ["reported", "calculated", "unknown"], "description": "reported: every success's cost is Reported. calculated: each is Reported or Calculated. unknown: some success has no cost. Read by: cost."},
+        "per_success_usd": {"$ref": "#/$defs/Series", "description": "Cost per success in USD: mean with its bootstrap. Absent when label is unknown. Read by: cost, frontier."},
+        "unknown": {"type": "integer", "minimum": 0, "description": "Successes without a cost; the page names the count. Read by: cost, indexes."},
+        "reason": {"$ref": "#/$defs/Id", "description": "Present when label is unknown: the methodology's `not_displayed` reason id, `no-provider-cost` when no success has a cost, else `trial-without-provider-cost`. Read by: cost, states."},
+        "not_final": {"type": "integer", "minimum": 0, "description": "Successes whose cost may still change. Read by: cost."}
+      }
+    },
+    "Pool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "document", "variants", "trials_per_variant", "state", "metrics"],
+      "description": "A replay suite's variants for one provider, combined by the methodology's rule; formed only when every variant was planned with the same N. Read by: suites, frontier.",
+      "properties": {
+        "provider": {"$ref": "#/$defs/Id", "description": "Provider id. Read by: suites."},
+        "document": {"$ref": "#/$defs/Id", "description": "Replay-suite methodology document id. Read by: suites."},
+        "variants": {"type": "array", "items": {"$ref": "#/$defs/Id"}, "description": "The variants pooled, in methodology order; their cells hold the per-variant series. Read by: suites."},
+        "trials_per_variant": {"type": "integer", "minimum": 1, "description": "N planned for every variant. Read by: suites."},
+        "state": {"$ref": "#/$defs/State", "description": "complete when every variant's cell is complete. Read by: suites, states."},
+        "metrics": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/Id"},
+          "description": "One workload value per methodology metric name. Read by: suites, frontier.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "p95", "n", "filled"],
+            "properties": {
+              "value": {"$ref": "#/$defs/Value", "description": "Geometric mean over variants of each variant's statistic. Read by: suites, frontier."},
+              "p95": {"type": ["number", "null"], "description": "Nearest rank over the pooled successes; null unless every variant is complete and the pool has at least 20 successes. Read by: suites."},
+              "n": {"type": "integer", "minimum": 0, "description": "Pooled successes. Read by: suites."},
+              "filled": {
+                "type": "array",
+                "description": "Variants this provider did not complete, each with the value it was filled with; the All drill-down's fill sentence reads it. Read by: suites.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["variant", "value"],
+                  "properties": {
+                    "variant": {"$ref": "#/$defs/Id", "description": "The filled variant's id. Read by: suites."},
+                    "value": {"$ref": "#/$defs/Value", "description": "The slowest value any provider recorded on the variant, on each unit statistic; null where none did. Read by: suites."}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "steps": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/Id"},
+          "description": "One workload value per result step id, from the variants' steps added over each trial's sandboxes, combined as `metrics` are; absent when no variant recorded a step. Read by: suites.",
+          "additionalProperties": {"$ref": "#/$defs/Pool/properties/metrics/additionalProperties"}
+        },
+        "cost": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["label", "value", "p95", "filled"],
+          "description": "The suite's cost per success, where the methodology publishes cost. Read by: cost, frontier.",
+          "properties": {
+            "label": {"enum": ["reported", "calculated", "unknown"], "description": "The weakest label of the pooled cells. Read by: cost."},
+            "value": {"anyOf": [{"$ref": "#/$defs/Value"}, {"type": "null"}], "description": "Geometric mean over variants of each variant's cost, a variant the provider did not complete taking the highest cost any provider recorded on it (01-indexes/cost.yaml); null when label is unknown. Read by: cost, frontier."},
+            "reason": {"$ref": "#/$defs/Id", "description": "Present when label is unknown: `no-provider-cost` when no pooled cell has a provider-sourced cost, else `trial-without-provider-cost` (ids of the methodology's cost documents). Read by: cost, states."},
+            "p95": {"type": ["number", "null"], "description": "Nearest rank over the pooled per-success costs; null unless every variant is complete and the pool has at least the tail floor's successes. Read by: cost."},
+            "filled": {"$ref": "#/$defs/Pool/properties/metrics/additionalProperties/properties/filled", "description": "Variants this provider did not complete, each with the highest cost any provider recorded on it. Read by: cost."}
+          }
+        }
+      }
+    },
+    "Value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["median", "mean"],
+      "description": "A combined value on each unit statistic; null where no value exists. Read by: suites, frontier.",
+      "properties": {
+        "median": {"type": ["number", "null"], "description": "Taken over each variant's median. Read by: suites, frontier."},
+        "mean": {"type": ["number", "null"], "description": "Taken over each variant's mean. Read by: suites, frontier."}
+      }
+    },
+    "Index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "metric", "scope", "statistic", "providers"],
+      "description": "One index on one scope and unit statistic, computed from an 01-indexes document's composition. Read by: indexes, score-tree.",
+      "properties": {
+        "document": {"$ref": "#/$defs/Id", "description": "The 01-indexes methodology document that defines it. Read by: indexes, score-tree."},
+        "metric": {"$ref": "#/$defs/Id", "description": "The document's metric name; gives the unit and better direction. Read by: indexes, score-tree."},
+        "scope": {"anyOf": [{"$ref": "#/$defs/Id"}, {"type": "null"}], "description": "The composition scope id, or null when the document has no scopes. Read by: indexes."},
+        "statistic": {"enum": ["median", "mean", "p95"], "description": "The unit statistic the reader picks. Read by: indexes, score-tree."},
+        "providers": {
+          "type": "array",
+          "description": "One row per included provider. Read by: indexes, score-tree.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["provider", "value", "filled", "parts"],
+            "properties": {
+              "provider": {"$ref": "#/$defs/Id", "description": "Provider id. Read by: indexes, score-tree."},
+              "value": {"type": ["number", "null"], "description": "The provider's index value; null when not displayed. Read by: indexes."},
+              "reason": {"$ref": "#/$defs/Id", "description": "On a cost index or cost score row whose value is null: the id of the `not_displayed` reason in the methodology's cost documents that holds (`no-provider-cost`, `trial-without-provider-cost` or `zero-unit-cost`); absent when the value is present. Read by: indexes, states."},
+              "filled": {"type": "array", "items": {"$ref": "#/$defs/Id"}, "description": "Input documents the provider has no result in, filled by the composition's rule. Read by: indexes."},
+              "parts": {"type": "array", "items": {"$ref": "#/$defs/IndexPart"}, "description": "The value each input took, or the score tree's top parts. Read by: indexes, score-tree."}
+            }
+          }
+        }
+      }
+    },
+    "IndexPart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "value", "rank", "of", "parts"],
+      "description": "One node of an index's tree: a group, an input document, a unit of a scored workload, or one document of a summed leaf. Read by: indexes, score-tree, suites.",
+      "properties": {
+        "id": {"$ref": "#/$defs/Id", "description": "Composition input, group, unit (variant) or summed document id. Read by: indexes, score-tree, suites."},
+        "value": {"type": ["number", "null"], "description": "The node's value in the index's metric; on a unit, the provider's score there (0 for a unit it has no result on); null on a summed leaf's document. Read by: indexes, score-tree, suites."},
+        "rank": {"type": ["integer", "null"], "minimum": 1, "description": "1 is best; null where the index does not rank. Read by: score-tree, suites."},
+        "of": {"type": ["integer", "null"], "minimum": 1, "description": "Providers ranked. Read by: score-tree, suites."},
+        "input": {"type": ["number", "null"], "description": "The measured value in the document's unit: a score-tree leaf's, a summed leaf document's, or the provider's own value on a unit (null where it has none). Read by: score-tree, suites."},
+        "parts": {"type": "array", "items": {"$ref": "#/$defs/IndexPart"}, "description": "Child nodes: a time or cost score's workload part holds one part per unit some provider has a value on, and a summed score-tree leaf one part per document; empty on any other leaf. Read by: score-tree, suites."}
+      }
+    }
+  }
+}

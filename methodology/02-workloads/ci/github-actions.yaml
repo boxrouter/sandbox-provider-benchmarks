@@ -32,8 +32,8 @@ failure_policy:
   - A step that starts one worker per reported CPU (fastapi's `pytest -n auto`) on a sandbox that reports
     more CPUs than were asked for.
   - A failure whose owner is uncertain.
-  retries: None; the first non-zero step ends the trial. A top-up run refills every missed, excluded or
-    failed slot whoever owned the failure; each failed trial stays in the data with its owner and cause.
+  retries: None inside a trial; the first non-zero step ends the trial. When a trial fails, a new trial runs in its
+    place up to the run's attempt limit for that cell, regardless of who owned the failure, and each failed trial remains in the data with its owner and cause.
   success: Every step exits 0 and the sandbox is confirmed deleted.
   timeout_seconds:
     create: 300
@@ -63,6 +63,14 @@ metrics:
   quantity: Job-step runtime
   unit: ms
   formula: sum(runtime(cmd))
+- description: The job set's median job times (each job's median over its trials) added up for one
+    provider; defined only when every job of the set has a successful trial.
+  direction: lower_is_better
+  name: job_time_set_total
+  per: job set
+  quantity: Job-step runtime
+  unit: ms
+  formula: sum(median(sum(runtime(cmd))))
 name: '{name:test.ci-jobs}'
 notes:
   cost_how_to_read: Only successful trials contribute to the cost value.
@@ -76,6 +84,8 @@ notes:
 parameters:
   path: parameters/github-actions/
   sha256: c95ec83910058a173925f9dc6848e9b71cc5ed2a4b368d8a9db409831625c983
+default_view:
+  metric: job_time
 procedure:
   concurrency:
     sandboxes_at_once: 1
@@ -107,6 +117,8 @@ procedure:
   - action: Start a new sandbox from the prepared benchmark image.
     id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     record_steps:
     - create
     timeout_seconds: 300
@@ -125,6 +137,8 @@ procedure:
       be root. Core dumps are disabled before timing.
     id: job_steps
     name: Job step
+    label: Job step
+    show: stack
     record_steps:
     - cmd
     repeats: true
@@ -136,6 +150,8 @@ procedure:
   - action: Destroy the sandbox after the job's last step and confirm it is gone.
     id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     record_steps:
     - destroy
     timeout_seconds: 300
@@ -257,7 +273,6 @@ statistics:
   percentile_method: Nearest rank over successful trials; nothing trimmed.
   primary: median
   ranking:
-    min_successes: 108
     ranked: true
   secondary:
   - mean
@@ -275,40 +290,3 @@ validity_checks:
 - check: The replay script turns core dumps off (`ulimit -c 0`); this is neither logged nor timed.
   id: replay_script_start
   threat: A crash writes a core dump that changes what a step costs.
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: 'No cache of any kind: every checkout, toolchain and dependency is fetched in the trial from
-      a prepared image. The provider''s image caches stay on.'
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

@@ -44,14 +44,16 @@ composition:
     marked Not offered for its required capability. Keep that workload on its own leaderboard, with
     its Not offered status and reason. Among the remaining workloads, include only providers that
     have a result of their own in at least one workload. A provider with no result for a remaining
-    workload takes its slowest complete value. The composite applies no ranking floor or
+    workload takes that workload's slowest complete value. The composite adds no completeness gate or
     failing-often rule of its own.
   not_displayed:
-  - condition: The provider has no result of its own in any workload of the scope, for example because
+  - id: no-result
+    condition: The provider has no result of its own in any workload of the scope, for example because
       it was not measured there.
     reason: The page lists the provider under "Not displayed" without a stated reason on this view; if
       no provider qualifies it says that no provider has a result in any of the benchmarks in the composite.
-  - condition: No unit of a workload was completed by any measured provider.
+  - id: no-unit-completed
+    condition: No unit of a workload was completed by any measured provider.
     reason: The workload has no time for any provider, so no provider has a composite value.
   scopes:
   - id: execution

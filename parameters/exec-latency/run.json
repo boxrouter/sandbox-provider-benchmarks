@@ -1,0 +1,22 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "exec-latency",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": { "vcpu": 2, "memory_gib": 4 },
+  "lifetime_s": 600,
+  "steps": [
+    { "id": "create", "op": "create", "timeout_s": 300 },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "repeat": "{param:calls}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    { "id": "destroy", "op": "destroy", "timeout_s": 300 }
+  ]
+}

@@ -3,15 +3,12 @@ effective: '2026-11-08'
 name: '{name:test.reconnect}'
 category: sandbox_operation
 notes:
-  what_this_measures: Direct results time attach and the first command from fresh client processes; Cloud
-    records their API-server operation timings with a fresh provider session for each call.
+  what_this_measures: The result measures the time to attach to a running sandbox and run a first command from a fresh client process.
   how_to_read: The {param:reconnect.statistics.primary} summarizes successful trials in the axis
     unit; {direction:reconnect_time}.
-  summary: A fresh client attaches to an existing sandbox and runs its first command; Cloud uses a fresh
-    provider session for each API call.
-  how_it_is_measured: Direct times attach and the first command with the job-host monotonic clock. Cloud
-    records separate API-server operation timings for them, each using a fresh provider session; sandbox
-    clock readings from `true` stay separate.
+  summary: A fresh client process attaches to an existing sandbox by ID and runs its first command.
+  how_it_is_measured: The monotonic clock on the client host times the attach call and the first command separately in
+    each fresh client process, while sandbox clock readings from `true` stay separate.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful round.
   cost_how_to_read: Only successful trials contribute to the cost value.
 inherits: sbs.common
@@ -51,6 +48,38 @@ metrics:
   formula: median(latency(true))
   quantity: time
   per: round
+- name: first_round_attach
+  unit: ms
+  direction: lower_is_better
+  description: Time on the client host's monotonic clock that a fresh client process takes to attach
+    to the existing sandbox by id in the first, cold round.
+  formula: first(total(attach))
+  quantity: time
+  per: round
+- name: first_round_command
+  unit: ms
+  direction: lower_is_better
+  description: Time on the client host's monotonic clock that the client process takes to run true
+    on the attached sandbox in the first, cold round.
+  formula: first(total(true))
+  quantity: time
+  per: round
+- name: later_rounds_attach
+  unit: ms
+  direction: lower_is_better
+  description: Median time on the client host's monotonic clock that a fresh client process takes to
+    attach to the existing sandbox by id across the later, warm rounds.
+  formula: median(later(total(attach)))
+  quantity: time
+  per: round
+- name: later_rounds_command
+  unit: ms
+  direction: lower_is_better
+  description: Median time on the client host's monotonic clock that the client process takes to run
+    true on the attached sandbox across the later, warm rounds.
+  formula: median(later(total(true)))
+  quantity: time
+  per: round
 environment:
   size:
     vcpu: 2
@@ -60,9 +89,11 @@ environment:
   network: unknown
   lifetime_seconds: 900
 clocks:
-  operation: Direct uses the job-host monotonic clock around attach and command calls; Cloud uses the API
-    server's monotonic clock around each provider call.
+  operation: The client host's monotonic clock times each attach call and each command call.
   command_runtime: Sandbox clock around true.
+default_view:
+  metric: reconnect_time
+  variant: attach-true
 procedure:
   mode: sequential
   trials: 40
@@ -71,11 +102,9 @@ procedure:
     trials_in_parallel: 10
     sandboxes_at_once: 1
   warm_cold_policy:
-    policy: Each trial uses one fresh sandbox; Direct starts a new client process for each round, while
-      Cloud opens a fresh provider session for each API call.
-    cold: First attach from a fresh Direct client process or Cloud provider session.
-    warm: Later rounds also use fresh Direct client processes or Cloud provider sessions; the provider
-      sandbox remains the same.
+    policy: Each trial creates one fresh sandbox, and each reconnect round starts in a new client process.
+    cold: The first round attaches to the sandbox from a fresh client process.
+    warm: Later rounds also attach from fresh client processes while the target sandbox remains the same.
   variants:
   - id: attach-true
     label: Attach, then true, 10 rounds
@@ -86,6 +115,8 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a fresh sandbox and pass the untimed ready check.
     timer: null
     timeout_seconds: 300
@@ -93,21 +124,23 @@ procedure:
     - create
   - id: attach
     name: Attach by id
-    action: In each of ten rounds, Direct uses a fresh client process and Cloud uses a fresh provider
-      session to attach to the existing sandbox by its id.
+    label: Attach
+    show: hidden
+    action: In each of the ten rounds, start a fresh client process and attach to the existing sandbox by its id.
     timer:
-      start_event: Direct starts timing the attach lookup; Cloud records the API-server attach operation.
-      stop_event: The attach lookup returns to the Direct client or the Cloud API server completes the operation.
+      start_event: The client process dispatches the attach lookup.
+      stop_event: The attach lookup returns to the client process.
     timeout_seconds: 120
     repeats: true
     record_steps:
     - attach
   - id: 'true'
     name: Run true
-    action: Direct sends true from its fresh client process; Cloud uses a separate fresh provider session.
-      Both return its exit status and sandbox clock readings.
+    label: 'true'
+    show: hidden
+    action: From that same client process, run true and receive its exit status and sandbox clock readings.
     timer:
-      start_event: Direct starts timing the command after attach; Cloud records the API-server command operation.
+      start_event: The client process dispatches the command right after the attach call returns.
       stop_event: The command returns the result and sandbox clock readings.
     timeout_seconds: 30
     repeats: true
@@ -115,6 +148,8 @@ procedure:
     - 'true'
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox from its creating process and confirm it is gone.
     timer: null
     timeout_seconds: 300
@@ -138,7 +173,6 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 20
 cost:
   method: provider_reported_or_priced
 failure_policy:
@@ -148,13 +182,13 @@ failure_policy:
     'true': 30
     destroy: 300
   retries: No attach or command round is retried; any failed round ends the trial.
-  success: All ten Direct client-process or Cloud provider-session rounds attach and run true successfully,
-    and the sandbox is confirmed destroyed.
+  success: All ten rounds attach from a fresh client process and run true with exit code 0, and the sandbox is
+    confirmed destroyed.
   provider_errors:
   - Attach
   - command or transport error; nonzero true exit; or missing sandbox clock readings.
   benchmark_errors:
-  - A malformed timing record, Direct client-process setup failure, or failure to open a fresh Cloud provider session.
+  - A malformed timing record or a failure to start a fresh client process.
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
@@ -163,21 +197,20 @@ parameters:
 interpretation:
   what_to_do: Compare what a stateless worker, or an agent restarted after a crash or a deploy, pays before
     its first command.
-  informs: 'Direct attach and first-command timings from a fresh client process, or Cloud API-server operation
-    timings for the same calls with a fresh provider session for each API call.'
+  informs: 'How long a fresh client process takes to attach to a running sandbox and run its first command.'
   limits:
   - Providers differ in attach behavior; no attach opens the connection used by commands, so first-command
     time includes that work.
-  - Cloud reports API-server operation timings for attach and `true` separately; session setup is not a separate metric.
-  - Times include the network between the Direct job host or Cloud API server and the provider's region.
+  - The attach call and `true` are timed separately, while starting the client process is outside both timers.
+  - Every time covers the whole request from the client host to the provider and back, which is the same for every provider.
   caveats:
   - 'The chart shows reconnect: the median attach plus the median first command.'
   - Each round is recorded with its number, so the first round can be compared with the later ones.
 validity_checks:
 - id: fresh_process_per_round
   threat: A reused client or provider session could hide the reconnect cost.
-  check: Direct starts a fresh client process for each round. Cloud uses a fresh provider session for each
-    API call, so neither mode reuses session state from the process that created the sandbox or an earlier round.
+  check: Each round runs in a newly started client process, so no connection or session state carries over from
+    the process that created the sandbox or from an earlier round.
 - id: round_succeeds
   threat: A failed attach or command could be left out.
   check: A round succeeds when the attach returns and `true` exits 0 with the clock readings back; a trial
@@ -192,40 +225,3 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Direct uses a fresh client process each round; Cloud uses a fresh provider session per API call,
-      while the sandbox stays the same. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

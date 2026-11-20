@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "snapshot-and-restore",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 2,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 4
+  },
+  "lifetime_s": 900,
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "sandbox": 1,
+      "timeout_s": 300
+    },
+    {
+      "id": "write-marker",
+      "op": "exec",
+      "command": "{param:marker.write}",
+      "timeout_s": 30
+    },
+    {
+      "id": "snapshot",
+      "op": "snapshot",
+      "snapshot": "marker",
+      "timeout_s": 600
+    },
+    {
+      "id": "destroy-source",
+      "op": "destroy",
+      "timeout_s": 300
+    },
+    {
+      "id": "create-from-snapshot",
+      "op": "create_from_snapshot",
+      "snapshot": "marker",
+      "sandbox": 2,
+      "timeout_s": 300
+    },
+    {
+      "id": "exec",
+      "op": "exec",
+      "sandbox": 2,
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 100
+    },
+    {
+      "id": "verify-marker",
+      "op": "exec",
+      "command": "[ \"$({param:marker.read})\" = \"{param:marker.text}\" ]",
+      "timeout_s": 30,
+      "sandbox": 2
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "sandbox": 2,
+      "timeout_s": 300
+    }
+  ]
+}

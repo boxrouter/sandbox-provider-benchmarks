@@ -1,0 +1,41 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "terminal-bench-4-0",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 4
+  },
+  "lifetime_s": 1800,
+  "handler": "replay",
+  "replay": {
+    "trace": "terminal-bench",
+    "network": "open",
+    "shell": "bash",
+    "directories": [
+      "/logs/agent/sessions"
+    ],
+    "fetch_key": "sb_publishable_Z-vuQbpvpG-PStjbh4yE0Q_e-d3MTIH"
+  },
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "timeout_s": 600
+    },
+    {
+      "id": "cmd",
+      "op": "exec",
+      "command": "recorded",
+      "timeout_s": 600
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

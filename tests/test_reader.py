@@ -92,27 +92,26 @@ def test_current_fio_result_uses_the_current_command_and_its_own_facts(
     assert bundle["schema"] == "boxrouter.bench.text/3"
 
 
-def test_cutover_reader_keeps_direct_and_cloud_measurement_facts_separate(
+def test_reader_states_one_client_side_clock_and_no_direct_or_cloud_modes(
     bundle: dict[str, Any],
 ) -> None:
     common = bundle["reader"]["methods"]["common"]["text"]["notes"]
     clocks = common["clocks"]
-    independence = common["independence"]
     reconnect = bundle["reader"]["methods"]["reconnect"]["text"]["notes"]["opening"]
     previews = bundle["reader"]["methods"]["previews"]["text"]["notes"]
     region_note = bundle["region_exceptions"][0]["network_note"]
 
-    assert "Direct uses the runner job host's monotonic clock" in clocks
-    assert "Cloud uses the BoxRouter API server's monotonic clock" in clocks
-    assert "Direct also audits job-host load" in independence
-    assert "Cloud records and bounds per-call API-server stalls" in independence
-    assert "fresh Direct client process" in reconnect
-    assert "fresh Cloud provider session" in reconnect
+    assert "monotonic clock on the client host that sends each request" in clocks
     assert (
-        "one request's monotonic clock, from process.start returning to the first successful URL "
-        "probe response" in previews["opening"]
+        "whole request from the client host to the provider and back, which is the same" in clocks
     )
-    assert "process.start duration and server-listening evidence separate" in previews["opening"]
+    assert "independence" not in common
+    assert "fresh client process" in reconnect
+    assert "interval on the client host's clock from process.start returning" in previews["opening"]
+    for prose in (clocks, reconnect, previews["opening"]):
+        assert "Direct" not in prose
+        assert "API server" not in prose
+        assert "API-server" not in prose
     assert "US measuring host" in region_note
     assert "US-East" not in region_note
 

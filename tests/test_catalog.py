@@ -28,7 +28,6 @@ from sandbox_benchmark_verifier.catalog import (
     region_policy,
     region_request_errors,
 )
-from sandbox_benchmark_verifier.cli import close, reproduce
 from sandbox_benchmark_verifier.yaml_load import load_yaml
 
 pytestmark = pytest.mark.unit
@@ -112,56 +111,12 @@ def test_packaged_assets_keep_stamped_identity(tmp_path: Path, mocker: MockerFix
 
 
 def test_schema_names_are_bounded_and_values_are_fresh() -> None:
-    assert load_schema("run") == load_schema("run.schema.json")
-    schema = load_schema("run")
+    assert load_schema("methodology") == load_schema("methodology.schema.json")
+    schema = load_schema("methodology")
     schema["title"] = "changed"
-    assert load_schema("run")["title"] != "changed"
+    assert load_schema("methodology")["title"] != "changed"
     with pytest.raises(ValueError, match="unknown methodology schema"):
         load_schema("../private")
-
-
-@pytest.mark.parametrize(
-    ("precision", "found", "expected", "matches"),
-    [
-        ({"decimal_places": 3}, 1.234, 1.23449, True),
-        ({"decimal_places": 3}, 1.234, 1.23451, False),
-        ({"absolute_tolerance": 0.01}, 1.0, 1.009, True),
-        ({"absolute_tolerance": 0.01}, 1.0, 1.011, False),
-        ({"absolute_tolerance": 0}, 1.0, 1.000000001, False),
-        ({"absolute_tolerance": 0}, 1e12, 1e12 + 1, False),
-        ({"decimal_places": 3}, 2169.43, 2169.4305, True),
-        ({"decimal_places": 3}, 9026.267, 9026.2675, True),
-        ({"decimal_places": 3}, 64.706, 64.7055, True),
-        ({"decimal_places": 3}, 64.706, 64.705499999, False),
-    ],
-)
-def test_explicit_absolute_precision(
-    precision: dict[str, float], found: float, expected: float, matches: bool
-) -> None:
-    assert close(found, expected, {"precision": precision}) is matches
-
-
-def test_reproduce_refuses_missing_precision(tmp_path: Path) -> None:
-    folder = tmp_path / "data" / "run-a" / "aggregates"
-    folder.mkdir(parents=True)
-    aggregate = folder / "value.json"
-    aggregate.write_text('{"statistic":"median", "value":1}')
-    assert reproduce(tmp_path) == [f"{aggregate}: aggregate must declare valid precision"]
-
-
-@pytest.mark.parametrize(
-    "precision",
-    [
-        None,
-        {},
-        {"decimal_places": -1},
-        {"absolute_tolerance": -1},
-        {"decimal_places": 3, "absolute_tolerance": 1},
-    ],
-)
-def test_schema_rejects_invalid_precision(precision: dict[str, int] | None) -> None:
-    schema = load_schema("aggregate")["properties"]["precision"]
-    assert not Draft202012Validator(schema).is_valid(precision)
 
 
 def test_selection_is_the_common_and_the_documents_that_inherit_it() -> None:

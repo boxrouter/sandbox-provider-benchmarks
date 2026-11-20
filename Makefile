@@ -20,10 +20,8 @@ lint-ruff:
 	$(UV) run --locked ruff format --check .
 	$(UV) run --locked ruff check .
 
-# Each reference parser is a module named `parse`, so mypy checks them one at a time.
 lint-mypy:
 	$(UV) run --locked mypy
-	@for parser in reference-tests/*/parse.py; do $(UV) run --locked mypy "$$parser" || exit 1; done
 
 lint-pyright:
 	$(UV) run --locked pyright
@@ -32,12 +30,10 @@ lint-pylint:
 	$(UV) run --locked pylint src/sandbox_benchmark_verifier
 
 check: lint
-	@$(call stage,procedures,$(UV) run --locked python -m sandbox_benchmark_verifier.procedures)
 	@$(call stage,pytest,$(UV) run --locked pytest -n $(PYTEST_WORKERS))
 	@$(call stage,text,$(UV) run --locked sandbox-benchmark-verify text)
 	@$(call stage,validate,$(UV) run --locked sandbox-benchmark-verify validate)
 	@$(call stage,lock,$(UV) run --locked python -m sandbox_benchmark_verifier.lock check)
-	@$(call stage,reproduce,$(UV) run --locked sandbox-benchmark-verify reproduce)
 	@$(call stage,build,task_build_dir=$$(mktemp -d); trap 'rm -rf "$$task_build_dir"' EXIT HUP INT TERM; \
 		$(UV) build --out-dir "$$task_build_dir" && \
 		$(UV) run --locked python tests/check_distribution.py "$$task_build_dir" && \
@@ -51,7 +47,6 @@ stage = start=$$(date +%s); $(2); status=$$?; echo "stage $(1): $$(( $$(date +%s
 # The three long stages run side by side; -O prints each one's output when it finishes.
 release-check:
 	@$(call stage,lint,$(MAKE) --no-print-directory lint)
-	@$(call stage,procedures,$(UV) run --locked python -m sandbox_benchmark_verifier.procedures)
 	@$(call stage,lock,$(UV) run --locked python -m sandbox_benchmark_verifier.lock check)
 	@$(MAKE) --no-print-directory -O -j3 release-text release-validate release-pytest
 

@@ -23,7 +23,6 @@ Edit [`conventions/text-conventions.yaml`](../../conventions/text-conventions.ya
 | Method Calculation (`method-calculation`) | structured | sentence | 8–3500 | False | True |
 | Method Failure Policy (`method-failure-policy`) | structured | sentence | 8–3000 | False | True |
 | Method Statistics Rules (`method-statistics-rules`) | structured | sentence | 8–4500 | False | True |
-| Method Independence (`method-independence`) | structured | sentence | 8–4500 | False | True |
 | Details / Latest Result (`details.latest-result`) | forbidden | preserve | 0–0 | False | False |
 | Details / Sources (`details.sources`) | link | preserve | 1–240 | False | True |
 | Page Summary (`page-summary`) | sentence | sentence | 8–160 | False | True |

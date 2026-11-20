@@ -63,14 +63,6 @@
     "cost-trial": {
      "metric": "cost_per_success",
      "statistic": "mean"
-    },
-    "time-trial": {
-     "metric": "pipeline_time",
-     "statistic": "selected"
-    },
-    "time-overall": {
-     "metric": "pipeline_time",
-     "statistic": "geometric_mean"
     }
    },
    "derived_metrics": {
@@ -80,21 +72,6 @@
      "per": "trial",
      "statistic": "mean",
      "kind": "cost"
-    },
-    "pipeline_time": {
-     "kind": "sum",
-     "unit": "ms",
-     "per": "trial",
-     "statistic": "median",
-     "terms": {
-      "create": "request-elapsed",
-      "reset": "command-runtime",
-      "snapshot": "request-elapsed",
-      "restore": "request-elapsed",
-      "cmd": "command-runtime",
-      "reward": "command-runtime",
-      "destroy": "request-elapsed"
-     }
     }
    }
   },

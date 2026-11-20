@@ -22,18 +22,29 @@ metrics:
   description: 7-Zip's total rating over compression and decompression, from its own output.
   quantity: rating
   per: trial
+  formula: value(cpu-7zip-mt)
 - name: compress_mips
   unit: MIPS
   direction: higher_is_better
   description: 7-Zip's compression rating.
   quantity: rating
   per: trial
+  phase:
+    kind: stage
+    id: compression
+    parent: cpu
+  formula: value(cpu-7zip-mt.compress_mips)
 - name: decompress_mips
   unit: MIPS
   direction: higher_is_better
   description: 7-Zip's decompression rating.
   quantity: rating
   per: trial
+  phase:
+    kind: stage
+    id: decompression
+    parent: cpu
+  formula: value(cpu-7zip-mt.decompress_mips)
 environment:
   size:
     vcpu: 2
@@ -42,6 +53,8 @@ environment:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
   network: unknown
   lifetime_seconds: 1200
+default_view:
+  metric: total_mips
 procedure:
   mode: single
   trials: 40
@@ -56,6 +69,8 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     action: Start a new sandbox from the standard image.
     timer: null
     timeout_seconds: 300
@@ -75,6 +90,8 @@ procedure:
     timer: null
   - id: 7-zip-all-vcpus
     name: '{name:test.7-zip-all-vcpus}'
+    label: '{name:stage.total}'
+    show: stack
     action: 'Run `./7zzs b -mmt<N>` as a background script that the harness polls, where N is the vCPU
       count requested, never `nproc`: some providers show the host''s CPUs inside a sandbox. The row runs
       in an order shuffled per trial with the other two rows of the trial. Compress and decompress ratings,
@@ -88,6 +105,8 @@ procedure:
     - cpu-7zip-mt
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox and confirm it is gone.
     timer: null
     timeout_seconds: 300
@@ -117,7 +136,6 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 5
 cost:
   method: provider_reported_or_priced
   counted_sandboxes: Each of the unit's five sandboxes.
@@ -167,40 +185,3 @@ validity_checks:
   threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
   check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
     as a CPU count mismatch and the result is kept.
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Nothing is warmed up and the work runs from memory and CPU, so page and package caches do not
-      enter the result. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

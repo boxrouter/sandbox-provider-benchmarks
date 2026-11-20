@@ -38,6 +38,29 @@
       "description": "A short one-line label of what the headline value is, restating the description and metrics without adding claims. Pages draw it under a title with the metric's direction.",
       "examples": ["Create to first command"]
     },
+    "default_view": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the results page's bar and score-tree leaf show before the reader changes anything. Required with a procedure.",
+      "properties": {
+        "metric": {
+          "$ref": "#/$defs/snake_name",
+          "description": "The metric the bar and leaf draw; absent means the bar is the stacked steps' totals added.",
+          "examples": ["pause_to_data_back"]
+        },
+        "variant": {
+          "$ref": "#/$defs/record_id",
+          "description": "The procedure variant the page opens on; absent means the set of every variant.",
+          "examples": ["storage-2gib"]
+        },
+        "sandbox": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The 1-based sandbox of a trial whose values the page opens on, for a trial with several sandboxes.",
+          "examples": [2]
+        }
+      }
+    },
     "panel": {
       "type": "object",
       "additionalProperties": false,
@@ -179,8 +202,9 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["condition", "reason"],
+            "required": ["id", "condition", "reason"],
             "properties": {
+              "id": { "$ref": "#/$defs/record_id", "description": "The reason's id, which the results data and the page key their wording by; the same condition keeps one id across documents.", "examples": ["no-provider-cost"] },
               "condition": { "type": "string", "description": "When a provider is not shown on the index." },
               "reason": { "type": "string", "description": "The reason the page gives." }
             }
@@ -273,93 +297,6 @@
       "description": "Id of the common methodology whose defaults (statistics, cost, failure policy, trial policy) apply wherever this document is silent.",
       "examples": ["sbs.common"]
     },
-    "independence": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["principle", "rounds", "rules", "run_check"],
-      "description": "Common methodology only: the rules that keep one trial's result from depending on another trial, the independence check run on every run, and its thresholds fixed in advance.",
-      "properties": {
-        "principle": { "type": "string", "minLength": 1 },
-        "rounds": { "type": "integer", "minimum": 1, "description": "Rounds each pair's trials are spread over." },
-        "rules": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["id", "rule"],
-            "properties": {
-              "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-              "rule": { "type": "string", "minLength": 1 }
-            }
-          }
-        },
-        "run_check": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["scope", "significance", "verdict", "checks"],
-          "properties": {
-            "scope": { "type": "string", "minLength": 1 },
-            "min_trials": { "type": "integer", "minimum": 1, "description": "Fewest successful trials a pair needs to be checked." },
-            "significance": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["test", "correction", "q", "across"],
-              "properties": {
-                "test": { "type": "string" },
-                "correction": { "enum": ["benjamini_hochberg"] },
-                "q": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
-                "power": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1, "description": "The power at which each pair reports the smallest effect its checks could have found." },
-                "across": { "type": "string" }
-              }
-            },
-            "verdict": { "type": "string", "minLength": 1 },
-            "checks": {
-              "type": "array",
-              "minItems": 1,
-              "description": "Each check with its thresholds, fixed before any run. Thresholds are numbers, flags, lists of names or lists of number pairs.",
-              "items": {
-                "type": "object",
-                "required": ["id", "measures"],
-                "properties": {
-                  "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-                  "measures": { "type": "string", "minLength": 1 }
-                },
-                "additionalProperties": {
-                  "oneOf": [
-                    { "type": "number" },
-                    { "type": "boolean" },
-                    {
-                      "type": "array",
-                      "items": {
-                        "oneOf": [
-                          { "type": "string" },
-                          { "type": "array", "items": { "type": "number" } }
-                        ]
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "independence_answers": {
-      "type": "object",
-      "minProperties": 1,
-      "description": "How the benchmark answers each rule of the inherited common methodology's `independence.rules`, keyed by rule id: it meets the rule, or it is an exception with its reason. The verifier fails a benchmark that leaves a rule unanswered.",
-      "additionalProperties": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["status", "text"],
-        "properties": {
-          "status": { "enum": ["meets", "exception"] },
-          "text": { "type": "string", "minLength": 1, "description": "How the rule is met, or why the benchmark is an exception." }
-        }
-      }
-    },
     "metrics": {
       "type": "array",
       "minItems": 1,
@@ -414,7 +351,7 @@
           },
           "formula": {
             "type": "string",
-            "description": "How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`, or alternatives, as `start(resume|data-back)`: the first the trial recorded) or `latency(<record step>)`, joined by `+` and `-`, folded by `median(...)`, `sum(...)`, `max(...)` or `min(...)` over a step's runs, a trial's sandboxes or a set's traces.",
+            "description": "How the value comes from recorded step values: `start`, `end`, `total`, `runtime` (each bare or with a record step, as `end(first-true)`, or alternatives, as `start(resume|data-back)`: the first the trial recorded), `latency(<record step>)` or `value(<record step>)` (a tool's figure; `value(<record step>.<key>)` one in its `details`), joined by `+` and `-`, folded by `median(...)`, `sum(...)`, `max(...)` or `min(...)` over a step's runs, a set's trials or a pool's cells, or by `trial_sum(...)`, `trial_max(...)` or `trial_min(...)` over every sandbox of a trial; `first(...)` and `later(...)` keep a step term's first call on each sandbox or its other calls.",
             "examples": [
               "median(latency(first-true)) + start"
             ]
@@ -869,6 +806,11 @@
                 "items": { "type": "string", "minLength": 1 },
                 "description": "Step ids stored records carry for the measurements this stage covers.",
                 "examples": [["restore"]]
+              },
+              "default_off": {
+                "const": true,
+                "description": "The page opens with this stage switched off in the chart; absent means it opens on.",
+                "examples": [true]
               }
             }
           }
@@ -881,6 +823,7 @@
             "type": "object",
             "additionalProperties": false,
             "required": ["id", "name", "action", "timer"],
+            "dependentRequired": { "record_steps": ["label", "show"] },
             "properties": {
               "id": {
                 "$ref": "#/$defs/snake_name",
@@ -997,6 +940,17 @@
                     "first-true"
                   ]
                 ]
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The step's label in the results page's chart, legend and drill-down; required with `record_steps`.",
+                "examples": ["Read"]
+              },
+              "show": {
+                "enum": ["stack", "hidden", "table"],
+                "description": "Where the results page draws the step's values: `stack` as a segment of the bar, `table` only in the drill-down table, `hidden` not at all. Required with `record_steps`.",
+                "examples": ["stack"]
               },
               "in_sandboxes": {
                 "type": "array",
@@ -1323,15 +1277,6 @@
               "type": "boolean",
               "description": "Whether providers are ordered on the primary statistic.",
               "examples": [true]
-            },
-            "min_successes": {
-              "oneOf": [
-                { "type": "integer", "minimum": 1 },
-                { "const": "unknown" }
-              ],
-              "x-unit": "successes",
-              "description": "Successes below which a provider is not ranked (\"too few runs yet\").",
-              "examples": [1]
             },
             "failing_often": {
               "type": "string",

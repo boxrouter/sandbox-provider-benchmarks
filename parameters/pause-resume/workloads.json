@@ -16,11 +16,16 @@
     "data": {
       "bytes": 1073741824,
       "kind": "memory",
+      "requirements": {
+        "pause_resume": {
+          "keeps": "files_and_memory"
+        }
+      },
       "seed": 20261004
     },
     "id": "memory-1gib",
     "label": "1 GiB in memory",
-    "version": "sha256:ea944b511947a5a3"
+    "version": "sha256:f7ae360ce2516c40"
   },
   {
     "data": {

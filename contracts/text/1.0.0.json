@@ -295,7 +295,7 @@
     },
     "too_few_runs": {
       "label": "Not Ranked",
-      "definition": "The workload is not ranked because it has not reached its declared number of successful trials.",
+      "definition": "The result is not ranked because it has not reached the number of successful trials, N, that the run's configuration sets.",
       "footer": true,
       "reason": false
     },
@@ -315,7 +315,7 @@
     },
     "in_development": {
       "label": "Not Supported",
-      "definition": "BoxRouter does not run this benchmark on this provider yet: a capability it needs is not supported through BoxRouter, or a known fault holds the test back.",
+      "definition": "BoxRouter does not run this benchmark on this provider yet: a capability that the test needs is not supported by the provider, or a known fault holds the test back.",
       "footer": true,
       "footer_group": "not_displayed",
       "details": false
@@ -445,7 +445,7 @@
   "statistics_selector": {
     "label": "Statistics",
     "template": "{label}: {value}",
-    "p95_unavailable": "Fewer than {param:sbs.common.statistics.tail.min_successes} trials",
+    "p95_unavailable": "Fewer than {param:sbs.common.statistics.tail.min_successes} samples",
     "ci_unavailable": "Not available for this configuration"
   },
   "dots_selector": {

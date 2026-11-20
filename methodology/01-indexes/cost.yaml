@@ -48,14 +48,18 @@ composition:
     the highest workload cost on the same statistic any provider had. A workload where it has results
     but no provider-sourced cost is not substituted.
   not_displayed:
-  - condition: At least one counted trial of the provider in a workload has no provider-sourced cost.
+  - id: trial-without-provider-cost
+    condition: At least one counted trial of the provider in a workload has no provider-sourced cost.
     reason: The page names how many of the counted trials have no provider-sourced cost; the provider
       has no cost, never a zero or a range.
-  - condition: A unit's cost on the chosen statistic is zero.
+  - id: zero-unit-cost
+    condition: A unit's cost on the chosen statistic is zero.
     reason: A unit costs nothing, so the geometric mean is undefined and the provider has no cost.
-  - condition: No unit of a workload was completed by any measured provider.
+  - id: no-unit-completed
+    condition: No unit of a workload was completed by any measured provider.
     reason: No unit was completed by any provider, so no workload cost exists.
-  - condition: A workload has no provider-sourced cost for the provider.
+  - id: no-provider-cost
+    condition: A workload has no provider-sourced cost for the provider.
     reason: The page gives "a workload has no provider-sourced cost for it".
   scopes:
   - id: execution

@@ -9,7 +9,7 @@ notes:
     {direction:tool_time}.
   summary: Each {name:test.deepswe} trace is one agent's full tool-use trace on a repository task.
   how_it_is_measured: Recorded sessions come from {name:test.deepswe} {param:deepswe.source.dataset_version} tasks. Commands run back to
-    back in each task's prepared image, with each runtime measured by the sandbox's own clock.
+    back in a fresh sandbox started from the standard image, and the sandbox's own clock measures each command's runtime.
   cost_summary: The cost covers sandbox creation through confirmed destruction, divided by successful
     traces.
   cost_how_to_read: Only successful trials contribute to the cost value.
@@ -35,24 +35,25 @@ environment:
     vcpu: 4
     memory_gib: 8
   image:
-    reference: Each trace's task image, pinned by digest (public.ecr.aws/d3j8x8q7/swe-bench-202605:<task
-      tag>-v1.1@sha256:<digest>); the digests are in the parameters' workloads.json.
-    modification: Prepared in each provider account before the run; nothing is added per trial.
+    reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
+    modification: None. Before the first timed step, an untimed setup clones each task's repository at its pinned commit and installs its dependencies, with nothing added to the image.
   network: A proxy started in the sandbox refuses every host, as {name:test.deepswe}'s own harness did.
     Where the provider allows it, the sandbox is also created with a deny-all network policy; this is
     optional.
   lifetime_seconds: 1500
+default_view:
+  metric: tool_time
 procedure:
   mode: single
-  trials: 20
+  trials: 10
   sandboxes_per_trial: 1
   concurrency:
     trials_in_parallel: 10
     sandboxes_at_once: 1
   warm_cold_policy:
-    policy: A fresh sandbox per trace from an image prepared ahead in the account. Commands run back to
+    policy: Each trace runs in a fresh sandbox started from the provider's prepared standard image. Commands run back to
       back with no model time between them, so the page cache stays warm and no provider sleeps between
-      commands. Each trace is replayed 20 times per provider in a run, so a result is 20 samples per trace.
+      commands. Each trace is replayed for the number of trials that the run's configuration sets (10 by default), giving that many samples per trace for each provider.
   variants:
   - id: claude-opus-5-high
     label: Claude Opus 5 high
@@ -90,7 +91,9 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
-    action: Start a new sandbox from the trace's task image, prepared in the account before the run.
+    label: '{name:stage.create}'
+    show: hidden
+    action: Start a fresh sandbox from the provider's prepared copy of the standard image.
     timer:
       start_event: The create request is dispatched.
       stop_event: The create call returns.
@@ -107,6 +110,8 @@ procedure:
     timer: null
   - id: commands
     name: Command replay
+    label: Command replay
+    show: stack
     action: Run every command of the trace in its recorded order as `sh -c <command>` with no input and
       output merged, in /app, with the image's environment plus a few non-interactive settings (no pager,
       no progress bars, git told not to guess an identity), in one script started in the background. The
@@ -126,6 +131,8 @@ procedure:
     timer: null
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox after the patch check and confirm it is gone.
     timer:
       start_event: The destroy request is dispatched.
@@ -143,13 +150,12 @@ statistics:
   percentile_method: Nearest rank over successful trials; nothing trimmed.
   ranking:
     ranked: true
-    min_successes: 180
     requires_all_successful: false
 cost:
   method: provider_reported_or_priced
 parameters:
   path: parameters/deepswe/
-  sha256: ddca17744dfb792446f807c71430b706b1055f1e0fcd6b46ee0d4379129888e4
+  sha256: ef2824abf9ac0fb353098efe35f9b7772814b62b07fafcabaf8ac8065d252e1f
 capabilities:
   required: []
   optional:
@@ -186,8 +192,8 @@ failure_policy:
     create: 600
     commands: 600
     destroy: 300
-  retries: None; the first failed step ends the trial. A top-up run refills every missed, excluded or
-    failed slot whoever owned the failure; each failed trial stays in the data with its owner and cause.
+  retries: None inside a trial; the first failed step ends the trial. When a trial fails, a new trial runs in its
+    place up to the run's attempt limit for that cell, regardless of who owned the failure, and each failed trial remains in the data with its owner and cause.
   success: Every saved command executes in order, the final patch check passes and the sandbox is confirmed
     deleted.
   provider_errors:
@@ -206,51 +212,15 @@ source:
   dataset_version: v1.1
   ids:
   - trace set sha256:98c823186807e15d07b67b937220f29372f45d1248055740613eeee5bdd77910
-  - '10 tasks: abs-stepped-slices, actionlint-action-pinning-lint, adaptix-name-mapping-aliases, aiomonitor-task-snapshots-diff,
+  - '10 tasks (the run''s configuration selects which tasks to run, 5 by default): abs-stepped-slices, actionlint-action-pinning-lint, adaptix-name-mapping-aliases, aiomonitor-task-snapshots-diff,
     awilix-async-container-initialization, cliffy-config-file-parsing, mobly-grouped-test-barriers, tengo-callable-instance-isolation,
     tengo-destructuring-bindings, yjs-map-conflict-detection'
-  - '10 traces: each task with one trace from one model configuration, replayed 20 times; per-trace trial
-    ids and image digests are in the parameters'' workloads.json'
+  - '10 traces: each task pairs with one trace from one model configuration and is replayed for the number of trials
+    that the run''s configuration sets; the per-trace trial ids and the repository, the commit and the setup
+    commands of each task are in the parameters'' workloads.json'
   licence: unknown
   venue_terms:
   - '{name:test.deepswe}'
 execution:
   mode: trace_replay
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Commands run back to back, so the page cache is warm as in an agent session, from an image prepared
-      ahead; no earlier trial's files are present. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

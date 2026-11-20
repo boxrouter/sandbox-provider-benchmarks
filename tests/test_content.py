@@ -17,7 +17,6 @@ from sandbox_benchmark_verifier.content import (
     rendered_content_errors,
     slot_errors,
 )
-from sandbox_benchmark_verifier.exclusion_reasons import exclusion_reason_errors
 from sandbox_benchmark_verifier.methodology_page import omit_paths
 from sandbox_benchmark_verifier.placeholders import PLACEHOLDER_OPENERS
 
@@ -657,28 +656,6 @@ def test_a_sentence_may_start_with_a_tool_name_the_owner_writes_in_lowercase() -
     assert slot_errors("fio's command runs.", rule, proper_names=()) == [
         "a sentence must start with a capital and end with a period"
     ]
-
-
-@pytest.mark.parametrize("reason", ["Provider failure", "Test in development"])
-def test_a_displayed_reason_is_one_of_the_generic_set(reason: str) -> None:
-
-    assert exclusion_reason_errors(content_criteria(), reason) == []
-
-
-@pytest.mark.parametrize(
-    "reason",
-    [
-        "excluded: our benchmark account couldn't reach Maven, not a Blaxel default",
-        "snapshots restore in the original sandbox; Core cannot create the four new sandboxes",
-        "a provider failure, replaced by a later trial",
-        "provider failure",
-        "Provider failure.",
-        "",
-    ],
-)
-def test_a_displayed_reason_outside_the_generic_set_is_refused(reason: str) -> None:
-    errors = exclusion_reason_errors(content_criteria(), reason)
-    assert any("generic" in error for error in errors)
 
 
 def test_the_generic_set_is_two_reasons_the_methodology_owns() -> None:

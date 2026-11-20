@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: BoxRouter, Inc.
+# SPDX-License-Identifier: Apache-2.0
+"""Build R2E-Gym task tarballs from the standard image and print their release URL and SHA-256.
+
+Run from the package directory with its environment, for example::
+
+    uv run --locked scripts/r2e-build-tarballs --keep out       # every task that names a tarball
+    uv run --locked scripts/r2e-build-tarballs --task numpy-0a476002600c --keep out
+
+Each task of ``parameters/r2e-gym/workloads.json`` whose ``data`` carries a ``source`` (the task's original
+Docker image, pinned by digest) gets one gzip tarball holding what that image holds beyond the
+standard image: ``/testbed`` with its virtual environment and built extensions, ``/r2e_tests``, the
+Python 3.7 interpreter and ``uv`` under ``/opt/r2e``. The build runs in a container of the standard
+image with build tools added to the container only; the tarball carries no compiler. The recorded
+rollouts never compile (see the r2e lane report), so the setup needs none either.
+
+The tarball is published as the asset ``<task>-<sha256>.tar.gz`` of a release of the public repository
+``boxrouter/bench-assets`` (tag ``r2e-gym-v1``, upload with ``gh release upload``), so its URL follows from its
+SHA-256. ``--keep DIR`` stores each built tarball under that name. A task is rebuilt only when its ``source`` digest or this script's
+``RECIPE`` changes: the SHA-256 recorded in ``workloads.json`` is kept while the stamp
+``recipe`` in the workload still equals ``stamp(source)``. ``--force`` rebuilds anyway.
+
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import shlex
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import Any
+
+PACKAGE = Path(__file__).resolve().parents[1]
+WORKLOADS = PACKAGE / "parameters/r2e-gym/workloads.json"
+STANDARD_IMAGE = (
+    "ghcr.io/boxrouter/standard-image@sha256:"
+    "89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b"
+)
+RECIPE = "1"
+"""Bump to rebuild every tarball after a change to the build below."""
+UV_VERSION = "0.5.18"
+RELEASE_BASE = "https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1"
+WORKDIR = "/testbed"
+
+# Runs as root inside the container. Arguments: the layers directory, the output directory.
+BUILD = r"""
+set -euo pipefail
+LAYERS=/layers OUT=/out
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq
+apt-get install -y -qq --no-install-recommends build-essential pkg-config >/dev/null
+ln -sf /usr/include/locale.h /usr/include/xlocale.h
+mkdir -p /opt/r2e/bin /root/.local/bin
+curl -fsSL --retry 3 "https://github.com/astral-sh/uv/releases/download/$UV_VERSION/uv-x86_64-unknown-linux-gnu.tar.gz" \
+  | tar -xz -C /opt/r2e/bin --strip-components=1 uv-x86_64-unknown-linux-gnu/uv
+ln -sf /opt/r2e/bin/uv /root/.local/bin/uv
+export PATH=/root/.local/bin:$PATH UV_PYTHON_INSTALL_DIR=/opt/r2e/python UV_NO_CONFIG=1
+git init -q /testbed
+cd /testbed
+git remote add origin "$CLONE_URL"
+git fetch -q --depth 2 origin "$COMMIT"
+PARENT=$(git rev-parse FETCH_HEAD^)
+git fetch -q --depth 1 origin "$PARENT"
+git checkout -q --detach "$PARENT"
+rm -f .git/FETCH_HEAD; git reflog expire --expire=now --all; git gc -q --prune=now
+cp "$LAYERS/testbed/run_tests.sh" "$LAYERS/testbed/install.sh" /testbed/
+git submodule update --init --recursive
+# No BLAS: numpy builds its bundled LAPACK, so the standard image needs no OpenBLAS or Fortran runtime.
+export BLAS=None LAPACK=None ATLAS=None NPY_NUM_BUILD_JOBS="$(nproc)"
+bash install.sh
+uv pip install tree_sitter_languages
+rm -rf /testbed/build
+cp -a "$LAYERS/r2e_tests" /r2e_tests
+cd /
+tar --sort=name --owner=0 --group=0 --numeric-owner -czf "$OUT/task.tar.gz" \
+  testbed r2e_tests opt/r2e root/.local/bin/uv
+"""
+
+
+def sh(*command: str, stdin: Any = None, capture: bool = True) -> str:
+    result = subprocess.run(
+        command, check=True, text=True, stdin=stdin, capture_output=capture, env=os.environ
+    )
+    return result.stdout if capture else ""
+
+
+def image_facts(source: str) -> dict[str, Any]:
+    """Clone URL, parent commit and the layers carrying the task's scripts and tests."""
+    config = json.loads(sh("crane", "config", "--platform", "linux/amd64", source))
+    manifest = json.loads(sh("crane", "manifest", "--platform", "linux/amd64", source))
+    layered = [h for h in config["history"] if not h.get("empty_layer")]
+    if len(layered) != len(manifest["layers"]):
+        raise SystemExit(f"{source}: history does not line up with layers")
+    layers = {}
+    clone = commit = ""
+    for entry, layer in zip(layered, manifest["layers"], strict=True):
+        made = entry["created_by"]
+        for name in ("run_tests.sh", "install.sh", "r2e_tests"):
+            if f"COPY {name} " in made:
+                layers[name] = layer["digest"]
+    for entry in config["history"]:
+        made = entry["created_by"]
+        if "git clone " in made and not clone:
+            clone = made.split("git clone ")[1].split()[0]
+        if "ARG OLD_COMMIT=" in made and not commit:
+            commit = made.split("OLD_COMMIT=")[1].split()[0].split("^")[0]
+    if not clone or not commit or set(layers) != {"run_tests.sh", "install.sh", "r2e_tests"}:
+        raise SystemExit(f"{source}: cannot find clone URL, commit or the task's layers")
+    return {"clone": clone, "commit": commit, "layers": layers}
+
+
+def fetch_layers(source: str, layers: dict[str, str], target: Path) -> None:
+    repository = source.split("@")[0]
+    for digest in sorted(set(layers.values())):
+        blob = subprocess.Popen(("crane", "blob", f"{repository}@{digest}"), stdout=subprocess.PIPE)
+        subprocess.run(("tar", "-xz", "-C", str(target)), check=True, stdin=blob.stdout)
+        if blob.wait():
+            raise SystemExit(f"cannot fetch layer {digest}")
+
+
+def build(task: dict[str, Any], out: Path) -> Path:
+    """Build one task's tarball; returns its path."""
+    facts = image_facts(task["data"]["source"])
+    with tempfile.TemporaryDirectory(prefix="r2e-layers-") as layers:
+        fetch_layers(task["data"]["source"], facts["layers"], Path(layers))
+        command = [
+            "docker", "run", "--rm", "--user", "0:0",
+            "-e", f"CLONE_URL={facts['clone']}", "-e", f"COMMIT={facts['commit']}",
+            "-e", f"UV_VERSION={UV_VERSION}",
+            "-v", f"{layers}:/layers:ro", "-v", f"{out}:/out",
+            "--entrypoint", "bash", STANDARD_IMAGE, "-c", BUILD,
+        ]  # fmt: skip
+        subprocess.run(command, check=True, env={**os.environ, "DOCKER_CONFIG": "/nonexistent"})
+    return out / "task.tar.gz"
+
+
+def stamp(task: dict[str, Any]) -> str:
+    return hashlib.sha256(f"{RECIPE}|{task['data']['source']}".encode()).hexdigest()[:16]
+
+
+def url_for(task_id: str, digest: str) -> str:
+    return f"{RELEASE_BASE}/{task_id}-{digest}.tar.gz"
+
+
+def setup_commands(url: str, digest: str) -> list[str]:
+    """The untimed setup: download, check, unpack. Leaves `/root/.local/bin/uv` for the reset."""
+    return [
+        f"curl -fsSL --retry 3 -o /tmp/r2e-task.tar.gz {shlex.quote(url)}",
+        f"echo '{digest}  /tmp/r2e-task.tar.gz' | sha256sum -c -",
+        "sudo tar -xzf /tmp/r2e-task.tar.gz -C /",
+        "rm -f /tmp/r2e-task.tar.gz",
+    ]
+
+
+def main() -> int:
+    from sandbox_benchmark_verifier.parameters import workload_version
+
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument(
+        "--task", action="append", help="task id (default: every task with a source)"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="rebuild although the recipe stamp matches"
+    )
+    parser.add_argument("--keep", type=Path, required=True, help="store each built tarball in this directory")
+    args = parser.parse_args()
+    workloads = json.loads(WORKLOADS.read_text())
+    for task in workloads:
+        data = task["data"]
+        if "source" not in data or (args.task and task["id"] not in args.task):
+            continue
+        if not args.force and data.get("sha256") and data.get("recipe") == stamp(task):
+            print(f"{task['id']}: up to date {data['tarball']} {data['sha256']}")
+            continue
+        with tempfile.TemporaryDirectory(prefix="r2e-out-", dir=os.environ.get("TMPDIR")) as out:
+            path = build(task, Path(out))
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            if args.keep:
+                args.keep.mkdir(parents=True, exist_ok=True)
+                (args.keep / f"{task['id']}-{digest}.tar.gz").write_bytes(path.read_bytes())
+            size = path.stat().st_size
+        data["tarball"] = url_for(task["id"], digest)
+        data["sha256"] = digest
+        data["recipe"] = stamp(task)
+        data["workdir"] = WORKDIR
+        data["setup"] = setup_commands(data["tarball"], digest)
+        data.setdefault("replayable", False)
+        data.setdefault("replayable_reason", "built; not yet replayed")
+        task["version"] = workload_version(task)
+        WORKLOADS.write_text(json.dumps(workloads, indent=2, sort_keys=True) + "\n")
+        print(f"{task['id']} {data['tarball']} {digest} {size}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

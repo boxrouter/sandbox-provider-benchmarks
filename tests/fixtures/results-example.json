@@ -1,0 +1,70 @@
+{
+  "schema": "boxrouter.bench.results/1",
+  "run": {
+    "id": "20261121T140000Z-7f3a",
+    "started_at": "2026-11-21T14:00:00Z",
+    "ended_at": "2026-11-21T14:12:41Z",
+    "region": "us-east-1",
+    "methodology": "0.4.410",
+    "config_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "lines_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "lines": 5,
+    "summarize": "0.1.0"
+  },
+  "cells": [
+    {
+      "provider": "daytona", "document": "deepswe", "variant": "aiomonitor-1",
+      "state": "partial",
+      "trials": {"planned": 2, "attempted": 2, "succeeded": 1, "failed": 1, "excluded": 0, "uncertain": 0},
+      "failures": [
+        {"step": "replay", "outcome": "timeout", "owner": "provider", "count": 1,
+         "trials": [{"id": "t-4", "sandbox_ids": ["sb-4"], "error": "command timed out after 600 s"}]}
+      ],
+      "metrics": {"tool_time": {"n": 1, "median": 51200, "p25": 51200, "p75": 51200, "p95": null, "min": 51200, "max": 51200, "mean": 51200, "ci": null, "values": [51200, null]}},
+      "stages": {"read": {"n": 1, "median": 9100, "p25": 9100, "p75": 9100, "p95": null, "min": 9100, "max": 9100, "mean": 9100, "ci": null, "values": [9100, null], "commands": [{"name": "cat", "count": 12}]}},
+      "cost": {"label": "calculated", "per_success_usd": {"n": 1, "median": 0.0052, "p25": 0.0052, "p75": 0.0052, "p95": null, "min": 0.0052, "max": 0.0052, "mean": 0.0052, "ci": null, "values": [0.0052, null]}, "unknown": 0, "not_final": 1}
+    },
+    {
+      "provider": "e2b", "document": "deepswe", "variant": "aiomonitor-1",
+      "state": "complete",
+      "trials": {"planned": 2, "attempted": 2, "succeeded": 2, "failed": 0, "excluded": 0, "uncertain": 0},
+      "failures": [],
+      "metrics": {"tool_time": {"n": 2, "median": 41230, "p25": 41230, "p75": 43010, "p95": null, "min": 41230, "max": 43010, "mean": 42120, "ci": [41230, 43010], "values": [43010, 41230]}},
+      "stages": {"read": {"n": 2, "median": 8000, "p25": 8000, "p75": 8400, "p95": null, "min": 8000, "max": 8400, "mean": 8200, "ci": [8000, 8400], "values": [8400, 8000], "commands": [{"name": "cat", "count": 12}]}},
+      "cost": {"label": "reported", "per_success_usd": {"n": 2, "median": 0.0041, "p25": 0.0041, "p75": 0.0043, "p95": null, "min": 0.0041, "max": 0.0043, "mean": 0.0042, "ci": [0.0041, 0.0043], "values": [0.0043, 0.0041]}, "unknown": 0}
+    },
+    {
+      "provider": "daytona", "document": "exec-latency", "variant": null,
+      "state": "missing",
+      "trials": {"planned": 2, "attempted": 0, "succeeded": 0, "failed": 0, "excluded": 0, "uncertain": 0},
+      "failures": []
+    },
+    {
+      "provider": "e2b", "document": "exec-latency", "variant": null,
+      "state": "unsupported",
+      "trials": {"planned": 2, "attempted": 1, "succeeded": 0, "failed": 0, "excluded": 0, "uncertain": 0},
+      "failures": []
+    }
+  ],
+  "pools": [
+    {
+      "provider": "e2b", "document": "deepswe", "variants": ["aiomonitor-1", "aiomonitor-2"], "trials_per_variant": 2,
+      "state": "partial",
+      "metrics": {"tool_time": {"value": {"median": 41230, "mean": 42120}, "p95": null, "n": 2,
+                                "filled": [{"variant": "aiomonitor-2", "value": {"median": 52100, "mean": 53400}}]}},
+      "steps": {"cmd": {"value": {"median": 38900, "mean": 39800}, "p95": null, "n": 2,
+                        "filled": [{"variant": "aiomonitor-2", "value": {"median": 49000, "mean": 50100}}]}},
+      "cost": {"label": "reported", "value": {"median": 0.0041, "mean": 0.0042}, "p95": null,
+               "filled": [{"variant": "aiomonitor-2", "value": {"median": 0.0043, "mean": 0.0043}}]}
+    }
+  ],
+  "indexes": [
+    {
+      "document": "time-index", "metric": "typical_time", "scope": "execution", "statistic": "median",
+      "providers": [
+        {"provider": "e2b", "value": 41230, "filled": [],
+         "parts": [{"id": "deepswe", "value": 41230, "rank": null, "of": null, "parts": []}]}
+      ]
+    }
+  ]
+}

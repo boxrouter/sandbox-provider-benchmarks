@@ -1,0 +1,15 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "sequential-tti",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": { "vcpu": 2, "memory_gib": 4 },
+  "lifetime_s": 300,
+  "steps": [
+    { "id": "create", "op": "create", "timeout_s": 300 },
+    { "id": "first-true", "op": "exec", "command": "{param:command}", "timeout_s": 120 },
+    { "id": "destroy", "op": "destroy", "timeout_s": 300 }
+  ]
+}

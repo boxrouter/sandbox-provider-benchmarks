@@ -27,6 +27,9 @@ environment:
     reference: See the selected variant's pinned base image digest.
     modification: One new image layer is added to the selected base image before preparation.
   network: unknown
+default_view:
+  metric: image_build_time
+  variant: standard
 procedure:
   mode: single
   trials: 20
@@ -132,6 +135,8 @@ procedure:
   steps:
   - id: build
     name: Prepare image
+    label: Image build
+    show: stack
     action: Prepare the selected new-layer image with the provider.
     timer:
       start_event: The image preparation request is dispatched.
@@ -157,7 +162,6 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 12
 cost:
   method: not_published
   notes:
@@ -228,41 +232,3 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: exception
-    text: No sandbox runs in this test; each trial builds its own new image layer and nothing is shared
-      between trials.
-  equal_concurrency:
-    status: exception
-    text: One build runs at a time per provider, so no other build shares the job host's network or the
-      provider's builders while one is timed.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Provider layer caching of the base stays on, as customers get it; each trial's new layer is
-      unique, so no earlier trial's build is reused.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: exception
-    text: One build runs at a time per provider, so no other trial of the batch is in flight.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: exception
-    text: No sandbox placement facts exist. Direct still records job-host load; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

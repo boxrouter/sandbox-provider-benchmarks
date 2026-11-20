@@ -1,0 +1,34 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "github-actions",
+  "version": 1,
+  "variants": "workloads.json",
+  "handler": "github_actions",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 4,
+    "memory_gib": 8
+  },
+  "lifetime_s": 900,
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "timeout_s": 300
+    },
+    {
+      "id": "cmd",
+      "op": "script",
+      "clock": "sandbox",
+      "cwd": "/workspace",
+      "script": "ulimit -c 0",
+      "timeout_s": 600
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

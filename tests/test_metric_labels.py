@@ -215,23 +215,15 @@ def test_trace_and_trace_set_charts_do_not_share_an_ambiguous_metric(
     assert label_for_chart(catalog, "deepswe", "time", "caption") is None
 
 
-def test_rl_pipeline_is_a_verified_composition_not_rollout_tool_time(
+def test_rl_charts_each_read_one_clock_and_no_pipeline_sum_exists(
     bundle: dict[str, Any],
 ) -> None:
+    """r2e-gym charts its sandbox-clock tool and reward times; no derived number adds the client's
+    request times to the sandbox's command runtimes (the two clocks are never mixed)."""
     catalog = bundle["metric_labels"]
-    binding = catalog["chart_bindings"]["r2e-gym"]["time-overall"]
-    assert binding["metric"].endswith("/pipeline_time")
-    metric = catalog["metrics"][binding["metric"]]
-    assert metric["per"] == "trial"
-    assert metric["derived_from"]["composition"]["terms"]["cmd"] == "command-runtime"
-    assert metric["derived_from"]["composition"]["terms"]["destroy"] == "request-elapsed"
-    assert label_for_chart(catalog, "r2e-gym", "time-overall", "caption") == (
-        "The chart shows geometric mean values per trial; lower is better."
-    )
-    broken = deepcopy(bundle)
-    broken["methodologies"]["r2e-gym"]["timed_steps"].remove("destroy")
-    with pytest.raises(ValueError, match="exactly the timed stages"):
-        compile_metric_labels(broken, load_tables(ROOT).aliases)
+    assert "time-overall" not in catalog["chart_bindings"]["r2e-gym"]
+    assert "time-trial" not in catalog["chart_bindings"]["r2e-gym"]
+    assert not [key for key in catalog["metrics"] if key.endswith("/pipeline_time")]
 
 
 def test_selected_statistic_and_fixed_typical_aggregate_remain_distinct(

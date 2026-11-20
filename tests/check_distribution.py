@@ -20,7 +20,6 @@ LICENSE_SOURCES = {
     "LICENSE": "LICENSE",
     "LICENSE-CC-BY-4.0": "LICENSE-CC-BY-4.0",
     "NOTICE": "NOTICE",
-    "LicenseRef-PolyForm-Shield-1.0.0.txt": ("LICENSES/LicenseRef-PolyForm-Shield-1.0.0.txt"),
 }
 EXPECTED_FILES = set(LICENSE_SOURCES)
 EXPECTED_LICENSE = "Apache-2.0"

@@ -1,0 +1,146 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "reconnect",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 4
+  },
+  "lifetime_s": 900,
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "sandbox": 1,
+      "timeout_s": 300
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "attach",
+      "op": "reconnect",
+      "timeout_s": 120
+    },
+    {
+      "id": "true",
+      "op": "exec",
+      "command": "{param:command}",
+      "clock_reads": true,
+      "timeout_s": 30
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

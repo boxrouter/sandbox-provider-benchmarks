@@ -1,0 +1,45 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "r2e-gym",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 5,
+  "machine": { "vcpu": 2, "memory_gib": 4 },
+  "lifetime_s": 900,
+  "handler": "r2e",
+  "steps": [
+    { "id": "create", "op": "create", "sandbox": 1, "timeout_s": 600 },
+    {
+      "id": "reset",
+      "op": "script",
+      "sandbox": 1,
+      "script": "each command of protocol.json `reset`, in order, one timed call each",
+      "timeout_s": 150
+    },
+    { "id": "snapshot", "op": "snapshot", "sandbox": 1, "snapshot": "r2e-task", "timeout_s": 600 },
+    { "id": "destroy", "op": "destroy", "sandbox": 1, "timeout_s": 300 },
+    {
+      "id": "restore",
+      "op": "create_from_snapshot",
+      "sandbox": 2,
+      "snapshot": "r2e-task",
+      "timeout_s": 600
+    },
+    {
+      "id": "cmd",
+      "op": "script",
+      "sandbox": 2,
+      "script": "each replayed tool call of the rollout in data.rollouts, in recorded order, one timed call each",
+      "timeout_s": 120
+    },
+    {
+      "id": "reward",
+      "op": "script",
+      "sandbox": 2,
+      "script": "protocol.json `reward`",
+      "timeout_s": 330
+    },
+    { "id": "destroy", "op": "destroy", "sandbox": 2, "timeout_s": 300 }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "sequential-read",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": {
+    "vcpu": 2,
+    "memory_gib": 4
+  },
+  "lifetime_s": 1800,
+  "shuffle": [
+    "disk-seq-read-1m",
+    "disk-seq-write-1m",
+    "disk-rand-read-4k",
+    "disk-rand-write-4k"
+  ],
+  "steps": [
+    {
+      "id": "create",
+      "op": "create",
+      "timeout_s": 300
+    },
+    {
+      "id": "fio-directory",
+      "op": "exec",
+      "untimed": true,
+      "command": "mkdir -p /workspace/fio",
+      "timeout_s": 30
+    },
+    {
+      "id": "download-fio",
+      "op": "exec",
+      "untimed": true,
+      "command": "curl -fsSL https://github.com/boxrouter/bench-assets/releases/download/tools-v1/fio-3.39-linux-x86_64-static -o /workspace/fio/fio && echo '4986f10f2072a20e1dd1b7c31311b14610b1174235410a11491167953e655ddb  /workspace/fio/fio' | sha256sum -c -",
+      "timeout_s": 120
+    },
+    {
+      "id": "disk-setup",
+      "op": "exec",
+      "untimed": true,
+      "command": "cd /workspace/fio || exit 1\nchmod +x fio\necho '4986f10f2072a20e1dd1b7c31311b14610b1174235410a11491167953e655ddb  fio' | sha256sum -c - || exit 1\ndd if=/dev/zero of=probe bs=4k count=256 oflag=direct status=none || { echo 'direct write refused'; exit 1; }\ndd if=probe of=/dev/null bs=4k iflag=direct status=none || { echo 'direct read refused'; exit 1; }\nrm -f probe\nfree=$(df -B1 --output=avail . | tail -n 1 | tr -d ' ')\n[ \"$free\" -ge {param:free_bytes} ] || { echo \"not enough free disk: $free\"; exit 1; }\ncat > disk.fio <<'JOBFILE'\n; One job file for the four disk benchmarks. RW, BS, SIZE, IODEPTH, RAMP and RUNTIME come from the\n; environment, which the workload parameters set.\n; fio 3.39 reads text after an option, a ';' included, as part of the option's value,\n; so every comment here has a line of its own.\n[global]\n; Linux native asynchronous I/O, so iodepth requests can be in flight\nioengine=libaio\n; O_DIRECT: bypass the guest page cache\ndirect=1\n; requests in flight (decided: Andre, 2026-10-09; section 3, choice 1)\niodepth=${IODEPTH}\n; one process\nnumjobs=1\nfilename=/workspace/fio/data.bin\n; the data file (decided: Andre, 2026-10-09; section 3, choice 3)\nsize=${SIZE}\n; seconds run before the measured interval, not counted\nramp_time=${RAMP}\n; the measured interval, in seconds\nruntime=${RUNTIME}\n; repeat over the file until runtime ends\ntime_based=1\n; drop the file's cached pages before starting (fio's default, written out)\ninvalidate=1\n; no sync calls (fio's defaults, written out)\nfsync=0\nend_fsync=0\n; the same random offsets every trial (fio's default, written out)\nrandrepeat=1\n; fresh random contents for every write buffer: no repeated or compressible blocks;\n; the CPU this costs is in usr_cpu (1.7, item 5)\nrefill_buffers=1\ngroup_reporting=1\n; one throughput and IOPS sample per second\nlog_avg_msec=1000\nwrite_bw_log=/workspace/fio/log\nwrite_iops_log=/workspace/fio/log\nper_job_logs=0\n\n[disk]\nrw=${RW}\nbs=${BS}\nJOBFILE\necho '{param:job_file_sha256}  disk.fio' | sha256sum -c - || exit 1\n",
+      "timeout_s": 60
+    },
+    {
+      "id": "first-write",
+      "op": "script",
+      "untimed": true,
+      "timeout_s": 180,
+      "script": "cd /workspace/fio && ./fio --output-format=terse --eta=never --name=prep --filename=data.bin --size={param:file_bytes} --rw=write --bs=1m --ioengine=libaio --iodepth={param:queue_depth} --direct=1 --end_fsync=1 --refill_buffers=1"
+    },
+    {
+      "id": "disk-seq-read-1m",
+      "op": "script",
+      "parse": "fio-mib-s",
+      "timeout_s": 180,
+      "script": "cd /workspace/fio && RW=read BS=1m SIZE={param:file_bytes} IODEPTH={param:queue_depth} RAMP={param:ramp_seconds} RUNTIME={param:runtime_seconds} ./fio --output-format=terse --eta=never disk.fio; rc=$?; rm -f /workspace/fio/log_*; exit $rc"
+    },
+    {
+      "id": "disk-seq-write-1m",
+      "op": "script",
+      "parse": "fio-mib-s",
+      "timeout_s": 180,
+      "script": "cd /workspace/fio && RW=write BS=1m SIZE={param:file_bytes} IODEPTH={param:queue_depth} RAMP={param:ramp_seconds} RUNTIME={param:runtime_seconds} ./fio --output-format=terse --eta=never disk.fio; rc=$?; rm -f /workspace/fio/log_*; exit $rc"
+    },
+    {
+      "id": "disk-rand-read-4k",
+      "op": "script",
+      "parse": "fio-iops",
+      "timeout_s": 180,
+      "script": "cd /workspace/fio && RW=randread BS=4k SIZE={param:file_bytes} IODEPTH={param:queue_depth} RAMP={param:ramp_seconds} RUNTIME={param:runtime_seconds} ./fio --output-format=terse --eta=never disk.fio; rc=$?; rm -f /workspace/fio/log_*; exit $rc"
+    },
+    {
+      "id": "disk-rand-write-4k",
+      "op": "script",
+      "parse": "fio-iops",
+      "timeout_s": 180,
+      "script": "cd /workspace/fio && RW=randwrite BS=4k SIZE={param:file_bytes} IODEPTH={param:queue_depth} RAMP={param:ramp_seconds} RUNTIME={param:runtime_seconds} ./fio --output-format=terse --eta=never disk.fio; rc=$?; rm -f /workspace/fio/log_*; exit $rc"
+    },
+    {
+      "id": "cache-checks",
+      "op": "script",
+      "untimed": true,
+      "script": "cd /workspace/fio || exit 1\nf=\"./fio --output-format=terse --eta=never --filename=cache.bin --size={param:cache_probe_bytes}\"\n$f --name=a --rw=write --bs=1m --ioengine=psync --direct=0 --end_fsync=1 > /dev/null || exit 1\n$f --name=b --rw=read --bs=1m --ioengine=psync --direct=0 --invalidate=0 || exit 1\n$f --name=c --rw=read --bs=1m --ioengine=libaio --iodepth={param:queue_depth} --direct=1 || exit 1\npython3 - <<'CHECK'\nimport hashlib, sys, zlib\ndata = open('data.bin', 'rb').read(64 << 20)\nblocks = len(data) // 4096\ndistinct = len({hashlib.sha256(data[i:i + 4096]).digest() for i in range(0, len(data), 4096)})\nratio = len(zlib.compress(data, 1)) / len(data)\nprint('blocks', blocks, 'distinct', distinct, 'zlib_ratio', ratio)\nsys.exit(0 if distinct >= blocks * 0.999 and ratio >= {param:min_zlib_ratio} else 1)\nCHECK\n",
+      "timeout_s": 120
+    },
+    {
+      "id": "destroy",
+      "op": "destroy",
+      "timeout_s": 300
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "list-2vcpu-8gib",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": { "vcpu": 2, "memory_gib": 8 },
+  "lifetime_s": 1800,
+  "steps": [
+    { "id": "create", "op": "create", "timeout_s": 300 },
+    {
+      "id": "setup",
+      "op": "exec",
+      "untimed": true,
+      "command": "{param:setup.command}",
+      "timeout_s": 60
+    },
+    {
+      "id": "file-list",
+      "op": "list_dir",
+      "path": "/workspace/prim/list",
+      "repeat": 100,
+      "timeout_s": 60
+    },
+    {
+      "id": "file-write-4kib",
+      "op": "write_file",
+      "path": "/workspace/prim/file-4kib.bin",
+      "bytes": 4096,
+      "repeat": 100,
+      "timeout_s": 60
+    },
+    {
+      "id": "file-read-4kib",
+      "op": "read_file",
+      "path": "/workspace/prim/file-4kib.bin",
+      "repeat": 100,
+      "timeout_s": 60
+    },
+    { "id": "destroy", "op": "destroy", "timeout_s": 300 }
+  ]
+}

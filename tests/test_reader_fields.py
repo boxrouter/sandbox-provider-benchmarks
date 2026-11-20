@@ -82,7 +82,6 @@ def test_trial_steps_is_bounded_to_400_characters_and_three_sentences() -> None:
         ("calculation", 3500),
         ("failure_policy", 3000),
         ("statistics_rules", 4500),
-        ("independence", 4500),
     ],
 )
 def test_a_method_page_note_is_bounded_by_its_slot_and_may_run_several_paragraphs(

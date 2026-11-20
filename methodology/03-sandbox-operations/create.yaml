@@ -8,12 +8,12 @@ notes:
   how_to_read: The {param:burst-tti.statistics.primary} summarizes successful trials in the axis
     unit; {direction:burst_time}.
   summary: >-
-    Time to first command is measured for sandboxes created in parallel from one unique trial
-    image.
+    Time to the first command is measured for sandboxes that start in parallel from the provider's
+    prepared copy of the standard image.
   how_it_is_measured: >-
-    A job-host monotonic clock runs from the first create request until the last sandbox's first
-    successful command returns. Each trial uses a unique image layer while provider base-image
-    caches and warm pools stay enabled.
+    The monotonic clock on the client host that sends each request runs from the first create call until
+    the last sandbox's first successful command returns. Every sandbox starts from the provider's prepared
+    copy of the standard image, while the provider's base-image caches and warm pools stay enabled.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful burst.
   cost_how_to_read: Only successful trials contribute to the cost value.
 inherits: sbs.common
@@ -25,7 +25,7 @@ metrics:
     only when all N sandboxes answered.
   quantity: time
   per: burst
-  formula: max(end(ready)) - min(start(create))
+  formula: trial_max(end(ready)) - trial_min(start(create))
 - name: answered_count
   unit: count
   direction: higher_is_better
@@ -38,10 +38,13 @@ environment:
     memory_gib: 4
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
-    modification: Each trial appends a layer containing its unique trial id and pushes a unique trial
-      image; provider base-image caches and warm pools stay enabled.
+    modification: None. Every sandbox starts from the provider's prepared copy of the standard image with nothing
+      added, while the provider's base-image caches and warm pools stay enabled.
   network: unknown
   lifetime_seconds: 300
+default_view:
+  metric: burst_time
+  variant: n5
 procedure:
   mode: concurrent
   trials: 20
@@ -50,11 +53,11 @@ procedure:
     trials_in_parallel: 1
     sandboxes_at_once: variant
   warm_cold_policy:
-    policy: Each trial uses a unique trial-image layer. Provider base-image caches and warm pools
-      remain enabled; sandboxes in one burst may reuse provider state. The N sandboxes of one burst
+    policy: Every sandbox starts from the provider's prepared copy of the standard image. Provider base-image
+      caches and warm pools remain enabled, so sandboxes in a burst may reuse provider state. The N sandboxes of one burst
       are created together and are not independent samples; their times describe that burst and are
       not comparable with sequential starts. One burst runs at a time per provider account.
-    cold: The trial image layer is unique; no cold-host or cold-base-layer state is claimed.
+    cold: Every trial starts from the same prepared image, so no cold-host or cold-base-layer state is claimed.
     warm: Sandboxes in one burst may reuse provider caches or warm-pool state.
   variants:
   - id: n5
@@ -94,17 +97,11 @@ procedure:
       summary: '{param:burst-tti.notes.summary}'
       what_this_measures: '{param:burst-tti.notes.what_this_measures}'
   steps:
-  - id: build
-    name: Image build
-    action: Push a new image layer containing this trial's id to the registry and prepare the image with
-      the provider. Recorded, but not part of the burst time.
-    timer: null
-    timeout_seconds: 1800
-    record_steps:
-    - build
   - id: create
     name: '{name:stage.create}'
-    action: Send N create requests together, from the prepared image, on one event loop using asynchronous
+    label: '{name:stage.create}'
+    show: stack
+    action: Send N create requests at the same time from the provider's prepared standard image on one event loop using asynchronous
       create.
     timer:
       from: each create request
@@ -115,6 +112,8 @@ procedure:
     - create
   - id: ready
     name: First command
+    label: First command
+    show: stack
     action: Send true as soon as that sandbox's create returns, and again after each not-ready answer
       (HTTP 502, 503 or 504, or a refused or reset connection), with the waits, deadline and attempt timeout
       of the common ready check (ready_check). Every attempt is recorded.
@@ -131,7 +130,9 @@ procedure:
     timer: null
   - id: destroy
     name: '{name:stage.destroy}'
-    action: Destroy all sandboxes together and confirm each is gone, then delete the trial's image.
+    label: '{name:stage.destroy}'
+    show: hidden
+    action: Destroy all N sandboxes together and confirm that each one is gone.
     timer:
       from: the destroy request
       until: the destroy calls return
@@ -168,16 +169,13 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 10
     requires_all_successful: true
 cost:
   method: provider_reported_or_priced
   notes:
   - A throttled create makes no sandbox and costs nothing.
-  - The provider may also charge for image preparation or short-lived image storage.
 failure_policy:
   timeout_seconds:
-    build: 1800
     create: 300
     ready_attempt: 30
     destroy: 300
@@ -195,7 +193,6 @@ failure_policy:
   - An error shown not to be the provider's.
   - A burst size above what BoxRouter's account with the provider runs at once is not run and is shown
     as that account's limit.
-  - Image build is recorded but excluded from the burst time.
   exclusion_limits:
     launch_spread_ms: 1000
 parameters:
@@ -215,10 +212,10 @@ interpretation:
     answered, k of N.
   - One burst runs at a time per provider account, so no other sandbox of the batch starts beside it.
 validity_checks:
-- id: image_new_per_trial
-  threat: A provider could start every trial from an image it has already seen.
-  check: Each trial appends a file holding its unique trial id to the pinned standard image, pushes it
-    and prepares it before the burst.
+- id: same_image_every_trial
+  threat: Trials that started from different images would not be comparable with one another.
+  check: Every sandbox starts from the provider's prepared copy of the one pinned standard image, and nothing
+    is added in any trial.
 - id: setup_outside_burst
   threat: Provider setup for creating sandboxes could inflate the create time.
   check: N distinct creation contexts are prepared before the timed burst, so provider setup stays out
@@ -240,49 +237,6 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: exception
-    text: Each trial creates N sandboxes together from one new image, by design; they describe one burst
-      and are not independent samples.
-  equal_concurrency:
-    status: exception
-    text: 'One burst runs at a time per provider account: the burst''s own sandboxes are the concurrency
-      under test and must not share the account''s limits with other trials.'
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: >-
-      Each trial uses a unique image layer. Provider base-image caches and warm pools stay
-      enabled; sandboxes in one burst may reuse provider state.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: One burst runs at a time, so no other trial is in flight; the burst's own sandboxes share hosts
-      by design.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: exception
-    text: Besides the common outlier and physical-limit rule, a burst whose create requests were sent over
-      more than its launch-spread limit (exclusion_limits) is excluded as the benchmark's own, with the
-      reason recorded, and topped off.
-
 ---
 id: sequential-tti
 effective: '2026-11-08'
@@ -295,11 +249,12 @@ notes:
   how_to_read: The {param:sequential-tti.statistics.primary} is shown in {unit:time_to_interactive};
     {direction:time_to_interactive}.
   summary: >-
-    Time to first command is measured for sandboxes created in sequence from one unique trial
-    image.
+    Time to the first command is measured for sandboxes that start in sequence from the provider's
+    prepared copy of the standard image.
   how_it_is_measured: >-
-    A job-host monotonic clock times each create request through the selected command’s exit code.
-    Each trial uses a unique image layer; provider base-image caches and warm pools stay enabled.
+    The monotonic clock on the client host that sends each request times each create call through the
+    selected command’s exit code. Every sandbox starts from the provider's prepared copy of the standard
+    image, while the provider's base-image caches and warm pools stay enabled.
 inherits: sbs.common
 metrics:
 - name: time_to_interactive
@@ -315,10 +270,14 @@ environment:
     memory_gib: 4
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
-    modification: Each trial appends a layer containing its unique trial id and pushes a unique trial
-      image; provider base-image caches and warm pools stay enabled.
+    modification: None. Every sandbox starts from the provider's prepared copy of the standard image with nothing
+      added, while the provider's base-image caches and warm pools stay enabled.
   network: unknown
   lifetime_seconds: 300
+default_view:
+  metric: time_to_interactive
+  variant: 'true'
+  sandbox: 1
 procedure:
   mode: sequential
   trials: 40
@@ -327,11 +286,11 @@ procedure:
     trials_in_parallel: 10
     sandboxes_at_once: 1
   warm_cold_policy:
-    policy: Each trial uses a unique trial-image layer. Provider base-image caches and warm pools
-      remain enabled. Every sandbox after the first follows the previous one by seconds and may reuse provider
-      caches or warm-pool state. Nothing is sent to the provider between the image build and the first
-      create, or between a create and its command.
-    cold: The trial-image layer is unique; host and base-layer cache state is not claimed.
+    policy: Every sandbox starts from the provider's prepared copy of the standard image. Provider base-image
+      caches and warm pools remain enabled, so each sandbox after the first follows the previous one by seconds
+      and may reuse provider caches or warm-pool state. No request is sent to the provider between a create call
+      and its first command.
+    cold: Every trial starts from the same prepared image, so no cold-host or cold-base-layer state is claimed.
     warm: Later sandboxes follow seconds apart and may reuse provider caches or warm-pool state.
   variants:
   - id: 'true'
@@ -363,17 +322,11 @@ procedure:
       summary: '{param:sequential-tti.notes.summary}'
       what_this_measures: '{param:sequential-tti.notes.what_this_measures}'
   steps:
-  - id: build
-    name: Image build
-    action: Push a new image layer containing this trial's id to the registry and prepare the image with
-      the provider. Recorded, but not part of the headline number.
-    timer: null
-    timeout_seconds: 1800
-    record_steps:
-    - build
   - id: create
     name: '{name:stage.create}'
-    action: Ask the provider for a fresh sandbox from the trial's prepared image, after the previous sandbox
+    label: '{name:stage.create}'
+    show: stack
+    action: Request a fresh sandbox from the provider's prepared copy of the standard image once the previous sandbox
       has been confirmed gone.
     timer:
       from: the create request
@@ -384,6 +337,8 @@ procedure:
     - create
   - id: first_command
     name: First command
+    label: First command
+    show: stack
     action: Send the variant's command as soon as create returns, with no other request or command in
       between.
     timer:
@@ -400,6 +355,8 @@ procedure:
     timeout_seconds: 30
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox and confirm it is gone before the next create.
     timer:
       from: the destroy request
@@ -434,16 +391,13 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 1
 cost:
   method: not_published
   notes:
-  - A trial's charge covers the image build and every sandbox of the trial, and no per-sandbox split is defined,
+  - A trial's billing record covers every sandbox that the trial creates in sequence, and no per-sandbox split is defined,
     so no cost is published for this benchmark.
-  - The provider may also charge for image preparation or short-lived image storage.
 failure_policy:
   timeout_seconds:
-    build: 1800
     create: 300
     first_command_from_create_start: 120
     destroy: 300
@@ -470,19 +424,19 @@ interpretation:
   informs: 'How quickly a provider can start fresh sandboxes for work: the wait between asking for a sandbox
     and its first command returning.'
   limits:
-  - The trial image differs from the standard image by one small layer.
+  - Every trial starts from the provider's prepared copy of the standard image; cold image preparation belongs
+    to the image-build benchmark rather than to this test.
   - Later starts follow the preceding sandbox closely and may use warmer provider hosts.
-  - Image build is recorded but excluded from the computed start time.
   caveats:
   - The first and last sandboxes are shown as separate positions; provider base-image caches and warm pools
     remain enabled, so these positions do not mean cold hosts or base layers.
   - Up to ten trials of a provider run at once, so a trial can share the provider's hosts with the other
     trials of its batch; the number in flight is recorded for each trial.
 validity_checks:
-- id: image_new_per_trial
-  threat: A provider could start every trial from an image it has already seen.
-  check: Each trial appends a file holding its unique trial id to the pinned standard image, pushes it
-    and prepares it, so the image is new to the provider.
+- id: same_image_every_trial
+  threat: Trials that started from different images would not be comparable with one another.
+  check: Every sandbox starts from the provider's prepared copy of the one pinned standard image, and nothing
+    is added in any trial.
 - id: command_within_window
   threat: A slow first command could be counted as a start.
   check: The first command must exit 0 within 120 seconds of that sandbox's create start; otherwise the
@@ -499,42 +453,3 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: exception
-    text: Each trial creates its sandboxes one after another from one new image, by design; they are
-      one sequence reported by position, and the trial, not the sandbox, is the independent sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: >-
-      Each trial uses a unique image layer. Provider base-image caches and warm pools stay
-      enabled; later sandboxes may reuse provider state.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

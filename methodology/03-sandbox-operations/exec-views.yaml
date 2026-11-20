@@ -36,6 +36,9 @@ environment:
 clocks:
   operation: Job-host monotonic clock around each command call.
   command_runtime: Sandbox clock read immediately before and after true.
+default_view:
+  metric: total_time
+  variant: 'true'
 procedure:
   mode: single
   trials: 100
@@ -58,6 +61,8 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a fresh sandbox from the pinned standard image.
     timer: null
     timeout_seconds: 300
@@ -65,6 +70,8 @@ procedure:
     - create
   - id: 'true'
     name: true calls
+    label: 'true'
+    show: stack
     action: Send 100 true commands one at a time, with each call's sandbox clock readings returned to
       the job host.
     timer:
@@ -76,6 +83,8 @@ procedure:
     - 'true'
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox and confirm it is gone.
     timer: null
     timeout_seconds: 300
@@ -91,7 +100,6 @@ statistics:
   - mean
   ranking:
     ranked: true
-    min_successes: 5
   percentile_method: Nearest rank over every call of every successful trial, pooled; calls of a trial
     that failed partway are left out, as they are from the per-trial sums; no trimming.
   sample: pooled_calls
@@ -123,55 +131,17 @@ failure_policy:
   - A malformed measurement record or failure in benchmark-side timing and parsing.
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Later calls reuse the session's warmed state, as a user's calls do; nothing is cleared between
-      calls. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall
-      is checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, working-directory device and file system;
-      the timing record carries the API server's stall for each call.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
 parameters:
   path: parameters/exec-latency/
   sha256: f97b44012d461bfe429c9918e4d9b3c7bf43b8cc030f84115a43424d1363da79
 interpretation:
   what_to_do: Use the latency to judge the floor under every command an agent runs through a provider.
-  informs: How long the shortest command, `true`, takes to come back through BoxRouter. A high latency
+  informs: How long the shortest command, `true`, takes to complete a round trip to the sandbox and back. A high latency
     points at the provider's exec API and its in-sandbox agent.
   limits:
   - The latency includes the network between the job host and the provider's US region; a provider whose
     region is farther away pays that distance.
-  - Only calls through BoxRouter are measured.
+  - Only calls sent from the client host are measured.
   caveats:
   - BoxRouter keeps idle connections for 300 s, so a call that follows a pause may pay a new connection.
   - A run is 100 trials, so each provider's figures come from 100 sandboxes and 10,000 calls. Until 2026-10-26
@@ -222,7 +192,7 @@ metrics:
   unit: ms
   direction: lower_is_better
   description: Sum of the round-trip times of the 100 calls of one trial.
-  formula: total(true)
+  formula: sum(total(true))
   quantity: latency
   per: 100-calls
 environment:
@@ -236,6 +206,9 @@ environment:
 clocks:
   operation: Job-host monotonic clock around each command call.
   command_runtime: Sandbox clock read immediately before and after true.
+default_view:
+  metric: total_time
+  variant: 'true'
 procedure:
   mode: single
   trials: 100
@@ -258,6 +231,8 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a fresh sandbox from the pinned standard image.
     timer: null
     timeout_seconds: 300
@@ -265,6 +240,8 @@ procedure:
     - create
   - id: 'true'
     name: true calls
+    label: 'true'
+    show: stack
     action: Send 100 true commands one at a time, with each call's sandbox clock readings returned to
       the job host.
     timer:
@@ -276,12 +253,16 @@ procedure:
     - 'true'
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox and confirm it is gone.
     timer: null
     timeout_seconds: 300
     record_steps:
     - destroy
   cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
+  shared_trial:
+    with: exec-latency
 timing_boundaries:
   start: Each true command call is dispatched.
   stop: Its exit code and the sandbox clock readings return to the job host.
@@ -291,7 +272,6 @@ statistics:
   - mean
   ranking:
     ranked: true
-    min_successes: 5
   percentile_method: Nearest rank over the successful trials; no trimming.
   sample: trial
   interval:
@@ -320,55 +300,14 @@ failure_policy:
   - A malformed measurement record or failure in benchmark-side timing and parsing.
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: Later calls reuse the session's warmed state, as a user's calls do; nothing is cleared between
-      calls. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall
-      is checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, working-directory device and file system;
-      the timing record carries the API server's stall for each call.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
-parameters:
-  path: parameters/exec-latency-per-100-calls/
-  sha256: f97b44012d461bfe429c9918e4d9b3c7bf43b8cc030f84115a43424d1363da79
 interpretation:
   what_to_do: Use the latency to judge the floor under every command an agent runs through a provider.
-  informs: How long the shortest command, `true`, takes to come back through BoxRouter. A high latency
+  informs: How long the shortest command, `true`, takes to complete a round trip to the sandbox and back. A high latency
     points at the provider's exec API and its in-sandbox agent.
   limits:
   - The latency includes the network between the job host and the provider's US region; a provider whose
     region is farther away pays that distance.
-  - Only calls through BoxRouter are measured.
+  - Only calls sent from the client host are measured.
   caveats:
   - BoxRouter keeps idle connections for 300 s, so a call that follows a pause may pay a new connection.
   - A run is 100 trials, so each provider's figures come from 100 sandboxes and 10,000 calls. Until 2026-10-26

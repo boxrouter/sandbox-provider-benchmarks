@@ -8,9 +8,8 @@ notes:
   how_to_read: The {param:previews.statistics.primary} summarizes successful trials in the axis
     unit; {direction:url_ready}.
   summary: A pinned development server starts and serves requests through its public preview URL.
-  how_it_is_measured: Direct uses its job-host clock. Cloud starts the process and polls the URL in one request;
-    URL-ready and {name:stage.between} run on its one monotonic clock to the first expected response,
-    {name:stage.between} from process.start returning.
+  how_it_is_measured: The monotonic clock on the client host times the process-start call and the polling of the public
+    preview URL until the first expected response; {name:stage.between} spans from process.start returning to that response.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful request.
   cost_how_to_read: Only successful trials contribute to the cost value.
 inherits: sbs.common
@@ -18,7 +17,7 @@ metrics:
 - name: url_ready
   unit: ms
   direction: lower_is_better
-  description: Time from process-start dispatch until the preview returns the expected response; Cloud takes it from one request's monotonic clock.
+  description: Time on the client host's monotonic clock from process-start dispatch until the preview returns the expected response.
   formula: end(url-poll) - start(start-server)
   quantity: time
   per: preview
@@ -32,7 +31,7 @@ metrics:
 - name: url_reachable
   unit: ms
   direction: lower_is_better
-  description: Cloud interval on one request's monotonic clock from process.start returning to the first successful HTTP probe response.
+  description: Time on the client host's monotonic clock from process.start returning until the first HTTP probe succeeds.
   formula: end(url-poll) - end(start-server)
   quantity: time
   per: preview
@@ -64,8 +63,11 @@ environment:
       ports:
       - 5173
 clocks:
-  operation: Direct uses the job-host monotonic clock around calls and preview probes. Cloud records provider-operation durations and the URL-ready and URL-reachable intervals on the API server's monotonic clock; the runner's own request and {name:stage.websocket} probes keep the runner clock.
+  operation: The client host's monotonic clock times every API call and preview probe, including the HTTP request and {name:stage.websocket} probes.
   command_runtime: Sandbox clock around localhost polling until the server responds.
+default_view:
+  metric: url_ready
+  variant: vite-dev
 procedure:
   mode: single
   trials: 60
@@ -94,6 +96,8 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a sandbox with a public preview for port 5173.
     timer: null
     timeout_seconds: 300
@@ -106,6 +110,8 @@ procedure:
     timeout_seconds: 300
   - id: open_preview
     name: Open preview
+    label: Open preview
+    show: hidden
     action: Open port 5173 and obtain its public preview URL.
     timer:
       start_event: The preview open request is dispatched.
@@ -115,16 +121,20 @@ procedure:
     - open-preview
   - id: start_server
     name: Start server
-    action: Start the Vite server while Direct's job host or the Cloud runner polls its URL; the command
+    label: Start dev server
+    show: hidden
+    action: Start the Vite server while the client host polls the public preview URL; the command
       records the sandbox clock before launch.
     timer:
-      start_event: Direct dispatches process start; Cloud dispatches process.start to the API server.
-      stop_event: The process-start call returns to the runner.
+      start_event: The client host dispatches the process-start request.
+      stop_event: The process-start call returns to the client host.
     timeout_seconds: 60
     record_steps:
     - start-server
   - id: server_listening
     name: '{name:stage.server-listening}'
+    label: '{name:stage.server-listening}'
+    show: stack
     action: Poll localhost every 10 ms until it returns HTTP 200 with body ok.
     timer:
       start_event: The sandbox clock reading immediately before server launch.
@@ -134,6 +144,8 @@ procedure:
     - server-listening
   - id: url_poll
     name: Preview URL ready
+    label: Preview URL answers
+    show: hidden
     action: Poll the public preview URL every 10 ms until it returns HTTP 200 with body ok; record each
       attempt.
     timer:
@@ -144,17 +156,21 @@ procedure:
     - url-poll
   - id: request
     name: Requests through preview
+    label: '{name:stage.request}'
+    show: hidden
     action: Send 100 sequential GET requests for /ping.txt over one kept-alive connection; each response
       must be HTTP 200 with body ok.
     timer:
       start_event: Each GET is sent after the preceding response returns.
-      stop_event: The response status and headers arrive at the job host or runner.
+      stop_event: The response status and headers arrive at the client host.
     timeout_seconds: 30
     repeats: true
     record_steps:
     - request
   - id: websocket
     name: '{name:stage.websocket} upgrade'
+    label: '{name:stage.websocket} upgrade'
+    show: hidden
     action: Connect with the vite-hmr subprotocol and record whether upgrade succeeds and the first message
       is the expected connected message within 10 s.
     timer:
@@ -165,6 +181,8 @@ procedure:
     - websocket
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy the sandbox and confirm it is gone.
     timer: null
     timeout_seconds: 300
@@ -180,13 +198,13 @@ procedure:
     - server-listening
   - id: between
     name: '{name:stage.between}'
-    description: Cloud time on one request's monotonic clock from process.start returning until the first public
+    description: Time on the client host's clock from process.start returning until the first public
       preview probe answers HTTP 200 with body ok.
     record_steps:
     - url-poll
 timing_boundaries:
   start: The process start request is dispatched.
-  stop: The first expected HTTP 200 response through the preview URL is received, by the job host in Direct and by the process-start request's probe in Cloud.
+  stop: The client host receives the first expected HTTP 200 response through the public preview URL.
 statistics:
   primary: median
   secondary:
@@ -203,7 +221,6 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 20
 cost:
   method: provider_reported_or_priced
 failure_policy:
@@ -245,18 +262,17 @@ interpretation:
   limits:
   - URL-ready time includes the process-start call, provider routing, and launch delay; it does not isolate
     routing.
-  - Cloud records the process-start operation separately. Neither its duration nor the sandbox-clock
+  - The duration of the process-start call is recorded separately. Neither that duration nor the sandbox-clock
     server-listening time is subtracted from or combined with the {name:stage.between} interval.
   - Request latency is time to first byte on one keep-alive connection; it excludes connect, TLS, and
     DNS, and includes the route and Vite's static-file response.
   caveats:
-  - Only providers that offer the `previews` capability through BoxRouter are measured; the rest show
+  - Only providers that support the `previews` capability are measured; the rest show
     Not Supported.
   - Vite is configured to accept any Host header and to skip its {name:stage.websocket} token check, so
     the benchmark can open the socket without first reading the token from the served client script.
-  - 'Direct uses the job-host clock for calls and URL probes, and the sandbox clock for server listening. Cloud
-    keeps three clocks separate: the API server monotonic clock for openPreview, process.start, URL-ready and
-    {name:stage.between}, the runner clock for request and {name:stage.websocket} probes, and the sandbox clock for server listening.'
+  - The client host's clock times API calls, URL probes, HTTP requests and {name:stage.websocket} probes, while the
+    sandbox's clock times server listening; readings from the two clocks stay in separate figures.
 validity_checks:
 - id: pinned_answer
   threat: A provider's waiting page could be counted as the app.
@@ -287,40 +303,3 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: meets
-    text: One fresh sandbox per trial; every pass, call or row run inside it is one sample.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: A fresh sandbox per trial; the first server start is cold and the later requests reuse the kept-alive
-      connection. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

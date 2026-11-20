@@ -1,0 +1,804 @@
+{
+ "about": "Inputs and expected outputs of sandbox_benchmark_verifier.stats.series and round_sig; web stat tests read the same file.",
+ "figures": 5,
+ "resamples": 10000,
+ "rounding": [
+  {
+   "expected": 0,
+   "value": 0
+  },
+  {
+   "expected": 1,
+   "value": 1
+  },
+  {
+   "expected": 123450,
+   "value": 123445
+  },
+  {
+   "expected": 123440,
+   "value": 123444
+  },
+  {
+   "expected": 123470,
+   "value": 123465
+  },
+  {
+   "expected": 123440,
+   "value": 123444.9
+  },
+  {
+   "expected": 1000000,
+   "value": 999995
+  },
+  {
+   "expected": 999990,
+   "value": 999994
+  },
+  {
+   "expected": 1234600,
+   "value": 1234567
+  },
+  {
+   "expected": 12345,
+   "value": 12344.5
+  },
+  {
+   "expected": 12346,
+   "value": 12345.5
+  },
+  {
+   "expected": 0.5,
+   "value": 0.5
+  },
+  {
+   "expected": 0.00012346,
+   "value": 0.000123456
+  },
+  {
+   "expected": 0.00012346,
+   "value": 0.00012345678
+  },
+  {
+   "expected": 1,
+   "value": 1.000049
+  },
+  {
+   "expected": 1.0001,
+   "value": 1.000051
+  },
+  {
+   "expected": 1,
+   "value": 0.999996
+  },
+  {
+   "expected": 2.5,
+   "value": 2.5
+  },
+  {
+   "expected": 4231.5,
+   "value": 4231.4999
+  },
+  {
+   "expected": 1000000,
+   "value": 999999.5
+  },
+  {
+   "expected": 1.2346e-09,
+   "value": 1.23456789e-09
+  },
+  {
+   "expected": 7,
+   "value": 7
+  }
+ ],
+ "seed": 0,
+ "series": [
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": null,
+    "max": 5,
+    "mean": 5,
+    "median": 5,
+    "min": 5,
+    "n": 1,
+    "p25": 5,
+    "p75": 5,
+    "p95": null
+   },
+   "name": "one value",
+   "tail_floor": 20,
+   "values": [
+    5
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     3,
+     9
+    ],
+    "max": 9,
+    "mean": 6,
+    "median": 3,
+    "min": 3,
+    "n": 2,
+    "p25": 3,
+    "p75": 9,
+    "p95": null
+   },
+   "name": "two values",
+   "tail_floor": 20,
+   "values": [
+    9,
+    3
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     1,
+     3
+    ],
+    "max": 3,
+    "mean": 2,
+    "median": 2,
+    "min": 1,
+    "n": 3,
+    "p25": 1,
+    "p75": 3,
+    "p95": null
+   },
+   "name": "odd count",
+   "tail_floor": 20,
+   "values": [
+    3,
+    1,
+    2
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     1,
+     4
+    ],
+    "max": 4,
+    "mean": 2.5,
+    "median": 2,
+    "min": 1,
+    "n": 4,
+    "p25": 1,
+    "p75": 3,
+    "p95": null
+   },
+   "name": "even count takes the lower middle",
+   "tail_floor": 20,
+   "values": [
+    4,
+    1,
+    3,
+    2
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     2,
+     5
+    ],
+    "max": 5,
+    "mean": 3.2,
+    "median": 2,
+    "min": 2,
+    "n": 5,
+    "p25": 2,
+    "p75": 5,
+    "p95": null
+   },
+   "name": "ties",
+   "tail_floor": 20,
+   "values": [
+    2,
+    2,
+    2,
+    5,
+    5
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     1,
+     3
+    ],
+    "max": 3,
+    "mean": 2,
+    "median": 2,
+    "min": 1,
+    "n": 3,
+    "p25": 1,
+    "p75": 3,
+    "p95": null
+   },
+   "name": "failed trials are null and skipped",
+   "tail_floor": 20,
+   "values": [
+    null,
+    3,
+    null,
+    1,
+    2
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": null,
+    "max": null,
+    "mean": null,
+    "median": null,
+    "min": null,
+    "n": 0,
+    "p25": null,
+    "p75": null,
+    "p95": null
+   },
+   "name": "no success",
+   "tail_floor": 20,
+   "values": [
+    null,
+    null
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": null,
+    "max": null,
+    "mean": null,
+    "median": null,
+    "min": null,
+    "n": 0,
+    "p25": null,
+    "p75": null,
+    "p95": null
+   },
+   "name": "no trial",
+   "tail_floor": 20,
+   "values": []
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     6,
+     14
+    ],
+    "max": 19,
+    "mean": 10,
+    "median": 10,
+    "min": 1,
+    "n": 19,
+    "p25": 5,
+    "p75": 15,
+    "p95": null
+   },
+   "name": "19 samples below the floor of 20, lower is better",
+   "tail_floor": 20,
+   "values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     6,
+     14
+    ],
+    "max": 20,
+    "mean": 10.5,
+    "median": 10,
+    "min": 1,
+    "n": 20,
+    "p25": 5,
+    "p75": 15,
+    "p95": 19
+   },
+   "name": "20 samples reach the floor, lower is better",
+   "tail_floor": 20,
+   "values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "expected": {
+    "ci": [
+     6,
+     14
+    ],
+    "max": 19,
+    "mean": 10,
+    "median": 10,
+    "min": 1,
+    "n": 19,
+    "p25": 5,
+    "p75": 15,
+    "p95": null
+   },
+   "name": "19 samples below the floor of 20, higher is better",
+   "tail_floor": 20,
+   "values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "expected": {
+    "ci": [
+     6,
+     14
+    ],
+    "max": 20,
+    "mean": 10.5,
+    "median": 10,
+    "min": 1,
+    "n": 20,
+    "p25": 5,
+    "p75": 15,
+    "p95": 1
+   },
+   "name": "20 samples reach the floor, higher is better",
+   "tail_floor": 20,
+   "values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     6,
+     14
+    ],
+    "max": 20,
+    "mean": 10.5,
+    "median": 10,
+    "min": 1,
+    "n": 20,
+    "p25": 5,
+    "p75": 15,
+    "p95": 19
+   },
+   "name": "20 successes among nulls reach the floor",
+   "tail_floor": 20,
+   "values": [
+    null,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    null
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "expected": {
+    "ci": [
+     10,
+     50
+    ],
+    "max": 50,
+    "mean": 30,
+    "median": 30,
+    "min": 10,
+    "n": 5,
+    "p25": 20,
+    "p75": 40,
+    "p95": 10
+   },
+   "name": "unsorted input, floor of 3, higher is better",
+   "tail_floor": 3,
+   "values": [
+    40,
+    10,
+    30,
+    20,
+    50
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     40,
+     60
+    ],
+    "max": 100,
+    "mean": 50.5,
+    "median": 50,
+    "min": 1,
+    "n": 100,
+    "p25": 25,
+    "p75": 75,
+    "p95": 95
+   },
+   "name": "100 samples, rank at 0.95 and 0.05",
+   "tail_floor": 20,
+   "values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100
+   ]
+  },
+  {
+   "direction": "higher_is_better",
+   "expected": {
+    "ci": [
+     40,
+     60
+    ],
+    "max": 100,
+    "mean": 50.5,
+    "median": 50,
+    "min": 1,
+    "n": 100,
+    "p25": 25,
+    "p75": 75,
+    "p95": 5
+   },
+   "name": "100 samples, higher is better",
+   "tail_floor": 20,
+   "values": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     0.00012346,
+     98765
+    ],
+    "max": 98765,
+    "mean": 20447,
+    "median": 1234.6,
+    "min": 0.00012346,
+    "n": 5,
+    "p25": 1000.1,
+    "p75": 1234.6,
+    "p95": 98765
+   },
+   "name": "rounding to 5 figures in every statistic",
+   "tail_floor": 5,
+   "values": [
+    1234.5678,
+    1234.5679,
+    1000.12345,
+    98765.4321,
+    0.000123456
+   ]
+  },
+  {
+   "direction": "lower_is_better",
+   "expected": {
+    "ci": [
+     0.1,
+     0.3
+    ],
+    "max": 0.3,
+    "mean": 0.2,
+    "median": 0.2,
+    "min": 0.1,
+    "n": 6,
+    "p25": 0.1,
+    "p75": 0.3,
+    "p95": null
+   },
+   "name": "floats that sum inexactly",
+   "tail_floor": 20,
+   "values": [
+    0.1,
+    0.2,
+    0.3,
+    0.1,
+    0.2,
+    0.3
+   ]
+  }
+ ]
+}

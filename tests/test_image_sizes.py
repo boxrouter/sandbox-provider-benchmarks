@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""Image Build base image facts are generated from the registries, never typed."""
+"""The standard image size comes from the pinned Image Build facts, never typed."""
 
 import json
 from pathlib import Path
@@ -11,12 +11,7 @@ import pytest
 from sandbox_benchmark_verifier.catalog import load_methodology
 from sandbox_benchmark_verifier.content import content_criteria
 from sandbox_benchmark_verifier.conventions import load_conventions
-from sandbox_benchmark_verifier.image_sizes import (
-    byte_size_text,
-    fill_facts,
-    image_fact_errors,
-    standard_image_bytes,
-)
+from sandbox_benchmark_verifier.image_sizes import byte_size_text, standard_image_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
 STANDARD = (
@@ -24,54 +19,6 @@ STANDARD = (
     .document["environment"]["image"]["reference"]
     .rsplit("@", 1)[1]
 )
-FACTS = {"compressed_bytes": 10, "uncompressed_bytes": 30, "layers": 2, "files": 7}
-
-
-def _write(root: Path, rows: list[dict[str, object]]) -> Path:
-    path = root / "parameters/image-build-2vcpu-4gib/workloads.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return path
-
-
-def _row(identifier: str, digest: str, facts: dict[str, int] | None = None) -> dict[str, object]:
-    data: dict[str, object] = {"base_image": f"docker.io/library/{identifier}@sha256:{digest}"}
-    if facts is not None:
-        data["facts"] = facts
-    return {"id": identifier, "data": data}
-
-
-def test_the_repository_has_facts_for_every_image_build_workload() -> None:
-    assert image_fact_errors(ROOT) == []
-
-
-def test_a_workload_with_no_facts_fails_and_names_the_command(tmp_path: Path) -> None:
-    _write(tmp_path, [_row("python", "a" * 64)])
-    errors = image_fact_errors(tmp_path)
-    assert len(errors) == 1
-    assert "sandbox-benchmark-verify image-sizes" in errors[0]
-
-
-def test_the_generator_reads_a_digest_once_and_reuses_its_facts(tmp_path: Path) -> None:
-    path = _write(
-        tmp_path,
-        [_row("python", "a" * 64, FACTS), _row("python", "a" * 64), _row("node", "b" * 64)],
-    )
-    read: list[str] = []
-
-    def reader(reference: str) -> dict[str, int]:
-        read.append(reference)
-        return {**FACTS, "layers": 9}
-
-    filled = fill_facts(tmp_path, reader)
-    assert len(filled) == 2
-    assert read == [f"docker.io/library/node@sha256:{'b' * 64}"]  # python's digest is already known
-    rows = json.loads(path.read_text())
-    assert rows[0]["data"]["facts"] == FACTS and rows[1]["data"]["facts"] == FACTS
-    assert rows[2]["data"]["facts"]["layers"] == 9
-    assert image_fact_errors(tmp_path) == []
-    assert fill_facts(tmp_path, reader) == []
-
 
 BYTE_SIZE = load_conventions()["presentation"]["byte_size"]
 

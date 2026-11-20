@@ -1,0 +1,35 @@
+{
+  "$schema": "../../schemas/run-definition.schema.json",
+  "schema": "boxrouter.bench.run/1",
+  "id": "package-registries",
+  "version": 1,
+  "variants": "workloads.json",
+  "sandboxes": 1,
+  "machine": { "vcpu": 2, "memory_gib": 4 },
+  "lifetime_s": 900,
+  "steps": [
+    { "id": "create", "op": "create", "timeout_s": 300 },
+    {
+      "id": "inputs",
+      "op": "upload_files",
+      "untimed": true,
+      "files": "{param:files}",
+      "timeout_s": 60
+    },
+    {
+      "id": "prepare",
+      "op": "exec",
+      "untimed": true,
+      "command": "export GIT_TERMINAL_PROMPT=0; export PATH=\"/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"; sudo -u user -H --preserve-env env PATH=\"$PATH\" bash -c '{param:prepare}'",
+      "timeout_s": 120
+    },
+    {
+      "id": "install",
+      "op": "script",
+      "script": "set -u\nexport GIT_TERMINAL_PROMPT=0\nexport PATH=\"/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"\n__rx() { awk '/:/ {sub(/^ */, \"\"); split($0, a, \":\"); if (a[1] != \"lo\") {split(a[2], b, \" \"); s += b[1]}} END {print s + 0}' /proc/net/dev; }\n__rx_before=$(__rx)\n__start=$(date +%s%N)\nsudo -u user -H --preserve-env env PATH=\"$PATH\" bash -c '{param:command}'\n__rc=$?\n__end=$(date +%s%N)\n__rx_after=$(__rx)\nawk -v s=\"$__start\" -v e=\"$__end\" -v b=\"$__rx_before\" -v a=\"$__rx_after\" -v rc=\"$__rc\" 'BEGIN { printf \"bench-install runtime_ms=%.3f rx_bytes=%d exit_code=%d\\n\", (e - s) / 1e6, a - b, rc }'\nexit \"$__rc\"\n",
+      "parse": "install",
+      "timeout_s": 600
+    },
+    { "id": "destroy", "op": "destroy", "timeout_s": 300 }
+  ]
+}

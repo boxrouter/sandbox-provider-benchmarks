@@ -1,60 +1,96 @@
 [
   {
     "data": {
+      "recipe": "ad675ad4d6462fb2",
+      "replayable": true,
+      "replayable_reason": "in a fresh standard-image container the setup, the reset and the first five recorded commands of rollout 1 exit as recorded, and the reward command runs",
       "rollouts": [
         "numpy-0a476002600c-run1",
         "numpy-0a476002600c-run2",
         "numpy-0a476002600c-run3",
         "numpy-0a476002600c-run4"
       ],
+      "setup": [
+        "curl -fsSL --retry 3 -o /tmp/r2e-task.tar.gz https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/numpy-0a476002600c-8493dce5ddbb55f9875ba07eb80784dbb649aeda43ec58aee2172880b8af3d8e.tar.gz",
+        "echo '8493dce5ddbb55f9875ba07eb80784dbb649aeda43ec58aee2172880b8af3d8e  /tmp/r2e-task.tar.gz' | sha256sum -c -",
+        "sudo tar -xzf /tmp/r2e-task.tar.gz -C /",
+        "rm -f /tmp/r2e-task.tar.gz"
+      ],
+      "sha256": "8493dce5ddbb55f9875ba07eb80784dbb649aeda43ec58aee2172880b8af3d8e",
       "snapshots": {
         "deletable": true,
         "original_after": "any"
       },
-      "task": "namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7"
+      "source": "docker.io/namanjain12/numpy_final@sha256:551c5e9e3c89d3db7011ec7e0be9c09a32d842b4ba35ac00ffd3706f5c143f4e",
+      "tarball": "https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/numpy-0a476002600c-8493dce5ddbb55f9875ba07eb80784dbb649aeda43ec58aee2172880b8af3d8e.tar.gz",
+      "task": "namanjain12/numpy_final:0a476002600cb42068a899f4dc2cf0bc8cdb26d7",
+      "workdir": "/testbed"
     },
     "id": "numpy-0a476002600c",
-    "image": "docker.io/namanjain12/numpy_final@sha256:551c5e9e3c89d3db7011ec7e0be9c09a32d842b4ba35ac00ffd3706f5c143f4e",
     "label": "numpy-masked-method-lookup",
-    "version": "sha256:a89cc744626b7bc0"
+    "version": "sha256:589c2b1c84d517b9"
   },
   {
     "data": {
+      "recipe": "694b4b5495c22136",
+      "replayable": true,
+      "replayable_reason": "in a fresh standard-image container the setup, the reset and the first five recorded commands of rollout 1 exit as recorded, and the reward command runs",
       "rollouts": [
         "numpy-dda20349d172-run1",
         "numpy-dda20349d172-run2",
         "numpy-dda20349d172-run3",
         "numpy-dda20349d172-run4"
       ],
+      "setup": [
+        "curl -fsSL --retry 3 -o /tmp/r2e-task.tar.gz https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/numpy-dda20349d172-35af0a9dba715ddc0db0f7a0d3efd8e0b3d3da86bd5a40d10d310360c44b23ec.tar.gz",
+        "echo '35af0a9dba715ddc0db0f7a0d3efd8e0b3d3da86bd5a40d10d310360c44b23ec  /tmp/r2e-task.tar.gz' | sha256sum -c -",
+        "sudo tar -xzf /tmp/r2e-task.tar.gz -C /",
+        "rm -f /tmp/r2e-task.tar.gz"
+      ],
+      "sha256": "35af0a9dba715ddc0db0f7a0d3efd8e0b3d3da86bd5a40d10d310360c44b23ec",
       "snapshots": {
         "deletable": true,
         "original_after": "any"
       },
-      "task": "namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8"
+      "source": "docker.io/namanjain12/numpy_final@sha256:88225ceb26dbdffe009cd32f58ed666d31fa2e2fa4c6fc2ac40d6972dfe8a743",
+      "tarball": "https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/numpy-dda20349d172-35af0a9dba715ddc0db0f7a0d3efd8e0b3d3da86bd5a40d10d310360c44b23ec.tar.gz",
+      "task": "namanjain12/numpy_final:dda20349d172ed09b949a3b819eb16a384cd29a8",
+      "workdir": "/testbed"
     },
     "id": "numpy-dda20349d172",
-    "image": "docker.io/namanjain12/numpy_final@sha256:88225ceb26dbdffe009cd32f58ed666d31fa2e2fa4c6fc2ac40d6972dfe8a743",
     "label": "numpy-issubdtype-abstract-types",
-    "version": "sha256:3975dda726e8357f"
+    "version": "sha256:a417b3626fabcc0e"
   },
   {
     "data": {
+      "recipe": "afe8c567696f0436",
+      "replayable": true,
+      "replayable_reason": "in a fresh standard-image container the setup, the reset and the first five recorded commands of rollout 1 exit as recorded, and the reward command runs",
       "rollouts": [
         "numpy-61640a849557-run1",
         "numpy-61640a849557-run2",
         "numpy-61640a849557-run3",
         "numpy-61640a849557-run4"
       ],
+      "setup": [
+        "curl -fsSL --retry 3 -o /tmp/r2e-task.tar.gz https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/numpy-61640a849557-96db97bea601b716a5675e001b0b8119235839c782ec4c95ced29728ffc1ca0d.tar.gz",
+        "echo '96db97bea601b716a5675e001b0b8119235839c782ec4c95ced29728ffc1ca0d  /tmp/r2e-task.tar.gz' | sha256sum -c -",
+        "sudo tar -xzf /tmp/r2e-task.tar.gz -C /",
+        "rm -f /tmp/r2e-task.tar.gz"
+      ],
+      "sha256": "96db97bea601b716a5675e001b0b8119235839c782ec4c95ced29728ffc1ca0d",
       "snapshots": {
         "deletable": true,
         "original_after": "any"
       },
-      "task": "namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d"
+      "source": "docker.io/namanjain12/numpy_final@sha256:9ef247b04c696ea4f7347454999067f2f246cc73d09d43b6e9eb9b1210094b5a",
+      "tarball": "https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/numpy-61640a849557-96db97bea601b716a5675e001b0b8119235839c782ec4c95ced29728ffc1ca0d.tar.gz",
+      "task": "namanjain12/numpy_final:61640a849557c4460101875fd9657b3c8aaccb6d",
+      "workdir": "/testbed"
     },
     "id": "numpy-61640a849557",
-    "image": "docker.io/namanjain12/numpy_final@sha256:9ef247b04c696ea4f7347454999067f2f246cc73d09d43b6e9eb9b1210094b5a",
     "label": "numpy-apply-axis-empty",
-    "version": "sha256:d78b3556eb25c696"
+    "version": "sha256:78eb77b7e80f3219"
   },
   {
     "data": {
@@ -115,41 +151,65 @@
   },
   {
     "data": {
+      "recipe": "72ddcb607e98ed2a",
+      "replayable": true,
+      "replayable_reason": "in a fresh standard-image container the setup, the reset and the first five recorded commands of rollout 1 exit as recorded, and the reward command runs",
       "rollouts": [
         "numpy-3c0b4db0b51e-run1",
         "numpy-3c0b4db0b51e-run2",
         "numpy-3c0b4db0b51e-run3",
         "numpy-3c0b4db0b51e-run4"
       ],
+      "setup": [
+        "curl -fsSL --retry 3 -o /tmp/r2e-task.tar.gz https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/numpy-3c0b4db0b51e-e7e582421b3199e94b132756401651df9e3d2941fe964bc65732af7b282416dd.tar.gz",
+        "echo 'e7e582421b3199e94b132756401651df9e3d2941fe964bc65732af7b282416dd  /tmp/r2e-task.tar.gz' | sha256sum -c -",
+        "sudo tar -xzf /tmp/r2e-task.tar.gz -C /",
+        "rm -f /tmp/r2e-task.tar.gz"
+      ],
+      "sha256": "e7e582421b3199e94b132756401651df9e3d2941fe964bc65732af7b282416dd",
       "snapshots": {
         "deletable": true,
         "original_after": "any"
       },
-      "task": "namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754"
+      "source": "docker.io/namanjain12/numpy_final@sha256:033d2deb76db7aef88792f64ef23b9364cbdcecc308c8d5c2323fe8625965584",
+      "tarball": "https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/numpy-3c0b4db0b51e-e7e582421b3199e94b132756401651df9e3d2941fe964bc65732af7b282416dd.tar.gz",
+      "task": "namanjain12/numpy_final:3c0b4db0b51ec4f4b67f63d647d8f8a668b7e754",
+      "workdir": "/testbed"
     },
     "id": "numpy-3c0b4db0b51e",
-    "image": "docker.io/namanjain12/numpy_final@sha256:033d2deb76db7aef88792f64ef23b9364cbdcecc308c8d5c2323fe8625965584",
     "label": "numpy-strided-custom-dtype",
-    "version": "sha256:293dfb34052785f6"
+    "version": "sha256:1ecec943d2c4bc26"
   },
   {
     "data": {
+      "recipe": "2dffa165279214b8",
+      "replayable": true,
+      "replayable_reason": "in a fresh standard-image container the setup, the reset and the first five recorded commands of rollout 1 exit as recorded, and the reward command runs",
       "rollouts": [
         "coveragepy-89f44c12465b-run1",
         "coveragepy-89f44c12465b-run2",
         "coveragepy-89f44c12465b-run3",
         "coveragepy-89f44c12465b-run4"
       ],
+      "setup": [
+        "curl -fsSL --retry 3 -o /tmp/r2e-task.tar.gz https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/coveragepy-89f44c12465b-abf2cbb6c08e93b01d13c502dfbbeaeac608f6447ad53def268b6a98e6f87916.tar.gz",
+        "echo 'abf2cbb6c08e93b01d13c502dfbbeaeac608f6447ad53def268b6a98e6f87916  /tmp/r2e-task.tar.gz' | sha256sum -c -",
+        "sudo tar -xzf /tmp/r2e-task.tar.gz -C /",
+        "rm -f /tmp/r2e-task.tar.gz"
+      ],
+      "sha256": "abf2cbb6c08e93b01d13c502dfbbeaeac608f6447ad53def268b6a98e6f87916",
       "snapshots": {
         "deletable": true,
         "original_after": "any"
       },
-      "task": "namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532"
+      "source": "docker.io/namanjain12/coveragepy_final@sha256:6afecc654c3a6afd3e2604864596d646ba3e4c06547b8596f31ca4879126212d",
+      "tarball": "https://github.com/boxrouter/bench-assets/releases/download/r2e-gym-v1/coveragepy-89f44c12465b-abf2cbb6c08e93b01d13c502dfbbeaeac608f6447ad53def268b6a98e6f87916.tar.gz",
+      "task": "namanjain12/coveragepy_final:89f44c12465b16a1ee63eb9e75ce13bb5a42e532",
+      "workdir": "/testbed"
     },
     "id": "coveragepy-89f44c12465b",
-    "image": "docker.io/namanjain12/coveragepy_final@sha256:6afecc654c3a6afd3e2604864596d646ba3e4c06547b8596f31ca4879126212d",
     "label": "coveragepy-behavior-flag-rename",
-    "version": "sha256:e3e09685cbe5310c"
+    "version": "sha256:b0e2d8468082a0d8"
   },
   {
     "data": {

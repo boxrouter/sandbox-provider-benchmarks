@@ -200,17 +200,6 @@ slots:
     casing: sentence
     order: 99
     source: notes.statistics_rules
-  method-independence:
-    purpose: State the trial independence rules, the run checks and the outlier gates; written on Common Methodology.
-    form: structured
-    min_length: 8
-    max_length: 4500
-    name: Method Independence
-    enabled: true
-    required: false
-    casing: sentence
-    order: 99
-    source: notes.independence
   details.latest-result:
     purpose: Retired; measured results are already present in the chart.
     form: forbidden
@@ -859,6 +848,14 @@ methodology_style:
     patterns:
     - '\b(?:seconds|milliseconds|minutes|hours)\b'
     - '\bin (?:µs|ms)\b'
+  - id: methodology-style.no-route-statement
+    text: Public benchmark text never states that the benchmarks run through BoxRouter, BoxRouter Cloud, BoxRouter Core, an adapter or the Cloud API. It says only how and where each figure is measured, for example that it is timed at the client that sends each request, on a monotonic clock.
+    check: forbidden-pattern
+    flags: i
+    patterns:
+    - '\b(?:through|via)\s+(?:BoxRouter|Cloud)\b'
+    - '\bBoxRouter\s+(?:Cloud|Core)\b'
+    - '\bthe\s+Cloud\s+API\b'
   - id: methodology-style.recorded-sizes
     text: A measured byte count (an image's bytes, a recorded fact in a parameter file) is never typed; reader text reads it through an image-size placeholder, which draws it in decimal MB and GB to three significant digits by presentation.byte_size, the way the results panel does. A size that a test, provider or tool defines in binary (the machine's memory, a payload, fio's blocks and file, a billing unit) is drawn in the unit its owner defines and never converted to kB, MB or GB; a rate is shown in the unit its tool reports (fio MiB/s, STREAM GB/s).
     check: recorded-size
@@ -2473,7 +2470,7 @@ presentation:
       - presentation.panel
     target: scope
   - id: tail-fallback-label
-    text: Below the tail floor (fewer successes than the methodology's statistics.tail.min_successes) a unit's p95 is its worst trial, and says so. Every place the chart or table shows that value as p95 ends with the owner's suffix, uses max where lower is better and uses min where higher is better, with the floor read from the methodology and never typed. A unit with the floor or more shows its p95 and no suffix. A statistics menu whose p95 has no unit at the floor greys the p95 option, cannot be picked, and says statistics_selector.p95_unavailable (Fewer than the floor trials) on hover.
+    text: When a suite's pool is below the tail floor (fewer successes than the methodology's statistics.tail.min_successes), its pooled p95 is its worst sample, and the label says so. Every place where the chart or table shows that value as p95 appends the owner's suffix, uses max when lower is better, and uses min when higher is better, with the floor read from the methodology and never typed. A suite whose pool has at least the floor number of samples shows its p95 without a suffix. When no pool in a statistics menu reaches the floor, the menu greys out the p95 option so that it cannot be picked and shows statistics_selector.p95_unavailable (Fewer than the floor trials) on hover.
     severity: error
     predicate:
       kind: schema

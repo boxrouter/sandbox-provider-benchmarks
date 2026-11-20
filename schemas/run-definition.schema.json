@@ -1,0 +1,582 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxrouter.ai/schemas/run-definition.schema.json",
+  "title": "Benchmark run definition",
+  "description": "What one trial of a workload does, machine-readable: parameters/<workload-id>/run.json. The runner reads it and runs it unchanged on every provider; nothing about a provider appears here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "version",
+    "sandboxes",
+    "machine",
+    "steps"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "boxrouter.bench.run/1"
+    },
+    "id": {
+      "description": "The workload id: the methodology document id, and the `workload` field of every result line.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "version": {
+      "description": "Bumped when the definition changes what is measured; copied to `workload_version` on the result line.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "variants": {
+      "description": "File beside this one listing the tasks (variants) of the workload, in the existing workloads.json shape: [{id, data}]. A step string may name `{param:<key>}` to read data.<key> of the variant being run. The variant id is the `task` of the result line. Omit for a workload with one variant.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+\\.json$"
+    },
+    "sandboxes": {
+      "description": "How many sandboxes one trial creates (steps pick one with `sandbox`).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "machine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vcpu",
+        "memory_gib"
+      ],
+      "properties": {
+        "vcpu": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_gib": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "disk_gib": {
+          "description": "Optional minimum disk, asked of create as `disk_min_mib`. Only for a workload that writes more than the smallest default disk holds (Daytona's is 3 GiB); omit it and every provider gives its own default.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "lifetime_s": {
+      "description": "Sandbox lifetime bound passed to create; every sandbox is bounded.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "setup": {
+      "description": "Untimed steps run in order before the first timed step. A failing setup step fails the trial and is recorded as a failed step.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    },
+    "steps": {
+      "description": "Timed steps in order. Each is one SDK operation measured on the runner's monotonic clock. A `destroy` step is timed; the runner destroys every sandbox on every path whether or not the list names it.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    },
+    "shuffle": {
+      "description": "Ids of timed steps that sit next to each other in `steps` and run in an order shuffled per trial (a seeded shuffle keyed by the trial id); the runner records the position each ran in on its step and the seed on the line. For rows of one trial that must not always run in the same order.",
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9_-]*$"
+      }
+    },
+    "handler": {
+      "description": "Name of one short Python function in the runner's handlers module for a workload the step list cannot express (for example replay, github_actions). The function receives the trial shell and this document; `steps` may then be empty of commands and only name what is recorded.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "requirements": {
+      "description": "Capability requirements sent verbatim on create (for example previews: {access, ports}); the runner does not interpret them. A provider that cannot meet them shows the cell as missing.",
+      "type": "object"
+    },
+    "modes": {
+      "description": "Alternative ways to run the trial, in order of preference. Before any trial the runner asks Cloud's match, for each provider, whether a create with a mode's `requirements` has a route, and runs the provider's cells in the first mode that has one (else the first mode); the mode id is the line's `mode`. Chosen from the provider's declared capabilities, never its name. Replaces top-level `requirements`.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "requirements"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*$"
+          },
+          "requirements": {
+            "description": "Capability requirements sent on create in this mode.",
+            "type": "object"
+          },
+          "skip": {
+            "description": "Step ids not sent in this mode; a skipped step's `delay_s` still elapses before the next step sent.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "standby": {
+            "description": "Validity check: the sandbox's uptime must stand still at least `min_s` between the end of step `after` and the start of step `before` (both `clock_reads` execs), read against the runner's monotonic gap between them; otherwise the trial fails at `before`, owned by the provider.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "after",
+              "before",
+              "min_s"
+            ],
+            "properties": {
+              "after": {
+                "type": "string"
+              },
+              "before": {
+                "type": "string"
+              },
+              "min_s": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "not_for": {
+            "description": "Variant ids this mode does not apply to, each with the reason; such a cell gets one unsupported line (`not_applicable`) and no sandbox.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "replay": {
+      "description": "Options of the `replay` handler (trace-replay suites). The commands and display groups come from the suite's protocol file; the task (repo, commit, workdir, setup, env) from the variant. The `cmd` step's `timeout_s` is the limit of each recorded command.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trace"
+      ],
+      "properties": {
+        "trace": {
+          "description": "How the recorded sessions are fetched and read: `deepswe` (a trajectory plus the final patch, checked after the last command) or `terminal-bench` (a trial archive: Bash, Edit and Write calls).",
+          "enum": [
+            "deepswe",
+            "terminal-bench"
+          ]
+        },
+        "protocol": {
+          "description": "File beside run.json with the source URLs, the pinned SHA-256 of the extracted trace set, per-task recorded environment and display groups (default protocol.json).",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+\\.json$"
+        },
+        "network": {
+          "description": "`deny`: a loopback proxy that refuses every host is started untimed and named by the proxy variables during the replay (setup always has the network); `open`: nothing is changed.",
+          "enum": [
+            "deny",
+            "open"
+          ]
+        },
+        "shell": {
+          "description": "The shell each recorded command runs under as `<shell> -c` (default sh).",
+          "enum": [
+            "sh",
+            "bash"
+          ]
+        },
+        "directories": {
+          "description": "Directories created as root during setup, in addition to the task's workdir.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fetch_key": {
+          "description": "A public client key sent as `apikey` and bearer token when fetching the trace archives.",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "param": {
+      "description": "A variant value reference.",
+      "type": "string",
+      "pattern": "^\\{param:[A-Za-z0-9_.]+\\}$"
+    },
+    "upload_file": {
+      "description": "One pinned input file an upload_files step writes into the sandbox.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "to",
+        "sha256"
+      ],
+      "properties": {
+        "name": {
+          "description": "File name inside the workload's parameters assets/ directory, or the published name of an `.artifacts` release asset.",
+          "type": "string"
+        },
+        "to": {
+          "description": "Path written inside the sandbox.",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "SHA-256 digest the file's content is checked against before upload.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "op"
+      ],
+      "properties": {
+        "id": {
+          "description": "Step id; matches the methodology's record_steps. Repeats of a step share it; `steps[].call` is the repeat index.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "op": {
+          "description": "One SDK operation (or, for script, one in-sandbox script run through exec). `reconnect` attaches to an existing sandbox again.",
+          "enum": [
+            "create",
+            "exec",
+            "script",
+            "start_process",
+            "write_file",
+            "read_file",
+            "list_dir",
+            "snapshot",
+            "create_from_snapshot",
+            "pause",
+            "resume",
+            "reconnect",
+            "preview_request",
+            "http_get",
+            "websocket_connect",
+            "destroy",
+            "upload_files"
+          ]
+        },
+        "sandbox": {
+          "description": "Which of the trial's sandboxes the step acts on (1-based; default 1). A list runs the step on each of those sandboxes at the same time. `create` and `create_from_snapshot` create that sandbox.",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          ]
+        },
+        "untimed": {
+          "description": "Run the step in its place in `steps` but leave it off the result line unless it fails (the trial then fails and the failed step is recorded). For work that must come after `create` or after the timed steps: tool installs, data preparation, validity checks. Its time is part of the trial's untimed remainder, never of a timed step.",
+          "type": "boolean"
+        },
+        "timeout_s": {
+          "description": "Per-step timeout. A timeout is measured and recorded (outcome timeout), not hidden.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "repeat": {
+          "description": "Run the step this many times in a row on the same sandbox, each sent when the one before returned; an integer or a {param:key}.",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "$ref": "#/$defs/param"
+            }
+          ]
+        },
+        "delay_s": {
+          "description": "Untimed wait before the step (for workloads whose definition is a wait, such as resume after a delay); an integer (0 waits not at all) or a {param:key}. Nothing is sent to the sandbox during the wait.",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "$ref": "#/$defs/param"
+            }
+          ]
+        },
+        "command": {
+          "description": "exec: the shell command, timed on the client clock; start_process: the long-running process to start. May contain {param:key}.",
+          "type": "string"
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "path": {
+          "description": "write_file, read_file, list_dir: the path inside the sandbox. http_get, websocket_connect: the URL path on the preview. May contain {param:key}.",
+          "type": "string"
+        },
+        "bytes": {
+          "description": "write_file: size of the generated content, in bytes (an integer or a {param:key}).",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "$ref": "#/$defs/param"
+            }
+          ]
+        },
+        "snapshot": {
+          "description": "snapshot: names the snapshot this step produces; create_from_snapshot: the snapshot (by that name) it creates from.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "port": {
+          "description": "start_process (optional), preview_request, http_get, websocket_connect: the sandbox port; http_get and websocket_connect go to that port's preview URL.",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            {
+              "$ref": "#/$defs/param"
+            }
+          ]
+        },
+        "clock": {
+          "description": "Whose clock `duration_ms` comes from. `client` (default; always for create, exec, files, snapshot, pause, resume, reconnect, preview_request, http_get, websocket_connect, destroy): the runner's monotonic clock around the SDK call. `sandbox` (always for script): the figure comes from the script's own output inside the sandbox (see `parse`); the client duration is still recorded. The two are never mixed in one number.",
+          "enum": [
+            "client",
+            "sandbox"
+          ]
+        },
+        "clock_reads": {
+          "description": "exec: wrap the command so the sandbox clock is read just before and after it, and record the difference as `runtime_ms` beside the client `duration_ms`.",
+          "type": "boolean"
+        },
+        "parse": {
+          "description": "exec: name of a tool parser in the runner's parsers module (for example 7zip, stream, fio) that turns the command's output into `value` and `unit` on the step line.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "script": {
+          "description": "script: a multi-line shell script run inside the sandbox in the background and polled until it exits; the sandbox clock times it (clock is `sandbox`), and `parse` reads its output. May contain {param:key}.",
+          "type": "string"
+        },
+        "until_status": {
+          "description": "http_get: poll the URL, each request sent when the one before returned, until it answers with this status or the step times out; the step's time is the whole wait. Without it the step is one request.",
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "asset": {
+          "description": "write_file: write this pinned tool file (by its published name) instead of generated `bytes`. The runner checks the file's SHA-256 against `sha256` before writing it; the content never comes from the provider.",
+          "type": "string",
+          "pattern": "^(\\{param:[A-Za-z0-9_.]+\\}|[A-Za-z0-9][A-Za-z0-9._-]*)$"
+        },
+        "expect_body": {
+          "description": "http_get: the response body that counts as the answer. With until_status the poll continues until both the status and this body match (a 200 with another body is another attempt); without it each response must match or the step fails.",
+          "type": "string"
+        },
+        "subprotocol": {
+          "description": "websocket_connect: the websocket subprotocol to request.",
+          "type": "string"
+        },
+        "expect": {
+          "description": "websocket_connect: the first server message must be JSON containing these key/value pairs, or the step fails. May be a {param:key} reference.",
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "$ref": "#/$defs/param"
+            }
+          ]
+        },
+        "files": {
+          "description": "upload_files: the pinned files to write inside the sandbox, as [{name, to, sha256}]. `name` resolves against the workload's parameters assets/ directory or the `.artifacts` release-asset directory, `to` is the path written inside the sandbox, `sha256` the digest checked before upload. A {param:key} reads the variant's list.",
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/upload_file"
+              }
+            },
+            {
+              "$ref": "#/$defs/param"
+            }
+          ]
+        },
+        "optional": {
+          "description": "A failure or timeout of this step is recorded on its line but does not fail the trial (for example a capability probe such as a websocket upgrade).",
+          "type": "boolean"
+        },
+        "sha256": {
+          "description": "write_file with `asset`: the file's SHA-256, lower-case hex.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "exec"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "command"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "script"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "script"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "start_process"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "command"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "write_file",
+                  "read_file",
+                  "list_dir"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "write_file"
+              }
+            }
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "bytes"
+                ]
+              },
+              {
+                "required": [
+                  "asset",
+                  "sha256"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "snapshot",
+                  "create_from_snapshot"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "snapshot"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "preview_request",
+                  "http_get",
+                  "websocket_connect"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "port"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "upload_files"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "files"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

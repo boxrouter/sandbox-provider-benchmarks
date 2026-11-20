@@ -51,7 +51,7 @@ LITERALS = [
     (
         "contracts/text/asked-vs-measured.json",
         "/asked_vs_measured_asked/template",
-        "The benchmark requested this {name:tab.cpu} and memory size through BoxRouter.",
+        "The benchmark requested this {name:tab.cpu} and memory size from the provider.",
     ),
     (
         "contracts/text/hover-templates.json",

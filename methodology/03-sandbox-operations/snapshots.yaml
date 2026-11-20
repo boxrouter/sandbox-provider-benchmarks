@@ -14,6 +14,14 @@ notes:
   cost_how_to_read: Only successful trials contribute to the cost value.
 inherits: sbs.common
 metrics:
+- name: total_time
+  unit: ms
+  direction: lower_is_better
+  description: The source's snapshot, the fork's create from snapshot and its first commands added, for each
+    fork.
+  quantity: time
+  per: sandbox
+  formula: trial_sum(total(snapshot)) + total(create-from-snapshot) + sum(total(exec))
 - name: create_from_snapshot
   unit: ms
   direction: lower_is_better
@@ -27,7 +35,7 @@ metrics:
   description: Median time for the first Python, Node and git commands in each fork.
   quantity: time
   per: sandbox
-  formula: total(exec)
+  formula: sum(total(exec))
 environment:
   size:
     vcpu: 2
@@ -39,6 +47,10 @@ environment:
 clocks:
   operation: Job-host monotonic clock around create and command calls.
   command_runtime: Sandbox clock around the first command after each restore.
+default_view:
+  metric: total_time
+  variant: marker-4-forks
+  sandbox: 2
 procedure:
   mode: sequential
   trials: 40
@@ -60,6 +72,8 @@ procedure:
   steps:
   - id: create
     name: Create source sandbox
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a sandbox with snapshot support and pass the untimed ready check.
     timer: null
     timeout_seconds: 300
@@ -67,6 +81,8 @@ procedure:
     - create
   - id: snapshot
     name: '{name:stage.snapshot}'
+    label: '{name:stage.snapshot}'
+    show: stack
     action: Write a marker, then request a snapshot.
     timer: null
     timeout_seconds: 600
@@ -79,6 +95,8 @@ procedure:
     timeout_seconds: 300
   - id: restore
     name: Create fork
+    label: Create from snapshot
+    show: stack
     action: Create one new sandbox from the snapshot after the preceding sandbox is confirmed gone.
     timer:
       from: the create-from-snapshot request
@@ -90,6 +108,8 @@ procedure:
     - create-from-snapshot
   - id: first_commands
     name: '{name:stage.load-runtimes}'
+    label: Load runtimes
+    show: stack
     action: Run the Python import, Node built-in and git version command immediately after each fork is
       created.
     timer:
@@ -141,7 +161,6 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 20
 cost:
   method: provider_reported_or_priced
   counted_sandboxes: Each of the unit's five sandboxes.
@@ -207,45 +226,6 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: exception
-    text: Each trial creates an original sandbox and four forks of it one after another. The five describe
-      one fork sequence reported by position, and no sandbox is shared across trials.
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: The first fork is cold and forks two to four follow it and may use the provider's cache, which
-      is stated. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.
-
 ---
 id: snapshot-and-restore
 effective: '2026-11-08'
@@ -265,6 +245,13 @@ notes:
   cost_how_to_read: Only successful trials contribute to the cost value.
 inherits: sbs.common
 metrics:
+- name: total_time
+  unit: ms
+  direction: lower_is_better
+  description: The snapshot, the create from snapshot and the first commands added.
+  quantity: time
+  per: sandbox
+  formula: trial_sum(total(snapshot)) + total(create-from-snapshot) + sum(total(exec))
 - name: snapshot_time
   unit: ms
   direction: lower_is_better
@@ -285,7 +272,7 @@ metrics:
   description: Time for the first Python, Node and git commands to return from the restored sandbox.
   quantity: time
   per: sandbox
-  formula: total(exec)
+  formula: sum(total(exec))
 environment:
   size:
     vcpu: 2
@@ -297,6 +284,10 @@ environment:
 clocks:
   operation: Job-host monotonic clock around snapshot, restore and command calls.
   command_runtime: Sandbox clock for the first command after restore.
+default_view:
+  metric: total_time
+  variant: marker
+  sandbox: 2
 procedure:
   mode: sequential
   trials: 40
@@ -320,6 +311,8 @@ procedure:
   steps:
   - id: create
     name: Create source sandbox
+    label: '{name:stage.create}'
+    show: hidden
     action: Create a new sandbox with snapshot support and pass the untimed ready check.
     timer: null
     timeout_seconds: 300
@@ -332,6 +325,8 @@ procedure:
     timeout_seconds: 30
   - id: snapshot
     name: '{name:stage.snapshot}'
+    label: '{name:stage.snapshot}'
+    show: stack
     action: Request a snapshot immediately after the marker write.
     timer:
       from: the snapshot request
@@ -347,6 +342,8 @@ procedure:
     timeout_seconds: 300
   - id: restore
     name: '{name:stage.create-from-snapshot}'
+    label: Create from snapshot
+    show: stack
     action: Create a new sandbox from the snapshot after the source sandbox is confirmed gone.
     timer:
       from: the create-from-snapshot request
@@ -357,6 +354,8 @@ procedure:
     - create-from-snapshot
   - id: first_commands
     name: '{name:stage.load-runtimes}'
+    label: Load runtimes
+    show: stack
     action: Run the pinned Python import, Node built-in and git version command immediately after restore,
       without a ready check first.
     timer:
@@ -373,6 +372,8 @@ procedure:
     timeout_seconds: 30
   - id: destroy
     name: Destroy restored sandbox
+    label: '{name:stage.destroy}'
+    show: hidden
     action: Destroy and confirm the restored sandbox is gone; delete and check the snapshot.
     timer: null
     timeout_seconds: 300
@@ -411,7 +412,6 @@ statistics:
     - median
   ranking:
     ranked: true
-    min_successes: 20
 cost:
   method: provider_reported_or_priced
   notes:
@@ -479,41 +479,3 @@ source:
 execution:
   mode: script
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: exception
-    text: 'Each trial uses two sandboxes: one writes a marker and is snapshotted, then a new one is created
-      from that snapshot. The pair is one sample and no sandbox or snapshot is shared across trials.'
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: The restore is the first create from that trial's own snapshot; later trials make their own.
-      The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

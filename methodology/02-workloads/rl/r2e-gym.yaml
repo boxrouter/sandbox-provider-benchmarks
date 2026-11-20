@@ -34,21 +34,22 @@ environment:
     vcpu: 2
     memory_gib: 4
   image:
-    reference: Each task's own image, pinned by digest (docker.io/namanjain12/<repository>_final@sha256:<digest>);
-      the digests are in the parameters' workloads.json.
-    modification: Prepared in each account before the run. Sandboxes 2 to 5 start from a snapshot of sandbox
-      1 taken after the environment reset.
+    reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
+    modification: None. Before the first timed step, an untimed setup unpacks each task's prebuilt environment
+      archive in sandbox 1, with nothing added to the image. Sandboxes 2 to 5 start from a snapshot of sandbox 1
+      taken after the environment reset.
   network: unknown
   lifetime_seconds: 900
+default_view: {}
 procedure:
   mode: sequential
-  trials: 20
+  trials: 10
   sandboxes_per_trial: 5
   concurrency:
     trials_in_parallel: 10
     sandboxes_at_once: 1
   warm_cold_policy:
-    policy: Sandbox 1 is created from the task's prepared image and reset; sandboxes 2 to 5 are created
+    policy: Sandbox 1 starts from the provider's prepared copy of the standard image and runs the environment reset; sandboxes 2 to 5 are created
       one after another from its snapshot, each only after the previous one has been probed, destroyed
       and confirmed gone. The restore request names no capability. The snapshot is deleted and checked
       gone after the last sandbox. Providers without create-from-snapshot are not measured.
@@ -106,7 +107,7 @@ procedure:
   stages:
   - id: setup
     name: '{name:stage.setup}'
-    description: Sandbox 1 is created from the task's prepared image, {name:test.r2e-gym}'s environment
+    description: Sandbox 1 starts from the provider's prepared copy of the standard image, {name:test.r2e-gym}'s environment
       is reset in it and it is snapshotted.
     record_steps:
     - create
@@ -134,7 +135,9 @@ procedure:
   steps:
   - id: create
     name: '{name:stage.create}'
-    action: Start sandbox 1 from the task's prepared image, with the snapshots capability requested.
+    label: '{name:stage.create}'
+    show: stack
+    action: Start sandbox 1 from the provider's prepared copy of the standard image with the snapshots capability requested.
     timer:
       from: the create request
       until: the create call returns
@@ -150,6 +153,8 @@ procedure:
     timer: null
   - id: reset
     name: Reset
+    label: Reset
+    show: stack
     action: After an untimed upload of {name:test.r2e-gym}'s four tools, run {name:test.r2e-gym}'s environment
       reset commands in order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started
       in the background.
@@ -164,6 +169,8 @@ procedure:
     - 1
   - id: snapshot
     name: '{name:stage.snapshot}'
+    label: '{name:stage.snapshot}'
+    show: stack
     action: Create a snapshot of sandbox 1, sent after the reset script ended with nothing sent in between.
     timer:
       from: the snapshot request
@@ -175,6 +182,8 @@ procedure:
     - 1
   - id: restore
     name: '{name:stage.create-from-snapshot}'
+    label: Create from snapshot
+    show: stack
     action: For each of sandboxes 2 to 5, create a sandbox from the snapshot once the previous sandbox
       is confirmed gone.
     timer:
@@ -191,6 +200,8 @@ procedure:
     - 5
   - id: tool_calls
     name: '{name:stage.tool-calls}'
+    label: Tool call
+    show: stack
     action: 'Replay one rollout''s tool calls back to back in recorded order as one script started in
       the background in sandbox 2, 3, 4 or 5, each as {name:test.r2e-gym} ran it: `timeout 90 <tool> <arguments>`
       under `sh -c` in /testbed.'
@@ -208,6 +219,8 @@ procedure:
     - 5
   - id: reward
     name: '{name:stage.reward}'
+    label: '{name:stage.reward}'
+    show: stack
     action: After an untimed command reads the rollout's patch, run {name:test.r2e-gym}'s reward command
       (`timeout 300 bash /root/run_tests.sh`).
     timer:
@@ -224,6 +237,8 @@ procedure:
     - 5
   - id: destroy
     name: '{name:stage.destroy}'
+    label: '{name:stage.destroy}'
+    show: stack
     action: After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
       the last sandbox, delete the snapshot and check it is gone, untimed.
     timer:
@@ -242,13 +257,12 @@ statistics:
   percentile_method: Nearest rank over successful trials; nothing trimmed.
   ranking:
     ranked: true
-    min_successes: 180
     requires_all_successful: false
 cost:
   method: provider_reported_or_priced
 parameters:
   path: parameters/r2e-gym/
-  sha256: f195d4340305f72639d16f2c43977ba738bde628b147d3d1ce500990ecf56671
+  sha256: 687c713cc3de0ac797bc122677b2f32d9cff95f91fa9f653ee09be95e0990abe
 capabilities:
   required:
   - snapshots
@@ -287,8 +301,8 @@ failure_policy:
     tool_calls: 120
     reward: 330
     destroy: 300
-  retries: None; the first failed step ends the trial. A top-up run refills every missed, excluded or
-    failed slot whoever owned the failure; each failed trial stays in the data with its owner and cause.
+  retries: None inside a trial; the first failed step ends the trial. When a trial fails, a new trial runs in its
+    place up to the run's attempt limit for that cell, regardless of who owned the failure, and each failed trial remains in the data with its owner and cause.
   success: unknown
   provider_errors:
   - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
@@ -306,7 +320,7 @@ source:
   version: dataset revision e5b8a7278660c7fec9dc11e1c29b4dc43b55fd1e; {name:test.r2e-gym} commit 9a3c2495ab69a3ca1e85f395c308bc6f72d4161f
   ids:
   - rollout set sha256:c2197767f1543b7fdac97ab896c03e3d1d2f733402b0a3b214cf9117455a2635
-  - 10 tasks (nine numpy, one coveragepy) with four rollouts each, ids <task>-run1 to <task>-run4
+  - 10 tasks (nine numpy and one coveragepy, from which the run's configuration selects which tasks to run, 5 by default) with four rollouts each, ids <task>-run1 to <task>-run4
   - 'tool sha256: file_editor d8f75b486a6a1e0d34b2c518465129e2bd214477cce67a3de895c3c2b526a596, search
     45dd41c6df73019f37f889c107a41dd85bd80da0107292d638596cc8cb6ddc9c, execute_bash 01c4bca1dff8eb7814a20dd447211df443fe6acb68ee2fbebe392f0854d9ce32,
     finish fbf1d05339d74a9d89ae43fbd7c84aa67d9015f2e85a00bc051874f72e56ebff'
@@ -317,42 +331,3 @@ source:
 execution:
   mode: trace_replay
   inference: false
-independence_answers:
-  fresh_sandbox:
-    status: exception
-    text: 'Each task uses five sandboxes: the first is created from the prepared image and snapshotted,
-      and four rollouts run in sandboxes restored from that snapshot. The task, not the sandbox, is the
-      sample, and nothing is shared across tasks.'
-  equal_concurrency:
-    status: meets
-    text: Up to 10 trials at once for every provider, the same number for each.
-  shuffled_order:
-    status: meets
-    text: The benchmark's position in each provider's chain is shuffled per run with the seed recorded,
-      and the pair's trials run in 4 rounds.
-  caches:
-    status: meets
-    text: The task's image is prepared ahead and the snapshot is created in the trial, so each task meets
-      its own snapshot only. The provider's image caches stay on.
-  job_host:
-    status: meets
-    text: Direct operation times use the job host's monotonic clock and command runtimes use the sandbox's
-      own clock; Cloud operation durations use the API server's monotonic clock and each call's stall is
-      checked against the configured bound.
-  shared_provider_hosts:
-    status: meets
-    text: Up to 9 other trials of the pair's batch may be in flight on the provider's hosts; the number
-      in flight is recorded for each trial.
-  empty_account:
-    status: meets
-    text: The account is checked empty before the provider's chain, and the count of other live sandboxes
-      is recorded at each batch's start and end.
-  placement_facts:
-    status: meets
-    text: Each trial records its CPU model and count, kernel, and working-directory device and file system. Direct also records job-host load over each trial's window; Cloud timing records per-call API-server stall.
-  run_check:
-    status: meets
-    text: The run's independence check covers the pair on its main metric with the common thresholds.
-  outliers:
-    status: meets
-    text: Values are excluded only by the common outlier and physical-limit rule, with the reason recorded.

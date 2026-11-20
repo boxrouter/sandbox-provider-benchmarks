@@ -7,57 +7,31 @@ path = [
   "NOTICE",
   "methodology/**",
   "parameters/*/protocol.json",
+  "parameters/*/run.json",
   "parameters/*/workloads.json",
   ".gitignore",
   ".pre-commit-config.yaml",
   "contracts/text/1.0.0.json",
-  "contracts/pre-template-ids.json",
-  "contracts/procedures/*.json",
   "contracts/text/chart-bindings.json",
   "Makefile",
   "README.md",
   "SECURITY.md",
-  "docs/fields.md",
-  "docs/operation-timing.md",
-  "docs/RUNBOOK.md",
   "pyproject.toml",
-  "reference-tests/cpu/README.md",
-  "reference-tests/disk/README.md",
-  "reference-tests/disk/disk.fio",
-  "reference-tests/filesystem/README.md",
-  "reference-tests/memory/README.md",
-  "reference-tests/network/README.md",
   "ruff.toml",
   "schemas/*.schema.json",
   "src/sandbox_benchmark_verifier/py.typed",
-  "tests/fixtures/reference-tests/cpu.txt",
-  "tests/fixtures/reference-tests/disk/rand_read.json",
-  "tests/fixtures/reference-tests/disk/rand_write.json",
-  "tests/fixtures/reference-tests/disk/seq_read.json",
-  "tests/fixtures/reference-tests/disk/seq_write.json",
-  "tests/fixtures/reference-tests/filesystem.yaml",
-  "tests/fixtures/reference-tests/memory.txt",
-  "tests/fixtures/reference-tests/network/git_clone.json",
-  "tests/fixtures/reference-tests/network/npm_ci.json",
-  "tests/fixtures/reference-tests/network/pip_install.json",
-  "tests/fixtures/shapes/pause_resume.json",
-  "tests/fixtures/shapes/reconnect.json",
-  "tests/fixtures/shapes/snapshot.json",
+  "src/sandbox_benchmark_verifier/results.schema.json",
+  "src/sandbox_benchmark_verifier/stats-vectors.json",
+  "tests/fixtures/results-example.json",
   "uv.lock",
 ]
 SPDX-FileCopyrightText = "BoxRouter, Inc."
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = "procedures/**"
-SPDX-FileCopyrightText = "BoxRouter, Inc."
-SPDX-License-Identifier = "LicenseRef-PolyForm-Shield-1.0.0"
-
-[[annotations]]
 path = [
   "names/aliases.yaml",
   "names/names.yaml",
-  "data/README.md",
   "contracts/text/asked-vs-measured.json",
   "contracts/text/drill-down-rows.json",
   "contracts/text/fact-list.json",
@@ -68,9 +42,9 @@ path = [
   "contracts/text/index-copy.json",
   "methodology/**",
   "parameters/*/protocol.json",
+  "parameters/*/run.json",
   "parameters/*/workloads.json",
-  "runs/README.md",
-  "traces/README.md",
+  "parameters/*/run.json",
 ]
 SPDX-FileCopyrightText = "BoxRouter, Inc."
 SPDX-License-Identifier = "CC-BY-4.0"
