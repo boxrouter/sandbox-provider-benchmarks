@@ -47,16 +47,18 @@ interpretation:
     sandbox's user, which may be root.
   - The spotify-player job is also measured by RunsOn's open runner benchmark.
   - A step that crashes still shows its abort in its output.
-  informs: How fast and how costly a provider is for the install, lint, test and build steps of a real
-    CI job.
+  informs: How fast and how costly a provider is for the lint, test and build steps of a real CI job.
   limits:
   - The same job is replayed with no caches for every trial.
+  - The job time leaves out the setup steps (checkout, toolchain, system packages and dependency install).
+    They mostly download from public package mirrors and CDNs, whose speed changes from hour to hour
+    for every provider alike; they are timed and listed apart.
   - Tools normally preinstalled for hosted CI jobs are fetched or installed in separate steps.
   - Each step runs as a non-root sandbox user; job `sudo` lines may run as root.
-  what_to_do: Compare which provider runs CI-style install, lint, test and build work fastest and at what
-    cost.
+  what_to_do: Compare which provider runs CI-style lint, test and build work fastest and at what cost.
 metrics:
-- description: Sum of the job's steps' runtimes, each by the sandbox's own clock.
+- description: Sum of the job's lint, test and build steps' runtimes, each by the sandbox's own clock; the
+    setup steps are not included.
   direction: lower_is_better
   name: job_time
   per: job
@@ -76,11 +78,12 @@ notes:
   cost_how_to_read: Only successful trials contribute to the cost value.
   cost_summary: The cost covers sandbox creation through confirmed destruction per successful job trial.
   how_it_is_measured: Each pinned public repository job is replayed in a fresh sandbox; step runtimes
-    use the sandbox clock.
+    use the sandbox clock. The job time sums the lint, test and build steps; setup steps are timed apart.
   how_to_read: The {param:github-actions.statistics.primary} summarizes successful trials in the
     axis unit; {direction:job_time}.
   summary: Each selected repository job runs its recorded steps in a fresh sandbox.
-  what_this_measures: The result sums the selected jobs’ step runtimes using the sandbox clock.
+  what_this_measures: The result sums the selected jobs’ lint, test and build step runtimes using the
+    sandbox clock, after setup.
 parameters:
   path: parameters/github-actions/
   sha256: c95ec83910058a173925f9dc6848e9b71cc5ed2a4b368d8a9db409831625c983
@@ -97,7 +100,7 @@ procedure:
     id: install
     name: '{name:stage.install}'
     record_steps:
-    - cmd
+    - setup
   - description: The job's check steps, such as format, type and lint checks.
     id: lint
     name: '{name:stage.lint}'
@@ -129,7 +132,23 @@ procedure:
     id: ready_check
     name: Ready check
     timer: null
-  - action: Run the selected job's steps back to back in workflow order as one script started in the background.
+  - action: Run the job's setup steps (checkout, toolchain, system packages and dependency install) first,
+      each as one script started in the background, the same way as the job steps below. Each is timed by
+      the sandbox's own clock and listed apart; the job time does not include them, because they mostly
+      download from public package mirrors and CDNs whose speed changes independently of the sandbox.
+    id: setup_steps
+    name: Setup step
+    label: Setup step
+    show: table
+    record_steps:
+    - setup
+    repeats: true
+    timeout_seconds: 600
+    timer:
+      start_event: The step starts, by the sandbox's own clock.
+      stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between two
+        consecutive readings.
+  - action: Run the rest of the selected job's steps back to back in workflow order, each as one script started in the background.
       A `run:` line is used as written; a `uses:` step is represented by the commands that do its work,
       such as checkout or toolchain download. Tools normally preinstalled for hosted CI jobs are fetched
       or installed in a separate step. Each step runs under bash as a non-root sandbox user, with no input,
@@ -280,7 +299,7 @@ statistics:
     min_successes: 20
     worse_side_percentile: 95
 timing_boundaries:
-  start: The first step of the job starts in the sandbox.
+  start: The first lint, test or build step of the job starts in the sandbox, after setup.
   stop: The last step of the job exits.
 validity_checks:
 - check: Every step must exit 0. A step that exits non-zero ends the trial and does not replay here, except
