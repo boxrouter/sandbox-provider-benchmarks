@@ -23,9 +23,8 @@ import sandbox_benchmark_verifier
 SCHEMA_PATH = Path(sandbox_benchmark_verifier.__file__).parent / "results.schema.json"
 EXAMPLE_PATH = Path(__file__).parent / "fixtures" / "results-example.json"
 
-MAX_BYTES = (
-    25 * 1024 + 512
-)  # 1.9.0: +1 KiB timing_excluded; 1.11.0: +0.5 KiB cell unsupported reason
+# 1.9.0: +1 KiB timing_excluded; 1.11.0: +0.5 KiB unsupported reason; 1.12.0: +0.5 KiB larger_size
+MAX_BYTES = 26 * 1024
 MAX_DEFINITIONS = 15
 READ_BY = re.compile(r"Read by: ([a-z-]+(?:, [a-z-]+)*)\.$")
 

@@ -5,6 +5,7 @@
   "version": 1,
   "variants": "workloads.json",
   "sandboxes": 1,
+  "kind": "machine-performance",
   "machine": {
     "vcpu": 2,
     "memory_gib": 4

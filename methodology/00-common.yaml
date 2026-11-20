@@ -6,6 +6,10 @@ environment:
   size:
     vcpu: 2
     memory_gib: 4
+  size_policy: Operation benchmarks (create, commands, files, pause and resume, snapshots, forks, reconnects and
+    previews) run on the provider's smallest size that holds the stated size; a result from a larger size is
+    flagged with the size it ran on. Machine-performance and workload benchmarks run only on a size no larger than
+    the stated one.
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
   region_policy: The provider's US region, never a narrower one, with one named exception. Boat has no

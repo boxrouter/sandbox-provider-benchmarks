@@ -3,7 +3,7 @@
   "$id": "https://boxrouter.ai/schemas/bench/results.schema.json",
   "title": "Benchmark results",
   "description": "results.json: what `bench summarize` derives from one run's run.jsonl, and the only data the benchmarks pages read. Labels, units, better direction, step order and colours come from the pinned methodology release; this file carries ids and numbers. Every property's description ends with `Read by:` and the ids of the readers (see `readers`) that draw it. Read by: build.",
-  "schema_version": "1.11.0",
+  "schema_version": "1.12.0",
   "readers": {
     "build": "The web build: pin and version checks, the join keys every panel selects cells by, the provider pages and sitemap it draws.",
     "downloads": "/benchmarks/results.json, run.jsonl, results.md and llms.txt, and their immutable run addresses.",
@@ -102,6 +102,10 @@
         "unsupported": {"type": "object", "additionalProperties": false, "required": ["code", "reason"], "description": "Unsupported cells: the line's code (`not_applicable`, `size_larger_than_asked`, a refusal's) and reason. Read by: states.", "properties": {
           "code": {"type": ["string", "null"], "description": "Read by: states."},
           "reason": {"type": ["string", "null"], "description": "Read by: states."}
+        }},
+        "larger_size": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory_mib"], "description": "An operation cell run at the provider's smallest size that holds the asked one, larger in CPU or memory; flag it. Read by: states.", "properties": {
+          "cpu": {"type": "number", "description": "vCPU. Read by: states."},
+          "memory_mib": {"type": "number", "description": "Memory in MiB. Read by: states."}
         }},
         "metrics": {"$ref": "#/$defs/SeriesMap", "description": "One series per methodology metric name. Read by: bars, hover."},
         "steps": {"$ref": "#/$defs/SeriesMap", "description": "One series per procedure step id. Read by: steps, hover."},

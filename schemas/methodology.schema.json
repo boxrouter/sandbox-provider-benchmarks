@@ -386,6 +386,10 @@
             }
           }
         },
+        "size_policy": {
+          "type": "string",
+          "description": "Which size a provider runs the benchmark on when its smallest size that holds the requested one is larger."
+        },
         "image": {
           "type": "object",
           "additionalProperties": false,

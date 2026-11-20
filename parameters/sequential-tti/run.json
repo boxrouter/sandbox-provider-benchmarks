@@ -5,6 +5,7 @@
   "version": 1,
   "variants": "workloads.json",
   "sandboxes": 1,
+  "kind": "operation",
   "machine": { "vcpu": 2, "memory_gib": 4 },
   "lifetime_s": 300,
   "steps": [
