@@ -110,6 +110,16 @@ def test_example_covers_every_cell_state_and_a_pool() -> None:
     assert example["pools"]
 
 
+@pytest.mark.parametrize(
+    ("provider", "valid"),
+    [("modal#vm", True), ("daytona#container", True), ("modal#", False), ("a#b#c", False)],
+)
+def test_a_provider_id_may_name_its_class(provider: str, valid: bool) -> None:
+    example = copy.deepcopy(_example())
+    example["cells"][0]["provider"] = provider
+    assert _validator().is_valid(example) is valid
+
+
 def _with(change: str) -> dict[str, Any]:
     example = copy.deepcopy(_example())
     complete = next(cell for cell in example["cells"] if cell["state"] == "complete")

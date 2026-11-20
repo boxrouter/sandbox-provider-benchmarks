@@ -3,7 +3,7 @@
   "$id": "https://boxrouter.ai/schemas/bench/results.schema.json",
   "title": "Benchmark results",
   "description": "results.json: what `bench summarize` derives from one run's run.jsonl, and the only data the benchmarks pages read. Labels, units, better direction, step order and colours come from the pinned methodology release; this file carries ids and numbers. Every property's description ends with `Read by:` and the ids of the readers (see `readers`) that draw it. Read by: build.",
-  "schema_version": "1.12.0",
+  "schema_version": "1.13.0",
   "readers": {
     "build": "The web build: pin and version checks, the join keys every panel selects cells by, the provider pages and sitemap it draws.",
     "downloads": "/benchmarks/results.json, run.jsonl, results.md and llms.txt, and their immutable run addresses.",
@@ -49,8 +49,8 @@
   "$defs": {
     "Id": {
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9._-]*$",
-      "description": "A methodology or provider id, never a sentence. Read by: build."
+      "pattern": "^[a-z0-9][a-z0-9._-]*(#[a-z0-9][a-z0-9._-]*)?$",
+      "description": "A methodology or provider id, never a sentence; a provider is `<provider>#<class>` once its class is known. Read by: build."
     },
     "Run": {
       "type": "object",
