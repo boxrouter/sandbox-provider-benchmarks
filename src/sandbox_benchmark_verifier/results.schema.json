@@ -91,7 +91,7 @@
             "failed": {"type": "integer", "minimum": 0, "description": "Trials that did not succeed whose owner is the provider or unknown (RULES.md 10). Read by: failures, hover."},
             "excluded": {"type": "integer", "minimum": 0, "description": "Trials that did not succeed whose owner is BoxRouter. Read by: failures, hover."},
             "uncertain": {"type": "integer", "minimum": 0, "description": "Trials whose outcome is uncertain, counted apart. Read by: run-chip."},
-            "timing_excluded": {"type": "integer", "minimum": 0, "description": "Successes with a step without a trusted provider time. Read by: run-chip."}
+            "timing_excluded": {"type": "integer", "minimum": 0, "description": "Successes with a step lacking a measured `provider_transport` time. Read by: run-chip."}
           }
         },
         "failures": {
