@@ -32,7 +32,7 @@ failure_policy:
   - A step that starts one worker per reported CPU (fastapi's `pytest -n auto`) on a sandbox that reports
     more CPUs than were asked for.
   - A failure whose owner is uncertain.
-  retries: None inside a trial; the first non-zero step ends the trial. When a trial fails, a new trial runs in its
+  retries: None inside a trial, except that a setup download an upstream registry refuses for load (HTTP 429, 502, 503 or 504) is repeated in place, with backoff, within that step's timeout; the first non-zero step ends the trial. When a trial fails, a new trial runs in its
     place up to the run's attempt limit for that cell, regardless of who owned the failure, and each failed trial remains in the data with its owner and cause.
   success: Every step exits 0 and the sandbox is confirmed deleted.
   timeout_seconds:
