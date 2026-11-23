@@ -8,7 +8,7 @@ notes:
   how_to_read: The {param:image-build-2vcpu-4gib.statistics.primary} is shown in {unit:image_build_time};
     {direction:image_build_time}.
   summary: Pinned base images are prepared with one new layer at the selected machine size.
-  how_it_is_measured: A job-host monotonic clock times image preparation from dispatch until the provider
+  how_it_is_measured: Provider time covers image preparation from dispatch until the provider
     call returns. Each trial uses a pinned base image with a new layer.
 inherits: sbs.common
 metrics:

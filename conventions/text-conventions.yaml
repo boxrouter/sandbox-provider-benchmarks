@@ -1033,16 +1033,11 @@ methodology_style:
     max_item_length: 1200
     min_items: 3
     min_item_length: 40
-    exempt_paragraphs:
-    - starts: The remaining pool is stratified across
-      reason: One sentence that names the ten selected traces after its colon.
-    - starts: Because steps fetch from live external registries
-      reason: One sentence that classifies one outcome two ways; two items are not a list.
   - id: methodology-style.one-numbered-list
     text: A test page's trial steps are its one numbered list; every other list in its reader text is "- " lines.
     check: one-numbered-list
   - id: methodology-style.measurement-prose-not-steps
-    text: The Measurement prose (Setup and the workload and procedure notes) says what the trial steps cannot, such as the image, the inputs and the reason for a choice, and never retells a step; the check refuses the lifecycle steps every trial has (creating the sandbox, the untimed readiness check and destroying the sandbox).
+    text: The Measurement prose (Setup and the workload and procedure notes) says what the trial steps cannot, such as the image, the inputs and the reason for a choice, and never retells a step; the check refuses the lifecycle steps every trial has (creating the sandbox and destroying the sandbox).
     check: forbidden-pattern
     flags: i
     fields:
@@ -1056,7 +1051,6 @@ methodology_style:
     patterns:
     - '\bcreat(?:e|es|ing) (?:a fresh|a new|one) sandbox\b'
     - '\bsandbox is created\b'
-    - '\buntimed readiness check\b'
     - '\bdestroy(?:s|ed|ing)?\b[^.]*\bsandbox\b'
     - '\bsandbox is (?:destroyed|confirmed gone)\b'
 taxonomy_order:

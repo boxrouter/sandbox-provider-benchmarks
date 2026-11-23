@@ -6,8 +6,8 @@ cost:
 effective: '2026-11-08'
 environment:
   image:
-    modification: Prepared with 4 vCPU and 8 GiB before the run; nothing is added per trial.
-    reference: A prepared Linux image for the selected job.
+    modification: None. Every checkout, toolchain and dependency is fetched in the trial's own setup steps.
+    reference: BoxRouter's pinned standard image.
   lifetime_seconds: 2700
   network: Open; steps clone the repository and download toolchains and dependencies, so a network failure
     in a setup step can fail a trial.
@@ -21,20 +21,14 @@ failure_policy:
   benchmark_errors:
   - A failure of the benchmark's own script.
   exclusions:
-  - Any other non-zero step does not replay on that provider and is excluded with its step and exit code.
-  - A setup failure that every provider's sandbox shows alike is external and excluded.
+  - An error shown to be BoxRouter's.
   provider_errors:
   - Create and transport errors, and a sandbox that stops answering.
-  - A step whose output says the disk was full.
-  - A setup step (checkout, toolchain, install, system packages) whose output names a network failure
-    (DNS, a refused, reset or timed-out connection), unless every provider's sandbox failed that step
-    the same way, which is external.
-  - A step that starts one worker per reported CPU (fastapi's `pytest -n auto`) on a sandbox that reports
-    more CPUs than were asked for.
+  - A step that exits non-zero or reaches its limit, whatever its cause.
   - A failure whose owner is uncertain.
   retries: None inside a trial, except that a setup download an upstream registry refuses for load (HTTP 429, 502, 503 or 504) is repeated in place, with backoff, within that step's timeout; the first non-zero step ends the trial. When a trial fails, a new trial runs in its
     place up to the run's attempt limit for that cell, regardless of who owned the failure, and each failed trial remains in the data with its owner and cause.
-  success: Every step exits 0 and the sandbox is confirmed deleted.
+  success: Every step exits 0 and the sandbox is deleted.
   timeout_seconds:
     create: 300
     destroy: 300
@@ -44,7 +38,7 @@ id: github-actions
 inherits: sbs.common
 interpretation:
   caveats:
-  - Each step runs under bash as the image's non-root `box` user; the job's own `sudo` lines run as the
+  - Each step runs under bash as the image's non-root `user` account; the job's own `sudo` lines run as the
     sandbox's user, which may be root.
   - The spotify-player job is also measured by RunsOn's open runner benchmark.
   - A step that crashes still shows its abort in its output.
@@ -129,12 +123,8 @@ procedure:
     timer:
       start_event: The create request is dispatched.
       stop_event: The create call returns.
-  - action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
-    id: ready_check
-    name: Ready check
-    timer: null
   - action: Run the job's setup steps (checkout, toolchain, system packages and dependency install) first,
-      each as one script started in the background, the same way as the job steps below. Each is timed by
+      each as its own script started in the background, the same way as the job steps below. Each is timed by
       the sandbox's own clock and listed apart; the job time does not include them, because they mostly
       download from public package mirrors and CDNs whose speed changes independently of the sandbox.
     id: setup_steps
@@ -149,12 +139,12 @@ procedure:
       start_event: The step starts, by the sandbox's own clock.
       stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between two
         consecutive readings.
-  - action: Run the rest of the selected job's steps back to back in workflow order, each as one script started in the background.
+  - action: Run the rest of the selected job's steps back to back in workflow order, each as its own script started in the background.
       A `run:` line is used as written; a `uses:` step is represented by the commands that do its work,
       such as checkout or toolchain download. Tools normally preinstalled for hosted CI jobs are fetched
       or installed in a separate step. Each step runs under bash as a non-root sandbox user, with no input,
       in the checkout and job environment; the job's own `sudo` lines run as the sandbox user, which may
-      be root. Core dumps are disabled before timing.
+      be root. Each step's script first turns core dumps off (`ulimit -c 0`); this is inside the step's time and takes well under a millisecond.
     id: job_steps
     name: Job step
     label: Job step
@@ -167,7 +157,7 @@ procedure:
       start_event: The step starts, by the sandbox's own clock.
       stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between two
         consecutive readings.
-  - action: Destroy the sandbox after the job's last step and confirm it is gone.
+  - action: Destroy the sandbox after the job's last step.
     id: destroy
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
@@ -268,7 +258,7 @@ procedure:
       workflow: .github/workflows/build.yml
   warm_cold_policy:
     policy: 'A fresh sandbox per trial from a prepared image, with no cache of any kind: every checkout,
-      toolchain and dependency is fetched in the trial. Steps run back to back as one script.'
+      toolchain and dependency is fetched in the trial. Steps run back to back, one script each.'
 source:
   ids:
   - pmndrs/zustand@d7a5583cffd80af515f7dfb69583c95cbdc9e2ce
@@ -303,10 +293,6 @@ timing_boundaries:
   start: The first lint, test or build step of the job starts in the sandbox, after setup.
   stop: The last step of the job exits.
 validity_checks:
-- check: Every step must exit 0. A step that exits non-zero ends the trial and does not replay here, except
-    in the cases the failure policy lists as the provider's failure.
+- check: Every step must exit 0. A step that exits non-zero ends the trial as a provider failure.
   id: every_step_exits_zero
   threat: A step that fails would make the job time cover less work than the job does.
-- check: The replay script turns core dumps off (`ulimit -c 0`); this is neither logged nor timed.
-  id: replay_script_start
-  threat: A crash writes a core dump that changes what a step costs.

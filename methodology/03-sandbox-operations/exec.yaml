@@ -8,12 +8,11 @@ notes:
     round-trip latency.
   what_this_measures: The result is the round-trip latency of one call to the true command, which runs
     for almost no time inside a 2 vCPU and 8 GiB sandbox, measured from dispatch until the exit code and
-    the sandbox clock readings return to the job host.
-  how_it_is_measured: A monotonic clock on the job host times each of 100 sequential true calls in one
+    the sandbox clock readings return.
+  how_it_is_measured: Provider time covers each of 100 sequential true calls in one
     fresh 2 vCPU and 8 GiB sandbox from dispatch until the exit status and the sandbox clock readings
     return.
-  how_to_read: The {param:exec-latency.statistics.primary} summarizes every call of every successful
-    trial, pooled across trials, in the axis unit; {direction:total_time}.
+  how_to_read: The {param:exec-latency.statistics.primary} summarizes each successful trial's median call, in the axis unit; {direction:total_time}.
   cost_summary: The cost is the sum of the provider-sourced sandbox costs for successful trials, divided
     by the number of successful calls.
   cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
@@ -37,7 +36,7 @@ environment:
   network: unknown
   lifetime_seconds: 600
 clocks:
-  operation: Job-host monotonic clock around each command call.
+  operation: Provider time of each command call.
   command_runtime: Sandbox clock read immediately before and after true.
 default_view:
   metric: total_time
@@ -52,7 +51,7 @@ procedure:
   warm_cold_policy:
     policy: One fresh sandbox per trial; 100 calls run sequentially in the same sandbox, so later calls
       reuse the session's warmed state.
-    cold: First call after the untimed ready check.
+    cold: The first of the 100 calls, which follows one untimed `true`.
     warm: Calls 2 through 100 follow immediately after the preceding call returns.
   variants:
   - id: 'true'
@@ -75,11 +74,10 @@ procedure:
     name: true calls
     label: 'true'
     show: stack
-    action: Send 100 true commands one at a time, with each call's sandbox clock readings returned to
-      the job host.
+    action: Send 100 true commands one at a time, with each call's sandbox clock readings returned.
     timer:
       start_event: The command call is dispatched.
-      stop_event: The exit code and sandbox clock readings return to the job host.
+      stop_event: The exit code and sandbox clock readings return.
     timeout_seconds: 30
     repeats: true
     record_steps:
@@ -88,7 +86,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -96,19 +94,18 @@ procedure:
   cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
 timing_boundaries:
   start: Each true command call is dispatched.
-  stop: Its exit code and the sandbox clock readings return to the job host.
+  stop: Its exit code and the sandbox clock readings return.
 statistics:
   primary: median
   secondary:
   - mean
   ranking:
     ranked: true
-  percentile_method: Nearest rank over every call of every successful trial, pooled; calls of a trial
-    that failed partway are left out, as they are from the per-trial sums; no trimming.
-  sample: pooled_calls
+  percentile_method: Nearest rank over successful trials, each trial taken as the median of its calls; no
+    trimming.
+  sample: trial
   interval:
-    type: cluster_bootstrap_percentile
-    cluster: trial
+    type: bootstrap_percentile
     confidence: 0.95
     resamples: 10000
     seed: 0
@@ -125,7 +122,7 @@ failure_policy:
     'true': 30
     destroy: 300
   retries: No command call is retried; the first failed call ends the trial.
-  success: All 100 commands exit 0 and return both clock readings; the sandbox is confirmed destroyed.
+  success: All 100 commands exit 0 and return both clock readings; the sandbox is destroyed.
   provider_errors:
   - A command call or transport error
   - a nonzero command exit
@@ -145,12 +142,12 @@ interpretation:
     from a 2 vCPU and 8 GiB sandbox. A high latency points to overhead in the provider's command
     execution API or its in-sandbox daemon.
   limits:
-  - The measured latency includes the network path between the job host and the provider's configured
-    region, so a provider in a more distant region pays for that network distance.
+  - Every call includes the network path to the provider's configured region, so a provider in a
+    more distant region pays for that network distance.
   - Only command calls sent from the client host in the 2 vCPU and 8 GiB cell are measured; the result is
     not equivalent to 2 vCPU and 4 GiB or 4 vCPU and 8 GiB results and is not pooled with them.
   caveats:
-  - Each trial creates one fresh sandbox and runs 100 calls sequentially after an untimed readiness check,
+  - Each trial creates one fresh sandbox and runs 100 calls sequentially after one untimed `true`,
     so calls 2 through 100 reuse the warmed session state of that sandbox.
   - BoxRouter keeps idle provider connections open for 300 seconds where the integration supports it,
     whereas a call that follows a longer pause in real use may pay for a new connection handshake.
@@ -159,15 +156,15 @@ interpretation:
 validity_checks:
 - id: clock_cross_check
   threat: A wrong sandbox clock reading would skew the runtime and the latency.
-  check: Each call sends `true` between two reads of the sandbox's clock (`$EPOCHREALTIME`, checked against
-    `/proc/uptime`), run by Bash.
+  check: Each call sends `true` between two readings of the sandbox's clock (`date +%s%N`). A call whose
+    readings do not come back fails.
 - id: all_calls_succeed
   threat: A failed call could be left out of the median.
   check: A call succeeds when it exits 0 with the clock readings back, and a trial succeeds only when
     all 100 calls do; every call counts, including the first.
 - id: first_command_not_measured
   threat: The sandbox's first command would add start-up work to the calls.
-  check: The ready check runs untimed after create, so the 100 calls do not include the sandbox's first
+  check: An untimed `true` runs once after create, so the 100 calls do not include the sandbox's first
     command.
 source:
   name: true command workload and BoxRouter standard image

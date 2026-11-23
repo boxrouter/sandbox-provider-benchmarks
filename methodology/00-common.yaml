@@ -13,48 +13,19 @@ environment:
     left out of rankings.
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
-  region_policy: The provider's US region, never a narrower one, with one named exception. Boat has no
+  region_policy: The provider's US region, never a narrower one, with one named exception. Boat, which is not tested yet, has no
     US region and no region choice, so it runs in the EU. Ordinary self-serve product, nothing tuned per
     provider. Results are never aggregated across job-host regions; each job-host region is
     its own series.
   connection_idle_seconds: 300
-  connection_idle_exceptions:
-  - provider: daytona
-    rule: The SDK has no idle-timeout setting. Its command channel keeps its connection open, and its file-transfer
-      channel reconnects after {duration:sbs.common.environment.connection_idle_exceptions.0.file_transfer_idle_seconds}
-      of idle time.
-    file_transfer_idle_seconds: 5
-  job_host: Timing is measured on the client host that sends each request, in the AWS region that the
-    publication names (each trial's host record carries it as job_host). Each latency includes the trip
-    from that host to the provider and back, which is the same for every provider, forms
-    part of the result, and is not the provider's own speed.
+  job_host: One job host runs the benchmark for every provider, in the AWS region that the publication names.
+    Each trial's record carries that region and the host's CPU load during the trial.
 clocks:
-  operation: Operation timing uses the monotonic clock of the client host that sends the request; the clock
-    starts just before each call and stops as the call returns, with nothing else inside the timed span.
+  operation: An operation sent to the provider is published at the provider's own time, how long its exchanges with
+    the provider were in flight. A step that never reaches the provider is timed on the monotonic clock of the job
+    host that sends it, from just before the call until it returns.
   command_runtime: The sandbox's own clock, read just before and after the command. Total time, runtime
     and latency (total minus runtime) stay separate.
-ready_check:
-  command: 'true'
-  retry_on:
-  - HTTP 502
-  - HTTP 503
-  - HTTP 504
-  - connection refused
-  - connection reset
-  initial_backoff_ms: 20
-  backoff_multiplier: 1.5
-  max_backoff_ms: 200
-  jitter_fraction: 0.2
-  deadline_seconds: 10
-  attempt_timeout_seconds: 30
-  published: false
-  skipped_by_benchmarks:
-  - sequential-tti
-  - burst-tti
-  skipped_on_restore_by_benchmarks:
-  - snapshot-and-restore
-  - fork
-  - r2e-gym
 statistics:
   primary: median
   secondary:
@@ -84,24 +55,26 @@ cost:
     document: cost-method.json
     versions: The price and rules versions recorded in the publication; they select each sandbox's method.
   notes:
-  - Each sandbox's cost is read once from the provider's record after the sandbox is destroyed and is shown as
-    Reported By Provider, Calculated or Unknown. A cost that is not available at that point is marked Unknown,
-    never zero or a range, and no result waits for billing to settle.
+  - Each sandbox's cost is read from the provider's record after the run's trials end, and read again until
+    the provider reports it or its reporting window closes. It is shown as Reported By Provider, Calculated or
+    Unknown, never zero or a range. A known cost the provider may still revise is published as read and
+    counted as not final.
   - A unit with a sandbox whose cost is unknown has no cost; it is never zero and never a range.
   - A sandbox whose stop can't be confirmed, with no provider end time and no maximum lifetime, has no
     cost; its trial is the provider's failure.
 failure_policy:
   timeout_seconds: {}
   retries: The first failed step ends the trial. Run each workload and primitive benchmark until its intended
-    number of successful trials from the run's configuration is reached. A failed trial runs again as a new trial
-    up to the run's attempt limit for that cell. A failure in BoxRouter's own script or software stops that unit
-    on that provider instead until the defect is fixed.
-  success: Every benchmark-specific check passes and every resource the trial created is confirmed deleted.
+    number of successful trials from the run's configuration is reached. A failed trial runs again as a new trial,
+    at most three attempts for each success the cell still needs, and the cell stops early after three failures in
+    a row at the same step with the same error. A trial that BoxRouter's own script, software or account limits
+    ended is left out of the published data and counted as excluded.
+  success: Every benchmark-specific check passes and every resource the trial created is deleted.
   provider_errors:
   - Create and transport errors, and a sandbox that stops answering.
   - A sandbox whose stop can't be confirmed.
   - A failure whose owner is uncertain.
-  - A ready check that reaches its deadline without a ready answer, or any other failure of it.
+  - A replayed command that exits with a different code than the recording, and a step that reaches its time limit.
   benchmark_errors:
   - A failure of the benchmark's own script, such as output it cannot parse after a command exited 0.
   exclusions:

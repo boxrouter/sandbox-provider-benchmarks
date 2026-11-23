@@ -71,7 +71,7 @@ def test_a_fact_may_only_read_the_measured_definition(monkeypatch: pytest.Monkey
     monkeypatch.setattr(reader, "load_reader", lambda _root: source)
     assert any("pins another document" in error for error in reader.reader_errors(ROOT))
     source["methods"]["sequential-read"]["notes"]["how_to_read"] = (
-        "Polled every {duration:content.timing.replay.poll_seconds}."
+        "Ranked as {param:content.ranking_statuses.filled.label}."
     )
     assert not any("pins another document" in error for error in reader.reader_errors(ROOT))
 
@@ -101,10 +101,8 @@ def test_reader_states_one_client_side_clock_and_no_direct_or_cloud_modes(
     previews = bundle["reader"]["methods"]["previews"]["text"]["notes"]
     region_note = bundle["region_exceptions"][0]["network_note"]
 
-    assert "monotonic clock on the client host that sends each request" in clocks
-    assert (
-        "whole request from the client host to the provider and back, which is the same" in clocks
-    )
+    assert "published at the provider's own time" in clocks
+    assert "monotonic clock of the job host that sends it" in clocks
     assert "independence" not in common
     assert "fresh client process" in reconnect
     assert "interval on the client host's clock from process.start returning" in previews["opening"]

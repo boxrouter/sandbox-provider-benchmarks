@@ -93,5 +93,5 @@ def test_the_r2e_gym_setup_step_lists_two_actions_without_a_comma(bundle: dict[s
 def test_deepswe_setup_types_no_image_size(bundle: dict[str, Any]) -> None:
     """DeepSWE setup avoids an unsupported image-size claim."""
     setup = " ".join(_sentences(bundle, "deepswe"))
-    assert "pinned by SHA-256 digest" in setup
+    assert "pinned standard image" in setup
     assert "1 to 2 GiB" not in setup

@@ -61,13 +61,14 @@ procedure:
     name: Mount facts
     timer: null
     action: Untimed, read the filesystem, mount and free space of /workspace/hardlink; under 100 MiB free,
-      the trial is missed. Then write a 256 MiB file there with `dd`, read the sandbox's shared memory
+      the trial fails as the provider's. Then write a 256 MiB file there with `dd`, read the sandbox's shared memory
       before and after, and delete the file.
   - id: install-stress-ng
     name: Install stress-ng
     timer: null
-    action: Untimed, write in the pinned static stress-ng V0.19.02 (xz-compressed), unpack it and check
-      its SHA-256 in the sandbox. Another digest is the benchmark script's failure.
+    action: Untimed, download the pinned static stress-ng V0.19.02 (xz-compressed) from a pinned release on
+      GitHub inside the sandbox, check the download's SHA-256, unpack it and check the binary's SHA-256.
+      Another digest is the provider's failure.
   - id: hard-links
     name: '{name:test.hard-links}'
     label: Hard links
@@ -76,10 +77,8 @@ procedure:
       -t 30`, with its links and its YAML in /workspace/hardlink. In each round the worker links one file
       up to 8,192 times, then removes every link. Afterwards, untimed, read the YAML back.
     timer:
-      start_event: stress-ng's link stressor begins, after the untimed mount facts and the check of the
-        pinned tool; nothing is sent between the check and this command.
-      stop_event: stress-ng has run one worker for 30 s, removed its last links and exited; its rate is
-        its own count over its own clock.
+      start_event: When stress-ng's link stressor starts. The checks and the tool download before that are not timed.
+      stop_event: When stress-ng exits after 30 s. The figure is stress-ng's own count of links over its own run time.
     timeout_seconds: 120
     record_steps:
     - hardlink
@@ -87,7 +86,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -120,15 +119,15 @@ failure_policy:
     create: 300
     hard-links: 120
     destroy: 300
-  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
-  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  retries: None; the first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is deleted.
   provider_errors:
   - Create or transport error, sandbox stops answering, or an uncertain failure owner.
   - stress-ng exiting non-zero, or a YAML with no links rate.
+  - A stress-ng download or binary whose SHA-256 differs from the pinned one.
   benchmark_errors:
   - Output that cannot be parsed after the benchmark tool exits successfully.
   - A YAML that cannot be read after stress-ng exited 0.
-  - A stress-ng binary whose SHA-256 differs from the pinned one.
   exclusions:
   - An error shown not to be the provider's; retain the trial and reason in the data.
 source:
@@ -172,11 +171,11 @@ interpretation:
 validity_checks:
 - id: free-space
   threat: A full /workspace would make links fail for want of space rather than for filesystem cost.
-  check: Under 100 MiB free in /workspace/hardlink, the trial is missed.
+  check: Under 100 MiB free in /workspace/hardlink, the trial fails as the provider's.
 - id: files-in-memory
   threat: A /workspace held in memory measures a memory filesystem, with no device behind it.
   check: When /workspace is a tmpfs or an overlay on one, or the 256 MiB probe raised shared memory by
-    at least 80% of its size, the result is ranked with a note that no device is behind the filesystem.
+    at least 80% of its size, the trial records it in the raw data; no note is added to the result yet.
 ---
 id: hard-links
 effective: '2026-11-08'
@@ -236,13 +235,14 @@ procedure:
     name: Mount facts
     timer: null
     action: Untimed, read the filesystem, mount and free space of /workspace/hardlink; under 100 MiB free,
-      the trial is missed. Then write a 256 MiB file there with `dd`, read the sandbox's shared memory
+      the trial fails as the provider's. Then write a 256 MiB file there with `dd`, read the sandbox's shared memory
       before and after, and delete the file.
   - id: install-stress-ng
     name: Install stress-ng
     timer: null
-    action: Untimed, write in the pinned static stress-ng V0.19.02 (xz-compressed), unpack it and check
-      its SHA-256 in the sandbox. Another digest is the benchmark script's failure.
+    action: Untimed, download the pinned static stress-ng V0.19.02 (xz-compressed) from a pinned release on
+      GitHub inside the sandbox, check the download's SHA-256, unpack it and check the binary's SHA-256.
+      Another digest is the provider's failure.
   - id: hard-links
     name: '{name:test.hard-links}'
     label: Hard links
@@ -251,10 +251,8 @@ procedure:
       -t 30`, with its links and its YAML in /workspace/hardlink. In each round the worker links one file
       up to 8,192 times, then removes every link. Afterwards, untimed, read the YAML back.
     timer:
-      start_event: stress-ng's link stressor begins, after the untimed mount facts and the check of the
-        pinned tool; nothing is sent between the check and this command.
-      stop_event: stress-ng has run one worker for 30 s, removed its last links and exited; its rate is
-        its own count over its own clock.
+      start_event: When stress-ng's link stressor starts. The checks and the tool download before that are not timed.
+      stop_event: When stress-ng exits after 30 s. The figure is stress-ng's own count of links over its own run time.
     timeout_seconds: 120
     record_steps:
     - hardlink
@@ -262,7 +260,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -295,15 +293,15 @@ failure_policy:
     create: 300
     hard-links: 120
     destroy: 300
-  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
-  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  retries: None; the first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is deleted.
   provider_errors:
   - Create or transport error, sandbox stops answering, or an uncertain failure owner.
   - stress-ng exiting non-zero, or a YAML with no links rate.
+  - A stress-ng download or binary whose SHA-256 differs from the pinned one.
   benchmark_errors:
   - Output that cannot be parsed after the benchmark tool exits successfully.
   - A YAML that cannot be read after stress-ng exited 0.
-  - A stress-ng binary whose SHA-256 differs from the pinned one.
   exclusions:
   - An error shown not to be the provider's; retain the trial and reason in the data.
 source:
@@ -344,8 +342,8 @@ interpretation:
 validity_checks:
 - id: free-space
   threat: A full /workspace would make links fail for want of space rather than for filesystem cost.
-  check: Under 100 MiB free in /workspace/hardlink, the trial is missed.
+  check: Under 100 MiB free in /workspace/hardlink, the trial fails as the provider's.
 - id: files-in-memory
   threat: A /workspace held in memory measures a memory filesystem, with no device behind it.
   check: When /workspace is a tmpfs or an overlay on one, or the 256 MiB probe raised shared memory by
-    at least 80% of its size, the result is ranked with a note that no device is behind the filesystem.
+    at least 80% of its size, the trial records it in the raw data; no note is added to the result yet.

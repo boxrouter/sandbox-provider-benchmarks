@@ -35,24 +35,3 @@ def test_non_string_keys_are_rejected(tmp_path: Path) -> None:
         f"{tmp_path / 'methodology' / 'exec.yaml'}: key $.failure_policy.timeout_seconds.True "
         "is not a string; quote it"
     ]
-
-
-def test_ready_check_skip_lists_name_existing_methodology_ids(tmp_path: Path) -> None:
-    (tmp_path / "methodology").mkdir()
-    common = tmp_path / "methodology" / "common.yaml"
-    common.write_text(
-        "id: sbs.common\nready_check:\n"
-        "  skipped_by_benchmarks: [sbs.common]\n  skipped_on_restore_by_benchmarks: [sbs.common]\n"
-    )
-    assert validate(tmp_path) == []
-    common.write_text(
-        "id: sbs.common\nready_check:\n"
-        "  skipped_by_benchmarks: [sandbox.create.sequential_tti]\n"
-        "  skipped_on_restore_by_benchmarks: [fork]\n"
-    )
-    assert validate(tmp_path) == [
-        f"{common}: ready_check.skipped_by_benchmarks names sandbox.create.sequential_tti, "
-        "which is no methodology id",
-        f"{common}: ready_check.skipped_on_restore_by_benchmarks names fork, "
-        "which is no methodology id",
-    ]

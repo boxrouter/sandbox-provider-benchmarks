@@ -60,9 +60,9 @@ procedure:
     timeout_seconds: 30
   - id: install-tools
     name: Install tools
-    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
-      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
-      sandbox and check each by its SHA-256.
+    action: Download the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) from a pinned
+      release on GitHub inside the sandbox and check each by its SHA-256.
     timer: null
   - id: stream-triad
     name: '{name:test.stream-triad}'
@@ -71,11 +71,10 @@ procedure:
     action: Run STREAM 5.10 for 20 passes over three arrays of 80,000,000 doubles with OMP_NUM_THREADS
       equal to the requested vCPU count (not `nproc`), as a background script that the harness polls;
       the output must say the solution validates. The row runs in an order shuffled per trial with the
-      other two rows of the trial. Copy, Scale and Add are recorded too.
+      other two rows of the trial.
     timer:
-      start_event: STREAM begins its benchmark.
-      stop_event: STREAM exits after 20 passes; its rate is the best Triad pass by its own clock, in 10^9
-        bytes/s.
+      start_event: When STREAM's benchmark starts. Downloading and checking the tools before that is not timed.
+      stop_event: When STREAM exits after 20 passes. The figure is its best Triad pass, in 10^9 bytes per second.
     timeout_seconds: 120
     record_steps:
     - stream-triad
@@ -83,7 +82,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -118,8 +117,8 @@ failure_policy:
     create: 300
     stream-triad: 120
     destroy: 300
-  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
-  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  retries: None; the first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is deleted.
   provider_errors:
   - Create or transport error, sandbox stops answering, or an uncertain failure owner.
   benchmark_errors:
@@ -145,20 +144,20 @@ interpretation:
   - STREAM measures sustained memory bandwidth with arrays far larger than the caches; it does not measure
     CPU compute speed.
   caveats:
-  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch; the threads
-    used are still the requested count.
+  - A sandbox that shows another CPU count than requested keeps its result; the threads used are still the
+    requested count, and the CPU count it shows is recorded in the raw data.
   - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
     in results can be traced to it.
   - The result is the tool's own figure by its own clock; the job host times nothing.
 validity_checks:
 - id: solution-validates
   threat: STREAM output that does not validate would publish a wrong bandwidth.
-  check: STREAM's output must say the solution validates; output that does not is the provider's failure.
+  check: STREAM's output must say the solution validates; output that does not is counted as BoxRouter's and left out of the results.
 - id: stream-array-small
   threat: Arrays small enough to sit in the caches would measure cache speed, not memory.
-  check: A trial in which one array is under four times the L3 cache the sandbox reports is recorded as
-    `stream_array_small`.
+  check: The L3 cache size the sandbox reports is recorded in the raw data; a trial in which one array is under
+    four times that size adds no note to the result yet.
 - id: threads-differ
   threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
-  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
-    as a CPU count mismatch and the result is kept.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference does not
+    change the result.

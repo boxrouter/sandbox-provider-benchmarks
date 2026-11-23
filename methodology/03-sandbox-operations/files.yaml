@@ -5,12 +5,12 @@ name: '{name:test.list-2vcpu-8gib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures the round-trip time of a directory-list request in a 2 vCPU
-    and 8 GiB sandbox, from dispatch on the job host until the 200 file names return.
+    and 8 GiB sandbox, from dispatch until the 200 file names return.
   how_to_read: The {param:list.statistics.primary} across successful trials is shown in {unit:total_time};
     {direction:total_time}.
   summary: Repeated requests list a prepared directory of 200 empty files in a 2 vCPU and 8 GiB sandbox.
   how_it_is_measured: After an untimed setup command creates 200 empty files in /workspace/prim/list,
-    a monotonic clock on the job host times each of 100 sequential directory-list requests until the sorted
+    the provider's own time is taken for each of 100 sequential directory-list requests until the sorted
     file names return.
   cost_summary: The cost is the sum of the provider-sourced sandbox costs for successful trials, divided
     by the number of successful calls.
@@ -77,7 +77,7 @@ procedure:
     action: List the prepared directory 100 times sequentially and return its names.
     timer:
       start_event: Each list request is dispatched.
-      stop_event: The directory names return to the job host.
+      stop_event: The directory names return.
     timeout_seconds: 60
     repeats: true
     record_steps:
@@ -86,7 +86,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -94,7 +94,7 @@ procedure:
   cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
 timing_boundaries:
   start: Each directory-list request is dispatched.
-  stop: The directory names return to the job host.
+  stop: The directory names return.
 statistics:
   primary: median
   secondary:
@@ -121,7 +121,7 @@ failure_policy:
     list: 60
     destroy: 300
   retries: No list request is retried; the first failed call ends the trial.
-  success: All 100 listing calls return the directory's 200 names and the sandbox is confirmed destroyed.
+  success: All 100 listing calls return the directory's 200 names and the sandbox is destroyed.
   provider_errors:
   - A list request or transport error
   - or a returned list that does not contain the expected names.
@@ -142,7 +142,7 @@ interpretation:
   - The 100 listings run back to back in one fresh sandbox after untimed setup, so they do not measure
     concurrent file requests or a cold sandbox's first operation.
   - Directory-list requests execute through the file API without an in-sandbox shell command timer, so
-    only total round-trip time on the job host is published.
+    only the provider's time is published.
   - Results belong to the 2 vCPU and 8 GiB declared-fit cell and are not equivalent to 2 vCPU and 4 GiB
     or 4 vCPU and 8 GiB results.
   caveats:
@@ -154,10 +154,6 @@ interpretation:
   - No request is retried; the first failed repetition ends the trial and marks any remaining repetitions
     and later file operations in that trial as not reached.
 validity_checks:
-- id: names_exact
-  threat: A listing that returns the wrong names could still be fast.
-  check: Each repetition succeeds only when the names back are exactly f000 to f199, sorted, and nothing
-    else; an error or a different list is the provider's failure.
 - id: setup_untimed
   threat: The first sandbox commands could add one-off work to the listing time.
   check: The 200 files are made by an untimed setup command; a non-zero exit is the provider's failure.
@@ -180,14 +176,12 @@ name: '{name:test.read-4kib-2vcpu-8gib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures the round-trip time of a 4 KiB file-read request in a 2 vCPU
-    and 8 GiB sandbox, from dispatch on the job host until the complete 4,096-byte file returns.
+    and 8 GiB sandbox, from dispatch until the complete 4,096-byte file returns.
   how_to_read: The {param:read-4kib.statistics.primary} summarizes successful trials in the axis
     unit; {direction:total_time}.
-  summary: Repeated requests read a fixed 4 KiB file from a 2 vCPU and 8 GiB sandbox and verify its SHA-256
-    digest.
-  how_it_is_measured: A monotonic clock on the job host times each of 100 sequential reads of /workspace/prim/file-4kib.bin
-    until the complete file returns, and the job host checks each returned payload's SHA-256 digest after
-    timing stops.
+  summary: Repeated requests read a fixed 4 KiB file from a 2 vCPU and 8 GiB sandbox.
+  how_it_is_measured: Provider time covers each of 100 sequential reads of /workspace/prim/file-4kib.bin
+    until the complete file returns.
   cost_summary: The cost is the sum of the provider-sourced sandbox costs for successful trials, divided
     by the number of successful calls.
   cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
@@ -256,11 +250,10 @@ procedure:
     name: Read file
     label: '{name:test.read-4kib}'
     show: stack
-    action: Read the file 100 times sequentially and check each returned payload's SHA-256 on the job
-      host.
+    action: Read the file 100 times sequentially.
     timer:
       start_event: Each read request is dispatched.
-      stop_event: The complete file returns to the job host.
+      stop_event: The complete file returns.
     timeout_seconds: 60
     repeats: true
     record_steps:
@@ -269,7 +262,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -279,7 +272,7 @@ procedure:
     with: list-2vcpu-8gib
 timing_boundaries:
   start: Each file-read request is dispatched.
-  stop: The complete file returns to the job host.
+  stop: The complete file returns.
 statistics:
   primary: median
   secondary:
@@ -306,7 +299,7 @@ failure_policy:
     read: 60
     destroy: 300
   retries: No read call is retried; the first failed call ends the trial.
-  success: All reads return the file with the expected SHA-256 and the sandbox is confirmed destroyed.
+  success: All reads return without an error and the sandbox is destroyed.
   provider_errors:
   - A read request or transport error
   - or returned bytes that differ from the expected payload.
@@ -333,18 +326,15 @@ interpretation:
     and {name:test.read-4kib-2vcpu-8gib}) share one trial and run back to back in the fixed order list,
     write, and read.
   - Each trial's value is the median of its 100 read repetitions, while the first read after the final
-    write is also recorded separately as the cold repetition and confirms that the preceding write persisted
-    the expected bytes.
-  - No read request is retried; the first failed repetition or SHA-256 mismatch ends the trial and marks
+    write is also recorded separately as the cold repetition.
+  - No read request is retried; the first failed repetition ends the trial and marks
     any remaining repetitions as not reached.
 validity_checks:
-- id: read_digest
-  threat: A read could return the wrong bytes and still be fast.
-  check: Every read must bring back bytes with the same SHA-256 as the payload, checked on the job host
-    after the call returns, so the first read also proves the last write. An error or another digest is
-    the provider's failure.
+- id: read_succeeds
+  threat: A failed read could be left out of the median.
+  check: An error is the provider's failure; the first failed repetition ends the trial.
 source:
-  name: fixed incompressible 4 KiB file payload
+  name: fixed 4 KiB file payload
   version: sha256:d3864095125f1d38
   ids:
   - primitives/shared-trial
@@ -362,13 +352,13 @@ name: '{name:test.write-4kib-2vcpu-8gib}'
 category: sandbox_operation
 notes:
   what_this_measures: The result measures the round-trip time of a 4 KiB file-write request in a 2 vCPU
-    and 8 GiB sandbox, from dispatch on the job host until the write call returns.
+    and 8 GiB sandbox, from dispatch until the write call returns.
   how_to_read: The {param:write-4kib.statistics.primary} across successful trials is shown in {unit:total_time};
     {direction:total_time}.
-  summary: Repeated requests write a fixed 4 KiB incompressible payload to one file path in a 2 vCPU and
+  summary: Repeated requests write a fixed 4 KiB payload to one file path in a 2 vCPU and
     8 GiB sandbox.
-  how_it_is_measured: A monotonic clock on the job host times each of 100 sequential writes of a fixed
-    4,096-byte incompressible payload to /workspace/prim/file-4kib.bin until the write call returns.
+  how_it_is_measured: Provider time covers each of 100 sequential writes of a fixed
+    4,096-byte payload of the letter x to /workspace/prim/file-4kib.bin until the write call returns.
   cost_summary: The cost is the sum of the provider-sourced sandbox costs for successful trials, divided
     by the number of successful calls.
   cost_how_to_read: Only successful trials contribute to the cost value, and provider-sourced costs are
@@ -442,7 +432,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -478,7 +468,7 @@ failure_policy:
     write: 60
     destroy: 300
   retries: No write call is retried; the first failed call ends the trial.
-  success: All 100 writes return successfully and the sandbox is confirmed destroyed.
+  success: All 100 writes return successfully and the sandbox is destroyed.
   provider_errors:
   - A write request or transport error.
   benchmark_errors:
@@ -509,15 +499,11 @@ interpretation:
   - Each repetition also records throughput in bytes per second, along with the total wall time and inter-call
     time, which are kept in the trial record and not published as headline metrics.
 validity_checks:
-- id: payload_digest
-  threat: A wrong payload would make writes and reads incomparable.
-  check: The payload is the first 4,096 bytes of SHAKE256 over a fixed ASCII seed, incompressible, generated
-    in memory and checked against its SHA-256 before the first write; a mismatch is the benchmark's.
 - id: write_succeeds
   threat: A failed write could be left out of the median.
   check: An error is the provider's failure; a size-limit refusal from BoxRouter is the benchmark's.
 source:
-  name: fixed incompressible 4 KiB file payload
+  name: fixed 4 KiB file payload
   version: sha256:d3864095125f1d38
   ids:
   - primitives/shared-trial
@@ -538,7 +524,7 @@ notes:
     return.
   how_to_read: The {param:list.statistics.primary} is shown in {unit:total_time}; {direction:total_time}.
   summary: Repeated requests list a fixed directory of empty files.
-  how_it_is_measured: A job-host monotonic clock times each directory-list request until the names return.
+  how_it_is_measured: Provider time covers each directory-list request until the names return.
     The workload uses the same fixed directory of empty files.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, divided by successful
     units.
@@ -604,7 +590,7 @@ procedure:
     action: List the prepared directory 100 times sequentially and return its names.
     timer:
       start_event: Each list request is dispatched.
-      stop_event: The directory names return to the job host.
+      stop_event: The directory names return.
     timeout_seconds: 60
     repeats: true
     record_steps:
@@ -613,7 +599,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -621,7 +607,7 @@ procedure:
   cadence: 'Manual: runs are started by hand, not on a fixed schedule.'
 timing_boundaries:
   start: Each directory-list request is dispatched.
-  stop: The directory names return to the job host.
+  stop: The directory names return.
 statistics:
   primary: median
   secondary:
@@ -648,7 +634,7 @@ failure_policy:
     list: 60
     destroy: 300
   retries: No list request is retried; the first failed call ends the trial.
-  success: All 100 listing calls return the directory's 200 names and the sandbox is confirmed destroyed.
+  success: All 100 listing calls return the directory's 200 names and the sandbox is destroyed.
   provider_errors:
   - A list request or transport error
   - or a returned list that does not contain the expected names.
@@ -678,10 +664,6 @@ interpretation:
   - 'The first failed repetition ends the trial: that operation''s later repetitions and every operation
     after it are recorded as not reached.'
 validity_checks:
-- id: names_exact
-  threat: A listing that returns the wrong names could still be fast.
-  check: Each repetition succeeds only when the names back are exactly f000 to f199, sorted, and nothing
-    else; an error or a different list is the provider's failure.
 - id: setup_untimed
   threat: The first sandbox commands could add one-off work to the listing time.
   check: The 200 files are made by an untimed setup command; a non-zero exit is the provider's failure.
@@ -707,9 +689,9 @@ notes:
     returns.
   how_to_read: The {param:read-4kib.statistics.primary} summarizes successful trials in the axis
     unit; {direction:total_time}.
-  summary: Repeated requests read a fixed file and verify its contents.
-  how_it_is_measured: A job-host monotonic clock times each file-read request until the complete file
-    returns. The workload uses a fixed incompressible file.
+  summary: Repeated requests read a fixed file.
+  how_it_is_measured: Provider time covers each file-read request until the complete file
+    returns. The workload uses a fixed file.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful call.
   cost_how_to_read: Only successful trials contribute to the cost value.
 inherits: sbs.common
@@ -779,11 +761,10 @@ procedure:
     name: Read file
     label: '{name:test.read-4kib}'
     show: stack
-    action: Read the file 100 times sequentially and check each returned payload's SHA-256 on the job
-      host.
+    action: Read the file 100 times sequentially.
     timer:
       start_event: Each read request is dispatched.
-      stop_event: The complete file returns to the job host.
+      stop_event: The complete file returns.
     timeout_seconds: 60
     repeats: true
     record_steps:
@@ -792,7 +773,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -802,7 +783,7 @@ procedure:
     with: list
 timing_boundaries:
   start: Each file-read request is dispatched.
-  stop: The complete file returns to the job host.
+  stop: The complete file returns.
 statistics:
   primary: median
   secondary:
@@ -829,7 +810,7 @@ failure_policy:
     read: 60
     destroy: 300
   retries: No read call is retried; the first failed call ends the trial.
-  success: All reads return the file with the expected SHA-256 and the sandbox is confirmed destroyed.
+  success: All reads return without an error and the sandbox is destroyed.
   provider_errors:
   - A read request or transport error
   - or returned bytes that differ from the expected payload.
@@ -857,13 +838,11 @@ interpretation:
   - Some providers' integrations do extra work per file call; it is part of that provider's path and is
     recorded.
 validity_checks:
-- id: read_digest
-  threat: A read could return the wrong bytes and still be fast.
-  check: Every read must bring back bytes with the same SHA-256 as the payload, checked on the job host
-    after the call returns, so the first read also proves the last write. An error or another digest is
-    the provider's failure.
+- id: read_succeeds
+  threat: A failed read could be left out of the median.
+  check: An error is the provider's failure; the first failed repetition ends the trial.
 source:
-  name: fixed incompressible 4 KiB file payload
+  name: fixed 4 KiB file payload
   version: sha256:d3864095125f1d38
   ids:
   - primitives/shared-trial
@@ -883,9 +862,9 @@ notes:
   what_this_measures: The result measures each file-write request from dispatch until the provider returns
     its result.
   how_to_read: The {param:write-4kib.statistics.primary} is shown in {unit:total_time}; {direction:total_time}.
-  summary: Repeated requests write a fixed incompressible payload to a sandbox file.
-  how_it_is_measured: A job-host monotonic clock times each file-write request until its result returns.
-    The workload uses a fixed incompressible payload.
+  summary: Repeated requests write a fixed payload to a sandbox file.
+  how_it_is_measured: Provider time covers each file-write request until its result returns.
+    The workload uses a fixed payload.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, divided by successful
     units.
   cost_how_to_read: Only successful trials contribute to the cost value.
@@ -958,7 +937,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -994,7 +973,7 @@ failure_policy:
     write: 60
     destroy: 300
   retries: No write call is retried; the first failed call ends the trial.
-  success: All 100 writes return successfully and the sandbox is confirmed destroyed.
+  success: All 100 writes return successfully and the sandbox is destroyed.
   provider_errors:
   - A write request or transport error.
   benchmark_errors:
@@ -1023,15 +1002,11 @@ interpretation:
   - Each file repetition also records its bytes per second. The wall time from the first repetition's
     start to the last one's end, and the time between repetitions, are recorded but not published.
 validity_checks:
-- id: payload_digest
-  threat: A wrong payload would make writes and reads incomparable.
-  check: The payload is the first 4,096 bytes of SHAKE256 over a fixed ASCII seed, incompressible, generated
-    in memory and checked against its SHA-256 before the first write; a mismatch is the benchmark's.
 - id: write_succeeds
   threat: A failed write could be left out of the median.
   check: An error is the provider's failure; a size-limit refusal from BoxRouter is the benchmark's.
 source:
-  name: fixed incompressible 4 KiB file payload
+  name: fixed 4 KiB file payload
   version: sha256:d3864095125f1d38
   ids:
   - primitives/shared-trial

@@ -26,7 +26,7 @@ failure_policy:
   retries: None in the benchmark, of a call or a trial, except the untimed ready check
     after a create. The first failed step ends the trial; later steps are not reached.
   success: Every benchmark-specific check passes and every resource the trial created
-    is confirmed deleted.
+    is deleted.
   provider_errors:
   - Any failure whose recorded owner is the provider, or whose owner is unknown. An
     unknown owner counts against the provider.

@@ -2,6 +2,9 @@ id: package-registries
 effective: '2026-11-08'
 name: '{name:test.package-registries}'
 category: machine_performance
+panel:
+  command: git clone · npm ci · pip install -r
+  quantities: install time and data received
 notes:
   summary: A fresh sandbox installs a pinned project from the selected registry or repository.
   what_this_measures: The result is command runtime for a cold-cache install, including downloads, unpacking
@@ -65,12 +68,10 @@ procedure:
   - id: setup
     name: '{name:stage.setup}'
     timeout_seconds: 120
-    timer:
-      start_event: The sandbox answers and the workload's pinned inputs have been uploaded.
-      stop_event: The setup command exits, by the sandbox's own clock.
-    action: 'Upload the workload''s pinned inputs, each checked against its SHA-256, then run one script
-      as the image''s non-root `user` account: a preparation command that removes ~/.npm and ~/.cache/pip,
-      so nothing is cached, and sets up the project directory or the virtualenv.'
+    timer: null
+    action: 'Untimed: upload the workload''s pinned inputs, each checked against its SHA-256, then run one command
+      as the image''s non-root `user` account that removes ~/.npm and ~/.cache/pip, so nothing is cached, and
+      sets up the project directory or the virtualenv.'
   - id: install
     name: '{name:stage.install}'
     label: '{name:stage.install}'
@@ -80,15 +81,15 @@ procedure:
     - install
     action: In the same script, read the bytes the network interfaces have received, run the workload's
       one command as `user` from a cold cache, then read the bytes again. The script runs in the background
-      and its status is read every 10 s, so no call's latency is in the result.
+      and its status is read every 0.5 s, so no call's latency is in the result.
     timer:
-      start_event: The workload's install command starts, right after setup.
-      stop_event: The command exits, by the sandbox's own clock.
+      start_event: When the selected command starts (git clone, npm ci or pip install -r). Creating the virtualenv before that is not timed.
+      stop_event: When the command exits. For git clone, the command includes the checkout of the pinned commit and its check.
   - id: destroy
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -151,18 +152,15 @@ failure_policy:
     setup: 120
     install: 600
     destroy: 300
-  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
-  success: The command exits 0 and the sandbox is confirmed deleted.
+  retries: None; the first failed step ends the trial.
+  success: The command exits 0 and the sandbox is deleted.
   provider_errors:
-  - A failure whose output names a network failure (DNS, a refused, reset or timed-out connection) or
-    a full disk, with the matched line kept.
-  - Any other failure of the command, a command that ran its whole time limit (600 s), and a script that
-    ended early.
+  - The install command exits non-zero or runs its whole time limit (600 s); the end of its output is kept.
+  - A script that ended early.
   - A failure whose owner is uncertain.
   benchmark_errors:
   - Output that cannot be parsed after the benchmark tool exits successfully.
   exclusions:
-  - A network failure that every provider had on the same workload in one publication is external instead.
   - An error shown not to be the provider's; retain the trial and reason in the data.
 source:
   name: Package registry install workloads

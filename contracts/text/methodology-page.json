@@ -159,9 +159,7 @@
       "sources": [
         "notes.clocks",
         "formula:common-latency",
-        "notes.guest_timing",
-        "formula:common-clock-gate",
-        "notes.clock_gate"
+        "notes.guest_timing"
       ]
     },
     "failures": {
@@ -328,7 +326,7 @@
     "expected_body": "Expected Response",
     "failure_policy": "Failure Policy",
     "file_count": "File Count",
-    "first_command_from_create_start": "First Command From Creation",
+    "first_command": "First Command",
     "first_commands": "First Commands",
     "formula": "Formula",
     "four_fio_rows": "Four Disk Workloads",
@@ -630,7 +628,7 @@
     "notes.workload_cost": "Workload and Composite Cost",
     "notes.stage_cost": "Stages and Missing Costs",
     "notes.ready_check": "Readiness Check",
-    "notes.guest_timing": "Guest Timing and the Clock Gate",
+    "notes.guest_timing": "Guest Timing",
     "notes.top_ups": "Top-Ups",
     "notes.per_unit_statistics": "Per-Unit Statistics",
     "notes.workload_value": "Multi-Unit Workload Value",
@@ -962,7 +960,7 @@
         },
         {
           "symbol": "c",
-          "definition": "Create time of sandbox 1, on the job host's clock."
+          "definition": "Create time of sandbox 1, the provider's time."
         },
         {
           "symbol": "r",
@@ -970,11 +968,11 @@
         },
         {
           "symbol": "s",
-          "definition": "Snapshot time of sandbox 1, on the job host's clock."
+          "definition": "Snapshot time of sandbox 1, the provider's time."
         },
         {
           "symbol": "p_k",
-          "definition": "Create-from-snapshot time of rollout k, on the job host's clock."
+          "definition": "Create-from-snapshot time of rollout k, the provider's time."
         },
         {
           "symbol": "u_k",
@@ -986,7 +984,7 @@
         },
         {
           "symbol": "d_j",
-          "definition": "Destroy time of sandbox j, on the job host's clock. The job host's times include network transport; the in-sandbox runtimes are measured by each sandbox's own clock and validated against `/proc/uptime`."
+          "definition": "Destroy time of sandbox j, the provider's time."
         }
       ]
     },
@@ -1009,7 +1007,7 @@
       ]
     },
     "exec-latency-per-100-calls": {
-      "aria_label": "Time per 100 calls is the sum of the job-host round-trip times of the 100 calls in a trial.",
+      "aria_label": "Time per 100 calls is the sum of the provider times of the 100 calls in a trial.",
       "tex": "T_i = \\sum_{c=1}^{100} t_{i,c}",
       "variables": [
         {
@@ -1018,7 +1016,7 @@
         },
         {
           "symbol": "t_{i,c}",
-          "definition": "Job-host round-trip time of call c in trial i, from the start of the request until the exit code and guest clock readings return."
+          "definition": "Provider time of call c in trial i, from the start of the request until the exit code and guest clock readings return."
         }
       ]
     },
@@ -1026,20 +1024,20 @@
       "tests": [
         "exec-latency-per-100-calls"
       ],
-      "aria_label": "Time per call is the median job-host round-trip time over every call of every successful trial.",
-      "tex": "\\tilde{t} = \\operatorname{median}_{i,c} \\left( t_{i,c} \\right), \\quad L_{i,c} = t_{i,c} - r_{i,c}",
+      "aria_label": "Time per call is the median over successful trials of each trial's median call time.",
+      "tex": "M_i = \\operatorname{median}_{c} \\left( t_{i,c} \\right), \\quad L_{i,c} = t_{i,c} - r_{i,c}",
       "variables": [
         {
-          "symbol": "\\tilde{t}",
-          "definition": "Median round-trip time of one call, taken over all calls of all successful trials."
+          "symbol": "M_i",
+          "definition": "Median time of one call in trial i, taken over the calls of that trial."
         },
         {
           "symbol": "t_{i,c}",
-          "definition": "Job-host round-trip time of call c in trial i, from the start of the request until the exit code and guest clock readings return."
+          "definition": "Provider time of call c in trial i, from the start of the request until the exit code and guest clock readings return."
         },
         {
           "symbol": "r_{i,c}",
-          "definition": "Runtime of call c in trial i: the in-sandbox duration between the two `$EPOCHREALTIME` readings around `true`, close to zero because `true` is a shell builtin."
+          "definition": "Runtime of call c in trial i: the in-sandbox duration between the two sandbox clock readings around `true`, close to zero because `true` is a shell builtin."
         },
         {
           "symbol": "L_{i,c}",
@@ -1053,7 +1051,7 @@
         "write-4kib",
         "read-4kib"
       ],
-      "aria_label": "A trial's value is the median job-host duration over its repetitions of the operation.",
+      "aria_label": "A trial's value is the median provider time over its repetitions of the operation.",
       "tex": "M_{\\mathrm{op},\\,i} = \\operatorname{median}_{r} \\left( t_{\\mathrm{op},\\,i,\\,r} \\right)",
       "variables": [
         {
@@ -1062,7 +1060,7 @@
         },
         {
           "symbol": "t_{\\mathrm{op},\\,i,\\,r}",
-          "definition": "Job-host duration of repetition r of operation op in trial i."
+          "definition": "Provider time of repetition r of operation op in trial i."
         }
       ]
     },
@@ -1098,11 +1096,11 @@
         },
         {
           "symbol": "a_{i,r}",
-          "definition": "Job-host duration of the attach lookup in round r of trial i."
+          "definition": "Provider time of the attach lookup in round r of trial i."
         },
         {
           "symbol": "c_{i,r}",
-          "definition": "Job-host duration of the first `true` command in round r of trial i."
+          "definition": "Provider time of the first `true` command in round r of trial i."
         },
         {
           "symbol": "q_{i,r}",
@@ -1155,11 +1153,11 @@
         },
         {
           "symbol": "s_k",
-          "definition": "The script's `$EPOCHREALTIME` reading immediately before command or step k."
+          "definition": "The sandbox clock's reading just before command or step k."
         },
         {
           "symbol": "e_k",
-          "definition": "The script's `$EPOCHREALTIME` reading immediately after command or step k."
+          "definition": "The sandbox clock's reading just after command or step k."
         }
       ]
     },
@@ -1176,32 +1174,11 @@
         },
         {
           "symbol": "t_{\\mathrm{total}}",
-          "definition": "Total time: the operation duration of a timed span, measured on the job host."
+          "definition": "Total time: the provider time of a timed span."
         },
         {
           "symbol": "t_{\\mathrm{runtime}}",
           "definition": "Runtime: the command duration of a timed span, measured on the sandbox's own clock."
-        }
-      ]
-    },
-    "common-clock-gate": {
-      "tests": [
-        "sbs.common"
-      ],
-      "aria_label": "A guest runtime is accepted when the wall-clock and uptime spans are not negative and differ by at most the clock gate's tolerance.",
-      "tex": "\\Delta t_{\\mathrm{wall}} \\ge 0, \\quad \\Delta t_{\\mathrm{up}} \\ge 0, \\quad \\text{and} \\quad \\left| \\Delta t_{\\mathrm{wall}} - \\Delta t_{\\mathrm{up}} \\right| \\le t_{\\mathrm{tol}}",
-      "variables": [
-        {
-          "symbol": "\\Delta t_{\\mathrm{wall}}",
-          "definition": "Elapsed time of the timed span from the start s and end e $EPOCHREALTIME readings: e - s."
-        },
-        {
-          "symbol": "\\Delta t_{\\mathrm{up}}",
-          "definition": "Elapsed /proc/uptime duration over the same span."
-        },
-        {
-          "symbol": "t_{\\mathrm{tol}}",
-          "definition": "The clock gate's tolerance, given below."
         }
       ]
     },

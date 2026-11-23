@@ -38,7 +38,7 @@ environment:
     modification: None. Before the first timed step, an untimed setup unpacks each task's prebuilt environment
       archive in sandbox 1, with nothing added to the image. Sandboxes 2 to 5 start from a snapshot of sandbox 1
       taken after the environment reset.
-  network: unknown
+  network: The provider's default network.
   lifetime_seconds: 900
 default_view: {}
 procedure:
@@ -50,8 +50,7 @@ procedure:
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: Sandbox 1 starts from the provider's prepared copy of the standard image and runs the environment reset; sandboxes 2 to 5 are created
-      one after another from its snapshot, each only after the previous one has been probed, destroyed
-      and confirmed gone. The restore request names no capability. The snapshot is deleted and checked
+      one after another from its snapshot, each only after the previous one has been destroyed. The restore request names no capability. The snapshot is deleted and checked
       gone after the last sandbox. Providers without create-from-snapshot are not measured.
   variants:
   - id: numpy-0a476002600c
@@ -147,8 +146,8 @@ procedure:
     in_sandboxes:
     - 1
   - id: ready_check
-    name: Ready check
-    action: Untimed; send `true` to sandbox 1 until it answers. Sandboxes created from the snapshot skip
+    name: Untimed first command
+    action: Untimed; send one `true` to sandbox 1 before its setup. Sandboxes created from the snapshot skip
       it.
     timer: null
   - id: reset
@@ -156,8 +155,8 @@ procedure:
     label: Reset
     show: stack
     action: After an untimed upload of {name:test.r2e-gym}'s four tools, run {name:test.r2e-gym}'s environment
-      reset commands in order as `timeout 120 <command>` under `sh -c` in /testbed, in one script started
-      in the background.
+      reset commands in order as `timeout 120 <command>` under `sh -c` in /testbed, each in its own script
+      started in the background; any exit code is accepted.
     timer:
       from: each reset command starting, by the sandbox's own clock
       until: it exits, by the sandbox's own clock
@@ -188,7 +187,7 @@ procedure:
       is confirmed gone.
     timer:
       from: the restore request
-      sent: once the previous sandbox is confirmed gone
+      sent: once the previous sandbox's destroy call returns
       until: the restore call returns
     timeout_seconds: 600
     record_steps:
@@ -202,8 +201,8 @@ procedure:
     name: '{name:stage.tool-calls}'
     label: Tool call
     show: stack
-    action: 'Replay one rollout''s tool calls back to back in recorded order as one script started in
-      the background in sandbox 2, 3, 4 or 5, each as {name:test.r2e-gym} ran it: `timeout 90 <tool> <arguments>`
+    action: 'Replay one rollout''s tool calls back to back in recorded order, each in its own script started in
+      the background in sandbox 2, 3, 4 or 5, run as root, each as {name:test.r2e-gym} ran it: `timeout 90 <tool> <arguments>`
       under `sh -c` in /testbed.'
     timer:
       from: each call starting, by the sandbox's own clock
@@ -239,7 +238,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: stack
-    action: After each sandbox's last command, probe its size, destroy it and confirm it is gone. After
+    action: After each sandbox's last command, destroy it. After
       the last sandbox, delete the snapshot and check it is gone, untimed.
     timer:
       from: the destroy request
@@ -275,7 +274,7 @@ interpretation:
   - The rollout dataset licence is unknown.
   - Whether snapshot storage is billed is unknown.
   caveats:
-  - The first sandbox gets the ready check right after its create; the sandboxes created from its snapshot
+  - The first sandbox gets one untimed `true` right after its create; the sandboxes created from its snapshot
     do not.
   - The restore request names no capability.
   - Whether snapshot storage is billed is unknown.
@@ -287,8 +286,7 @@ validity_checks:
     of the benchmark, not of the provider.
 - id: one_at_a_time
   threat: Sandboxes alive together would change the load on the provider.
-  check: Each of sandboxes 2 to 5 is created only after the previous one has been probed, destroyed and
-    confirmed gone.
+  check: Each of sandboxes 2 to 5 is created only after the previous one has been destroyed.
 - id: snapshot_cleanup
   threat: A leftover snapshot would carry cost and state into later trials.
   check: After the last sandbox the snapshot is deleted and checked gone, untimed.
@@ -303,17 +301,17 @@ failure_policy:
     destroy: 300
   retries: None inside a trial; the first failed step ends the trial. When a trial fails, a new trial runs in its
     place up to the run's attempt limit for that cell, regardless of who owned the failure, and each failed trial remains in the data with its owner and cause.
-  success: unknown
+  success: Every `execute_bash` tool call exits with the code the rollout recorded, the replay leaves the recorded patch (checked untimed before the reward), and all five sandboxes and the snapshot are deleted. The reward command's own result is not judged.
   provider_errors:
   - Create, snapshot, restore and transport errors, and a sandbox that stops answering.
   - A failure whose owner is uncertain.
+  - A tool call whose exit code differs from the recorded one, or a patch that differs from the recording's (unknown owner, counted against the provider).
   benchmark_errors:
   - A fetched rollout set that differs from the pinned set.
   - A failure of the benchmark's own script.
   exclusions:
   - A provider with no create-from-snapshot through the integration is not measured.
-  - A workload that does not replay on that provider.
-  - An error shown not to be the provider's.
+  - An error shown to be BoxRouter's.
 source:
   name: '{name:test.r2e-gym} RL trajectories (AxT-dev/qwen3-32b-rl-step200-r2e-gym-trajectories) replayed
     with {name:test.r2e-gym}''s tools'

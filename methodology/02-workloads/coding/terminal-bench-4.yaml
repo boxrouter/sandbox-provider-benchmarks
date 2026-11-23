@@ -38,8 +38,7 @@ environment:
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
     modification: None. Before the first timed step, an untimed setup checks out the benchmark repository at its pinned commit, copies in the task's environment files and installs the task's dependencies, with nothing added to the image.
-  network: The provider's default network, which is open, as Terminal-Bench's was. The sandbox runs as
-    root.
+  network: The provider's default network, which is open, as Terminal-Bench's was. Steps run as root.
   lifetime_seconds: 1800
 default_view:
   metric: tool_time
@@ -72,6 +71,11 @@ procedure:
     description: Steps that change files, such as edits, redirects, `git apply`, `mv`, `cp` and `rm`.
     record_steps:
     - cmd
+  - id: install
+    name: '{name:stage.install}'
+    description: Steps that install packages, such as `pip install`, `npm install` and `go mod download`.
+    record_steps:
+    - cmd
   - id: build
     name: '{name:stage.build}'
     description: Steps that build, compile, lint or format, such as `go build`, `tsc`, `ruff` and `make`.
@@ -94,23 +98,17 @@ procedure:
     timeout_seconds: 600
     record_steps:
     - create
-  - id: ready_check
-    name: Ready check
-    action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
-    timer: null
   - id: steps
     name: Session replay
     label: Session replay
     show: stack
-    action: Run the session's steps in recorded order as one bash script, uploaded and started in the
-      background and polled every 10 s. A Bash step runs byte for byte as `bash -c <command>` in its recorded
-      directory with no input. An Edit step runs as a perl program that replaces the old text with the
-      new and exits 1 unless the old text occurs exactly once (every occurrence with replace-all), as
-      Claude Code's Edit refuses. A Write step decodes the content into the file and makes its directory.
-      Each step gets the image's environment plus GIT_EDITOR=true, TERM=xterm and git's user.useConfigOnly,
-      and a 600 s limit. The script first sets PATH to the image's and turns core dumps off; neither is
-      timed. The sandbox's clock is logged before and after each step with its exit code, and /proc/uptime
-      at the script's start and end; if the two clocks differ by more than 20 ms no step runtime is kept.
+    action: Run the session's steps in recorded order, each as its own call that runs as root. A Bash step
+      runs byte for byte as `bash -c <command>` in its recorded directory with no input. An Edit step runs
+      as a perl program that replaces the old text with the new and exits 1 unless the old text occurs
+      exactly once (every occurrence with replace-all), as Claude Code's Edit refuses. A Write step decodes
+      the content into the file and makes its directory. Each step gets the image's environment plus
+      GIT_EDITOR=true, TERM=xterm and git's user.useConfigOnly, and a 600 s limit. The sandbox's clock is
+      read just before and just after each step in the same call.
     timer:
       start_event: The step starts, by the sandbox's own clock.
       stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between its
@@ -119,16 +117,11 @@ procedure:
     repeats: true
     record_steps:
     - cmd
-  - id: outputs
-    name: Outputs
-    action: Untimed; the log and every step's output come back as one archive kept with the trial. Outputs
-      are not compared.
-    timer: null
   - id: destroy
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone, the confirmation untimed.
+    action: Destroy the sandbox.
     timer:
       start_event: The destroy request is dispatched.
       stop_event: The destroy call returns.
@@ -159,14 +152,12 @@ interpretation:
     and process start under these tools.
   informs: Which provider makes a terminal agent wait least on its tool calls.
   limits:
-  - Each session is replayed once per provider in a run.
+  - Each session is replayed {param:terminal-bench-4-0.procedure.trials} times per provider in a run.
   - Steps run back to back, so the page cache stays warm and the provider does not sleep between steps.
   - The task's own tests run separately; the replay does not check the final task result.
   caveats:
-  - Terminal-Bench covers terminal work beyond code. By its own categories the ten tasks are four science
+  - Terminal-Bench covers terminal work beyond code. By its own categories the ten tasks in the parameters are four science
     (one a Coq proof), two operations, two software, one ML evaluation and one hardware (a FreeCAD model).
-  - The images are built later than Terminal-Bench's own, and their Dockerfiles install some unpinned
-    packages, so versions can differ from the recording.
   - An edit runs here as a `perl` or `base64` process, where Claude Code writes from its own process.
   - Daytona's containers show the host's CPU count to `nproc` and Python; tools that size their work by
     it run as they would for a Daytona user.
@@ -177,55 +168,42 @@ interpretation:
     had no error, ran nothing in the background, had no command time out, called no subagent, tried no
     network install or download, and called none of the agent''s own programs (`rg`, `node`, `npm`, `npx`,
     `claude`). For each task and configuration the earliest eligible session is taken: 40 sessions, with
-    1,965 commands and 290 file edits. Only the ten Claude Opus 5.5
-    max sessions are replayed, 303 steps. Sonnet 5 max
+    1,965 commands and 290 file edits. Only the Claude Opus 5.5
+    max sessions are replayed, and the run replays five of the ten tasks. Sonnet 5 max
     has 60% of the 40 sessions'' steps, 700 of them in one Coq session.'
-  - Since 2026-10-26 the image of coq-block-bound sets `CMD ["sleep", "infinity"]` (a new digest and workload; the other nine are unchanged), because its Dockerfile's `ENTRYPOINT []` clears the base image's
-    CMD and Modal starts a sandbox with the image's CMD. This lets it run on Modal too.
   - 'The sessions are fetched by trial id from the endpoints in the parameters'' protocol.json and are
     not republished: their licence is not stated.'
 validity_checks:
 - id: trace_set_pinned
   threat: A fetched session set that differs from the one this version pins would replay different steps.
   check: The protocol pins the SHA-256 of the extracted set; a batch whose fetched set differs sends no
-    command and its trials are missed.
+    command, and its trials do not succeed.
 - id: exit_codes
   threat: A step that diverges from the recording, so the replay no longer stands for the session.
   check: A step succeeds when it exits with the code the session recorded (`Exit code N` from the result;
     1 when Claude Code gave a `returnCodeInterpretation`, such as grep's "No matches found"; otherwise
-    0; an edit 0). The script stops at the first step whose code differs, and that trial is excluded on
-    that provider as "does not replay here", with the step and both codes.
-- id: clock_agreement
-  threat: The sandbox's clock drifts, so step runtimes are wrong.
-  check: /proc/uptime is read at the script's start and end; when the two clocks disagree by more than
-    20 ms, no step's runtime is kept.
-- id: replay_script_start
-  threat: A provider's login shell resets PATH, or a crash writes a core dump.
-  check: The script first sets PATH to the image's and turns core dumps off (`ulimit -c 0`); neither is
-    logged or timed.
+    0; an edit 0). The trial stops at the first step whose code differs, and it fails as the provider's, with the step
+    and both codes.
 failure_policy:
   timeout_seconds:
     create: 600
     steps: 600
     destroy: 300
-  retries: None inside a trial; the script stops at the first failing step. When a trial fails, a new trial runs in
+  retries: None inside a trial; the trial stops at the first failing step. When a trial fails, a new trial runs in
     its place up to the run's attempt limit for that cell, regardless of who owned the failure, and each failed trial remains in the data with its owner and cause.
   success: 'Every step exits with the code the session recorded (`Exit code N` from the result; 1 when
     Claude Code gave a return-code interpretation such as grep''s "No matches found"; otherwise 0; an
-    edit 0) and the sandbox is confirmed deleted. There is no end-state check: Terminal-Bench''s own tests
+    edit 0) and the sandbox is deleted. There is no end-state check: Terminal-Bench''s own tests
     run in a separate verifier image.'
   provider_errors:
   - Create and transport errors, and a sandbox that stops answering.
-  - A script that ends before its last step with no exit-code mismatch.
+  - A step whose exit code differs from the recorded one, or a step that reaches its 600 s limit.
   - A failure whose owner is uncertain.
   benchmark_errors:
-  - A fetched session set that differs from the pinned set; no command is sent and its trials are missed.
+  - A fetched session set that differs from the pinned set; no command is sent.
   - A failure of the benchmark's own script.
   exclusions:
-  - A step whose exit code differs from the recorded one is excluded on that provider as "does not replay
-    here", with the step and both codes.
-  - A step that runs its full 600 s is excluded the same way.
-  - An error shown not to be the provider's.
+  - An error shown to be BoxRouter's.
 source:
   name: '{name:test.terminal-bench-4-0} (harbor-framework/terminal-bench) leaderboard sessions'
   version: v4.0.0, commit 452bf305c6daa62fc59061d22133a7cbc7c1572e

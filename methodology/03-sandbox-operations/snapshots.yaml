@@ -8,7 +8,7 @@ notes:
   how_to_read: The {param:fork.statistics.primary} summarizes successful trials in the axis unit;
     {direction:create_from_snapshot}.
   summary: New sandboxes are created in sequence from the same snapshot and run representative first commands.
-  how_it_is_measured: A job-host monotonic clock times each create-from-snapshot request and first command
+  how_it_is_measured: The provider's own time times each create-from-snapshot request and first command
     until its result returns. The same snapshot supplies each sandbox in sequence.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful sandbox.
   cost_how_to_read: Only successful trials contribute to the cost value.
@@ -45,7 +45,7 @@ environment:
   network: unknown
   lifetime_seconds: 900
 clocks:
-  operation: Job-host monotonic clock around create and command calls.
+  operation: Provider time of each create and command call.
   command_runtime: Sandbox clock around the first command after each restore.
 default_view:
   metric: total_time
@@ -74,7 +74,7 @@ procedure:
     name: Create source sandbox
     label: '{name:stage.create}'
     show: hidden
-    action: Create a sandbox with snapshot support and pass the untimed ready check.
+    action: Create a sandbox with snapshot support.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -90,17 +90,17 @@ procedure:
     - snapshot
   - id: destroy_source
     name: Destroy source
-    action: Probe size, destroy the original sandbox and confirm it is gone.
+    action: Destroy the original sandbox.
     timer: null
     timeout_seconds: 300
   - id: restore
     name: Create fork
     label: Create from snapshot
     show: stack
-    action: Create one new sandbox from the snapshot after the preceding sandbox is confirmed gone.
+    action: Create one new sandbox from the snapshot after the preceding sandbox's destroy call returns.
     timer:
       from: the create-from-snapshot request
-      sent: once the preceding sandbox is confirmed gone
+      sent: once the preceding sandbox's destroy call returns
       until: the call returns with the fork
     timeout_seconds: 300
     repeats: true
@@ -122,7 +122,7 @@ procedure:
     - exec
   - id: verify_destroy
     name: Verify and destroy fork
-    action: Read the marker, then destroy and confirm the fork is gone before creating the next.
+    action: Read the marker, then destroy the fork before creating the next.
     timer: null
     timeout_seconds: 300
   - id: delete_snapshot
@@ -203,7 +203,7 @@ interpretation:
   - Snapshot storage is unpriced because no provider publishes a rate for a snapshot held for seconds.
   caveats:
   - Each trial's cost is the five sandboxes' compute.
-  - Each time is BoxRouter's operation time on the job host.
+  - Each time is the provider's time for that call.
   - The first sandbox and snapshot are shared with {name:test.snapshot-and-restore}'s trial design.
   - 'Providers capture different things: a snapshot may keep files and memory or files only. A snapshot
     that keeps memory takes longer to save and may start faster.'
@@ -215,7 +215,7 @@ validity_checks:
   check: The marker is read back in each fork; a missing or different marker is the provider's failure.
 - id: one_fork_at_a_time
   threat: Overlapping forks would measure contention instead of a fork.
-  check: Each fork is destroyed and confirmed gone before the next one is created.
+  check: Each fork is destroyed before the next one is created.
 source:
   name: fixed snapshot marker and standard runtime commands
   version: sha256:1d6c76a30f30daae
@@ -237,7 +237,7 @@ notes:
   how_to_read: The {param:snapshot-and-restore.statistics.primary} is shown in {unit:snapshot_time};
     {direction:snapshot_time}.
   summary: A sandbox creates a snapshot, restores it and runs representative first commands.
-  how_it_is_measured: A job-host monotonic clock times each snapshot, restore, or first-command call from
+  how_it_is_measured: Each snapshot, restore, or first-command call is timed at the provider's own time, from
     dispatch until its result returns. The workload uses a fixed snapshot marker and standard runtime
     commands.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, divided by successful
@@ -282,7 +282,7 @@ environment:
   network: unknown
   lifetime_seconds: 900
 clocks:
-  operation: Job-host monotonic clock around snapshot, restore and command calls.
+  operation: Provider time of each snapshot, restore and command call.
   command_runtime: Sandbox clock for the first command after restore.
 default_view:
   metric: total_time
@@ -313,7 +313,7 @@ procedure:
     name: Create source sandbox
     label: '{name:stage.create}'
     show: hidden
-    action: Create a new sandbox with snapshot support and pass the untimed ready check.
+    action: Create a new sandbox with snapshot support.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -337,17 +337,17 @@ procedure:
     - snapshot
   - id: destroy_source
     name: Destroy source
-    action: Probe size, destroy the original sandbox and confirm it is gone.
+    action: Destroy the original sandbox.
     timer: null
     timeout_seconds: 300
   - id: restore
     name: '{name:stage.create-from-snapshot}'
     label: Create from snapshot
     show: stack
-    action: Create a new sandbox from the snapshot after the source sandbox is confirmed gone.
+    action: Create a new sandbox from the snapshot after the source sandbox's destroy call returns.
     timer:
       from: the create-from-snapshot request
-      sent: once the source sandbox is confirmed gone
+      sent: once the source sandbox's destroy call returns
       until: the call returns with the new sandbox
     timeout_seconds: 300
     record_steps:
@@ -357,10 +357,10 @@ procedure:
     label: Load runtimes
     show: stack
     action: Run the pinned Python import, Node built-in and git version command immediately after restore,
-      without a ready check first.
+      with no other request first.
     timer:
       from: the command
-      sent: immediately after the restore, without a ready check first
+      sent: immediately after the restore, with no other request first
       until: its result and sandbox clock readings return
     timeout_seconds: 100
     record_steps:
@@ -374,7 +374,7 @@ procedure:
     name: Destroy restored sandbox
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy and confirm the restored sandbox is gone; delete and check the snapshot.
+    action: Destroy the restored sandbox; delete and check the snapshot.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -453,9 +453,9 @@ interpretation:
   - Snapshot storage is unpriced because no provider publishes a rate for a snapshot held for seconds.
   caveats:
   - Each trial's cost is the two sandboxes' compute.
-  - Where BoxRouter cannot look a snapshot up after its delete, the delete is sent and recorded as not
-    checkable.
-  - Each time is BoxRouter's operation time on the job host.
+  - The snapshot is deleted when the trial ends; a delete that is not accepted fails the
+    trial, and the run's cleanup tries it again.
+  - Each time is the provider's time for that call.
 validity_checks:
 - id: marker_read_back
   threat: A snapshot that restores an empty sandbox would still look fast.
@@ -464,10 +464,10 @@ validity_checks:
 - id: nothing_inherited
   threat: A create that inherits the first sandbox would not measure the snapshot.
   check: The create from the snapshot names no capability, so nothing is inherited from the first sandbox,
-    which is destroyed and confirmed gone first.
-- id: no_ready_check_first
-  threat: A ready check would hide the first command's time.
-  check: The load-runtimes command is sent as soon as the create returns, with no ready check first, and
+    which is destroyed first.
+- id: first_command_first
+  threat: A request before the first command would hide the first command's time.
+  check: The load-runtimes command is sent as soon as the create returns, with no other request first, and
     its runtime is read by the sandbox's clock.
 source:
   name: fixed snapshot marker and standard runtime commands

@@ -38,8 +38,6 @@ environment:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
     modification: None. Before the first timed step, an untimed setup clones each task's repository at its pinned commit and installs its dependencies, with nothing added to the image.
   network: A proxy started in the sandbox refuses every host, as {name:test.deepswe}'s own harness did.
-    Where the provider allows it, the sandbox is also created with a deny-all network policy; this is
-    optional.
   lifetime_seconds: 1500
 default_view:
   metric: tool_time
@@ -100,10 +98,6 @@ procedure:
     timeout_seconds: 600
     record_steps:
     - create
-  - id: ready_check
-    name: Ready check
-    action: Untimed; send `true` until the sandbox answers, as the common ready check describes.
-    timer: null
   - id: proxy_start
     name: Proxy start
     action: Untimed; start the proxy that refuses every host.
@@ -114,9 +108,8 @@ procedure:
     show: stack
     action: Run every command of the trace in its recorded order as `sh -c <command>` with no input and
       output merged, in /app, with the image's environment plus a few non-interactive settings (no pager,
-      no progress bars, git told not to guess an identity), in one script started in the background. The
-      script first sets PATH to the image's and turns core dumps off; neither is timed. It records the
-      sandbox clock before the first command and after each one.
+      no progress bars, git told not to guess an identity), each as its own call as root. The
+      sandbox clock is read just before and just after each command in the same call.
     timer:
       start_event: The command starts, by the sandbox's own clock.
       stop_event: The command exits, by the sandbox's own clock; its runtime is the difference between
@@ -133,7 +126,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox after the patch check and confirm it is gone.
+    action: Destroy the sandbox after the patch check.
     timer:
       start_event: The destroy request is dispatched.
       stop_event: The destroy call returns.
@@ -158,9 +151,6 @@ parameters:
   sha256: ef2824abf9ac0fb353098efe35f9b7772814b62b07fafcabaf8ac8065d252e1f
 capabilities:
   required: []
-  optional:
-    network_lockdown:
-      policy: deny_all
 interpretation:
   what_to_do: Compare the sandbox time and cost to run these command sequences. A provider can use the
     command span to investigate execution overhead for this workload.
@@ -169,7 +159,7 @@ interpretation:
   limits:
   - The replay measures recorded commands; it does not measure agent quality or model speed.
   - Commands run back to back, so the page cache stays warm and the provider does not sleep between commands.
-  - A proxy refuses every host; a provider deny-all network policy is optional.
+  - A proxy in the sandbox refuses every host; no provider network policy is requested.
   caveats:
   - Trace and patch files are fetched by trial id from the public {name:test.deepswe} trial endpoints
     named in the parameters' protocol.json and are not republished; the upstream setup source states no
@@ -178,15 +168,10 @@ interpretation:
 validity_checks:
 - id: trace_set_pinned
   threat: A fetched trace set that differs from the one this version pins would replay different commands.
-  check: The protocol pins the SHA-256 of the trace set; a missing trace is recorded as a missed trial.
+  check: The protocol pins the SHA-256 of the trace set; a set that differs sends no command, and the trial does not succeed.
 - id: final_patch
   threat: A replay that ran the commands but did not reproduce the recorded result.
   check: After the last command, the final patch is checked; the trial succeeds only when it passes.
-- id: replay_script_start
-  threat: A provider's login shell resets PATH, or a crash writes a core dump, and either changes what
-    a command does or costs.
-  check: The replay script first sets PATH to the image's and turns core dumps off (`ulimit -c 0`); neither
-    is logged or timed.
 failure_policy:
   timeout_seconds:
     create: 600
@@ -194,18 +179,17 @@ failure_policy:
     destroy: 300
   retries: None inside a trial; the first failed step ends the trial. When a trial fails, a new trial runs in its
     place up to the run's attempt limit for that cell, regardless of who owned the failure, and each failed trial remains in the data with its owner and cause.
-  success: Every saved command executes in order, the final patch check passes and the sandbox is confirmed
+  success: Every saved command executes in order, the final patch check passes and the sandbox is
     deleted.
   provider_errors:
   - Create and transport errors, and a sandbox that stops answering.
-  - A command timeout.
+  - A command timeout, or a command that exits with a code other than the recorded one.
   - A failure whose owner is uncertain.
   benchmark_errors:
-  - A missing trace, recorded as a missed trial.
+  - A fetched trace set that differs from the pinned set; no command is sent.
   - A failure of the benchmark's own script.
   exclusions:
-  - A workload that does not replay on that provider.
-  - An error shown not to be the provider's.
+  - An error shown to be BoxRouter's.
 source:
   name: '{name:test.deepswe} (datacurve-ai/deep-swe), v1.1 tasks and trial artifacts'
   version: 3cda4081fed96103a6395de39c85e9b20275e307

@@ -76,7 +76,6 @@
               "trial_lifecycle": {"type": "string", "minLength": 1},
               "ready_check": {"type": "string", "minLength": 1},
               "guest_timing": {"type": "string", "minLength": 1},
-              "clock_gate": {"type": "string", "minLength": 1},
               "workload": {"type": "string", "minLength": 1},
               "procedure": {"type": "string", "minLength": 1},
               "metrics": {"type": "string", "minLength": 1},

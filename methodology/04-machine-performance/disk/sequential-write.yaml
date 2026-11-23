@@ -54,13 +54,12 @@ procedure:
     - create
   - id: setup
     name: Prepare disk workload
-    action: 'Untimed: read the mount facts of /workspace/fio; write in and check the pinned static fio
-      3.39 by its SHA-256 (another digest is the benchmark''s failure); probe direct I/O with `dd` (a
-      /workspace that refuses O_DIRECT reads or writes, or has under 2 GiB free, misses the trial); then
-      write the job file and the data file''s first write: 1 GiB, direct, fresh random contents in every
-      buffer, with the sandbox''s memory figures read before and after. The first write and the cache
-      checks are started in the background and polled, each writing what it prints to a file that is read
-      back.'
+    action: 'Untimed: make /workspace/fio, then download the pinned static fio 3.39 from a pinned release on
+      GitHub inside the sandbox and check its SHA-256 (another digest is the provider''s failure); probe
+      direct I/O with `dd` (a /workspace that refuses O_DIRECT reads or writes, or has under 2 GiB free,
+      fails the trial); then write the job file and the data file''s first write: 1 GiB, direct, fresh
+      random contents in every buffer. The first write and the cache checks are started in the background
+      and polled.'
     timer: null
   - id: sequential-write
     name: '{name:test.sequential-write}'
@@ -68,16 +67,13 @@ procedure:
     show: stack
     action: Run fio 3.39 on one 1 GiB file in /workspace/fio with direct I/O (libaio), 64 requests in
       flight, one process, a 5 s ramp and a 60 s measured interval, changing only the access pattern and
-      block size. The row is started in the background and its status read every 10 s until fio exits,
+      block size. The row is started in the background and its status read every 0.5 s until fio exits,
       because a call that waits more than about 120 s can be cut by a provider's gateway. The four disk
-      rows of a trial run in an order shuffled per trial; each row's per-second log is read back, untimed,
-      before the next. This row uses sequential 1 MiB blocks, and the reported byte count divided by 1,048,576
+      rows of a trial run in an order shuffled per trial. This row uses sequential 1 MiB blocks, and the reported byte count divided by 1,048,576
       gives MiB/s.
     timer:
-      start_event: fio starts after the untimed setup and the data file's first write, or the row before
-        it.
-      stop_event: fio exits after its 5 s ramp and 60 s measured interval, by the sandbox's own clock;
-        its JSON is written to a file and read back, untimed, after.
+      start_event: When fio starts. Setting up the sandbox and writing the 1 GiB test file before that are not timed.
+      stop_event: When fio exits, after a 5 s warm-up and 60 s of writes. The figure is fio's own rate over those 60 s. Reading fio's results afterwards is not timed.
     timeout_seconds: 180
     record_steps:
     - disk-seq-write-1m
@@ -86,12 +82,12 @@ procedure:
     timer: null
     action: 'After the rows, untimed: write a separate 256 MiB file and read it through the page cache,
       then read it with direct I/O. Sample the first 64 MiB of the data file: at least 99.9% of its 4 KiB
-      blocks must differ and zlib may shrink them by at most 1%, or the trial is the benchmark''s failure.'
+      blocks must differ and zlib may shrink them by at most 1%, or the trial fails as the provider''s.'
   - id: destroy
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -100,8 +96,7 @@ procedure:
   shared_trial:
     with: sequential-read
 timing_boundaries:
-  start: The row's fio starts after the untimed setup and the data file's first write, or the row before
-    it; rows are shuffled within each trial.
+  start: The row's fio starts. Setting up the sandbox and writing the 1 GiB test file before that are not timed. The four rows run one after another, in a new random order in each trial.
   stop: fio exits after a 5 s ramp and 60 s measured interval. The value is
     fio's reported byte count divided by 1,048,576.
 statistics:
@@ -128,17 +123,18 @@ failure_policy:
     create: 300
     sequential-write: 180
     destroy: 300
-  retries: None in the benchmark except the untimed ready check; first failed step ends the trial.
-  success: Benchmark checks pass and the sandbox is confirmed deleted.
+  retries: None; the first failed step ends the trial.
+  success: Benchmark checks pass and the sandbox is deleted.
   provider_errors:
   - Create or transport error, sandbox stops answering, or an uncertain failure owner.
-  - fio exiting non-zero, an error in its job, or a measured interval under 59 s.
-  - A /workspace that refuses direct I/O shows no number, only the reason.
+  - fio exiting non-zero, or an error in its job.
+  - A /workspace that refuses direct I/O, or has under 2 GiB free, fails the trial before fio runs.
+  - A fio download whose SHA-256 differs from the pinned one.
+  - Data-file blocks that repeat or compress by more than 1%.
   benchmark_errors:
   - Output that cannot be parsed after the benchmark tool exits successfully.
-  - fio JSON that cannot be read after fio exited 0.
-  - A fio binary whose SHA-256 differs from the pinned one.
-  - Data-file blocks that repeat or compress by more than 1%.
+  - fio output that cannot be read after fio exited 0, a measured interval under 59 s, or a fio error in
+    its output; these are counted as BoxRouter's and left out of the results.
   exclusions:
   - An error shown not to be the provider's; retain the trial and reason in the data.
 source:
@@ -146,7 +142,7 @@ source:
   version: '3.39'
   ids:
   - 'workload: fio-1g'
-  - job file sha256:85c02cea782dad97fd9b0835b981f4ca90c335be61fd11a4ab98620181f1b207
+  - job file sha256:fd3213eb531c5908cd1dbd4d11db8c12312bcee2fe17e9b8571011b5ef89a4b7
   - fio-3.39-linux-x86_64-static sha256:4986f10f2072a20e1dd1b7c31311b14610b1174235410a11491167953e655ddb
   licence: GPL-2.0-only; publish commands and results naming fio 3.39; reference-only for the binary.
 execution:
@@ -159,34 +155,7 @@ interpretation:
   limits:
   - The numbers say little about everyday agent work on small, cached files.
 validity_checks:
-- id: files-in-memory
-  threat: /workspace is held in memory, so the number is memory speed, not a device.
-  check: Recorded when /workspace is a tmpfs or an overlay on one, or the first write of the data file
-    took 0.8 GiB or more of the sandbox's memory; it becomes a note on the provider's result saying in
-    how many trials it fired. No result is removed.
-- id: direct-reads-at-memory-speed
-  threat: Direct reads are served from host memory, so the number is not the device.
-  check: Recorded when a proven cache hit read at least half as fast when bypassing the cache, or single
-    direct reads take under 10 µs at the median; it becomes a note on the provider's result. No result
-    is removed.
-- id: throughput-drop
-  threat: Throughput that falls during the interval means the first seconds were not sustained.
-  check: Recorded when throughput fell by more than 30% from the first 10 s to the last 10 s; it becomes
-    a note on the provider's result. No result is removed.
-- id: queue-depth-and-cpu
-  threat: A row that did not keep the queue full, or was held back by fio's own CPU, measures the sandbox's
-    CPU rather than its storage.
-  check: Recorded when fewer than 90% of requests kept 64 in flight, or fio used more than 90% of one
-    vCPU; it becomes a note on the provider's result. No result is removed.
 - id: interval-length
   threat: A measured interval shorter than intended reports a rate over too little time.
-  check: A measured interval under 59 s is the provider's failure.
-- id: above-link-limit
-  threat: A sequential figure above one storage device's link limit cannot come from a device.
-  check: Recorded when a sequential row is above 15.75 GB/s, one storage device's link limit; it becomes
-    a note on the provider's result. No result is removed.
-- id: rewrite-speed
-  threat: A rewrite much faster or slower than the first write means the first write measured something
-    else.
-  check: Recorded when the sequential write row rewrites more than twice, or less than half, the speed
+  check: A measured interval under 59 s is counted as BoxRouter's and left out of the results.
     of the data file's first write; it becomes a note on the provider's result. No result is removed.

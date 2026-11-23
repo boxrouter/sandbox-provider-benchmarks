@@ -55,7 +55,7 @@ environment:
     memory_gib: 4
   image:
     reference: ghcr.io/boxrouter/standard-image@sha256:89d4c97048dbdfb8b6d85ad91833962ff38d1c334a5f47e6de80a9762310191b
-  network: The runner must reach the public preview endpoint; the sandbox itself requires no network.
+  network: The sandbox downloads the app from github.com; the runner must reach the public preview endpoint.
   lifetime_seconds: 900
   capability_settings:
     previews:
@@ -104,8 +104,8 @@ procedure:
     record_steps:
     - create
   - id: upload
-    name: Upload app
-    action: Upload and unpack the pinned app archive, then verify its SHA-256.
+    name: Download app
+    action: Download the pinned app archive from a pinned release on GitHub inside the sandbox, check it, unpack it, check the tar file by its SHA-256 and extract it.
     timer: null
     timeout_seconds: 300
   - id: open_preview
@@ -123,11 +123,11 @@ procedure:
     name: Start server
     label: Start dev server
     show: hidden
-    action: Start the Vite server while the client host polls the public preview URL; the command
+    action: Start the Vite server. The call returns once the process has started; the command
       records the sandbox clock before launch.
     timer:
-      start_event: The client host dispatches the process-start request.
-      stop_event: The process-start call returns to the client host.
+      start_event: The process-start request is sent to the provider.
+      stop_event: The provider's answer arrives.
     timeout_seconds: 60
     record_steps:
     - start-server
@@ -146,11 +146,11 @@ procedure:
     name: Preview URL ready
     label: Preview URL answers
     show: hidden
-    action: Poll the public preview URL every 10 ms until it returns HTTP 200 with body ok; record each
-      attempt.
+    action: After the process-start call returns, request the public preview URL again and again, with no
+      pause, until it answers HTTP 200 with body ok.
     timer:
-      start_event: First GET sent just before server start.
-      stop_event: First GET returning HTTP 200 with body ok.
+      start_event: When the process-start request is sent.
+      stop_event: When the preview URL first answers HTTP 200 with body ok.
     timeout_seconds: 120
     record_steps:
     - url-poll
@@ -183,7 +183,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -234,17 +234,15 @@ failure_policy:
     request: 30
     websocket: 10
     destroy: 300
-  retries: Polling the URL and localhost repeats at 10 ms intervals; HTTP requests after readiness are
+  retries: Polling the URL repeats with no pause, and the localhost loop repeats at 10 ms intervals; HTTP requests after readiness are
     not retried; {name:stage.websocket} support is recorded without failing the trial.
   success: URL polling reaches the expected HTTP response, all 100 requests return the expected body,
-    and the sandbox is confirmed destroyed.
+    and the sandbox is destroyed.
   provider_errors:
   - Preview open or request transport error; server or URL fails to become ready within 120 s; a request
-    returns an unexpected status or body.
+    returns an unexpected status or body; an app archive whose SHA-256 differs from the pinned one.
   benchmark_errors:
-  - Malformed timing record
-  - archive checksum mismatch
-  - or failure in benchmark-side polling or parsing.
+  - A malformed timing record, or a failure in benchmark-side polling or parsing.
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
@@ -276,18 +274,17 @@ interpretation:
 validity_checks:
 - id: pinned_answer
   threat: A provider's waiting page could be counted as the app.
-  check: A 200 whose body is not the pinned `ok` counts as another attempt, as a 502 does; every attempt's
-    status and time is recorded.
+  check: A response that is not HTTP 200 with a body containing `ok` counts as another attempt, as a 502 does.
 - id: pinned_app
   threat: A different app would make runs incomparable.
-  check: The pinned Vite 8.3.4 project is uploaded as one tar file and checked by its SHA-256 in the sandbox
+  check: The pinned Vite 8.3.4 project is downloaded as one tar file and checked by its SHA-256 in the sandbox
     before it is unpacked.
 - id: poll_timeout
   threat: A server that never answers could hang the trial.
   check: Both polls give up after 120 s, which is the provider's failure.
 - id: requests_ok
   threat: A bad response could be timed as a good one.
-  check: Each of the 100 requests must be a 200 with the body `ok`.
+  check: Each of the 100 requests must answer without an error status and with a body containing `ok`.
 - id: websocket_recorded
   threat: A failed {name:stage.websocket} could fail the whole trial.
   check: A {name:stage.websocket} that does not work is recorded as not working and does not fail the

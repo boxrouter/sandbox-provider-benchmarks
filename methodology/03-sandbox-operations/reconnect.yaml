@@ -3,12 +3,12 @@ effective: '2026-11-08'
 name: '{name:test.reconnect}'
 category: sandbox_operation
 notes:
-  what_this_measures: The result measures the time to attach to a running sandbox and run a first command from a fresh client process.
+  what_this_measures: The result measures the time to attach to a running sandbox by ID and run a first command through the new handle.
   how_to_read: The {param:reconnect.statistics.primary} summarizes successful trials in the axis
     unit; {direction:reconnect_time}.
-  summary: A fresh client process attaches to an existing sandbox by ID and runs its first command.
-  how_it_is_measured: The monotonic clock on the client host times the attach call and the first command separately in
-    each fresh client process, while sandbox clock readings from `true` stay separate.
+  summary: A new handle to an existing sandbox is looked up by ID, and its first command runs.
+  how_it_is_measured: The attach call and the first command are timed separately at the provider's own time in
+    each round, while sandbox clock readings from `true` stay separate.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful round.
   cost_how_to_read: Only successful trials contribute to the cost value.
 inherits: sbs.common
@@ -51,32 +51,28 @@ metrics:
 - name: first_round_attach
   unit: ms
   direction: lower_is_better
-  description: Time on the client host's monotonic clock that a fresh client process takes to attach
-    to the existing sandbox by id in the first, cold round.
+  description: Provider time to attach to the existing sandbox by id in the first, cold round.
   formula: first(total(attach))
   quantity: time
   per: round
 - name: first_round_command
   unit: ms
   direction: lower_is_better
-  description: Time on the client host's monotonic clock that the client process takes to run true
-    on the attached sandbox in the first, cold round.
+  description: Provider time to run true on the attached sandbox in the first, cold round.
   formula: first(total(true))
   quantity: time
   per: round
 - name: later_rounds_attach
   unit: ms
   direction: lower_is_better
-  description: Median time on the client host's monotonic clock that a fresh client process takes to
-    attach to the existing sandbox by id across the later, warm rounds.
+  description: Median provider time to attach to the existing sandbox by id across the later, warm rounds.
   formula: median(later(total(attach)))
   quantity: time
   per: round
 - name: later_rounds_command
   unit: ms
   direction: lower_is_better
-  description: Median time on the client host's monotonic clock that the client process takes to run
-    true on the attached sandbox across the later, warm rounds.
+  description: Median provider time to run true on the attached sandbox across the later, warm rounds.
   formula: median(later(total(true)))
   quantity: time
   per: round
@@ -89,7 +85,7 @@ environment:
   network: unknown
   lifetime_seconds: 900
 clocks:
-  operation: The client host's monotonic clock times each attach call and each command call.
+  operation: Provider time of each attach call and each command call.
   command_runtime: Sandbox clock around true.
 default_view:
   metric: reconnect_time
@@ -102,9 +98,9 @@ procedure:
     trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
-    policy: Each trial creates one fresh sandbox, and each reconnect round starts in a new client process.
-    cold: The first round attaches to the sandbox from a fresh client process.
-    warm: Later rounds also attach from fresh client processes while the target sandbox remains the same.
+    policy: Each trial creates one fresh sandbox, and each reconnect round looks it up by id for a new handle.
+    cold: The first round attaches to the sandbox.
+    warm: Later rounds attach to the same sandbox through the same client.
   variants:
   - id: attach-true
     label: Attach, then true, 10 rounds
@@ -117,7 +113,7 @@ procedure:
     name: '{name:stage.create}'
     label: '{name:stage.create}'
     show: hidden
-    action: Create a fresh sandbox and pass the untimed ready check.
+    action: Create a fresh sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -126,10 +122,10 @@ procedure:
     name: Attach by id
     label: Attach
     show: hidden
-    action: In each of the ten rounds, start a fresh client process and attach to the existing sandbox by its id.
+    action: In each of the ten rounds, look up the existing sandbox by its id to get a new handle.
     timer:
-      start_event: The client process dispatches the attach lookup.
-      stop_event: The attach lookup returns to the client process.
+      start_event: The attach lookup is dispatched.
+      stop_event: The attach lookup returns.
     timeout_seconds: 120
     repeats: true
     record_steps:
@@ -150,7 +146,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox from its creating process and confirm it is gone.
+    action: Destroy the sandbox from its creating process.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -182,13 +178,12 @@ failure_policy:
     'true': 30
     destroy: 300
   retries: No attach or command round is retried; any failed round ends the trial.
-  success: All ten rounds attach from a fresh client process and run true with exit code 0, and the sandbox is
-    confirmed destroyed.
+  success: All ten rounds complete attach and run true with exit code 0, and the sandbox is destroyed.
   provider_errors:
   - Attach
   - command or transport error; nonzero true exit; or missing sandbox clock readings.
   benchmark_errors:
-  - A malformed timing record or a failure to start a fresh client process.
+  - A malformed timing record.
   exclusions:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
@@ -197,20 +192,20 @@ parameters:
 interpretation:
   what_to_do: Compare what a stateless worker, or an agent restarted after a crash or a deploy, pays before
     its first command.
-  informs: 'How long a fresh client process takes to attach to a running sandbox and run its first command.'
+  informs: 'How long it takes to attach to a running sandbox by ID and run its first command.'
   limits:
   - Providers differ in attach behavior; no attach opens the connection used by commands, so first-command
     time includes that work.
-  - The attach call and `true` are timed separately, while starting the client process is outside both timers.
-  - Every time covers the whole request from the client host to the provider and back, which is the same for every provider.
+  - The attach call and `true` are timed separately, and each time is the provider's time for that call.
+  - The benchmark does not yet start a new process for each round.
   caveats:
   - 'The chart shows reconnect: the median attach plus the median first command.'
   - Each round is recorded with its number, so the first round can be compared with the later ones.
 validity_checks:
-- id: fresh_process_per_round
-  threat: A reused client or provider session could hide the reconnect cost.
-  check: Each round runs in a newly started client process, so no connection or session state carries over from
-    the process that created the sandbox or from an earlier round.
+- id: handle_by_id_per_round
+  threat: A reused sandbox handle could hide the lookup cost.
+  check: Each round gets a new sandbox handle by looking the sandbox up by id; the client and its connections
+    are the ones the trial already uses.
 - id: round_succeeds
   threat: A failed attach or command could be left out.
   check: A round succeeds when the attach returns and `true` exits 0 with the clock readings back; a trial

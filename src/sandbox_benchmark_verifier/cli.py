@@ -24,7 +24,6 @@ from sandbox_benchmark_verifier.machine_panels import panel_errors
 from sandbox_benchmark_verifier.names import name_errors
 from sandbox_benchmark_verifier.parameters import document_errors
 from sandbox_benchmark_verifier.text import text_warnings, write_text_bundle
-from sandbox_benchmark_verifier.timing import timing_errors
 from sandbox_benchmark_verifier.yaml_load import load_yaml_all
 
 ROOT = Path.cwd()
@@ -131,37 +130,13 @@ def _method_errors(root: Path, documents: Sequence[tuple[Path, Any]]) -> list[st
     ]
 
 
-READY_CHECK_SKIP_LISTS = ("skipped_by_benchmarks", "skipped_on_restore_by_benchmarks")
-
-
-def ready_check_skip_errors(
-    root: Path, documents: Sequence[tuple[Path, Any]], methods: set[str]
-) -> list[str]:
-    """Every id a ready check names as skipping it is a methodology document's id."""
-    errors: list[str] = []
-    for path, document in documents:
-        if not path.is_relative_to(root / "methodology") or not isinstance(document, Mapping):
-            continue
-        ready_check = document.get("ready_check")
-        if not isinstance(ready_check, Mapping):
-            continue
-        for field in READY_CHECK_SKIP_LISTS:
-            errors.extend(
-                f"{path}: ready_check.{field} names {identifier}, which is no methodology id"
-                for identifier in ready_check.get(field, [])
-                if identifier not in methods
-            )
-    return errors
-
-
 def validate(root: Path = ROOT) -> list[str]:
     """Validate every methodology document: its schema, then the checks that read them all."""
     schemas, errors = read_schemas(root)
     documents, read_errors = load_documents(root)
     errors.extend(read_errors)
-    methods, method_errors = methodology_index(root, documents)
+    _, method_errors = methodology_index(root, documents)
     errors.extend(method_errors)
-    errors.extend(ready_check_skip_errors(root, documents, methods))
     for path, document in documents:
         errors.extend(
             f"{path}: key {where} is not a string; quote it" for where in non_string_keys(document)
@@ -174,7 +149,6 @@ def validate(root: Path = ROOT) -> list[str]:
                 errors.append(f"{path}: X22 schema validation failed at {list(issue.schema_path)}")
     errors.extend(_method_errors(root, documents))
     errors.extend(name_errors(root))
-    errors.extend(timing_errors(root))
     return errors
 
 

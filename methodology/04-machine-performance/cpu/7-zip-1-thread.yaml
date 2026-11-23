@@ -83,9 +83,9 @@ procedure:
     timeout_seconds: 30
   - id: install-tools
     name: Install tools
-    action: Write the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
-      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) into the
-      sandbox and check each by its SHA-256.
+    action: Download the pinned static 7-Zip 25.01 build (Igor Pavlov's own static build) and the pinned
+      STREAM 5.10 build (John McCalpin's stream.c, built once with OpenMP for generic x86-64) from a pinned
+      release on GitHub inside the sandbox and check each by its SHA-256.
     timer: null
   - id: 7-zip-1-thread
     name: '{name:test.7-zip-1-thread}'
@@ -94,11 +94,10 @@ procedure:
     action: Run `./7zzs b -mmt1` as a background script that the harness polls. The three CPU and memory
       rows of this trial (7-Zip at one thread, 7-Zip at all requested vCPUs and {name:test.stream-triad})
       run in an order shuffled per trial, each after the untimed CPU facts and tool check or the row before
-      it. Compress and decompress ratings, CPU usage and 7-Zip's own frequency estimate are recorded too.
+      it. The compression and decompression ratings are recorded too.
     timer:
-      start_event: 7-Zip's benchmark begins.
-      stop_event: 7zzs b -mmt1 exits; its rating is 7-Zip's own total MIPS over compress and decompress,
-        by its own clock.
+      start_event: When 7-Zip's benchmark starts. Downloading and checking the tools before that is not timed.
+      stop_event: When 7-Zip exits. The figure is 7-Zip's own rating, its total MIPS over compression and decompression.
     timeout_seconds: 300
     record_steps:
     - cpu-7zip-1t
@@ -106,7 +105,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone.
+    action: Destroy the sandbox.
     timer: null
     timeout_seconds: 300
     record_steps:
@@ -142,7 +141,7 @@ failure_policy:
     7-zip-1-thread: 300
     destroy: 300
   retries: None; the first failed step ends the trial.
-  success: 7-Zip exits 0 and prints a rating, and the sandbox is confirmed deleted.
+  success: 7-Zip exits 0 and prints a rating, and the sandbox is deleted.
   provider_errors:
   - A benchmark row that does not exit 0.
   - A failure whose owner is uncertain.
@@ -150,8 +149,8 @@ failure_policy:
   - Output the benchmark cannot read after 7-Zip exited 0.
   exclusions:
   - An error shown not to be the provider's.
-  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch, and its
-    result is kept.
+  - A sandbox that shows another CPU count than requested keeps its result; the CPU count it shows is recorded
+    in the raw data.
 source:
   name: 7-Zip
   version: '25.01'
@@ -173,8 +172,8 @@ interpretation:
   - The tool rates integer work such as compression, branching and cache access; it does not measure floating-point
     or vector speed.
   caveats:
-  - A sandbox that shows another CPU count than requested is recorded as a CPU count mismatch, and its
-    result is kept.
+  - A sandbox that shows another CPU count than requested keeps its result; the CPU count it shows is recorded
+    in the raw data.
   - A provider's sandboxes can land on different CPU models; each trial records its model, so a spread
     in results can be traced to it.
   - Each result is the tool's own figure by its own clock; the job host times nothing.
@@ -183,5 +182,5 @@ interpretation:
 validity_checks:
 - id: threads-differ
   threat: A sandbox shows another CPU count than requested, for example the host's CPUs.
-  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference is recorded
-    as a CPU count mismatch and the result is kept.
+  check: The CPU count the sandbox shows is compared with the requested vCPU count; a difference does not
+    change the result.
