@@ -246,7 +246,7 @@ names:
   - {row: 38, kind: "stage", id: "test", name: "Test", parent: "ci-jobs"}
   - {row: 38, kind: "stage", id: "build", name: "Build", parent: "ci-jobs"}
   - {row: 39, kind: "tab", id: "create", name: "Create", parent: "sandbox-operations"}
-  - {row: 40, kind: "test", id: "sequential-tti", name: "Sequential TTI", parent: "create", document: "sequential-tti", selector: {label: "First Command", mode: chooses}, rejected_labels: [Startup Time, Cold Startup Time, Cold Start], presentation: {panel: "sequential-start"}}
+  - {row: 40, kind: "test", id: "sequential-tti", name: "Cold Startup Time", parent: "create", document: "sequential-tti", selector: {label: "First Command", mode: chooses}, rejected_labels: [Startup Time, Cold Start], presentation: {panel: "sequential-start"}}
   - {row: 41, kind: "variant", id: "true", name: "true", parent: "sequential-tti", workload: "true", short: "true"}
   - {row: 41, kind: "variant", id: "python3", name: "python3 -c import", parent: "sequential-tti", workload: "python3", short: "python3"}
   - {row: 41, kind: "variant", id: "node", name: "node -e require", parent: "sequential-tti", workload: "node", short: "node"}
@@ -432,6 +432,10 @@ display_name_history:
   id: pause-resume
   previous_names:
   - Pause & Resume
+- kind: test
+  id: sequential-tti
+  previous_names:
+  - Sequential TTI
 - kind: capability
   id: pause_resume
   previous_names:

@@ -26,3 +26,14 @@ def test_the_reader_rules_are_not_restated_as_presentation_rules() -> None:
     assert ids.isdisjoint(
         {"capitalize-first-letter", "no-page-facts-in-slots", "no-raw-placeholders"}
     )
+
+
+def test_the_segment_minimum_leaves_the_pricing_panel_at_exact_scale() -> None:
+    """The pricing bar's length is the price, so only that panel kind is outside the minimum."""
+    rule = next(
+        rule
+        for rule in load_conventions()["presentation"]["rules"]
+        if rule["id"] == "segment-min-width"
+    )
+    assert rule["applies_to"]["slots"] == ["presentation.panel"]
+    assert rule["applies_to"]["exclude_slots"] == ["presentation.pricing-panel"]

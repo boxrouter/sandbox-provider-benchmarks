@@ -455,6 +455,7 @@
     "sent": "Sent",
     "server_listening": "{name:stage.server} Listening",
     "setup": "{name:stage.setup}",
+    "setup_steps": "Setup Steps",
     "sevenzip_one_thread": "7-Zip With One Thread",
     "sha256": "SHA-256",
     "shared_trial": "Shared Trial",
@@ -848,6 +849,7 @@
     },
     "charged_rate": "{name} {usd} per {unit}",
     "units": {
+      "creation": "creation",
       "gib": "GiB",
       "gb": "GB",
       "gib-month": "GiB-month",
@@ -1465,9 +1467,6 @@
     "list_of_objects": "One table: a row per item, a column per key every item has, headers from field_labels; a key only some items have is a note on that item.",
     "nested_object": "Each field has its own label from field_labels; labels are never joined from the path.",
     "composite_procedures": "A composite folds its inputs' procedure links into one disclosure (actions.procedures); each input's page links its own."
-  },
-  "measured_from_data": {
-    "procedure.sandboxes_per_trial": "sandbox_positions"
   },
   "at_a_glance": {
     "groups": [

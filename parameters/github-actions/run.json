@@ -11,7 +11,7 @@
     "vcpu": 4,
     "memory_gib": 8
   },
-  "lifetime_s": 900,
+  "lifetime_s": 2700,
   "steps": [
     {
       "id": "create",
@@ -24,7 +24,7 @@
       "clock": "sandbox",
       "cwd": "/workspace",
       "script": "ulimit -c 0",
-      "timeout_s": 600
+      "timeout_s": 1500
     },
     {
       "id": "cmd",

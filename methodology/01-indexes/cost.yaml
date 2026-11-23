@@ -35,18 +35,18 @@ composition:
     If a unit has a failed attempt with an explicitly recorded owner other than the provider, omit
     that unit for every provider unless a later successful rerun replaces the failure. Treat an
     unknown owner as provider-owned. For each remaining unit a provider did not complete, use the
-    highest exact cost on the same statistic any provider had on it. The page uses each workload's
+    highest exact cost on the same statistic any provider had on it. A workload the provider completed
+    no unit of is left out of its value. The page uses each workload's
     first listed variant as its overall result.
   aggregation: geometric_mean
-  weighting: Equal weight per workload; nothing is made relative to the best provider and there is no
-    0-100 score.
+  weighting: Equal weight per workload the provider ran; nothing is made relative to the best provider
+    and there is no 0-100 score.
   inclusion: >-
-    Omit a workload from this scope for every provider if any provider's workload result is
-    marked Not offered for its required capability. Keep that workload on its own leaderboard, with
-    its Not offered status and reason. Among the remaining workloads, include only providers that
-    have results in at least one workload. A provider with no result for a remaining workload takes
-    the highest workload cost on the same statistic any provider had. A workload where it has results
-    but no provider-sourced cost is not substituted.
+    Include only providers that have results in at least one workload of the scope. A workload a
+    provider has no result on, including one marked Not offered for its required capability, is left out
+    of that provider's composite and nothing is substituted for it; the other providers keep it. Keep
+    each workload on its own leaderboard, with its Not offered status and reason. A workload where it has
+    results but no provider-sourced cost is not substituted.
   not_displayed:
   - id: trial-without-provider-cost
     condition: At least one counted trial of the provider in a workload has no provider-sourced cost.

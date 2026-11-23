@@ -56,10 +56,10 @@ default_view:
   metric: total_mips
 procedure:
   mode: single
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: A fresh sandbox per trial from the standard image, prepared in the account before the run.
@@ -135,7 +135,7 @@ statistics:
     ranked: true
 cost:
   method: provider_reported_or_priced
-  counted_sandboxes: Each of the unit's five sandboxes.
+  counted_sandboxes: The trial's one sandbox.
 failure_policy:
   timeout_seconds:
     create: 300

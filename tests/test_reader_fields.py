@@ -293,7 +293,7 @@ def test_a_note_reads_counts_durations_and_products_of_its_own_definition(
     monkeypatch.setattr(reader, "load_reader", lambda _root: source)
     methods = build_text_bundle(ROOT)["reader"]["methods"]
     assert methods["sequential-read"]["text"]["notes"]["trial_steps"].startswith(
-        "400 runs, 1 metric, 30 min."
+        "100 runs, 1 metric, 30 min."  # sequential-read: 20 trials x 5 in parallel (workloads.yaml)
     )
 
 

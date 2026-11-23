@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: BoxRouter, Inc.
 # SPDX-License-Identifier: Apache-2.0
-"""A missing result takes the slowest (or highest-cost) value any provider recorded, no factor."""
+"""A missing unit takes the slowest (or highest-cost) value any provider recorded, no factor.
+
+A missing workload is left out of the provider's composite.
+"""
 
 import re
 from pathlib import Path
@@ -24,7 +27,10 @@ def test_the_composites_carry_no_penalty_and_fill_inside_each_workload(identifie
     # and only when the failure is the provider's own.
     assert "any provider had on it" in composition["per_input_value"]
     assert "owner other than the provider" in composition["per_input_value"]
-    assert re.search(r"takes (the|its|that workload's)", composition["inclusion"])
+    # A workload the provider has no result on is left out of its composite, nothing substituted
+    # (founder decision, 2026-11-22).
+    assert "left out of that provider's composite" in composition["inclusion"]
+    assert "nothing is substituted" in composition["inclusion"]
     assert not re.search(r"(?i)penalty|multipl", str(composition))
 
 

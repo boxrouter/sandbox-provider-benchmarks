@@ -53,10 +53,10 @@ default_view:
   sandbox: 2
 procedure:
   mode: sequential
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 5
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: Four forks are created one after another after the original sandbox has been destroyed.
@@ -290,10 +290,10 @@ default_view:
   sandbox: 2
 procedure:
   mode: sequential
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 2
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: One fresh sandbox writes a marker and is snapshotted; after it is destroyed, a new sandbox

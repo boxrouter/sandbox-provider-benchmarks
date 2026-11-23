@@ -11,7 +11,6 @@ from sandbox_benchmark_verifier.conventions import load_conventions
 from sandbox_benchmark_verifier.placeholders import (
     PlaceholderError,
     fio_size_bytes,
-    measured_token_errors,
     parse_placeholders,
     percent_text,
     resolve_template,
@@ -458,53 +457,3 @@ def test_a_version_placeholder_reads_the_one_version_a_text_holds() -> None:
     for target in ("ids.0", "two"):
         with pytest.raises(PlaceholderError, match="does not hold one version"):
             resolve_template("{version:demo." + target + "}", names={}, documents=documents)
-
-
-FIELDS = {"procedure.sandboxes_per_trial": "sandbox_positions"}
-
-
-def test_a_measured_token_is_the_readers_and_stays_in_the_compiled_text() -> None:
-    text = (
-        "{measured:procedure.trials*procedure.sandboxes_per_trial} sandboxes, "
-        "{measured:procedure.sandboxes_per_trial} each"
-    )
-    assert resolve_template(text, names=NAMES, documents=DOCUMENTS) == text
-    assert [p.kind for p in parse_placeholders(text)] == ["measured", "measured"]
-
-
-@pytest.mark.parametrize(
-    "token",
-    [
-        "{measured:procedure.sandboxes_per_trial}",
-        # An unlisted factor of a product is read from the definition.
-        "{measured:procedure.trials*procedure.sandboxes_per_trial}",
-    ],
-)
-def test_a_measured_token_with_a_listed_field_passes(token: str) -> None:
-    assert measured_token_errors(f"Each trial uses {token} sandboxes.", FIELDS) == []
-
-
-@pytest.mark.parametrize(
-    ("token", "expected"),
-    [
-        ("{measured:procedure.trials}", "names no field of measured_from_data"),
-        ("{measured:Procedure.Sandboxes}", "is malformed"),
-        ("{measured:procedure.sandboxes_per_trial*procedure.trials*}", "is malformed"),
-    ],
-)
-def test_a_measured_token_without_a_listed_field_or_malformed_fails(
-    token: str, expected: str
-) -> None:
-    [error] = measured_token_errors(f"Uses {token} sandboxes.", FIELDS)
-    assert expected in error
-
-
-def test_a_measured_token_that_mixes_data_facts_fails() -> None:
-    fields = {
-        "procedure.sandboxes_per_trial": "sandbox_positions",
-        "procedure.trials": "trial_count",
-    }
-    [error] = measured_token_errors(
-        "{measured:procedure.trials*procedure.sandboxes_per_trial}", fields
-    )
-    assert "mixes data facts" in error

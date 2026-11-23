@@ -197,28 +197,6 @@ def _public_source_criteria_errors(criteria: Mapping[str, Any]) -> list[str]:
     return errors
 
 
-MEASURED_DATA_KINDS = frozenset({"sandbox_positions"})
-"""The facts of the published data a page may draw in place of a methodology parameter."""
-
-
-def _measured_from_data_errors(fields: Mapping[str, Any]) -> list[str]:
-    """`measured_from_data` marks a methodology parameter the page reads from the data it draws
-    (Sequential TTI's sandboxes per trial: the data's `n-*` positions), not from the pinned
-    document, whose value may belong to a later dataset. Each key must be a parameter the
-    methodology schema defines, and each value a data fact the page knows."""
-    schema = json.loads((_assets() / "schemas/methodology.schema.json").read_text(encoding="utf-8"))
-    errors = []
-    for path, kind in fields.items():
-        node: Any = schema
-        for part in str(path).split("."):
-            node = node.get("properties", {}).get(part) if isinstance(node, Mapping) else None
-        if node is None:
-            errors.append(f"{path}: measured_from_data names a parameter the schema lacks")
-        if kind not in MEASURED_DATA_KINDS:
-            errors.append(f"{path}: unsupported data fact {kind!r} in measured_from_data")
-    return errors
-
-
 def _methodology_page_criteria_errors(criteria: Mapping[str, Any]) -> list[str]:
     errors: list[str] = []
     for key, label in criteria.get("methodology_page", {}).get("field_labels", {}).items():
@@ -238,7 +216,6 @@ def _methodology_page_criteria_errors(criteria: Mapping[str, Any]) -> list[str]:
         f"{{{name}}}" in str(page.get("machine_size", "")) for name in ("vcpu", "memory_gib")
     ):
         errors.append("machine_size must be a template with {vcpu} and {memory_gib}")
-    errors.extend(_measured_from_data_errors(page.get("measured_from_data", {})))
     errors.extend(_standard_image_errors(page.get("standard_image")))
     if any(key in page.get("byline", {}) for key in ("version", "effective")):
         errors.append("methodology pages must not show document versions or effective dates")

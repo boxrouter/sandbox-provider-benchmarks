@@ -34,10 +34,10 @@ default_view:
   metric: random_write_iops
 procedure:
   mode: single
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: A fresh sandbox per trial; no warm-up. Workload rows are shuffled within each trial where

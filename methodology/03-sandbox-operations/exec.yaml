@@ -44,10 +44,10 @@ default_view:
   variant: 'true'
 procedure:
   mode: single
-  trials: 100
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: One fresh sandbox per trial; 100 calls run sequentially in the same sandbox, so later calls
@@ -154,8 +154,8 @@ interpretation:
     so calls 2 through 100 reuse the warmed session state of that sandbox.
   - BoxRouter keeps idle provider connections open for 300 seconds where the integration supports it,
     whereas a call that follows a longer pause in real use may pay for a new connection handshake.
-  - A complete run targets 100 trials with up to 10 trials running in parallel, which produces 10,000
-    pooled calls across 100 sandboxes when all trials succeed.
+  - A complete run targets 20 trials with up to 5 trials running in parallel, which produces 2,000
+    pooled calls across 20 sandboxes when all trials succeed.
 validity_checks:
 - id: clock_cross_check
   threat: A wrong sandbox clock reading would skew the runtime and the latency.

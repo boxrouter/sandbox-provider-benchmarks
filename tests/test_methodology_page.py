@@ -57,25 +57,6 @@ def test_a_provider_field_is_drawn_as_the_provider_not_its_id() -> None:
     )
 
 
-def test_sandboxes_per_trial_is_marked_as_read_from_the_data() -> None:
-    """The pinned document's count may belong to a later dataset than the one drawn, so the page
-    reads it from the data's sandbox positions; the contract says so and its entries are checked."""
-    criteria = content_criteria()
-    page = criteria["methodology_page"]
-    assert page["measured_from_data"] == {"procedure.sandboxes_per_trial": "sandbox_positions"}
-    assert not any("measured_from_data" in error for error in criteria_errors(criteria))
-    for broken_fields, expected in (
-        ({"procedure.sandboxes_per_trial": "elsewhere"}, "unsupported data fact"),
-        (
-            {"procedure.no_such_parameter": "sandbox_positions"},
-            "names a parameter the schema lacks",
-        ),
-    ):
-        broken = deepcopy(criteria)
-        broken["methodology_page"]["measured_from_data"] = broken_fields
-        assert any(expected in error for error in criteria_errors(broken))
-
-
 def test_at_a_glance_is_short_and_sections_carry_no_open_flag() -> None:
     page = content_criteria()["methodology_page"]
 

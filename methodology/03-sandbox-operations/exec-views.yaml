@@ -41,10 +41,10 @@ default_view:
   variant: 'true'
 procedure:
   mode: single
-  trials: 100
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: One fresh sandbox per trial; 100 calls run sequentially in the same sandbox, so later calls
@@ -211,10 +211,10 @@ default_view:
   variant: 'true'
 procedure:
   mode: single
-  trials: 100
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: One fresh sandbox per trial; 100 calls run sequentially in the same sandbox, so later calls

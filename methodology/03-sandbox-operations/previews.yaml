@@ -70,10 +70,10 @@ default_view:
   variant: vite-dev
 procedure:
   mode: single
-  trials: 60
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: One fresh sandbox per trial; upload the pinned app, open a preview on port 5173, then start

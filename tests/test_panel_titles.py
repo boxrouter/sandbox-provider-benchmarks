@@ -62,7 +62,7 @@ def test_a_part_that_is_absent_drops_its_group() -> None:
 
 def test_a_variant_that_is_a_tests_full_name_titles_the_panel_by_itself() -> None:
     for category, variant, measure, title in [
-        ("Create", "Sequential TTI", "Time", "Sequential TTI"),
+        ("Create", "Cold Startup Time", "Time", "Cold Startup Time"),
         ("Create", "Burst TTI", "Time", "Burst TTI"),
         ("Files", "Read and Write", "Time", "Read and Write Time"),
         ("Snapshots", "Snapshot and Restore", "Time", "Snapshot and Restore Time"),

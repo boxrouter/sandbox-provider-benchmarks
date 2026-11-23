@@ -454,26 +454,5 @@
   },
   "counted_unit": {
     "default": "trial"
-  },
-  "sandbox_selector": {
-    "one": "TTI for Sandbox: [{sandbox}]",
-    "many": "TTI for Sandboxes: [{sandbox}]",
-    "all": "All",
-    "none": "None",
-    "count": "{n}",
-    "separator": ", ",
-    "most_named": 3,
-    "starts": [
-      {
-        "sandbox": 1,
-        "label": "Cold Start",
-        "short": "Cold"
-      },
-      {
-        "sandbox": "last",
-        "label": "Warm Start",
-        "short": "Warm"
-      }
-    ]
   }
 }

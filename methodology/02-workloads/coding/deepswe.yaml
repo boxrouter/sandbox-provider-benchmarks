@@ -48,7 +48,7 @@ procedure:
   trials: 10
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: Each trace runs in a fresh sandbox started from the provider's prepared standard image. Commands run back to

@@ -963,27 +963,25 @@ def test_a_composite_page_draws_each_composites_metrics_paragraph(bundle: dict[s
         assert "notes.metrics" not in sources
 
 
-def test_sequential_tti_reads_its_sandbox_count_from_the_data_and_states_it_nowhere_else(
+def test_cold_startup_starts_one_sandbox_per_trial_and_states_no_sequence(
     bundle: dict[str, Any],
 ) -> None:
-    """The count is `{measured:...}` in the notes web draws, and the opening, the introduction and
-    the metric (the no-JavaScript lead) carry no token and no count: the pinned document's count may
-    belong to a later dataset than the one drawn."""
+    """Cold Startup Time (document `sequential-tti`) starts one sandbox per trial: the notes say so
+    and name no sequence of sandboxes, no sandbox position and no per-trial sandbox count."""
     notes = bundle["reader"]["methods"]["sequential-tti"]["text"]["notes"]
-    for name in ("setup", "trial_steps", "statistics_rules", "failure_policy"):
-        assert (
-            "{measured:procedure.sandboxes_per_trial}" in notes[name]
-            or "{measured:procedure.trials*procedure.sandboxes_per_trial}" in notes[name]
-        )
-        assert "{param:measured.procedure.sandboxes_per_trial}" not in notes[name]
-        assert (
-            "{product:measured.procedure.trials*measured.procedure.sandboxes_per_trial}"
-            not in notes[name]
-        )
-    count = re.compile(
-        r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:sequential\s+)?sandboxes\b",
+    assert "one sandbox" in notes["setup"]
+    sequence = re.compile(
+        r"sequential sandboxes|previous sandbox|preceding sandbox|next one|sandbox position"
+        r"|sandboxes_per_trial",
         re.I,
     )
-    for name in ("opening", "introduction", "metric"):
-        assert "{measured:" not in notes[name]
-        assert not count.search(notes[name]), notes[name]
+    for name in (
+        "opening",
+        "introduction",
+        "metric",
+        "setup",
+        "trial_steps",
+        "statistics_rules",
+        "failure_policy",
+    ):
+        assert not sequence.search(notes[name]), notes[name]

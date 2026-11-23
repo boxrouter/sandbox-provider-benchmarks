@@ -760,9 +760,6 @@ naming:
     - ranking_statuses.*.label
     - statistics_selector.label
     - dots_selector.label
-    - sandbox_selector.one
-    - sandbox_selector.many
-    - sandbox_selector.starts.*.label
     - provider_capabilities.supported
     - provider_capabilities.not_supported
   - file: contracts/text/fact-list.json
@@ -2582,7 +2579,8 @@ presentation:
     target: scope
   - id: segment-min-width
     text: Draw every bar segment with a value above zero at least {parameters.min_segment_px} px wide at the current
-      axis scale, and draw no segment, divider or minimum for a value of zero or none.
+      axis scale, and draw no segment, divider or minimum for a value of zero or none. The pricing panel is the
+      exception, because its bar length is the price, so it draws each segment at exact scale with no minimum.
     parameters:
       min_segment_px: 10
     severity: error
@@ -2593,6 +2591,8 @@ presentation:
     applies_to:
       slots:
       - presentation.panel
+      exclude_slots:
+      - presentation.pricing-panel
     target: scope
   - id: class-label-style
     text: Draw a provider's class word inline after its name, in a lighter colour, {parameters.class_px} px against the
@@ -2624,7 +2624,7 @@ presentation:
       - presentation.panel
     target: scope
   - id: command-choice
-    text: A choice between shell commands (Sequential TTI's first command) shows each by its command word in code style, and under it the exact command the test runs, in smaller type. The word and the command come from the test's document.
+    text: A choice between shell commands (Cold Startup Time's first command) shows each by its command word in code style, and under it the exact command the test runs, in smaller type. The word and the command come from the test's document.
     severity: error
     predicate:
       kind: schema

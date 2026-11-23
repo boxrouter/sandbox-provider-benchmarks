@@ -38,10 +38,10 @@ default_view:
   variant: shared-trial
 procedure:
   mode: single
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: The 100 directory-list requests run back to back in one fresh sandbox after the directory
@@ -214,10 +214,10 @@ default_view:
   variant: shared-trial
 procedure:
   mode: single
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: The directory is listed and the fixed file is written in the same trial before 100 sequential
@@ -395,10 +395,10 @@ default_view:
   variant: shared-trial
 procedure:
   mode: single
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: The payload is written 100 times to one path in the same fresh sandbox.
@@ -565,10 +565,10 @@ default_view:
   variant: shared-trial
 procedure:
   mode: single
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: The 100 directory-list requests run back to back in one fresh sandbox after the directory
@@ -734,10 +734,10 @@ default_view:
   variant: shared-trial
 procedure:
   mode: single
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: The file is written in the same trial and then read 100 times sequentially.
@@ -911,10 +911,10 @@ default_view:
   variant: shared-trial
 procedure:
   mode: single
-  trials: 40
+  trials: 20
   sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: The payload is written 100 times to one path in the same fresh sandbox.

@@ -44,7 +44,6 @@ from sandbox_benchmark_verifier.placeholders import (
     PlaceholderError,
     commit_url,
     mark_sha256,
-    measured_token_errors,
     with_blocks,
 )
 from sandbox_benchmark_verifier.reader_limitations import (
@@ -210,21 +209,6 @@ def cost_scope_errors(source: Mapping[str, Any], rows: Sequence[Mapping[str, Any
     ]
 
 
-def _measured_errors(root: Path) -> list[str]:
-    """Each ``{measured:...}`` token of the reader copy that the page contract does not allow."""
-    path = root / "contracts/text/methodology-page.json"
-    fields = (
-        json.loads(path.read_text(encoding="utf-8")).get("measured_from_data", {})
-        if path.is_file()
-        else {}
-    )
-    return [
-        f"{READER_PATH}: {where}: {error}"
-        for where, text in _raw_strings(load_reader(root))
-        for error in measured_token_errors(text, fields)
-    ]
-
-
 def reader_errors(root: Path) -> list[str]:
     """Schema errors, and any fact reference that is not to the measured definition."""
     source = plain_reader(root)
@@ -246,7 +230,6 @@ def reader_errors(root: Path) -> list[str]:
         for path, text in _raw_strings(load_reader(root))
         for error in gate_errors(text)
     )
-    errors.extend(_measured_errors(root))
     scopes, tests = _names_rows(root)
     errors.extend(cost_scope_errors(source, load_tables(root).names))
     for identifier, entry in source.get("methods", {}).items():

@@ -46,7 +46,7 @@ procedure:
   trials: 10
   sandboxes_per_trial: 5
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
     policy: Sandbox 1 starts from the provider's prepared copy of the standard image and runs the environment reset; sandboxes 2 to 5 are created

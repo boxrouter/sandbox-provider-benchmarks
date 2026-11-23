@@ -34,18 +34,17 @@ composition:
     explicitly recorded owner other than the provider, omit that unit for every provider unless a
     later successful rerun replaces the failure. Treat an unknown owner as provider-owned. For each
     remaining unit a provider did not complete, use the slowest time on the same statistic any
-    provider had on it. The page uses each workload's first listed variant as its overall result, not
+    provider had on it. A workload the provider completed no unit of is left out of its value. The page uses each workload's first listed variant as its overall result, not
     a single model configuration or job.
   aggregation: geometric_mean
-  weighting: Equal weight per workload; nothing is made relative to the best provider and there is no
-    0-100 score.
+  weighting: Equal weight per workload the provider ran; nothing is made relative to the best provider
+    and there is no 0-100 score.
   inclusion: >-
-    Omit a workload from this scope for every provider if any provider's workload result is
-    marked Not offered for its required capability. Keep that workload on its own leaderboard, with
-    its Not offered status and reason. Among the remaining workloads, include only providers that
-    have a result of their own in at least one workload. A provider with no result for a remaining
-    workload takes that workload's slowest complete value. The composite adds no completeness gate or
-    failing-often rule of its own.
+    Include only providers that have a result of their own in at least one workload of the scope. A
+    workload a provider has no result on, including one marked Not offered for its required capability,
+    is left out of that provider's composite and nothing is substituted for it; the other providers keep
+    it. Keep each workload on its own leaderboard, with its Not offered status and reason. The
+    composite adds no completeness gate or failing-often rule of its own.
   not_displayed:
   - id: no-result
     condition: The provider has no result of its own in any workload of the scope, for example because
@@ -92,5 +91,5 @@ cost:
 interpretation:
   limits:
   - The composite applies no extra ranking rule.
-  - A workload marked Not offered for a provider remains on its own leaderboard with its reason and is omitted from every composite in the scope.
+  - A workload marked Not offered for a provider remains on its own leaderboard with its reason and is left out of that provider's composite in the scope.
   - The comparison retains the measurement boundaries of its workload inputs.

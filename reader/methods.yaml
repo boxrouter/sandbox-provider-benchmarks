@@ -29,7 +29,7 @@ common:
       opening: |-
         Every interactive coding session, evaluation task, and reinforcement learning rollout begins by waiting for a sandbox to boot and accept its first shell command.
 
-        The {name:tab.create} tab measures that startup wait, Time to Interactive (TTI), under two launch patterns: starting sandboxes one after another in a single loop ({name:test.sequential-tti}) and launching a parallel wave of sandboxes at the same moment ({name:test.burst-tti}).
+        The {name:tab.create} tab measures that startup wait, Time to Interactive (TTI), under two launch patterns: starting one sandbox per trial ({name:test.sequential-tti}) and launching a parallel wave of sandboxes at the same moment ({name:test.burst-tti}).
       limit_layer: Every sandbox starts from the provider's prepared copy of the standard image, and provider base-image caches and warm pools stay enabled, so sandboxes may reuse warm provider state.
     files:
       opening: |-
@@ -287,7 +287,7 @@ methods:
 
         If a provider completed at least one unit in the workload but has no successful trials on a unit, its cost on that unit is the highest unit cost observed on it across all providers that completed it. This matches the missing-unit substitution in {name:page.common}.
 
-        **Composite Cost:** The overview's composite cost averages workload costs the same way. On {name:section.overview}, {name:index.cost-index} is the unweighted geometric mean of a provider's workload costs across the workloads in the selected scope. A provider that failed an entire workload gets the highest observed workload cost for it.
+        **Composite Cost:** The overview's composite cost averages workload costs the same way. On {name:section.overview}, {name:index.cost-index} is the unweighted geometric mean of a provider's workload costs across the workloads in the selected scope. A workload a provider has no result on is left out of its composite.
 
         **Shared Units:** In {name:index.time-vs-cost}, each provider's {name:index.time-index} coordinate is computed over the same set of costed units that enter its {name:index.cost-index} coordinate, so both axes compare the same units.
       stage_cost: '**Stage Cost:** A stage''s share of the cost follows its share of the time. When a workload chart splits a unit''s time bar into stages (such as {name:stage.read}, {name:stage.write}, {name:stage.install}, {name:stage.lint}, {name:stage.build}, and {name:stage.test}), each stage is assigned a share of the unit''s displayed cost in proportion to its share of the total stage time, under the same statistic:'
@@ -316,12 +316,12 @@ methods:
         Aggregation proceeds in two geometric-mean levels so neither long-running units nor multi-unit workloads dominate the index:
 
         - First, within each workload, the provider's workload time is the geometric mean across all units completed by at least one provider, using the selected statistic (median by default, or mean or p95); if a provider completed at least one unit in the workload but has no successful trials on a unit, that unit's value is replaced by the slowest value observed for that unit across all providers that completed it.
-        - Second, the provider's {name:index.time-index} is the unweighted geometric mean of its workload times across the workloads in the selected scope, giving each workload equal proportional weight; if a provider has no completed units in an entire workload, its workload time is replaced by the slowest workload time observed across providers that completed that workload.
+        - Second, the provider's {name:index.time-index} is the unweighted geometric mean of its workload times across the workloads in the selected scope, giving each workload equal proportional weight; a workload in which a provider has no completed units is left out of its composite.
 
         Like {name:index.time-index}, {name:index.cost-index} aggregates in two geometric-mean steps:
 
         - Within each workload, a provider's workload cost is the geometric mean of its per-unit costs across all units completed by at least one provider, substituting the highest observed unit cost when a provider failed a unit.
-        - Across workloads in the selected scope, {name:index.cost-index} is the unweighted geometric mean of those workload costs, substituting the highest observed workload cost if a provider failed an entire workload.
+        - Across workloads in the selected scope, {name:index.cost-index} is the unweighted geometric mean of those workload costs, over the workloads the provider has a cost for; a workload it has no result on is left out.
 
         In {name:index.time-vs-cost}, each provider is plotted by two coordinates: Time Over the Costed Units ({axis:time-index}, lower is better) and Composite Cost ({axis:cost-index}, in USD, lower is better). Providers down and to the left deliver both faster execution and lower billed cost, forming the Pareto frontier.
 
@@ -348,14 +348,14 @@ methods:
       cost_summary: '{param:content.index_copy.description}'
       cost_how_to_read: '{param:content.index_copy.details.time.cost_how_to_read}'
       limitations:
-      - '[[tests: all]]Adds no completeness requirement beyond the underlying workloads, and substitutes the slowest observed unit or workload time when a provider has partial results so that failing a slow task cannot improve a provider’s composite.'
+      - '[[tests: all]]Adds no completeness requirement beyond the underlying workloads. A workload a provider has no result on is left out of its composite; a unit it did not complete in a workload it ran takes the slowest observed time.'
       - '[[tests: all]]{param:reader.common.blocks.overview.limit_guest_clock}'
       statistics_rules: |-
         Switching the statistic selector between {name:statistic.median}, {name:statistic.mean}, and {name:statistic.p95} recomputes each unit's summary statistic first, then takes the geometric mean across units in each workload, and finally takes the geometric mean across workloads in the scope.
 
         Both coordinates of {name:index.time-vs-cost} update together when the statistic selector switches between {name:statistic.median}, {name:statistic.mean}, and {name:statistic.p95}; providers are plotted on the two-dimensional plane rather than given a single combined scalar rank.
       failure_policy: |-
-        A workload is included in a scope only if every provider offers the capabilities that workload requires; if any provider's result on a workload is marked {param:content.ranking_statuses.not_offered.label} or {param:content.ranking_statuses.account_limit.label}, that workload is omitted from the composite scope for all providers. Providers with zero completed units across all workloads in the selected scope are not displayed.
+        A workload a provider has no result on, including one marked {param:content.ranking_statuses.not_offered.label} or {param:content.ranking_statuses.account_limit.label} for it, is left out of that provider's composite; other providers keep it. Providers with zero completed units across all workloads in the selected scope are not displayed.
 
         A provider is omitted from {name:index.cost-index} and {name:index.time-vs-cost} and listed under {param:content.ranking_statuses.not_displayed.label} {param:reader.common.blocks.overview.omitted_when}
   cost-index:
@@ -681,8 +681,8 @@ methods:
       introduction: 'Times each sandbox from its create request until its first command returns.'
       metric: '{name:test.sequential-tti} is the duration from the start of `create` until the first command inside the sandbox returns its expected output, computed as the sum of {name:stage.create} and {param:measured.procedure.stages.1.name}.'
       setup: |-
-        Each trial runs {measured:procedure.sandboxes_per_trial} sequential sandboxes from the provider's prepared copy of BoxRouter's pinned standard image, with nothing added per trial ({measured:procedure.trials*procedure.sandboxes_per_trial} sandboxes per variant per provider).
-      trial_steps: '[[steps: create]]For each of the {measured:procedure.sandboxes_per_trial} sequential sandboxes, call `create` ({name:stage.create}) [[steps: first_command]]and immediately dispatch the selected first command ({param:measured.procedure.stages.1.name}); then [[steps: uptime]]read `/proc/uptime` and probe the sandbox size (untimed); then [[steps: destroy]]destroy the sandbox and confirm that it is gone before starting the next one.'
+        Each trial starts one sandbox from the provider's prepared copy of BoxRouter's pinned standard image, with nothing added.
+      trial_steps: '[[steps: create]]Call `create` ({name:stage.create}) [[steps: first_command]]and immediately dispatch the selected first command ({param:measured.procedure.stages.1.name}); then [[steps: uptime]]read `/proc/uptime` and probe the sandbox size (untimed); then [[steps: destroy]]destroy the sandbox and confirm that it is gone.'
       procedure: |-
         The {countword:measured.procedure.variants} first-command variants compare bare container readiness (`true`) against the dynamic-linking and filesystem page-in time of loading a language runtime on first touch.
       limitations:
@@ -693,11 +693,11 @@ methods:
       statistics_rules: |-
         {param:reader.common.blocks.common.statistics_citation}
 
-        Across {param:measured.procedure.trials} trials of {measured:procedure.sandboxes_per_trial} sequential sandboxes, each variant pools up to {measured:procedure.trials*procedure.sandboxes_per_trial} sandbox TTI readings, while confidence intervals resample whole trials because sandboxes in a trial follow seconds apart. {param:reader.common.blocks.common.complete_cell}
+        Each trial gives one reading, and confidence intervals resample trials. {param:reader.common.blocks.common.complete_cell}
       failure_policy: |-
         {param:reader.common.blocks.common.failures_citation}
 
-        A trial succeeds only when `image.prepare` completes, all {measured:procedure.sandboxes_per_trial} sequential sandboxes complete `create` and their first command within {duration:measured.failure_policy.timeout_seconds.first_command_from_create_start} with exit code 0, and every sandbox and the trial image are confirmed deleted.
+        A trial succeeds only when its sandbox completes `create` and its first command exits 0 within {duration:measured.failure_policy.timeout_seconds.first_command_from_create_start}, and the sandbox is confirmed deleted.
     stages:
       create:
         start: Create request is sent

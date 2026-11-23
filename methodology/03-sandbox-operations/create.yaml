@@ -249,7 +249,7 @@ notes:
   how_to_read: The {param:sequential-tti.statistics.primary} is shown in {unit:time_to_interactive};
     {direction:time_to_interactive}.
   summary: >-
-    Time to the first command is measured for sandboxes that start in sequence from the provider's
+    Time to the first command is measured for one fresh sandbox per trial, started from the provider's
     prepared copy of the standard image.
   how_it_is_measured: >-
     The monotonic clock on the client host that sends each request times each create call through the
@@ -277,21 +277,19 @@ environment:
 default_view:
   metric: time_to_interactive
   variant: 'true'
-  sandbox: 1
 procedure:
-  mode: sequential
-  trials: 40
-  sandboxes_per_trial: 5
+  mode: single
+  trials: 20
+  sandboxes_per_trial: 1
   concurrency:
-    trials_in_parallel: 10
+    trials_in_parallel: 5
     sandboxes_at_once: 1
   warm_cold_policy:
-    policy: Every sandbox starts from the provider's prepared copy of the standard image. Provider base-image
-      caches and warm pools remain enabled, so each sandbox after the first follows the previous one by seconds
-      and may reuse provider caches or warm-pool state. No request is sent to the provider between a create call
-      and its first command.
+    policy: Each trial creates one sandbox from the provider's prepared copy of the standard image. Provider
+      base-image caches and warm pools remain enabled, so a sandbox may reuse provider caches or warm-pool state.
+      No request is sent to the provider between a create call and its first command.
     cold: Every trial starts from the same prepared image, so no cold-host or cold-base-layer state is claimed.
-    warm: Later sandboxes follow seconds apart and may reuse provider caches or warm-pool state.
+    warm: Earlier trials of the same provider may leave provider caches or warm-pool state that a sandbox reuses.
   variants:
   - id: 'true'
     label: 'true'
@@ -326,11 +324,10 @@ procedure:
     name: '{name:stage.create}'
     label: '{name:stage.create}'
     show: stack
-    action: Request a fresh sandbox from the provider's prepared copy of the standard image once the previous sandbox
-      has been confirmed gone.
+    action: Request one sandbox from the provider's prepared copy of the standard image.
     timer:
       from: the create request
-      sent: once the previous sandbox is confirmed gone
+      sent: at the start of the trial
       until: the create call returns
     timeout_seconds: 300
     record_steps:
@@ -357,7 +354,7 @@ procedure:
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'
     show: hidden
-    action: Destroy the sandbox and confirm it is gone before the next create.
+    action: Destroy the sandbox and confirm it is gone.
     timer:
       from: the destroy request
       until: the destroy call returns
@@ -394,15 +391,14 @@ statistics:
 cost:
   method: not_published
   notes:
-  - A trial's billing record covers every sandbox that the trial creates in sequence, and no per-sandbox split is defined,
-    so no cost is published for this benchmark.
+  - A trial's billing record covers its sandbox's whole lifetime, not only the time to the first command, so no cost is
+    published for this benchmark.
 failure_policy:
   timeout_seconds:
     create: 300
     first_command_from_create_start: 120
     destroy: 300
-  retries: 'None; the first failed step ends the trial. A sequence that stops partway counts against the
-    provider: earlier sandboxes count as successes, the failed one as a failure, and the rest as not reached.'
+  retries: None; the first failed step ends the trial.
   success: The command exits 0 within 120 seconds of that sandbox's create start, and every resource the
     trial created is confirmed deleted.
   provider_errors:
@@ -419,18 +415,16 @@ parameters:
   path: parameters/sequential-tti/
   sha256: 240fe318604b76eeec1d775c1b75b9491dbe6369e76bb1627d65a13bd20bfe4d
 interpretation:
-  what_to_do: Compare how quickly providers start fresh sandboxes for work, and which first command you
-    care about.
-  informs: 'How quickly a provider can start fresh sandboxes for work: the wait between asking for a sandbox
-    and its first command returning.'
+  what_to_do: Compare how quickly providers start a sandbox for work, for the first command you care about.
+  informs: 'How quickly a provider can start a sandbox for work: the wait between asking for a sandbox and its
+    first command returning.'
   limits:
   - Every trial starts from the provider's prepared copy of the standard image; cold image preparation belongs
     to the image-build benchmark rather than to this test.
-  - Later starts follow the preceding sandbox closely and may use warmer provider hosts.
   caveats:
-  - The first and last sandboxes are shown as separate positions; provider base-image caches and warm pools
-    remain enabled, so these positions do not mean cold hosts or base layers.
-  - Up to ten trials of a provider run at once, so a trial can share the provider's hosts with the other
+  - Each trial measures one sandbox; provider base-image caches and warm pools remain enabled, so a result does
+    not mean a cold host or base layer.
+  - Up to five trials of a provider run at once, so a trial can share the provider's hosts with the other
     trials of its batch; the number in flight is recorded for each trial.
 validity_checks:
 - id: same_image_every_trial

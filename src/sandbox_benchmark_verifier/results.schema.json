@@ -3,7 +3,7 @@
   "$id": "https://boxrouter.ai/schemas/bench/results.schema.json",
   "title": "Benchmark results",
   "description": "results.json: what `bench summarize` derives from one run's run.jsonl, and the only data the benchmarks pages read. Labels, units, better direction, step order and colours come from the pinned methodology release; this file carries ids and numbers. Every property's description ends with `Read by:` and the ids of the readers (see `readers`) that draw it. Read by: build.",
-  "schema_version": "1.13.0",
+  "schema_version": "1.15.0",
   "readers": {
     "build": "The web build: pin and version checks, the join keys every panel selects cells by, the provider pages and sitemap it draws.",
     "downloads": "/benchmarks/results.json, run.jsonl, results.md and llms.txt, and their immutable run addresses.",
@@ -66,7 +66,8 @@
         "config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the resolved workloads.yaml. Read by: downloads."},
         "lines_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the run.jsonl bytes summarized. Read by: downloads."},
         "lines": {"type": "integer", "minimum": 0, "description": "Number of lines in run.jsonl. Read by: downloads."},
-        "summarize": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "Version of `bench summarize` that wrote the file. Read by: downloads."}
+        "summarize": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$", "description": "Version of `bench summarize` that wrote the file. Read by: downloads."},
+        "budgets_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the exchange budgets the steps were checked against (1.14.0). Read by: downloads."}
       }
     },
     "Cell": {
@@ -103,6 +104,12 @@
           "code": {"type": ["string", "null"], "description": "Read by: states."},
           "reason": {"type": ["string", "null"], "description": "Read by: states."}
         }},
+        "ran_on_size": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory_mib", "asked_size", "reason"], "description": "A cell that is not an operation, run on the provider's nearest larger size because it has no exact one (1.15.0): its data stands, it ranks as unsupported. Read by: states.", "properties": {
+          "cpu": {"type": "number", "description": "vCPU it ran on. Read by: states."},
+          "memory_mib": {"type": "number", "description": "MiB it ran on. Read by: states."},
+          "asked_size": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory_mib"], "description": "The size the workload asks. Read by: states.", "properties": {"cpu": {"type": "number", "description": "vCPU. Read by: states."}, "memory_mib": {"type": "number", "description": "MiB. Read by: states."}}},
+          "reason": {"enum": ["provider_nearest_size"], "description": "Read by: states."}
+        }},
         "larger_size": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory_mib"], "description": "An operation cell run at the provider's smallest size that holds the asked one, larger in CPU or memory; flag it. Read by: states.", "properties": {
           "cpu": {"type": "number", "description": "vCPU. Read by: states."},
           "memory_mib": {"type": "number", "description": "Memory in MiB. Read by: states."}
@@ -112,10 +119,14 @@
         "unmeasured": {"type": "object", "additionalProperties": false, "description": "Series that leave out successes lacking a trusted provider time. Read by: hover.", "properties": {
           "metrics": {"type": "object", "additionalProperties": {"type": "object", "additionalProperties": false, "required": ["trials", "reasons"], "properties": {
             "trials": {"type": "integer", "minimum": 1, "description": "Successes left out. Read by: hover."},
-            "reasons": {"type": "array", "items": {"enum": ["no-provider-time", "provider-timing-coverage"]}, "description": "No provider time, or flagged by the coverage cross-check. Read by: hover."}
+            "reasons": {"type": "array", "items": {"enum": ["no-provider-time", "provider-timing-coverage", "exchange-budget", "no-exchange-budget", "exchanges-not-reported"]}, "description": "No provider time, the coverage cross-check, over the exchange budget, no budget, or exchanges not reported (last three: 1.14.0). Read by: hover."}
           }}, "description": "By metric name. Read by: hover."},
           "steps": {"$ref": "#/$defs/Cell/properties/unmeasured/properties/metrics", "description": "By step id. Read by: hover."}
         }},
+        "exchanges": {"type": "object", "propertyNames": {"$ref": "#/$defs/Id"}, "description": "By step id (1.14.0): wire exchanges with the provider per call, and time per exchange. Read by: hover.", "additionalProperties": {"type": "object", "additionalProperties": false, "required": ["n", "ms_per_exchange"], "properties": {
+          "n": {"type": "integer", "minimum": 0, "description": "Median per call. Read by: hover."},
+          "ms_per_exchange": {"type": ["number", "null"], "minimum": 0, "description": "Median ms per exchange. Read by: hover."}
+        }}},
         "stages": {
           "type": "object",
           "propertyNames": {"$ref": "#/$defs/Id"},

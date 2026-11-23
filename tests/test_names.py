@@ -568,10 +568,9 @@ def test_a_clock_name_never_adds_a_provider_label(tmp_path: Path) -> None:
         ("names/names.yaml", 'label: "Parallel Sandboxes"', 'label: "Parallel sandboxes"'),
         ("names/names.yaml", 'label: "fio Test"', 'label: "Fio test"'),
         ("names/names.yaml", 'name: "Load Runtimes"', 'name: "Load runtimes"'),
-        ("contracts/text/1.0.0.json", '"TTI for Sandbox: [', '"TTI for sandbox: ['),
     ],
 )
-def test_a_selector_label_a_stage_name_and_the_sandbox_picker_are_title_case(
+def test_a_selector_label_and_a_stage_name_are_title_case(
     checkout: Path, tmp_path: Path, relative: str, old: str, new: str
 ) -> None:
     """The overview's selectors and legend chips mixed sentence case with Title Case (2026-11-02);

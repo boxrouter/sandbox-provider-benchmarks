@@ -19,9 +19,6 @@ _NAME_TARGET = re.compile(r"[a-z0-9][a-z0-9._-]*\Z")
 _METRIC_TARGET = re.compile(r"[a-z][a-z0-9_-]*\Z")
 _PARAM_PATH = r"[a-z0-9][a-z0-9._-]*\.[A-Za-z_][A-Za-z0-9_.-]*"
 _PARAM_TARGET = re.compile(_PARAM_PATH + r"\Z")
-# A definition path read from the data a page draws (``{measured:procedure.sandboxes_per_trial}``),
-# or a product of such paths joined by ``*``. Lowercase, ``_`` and ``.`` only.
-_MEASURED_PATH = r"[a-z_.]+"
 _SHA256 = r"[0-9a-f]{64}"
 _GIT_COMMIT = r"[0-9a-f]{40}"
 _REPOSITORY = r"(?:[a-z]+:)?[\w.-]+/[\w.-]+"
@@ -45,15 +42,11 @@ _TARGETS = {
     "imagesize": _PARAM_TARGET,
     "machine": _PARAM_TARGET,
     "product": re.compile(rf"{_PARAM_PATH}(?:\*{_PARAM_PATH})+\Z"),
-    "measured": re.compile(rf"{_MEASURED_PATH}(?:\*{_MEASURED_PATH})*\Z"),
     "unit": _METRIC_TARGET,
     "direction": _METRIC_TARGET,
     "axis": _NAME_TARGET,
 }
-# A ``{measured:...}`` token is the reader's own (web resolves it against the data it draws), so it
-# stays in the compiled text and is no unresolved reference.
-PASS_THROUGH_KINDS = frozenset({"measured"})
-PLACEHOLDER_OPENERS = tuple(f"{{{kind}:" for kind in _TARGETS if kind not in PASS_THROUGH_KINDS)
+PLACEHOLDER_OPENERS = tuple(f"{{{kind}:" for kind in _TARGETS)
 # A procedure stage's name as a parameter ({param:measured.procedure.stages.1.name}).
 _STAGE_NAME_PARAM = re.compile(r"\.procedure\.stages\.\d+\.name\Z")
 
@@ -539,10 +532,6 @@ def _resolve_template(  # pylint: disable=too-many-arguments,too-many-positional
     cursor = 0
     for placeholder in parse_placeholders(template, allow_literal_braces=True):
         output.append(template[cursor : placeholder.start])
-        if placeholder.kind in PASS_THROUGH_KINDS:
-            output.append(template[placeholder.start : placeholder.end])
-            cursor = placeholder.end
-            continue
         reference = (placeholder.kind, placeholder.target)
         if reference in active:
             chain = " -> ".join(f"{kind}:{target}" for kind, target in (*active, reference))
@@ -557,29 +546,6 @@ def _resolve_template(  # pylint: disable=too-many-arguments,too-many-positional
         cursor = placeholder.end
     output.append(template[cursor:])
     return "".join(output)
-
-
-_MEASURED_TOKEN = re.compile(r"\{measured:([^{}]*)\}")
-
-
-def measured_token_errors(text: str, fields: Mapping[str, str]) -> list[str]:
-    """What is wrong with each ``{measured:<paths>}`` token of ``text``, given the methodology
-    page's ``measured_from_data`` map (a definition path to the data fact the page reads it from).
-    A token names at least one listed field (an unlisted factor of a product is read from the
-    definition), and its listed fields all stand for one data fact: web reads the token as that
-    fact."""
-    errors = []
-    for found in _MEASURED_TOKEN.finditer(text):
-        token, target = found.group(0), found.group(1)
-        if _TARGETS["measured"].fullmatch(target) is None:
-            errors.append(f"{token} is malformed (lowercase, _ and . only, factors joined by *)")
-            continue
-        listed = [path for path in target.split("*") if path in fields]
-        if not listed:
-            errors.append(f"{token} names no field of measured_from_data")
-        elif len({fields[path] for path in listed}) > 1:
-            errors.append(f"{token} mixes data facts: {sorted({fields[p] for p in listed})}")
-    return errors
 
 
 def with_blocks(entry: Any, blocks: Mapping[str, Mapping[str, str]]) -> Any:

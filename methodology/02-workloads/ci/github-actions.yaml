@@ -8,7 +8,7 @@ environment:
   image:
     modification: Prepared with 4 vCPU and 8 GiB before the run; nothing is added per trial.
     reference: A prepared Linux image for the selected job.
-  lifetime_seconds: 900
+  lifetime_seconds: 2700
   network: Open; steps clone the repository and download toolchains and dependencies, so a network failure
     in a setup step can fail a trial.
   size:
@@ -38,6 +38,7 @@ failure_policy:
   timeout_seconds:
     create: 300
     destroy: 300
+    setup_steps: 1500
     job_steps: 600
 id: github-actions
 inherits: sbs.common
@@ -86,13 +87,13 @@ notes:
     sandbox clock, after setup.
 parameters:
   path: parameters/github-actions/
-  sha256: c95ec83910058a173925f9dc6848e9b71cc5ed2a4b368d8a9db409831625c983
+  sha256: 156d7ef124dd6d5982ecdf257154abc46afe129edbf2051141ec799d676620c7
 default_view:
   metric: job_time
 procedure:
   concurrency:
     sandboxes_at_once: 1
-    trials_in_parallel: 10
+    trials_in_parallel: 5
   mode: single
   sandboxes_per_trial: 1
   stages:
@@ -143,7 +144,7 @@ procedure:
     record_steps:
     - setup
     repeats: true
-    timeout_seconds: 600
+    timeout_seconds: 1500
     timer:
       start_event: The step starts, by the sandbox's own clock.
       stop_event: The step exits, by the sandbox's own clock; its runtime is the difference between two
@@ -177,7 +178,7 @@ procedure:
     timer:
       start_event: The destroy request is dispatched.
       stop_event: The destroy call returns.
-  trials: 20
+  trials: 10
   variants:
   - description: The workload uses the {param:github-actions.procedure.variants.0.label} configuration.
     id: all

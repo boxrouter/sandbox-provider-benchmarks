@@ -166,7 +166,7 @@
           "id": "install"
         },
         {
-          "command": "export PATH=/workspace/sdk/go/bin:$PATH && echo \"mode: count\" > coverage.out && for d in github.com/gin-gonic/gin github.com/gin-gonic/gin/ginS github.com/gin-gonic/gin/binding github.com/gin-gonic/gin/render; do go test -v -covermode=count -coverprofile=profile.out \"$d\" > tmp.out || { cat tmp.out; exit 1; }; cat tmp.out; grep -v mode: profile.out >> coverage.out; done",
+          "command": "export PATH=/workspace/sdk/go/bin:$PATH && echo \"mode: count\" > coverage.out && for d in github.com/gin-gonic/gin github.com/gin-gonic/gin/ginS github.com/gin-gonic/gin/binding github.com/gin-gonic/gin/render; do go test -v -covermode=count -coverprofile=profile.out \"$d\" > tmp.out || { cat tmp.out; grep -E '^ *(--- FAIL|FAIL|panic)' tmp.out; exit 1; }; cat tmp.out; grep -v mode: profile.out >> coverage.out; done",
           "directory": "/workspace/src",
           "group": "test",
           "id": "test"
@@ -175,7 +175,7 @@
     },
     "id": "gin",
     "label": "Go (gin)",
-    "version": "sha256:42ebdc8938a17d29"
+    "version": "sha256:1ad873ad1692b230"
   },
   {
     "data": {

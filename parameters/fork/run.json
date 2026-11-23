@@ -11,6 +11,7 @@
     "memory_gib": 4
   },
   "lifetime_s": 900,
+  "requirements": {"snapshots": {"original_after": "any"}},
   "steps": [
     {
       "id": "create",
