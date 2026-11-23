@@ -63,11 +63,11 @@ def test_two_tests_on_one_page_are_two_names_in_a_score(bundle: dict[str, Any]) 
     assert "CPU" in leaves["first_test_only"]
 
 
-def test_pause_and_resume_states_which_providers_it_tests_and_delayed_resume_does_not(
+def test_resume_with_data_states_which_providers_it_tests_and_delayed_resume_does_not(
     bundle: dict[str, Any],
 ) -> None:
     """only providers with an explicit pause command are tested; Delayed Resume
-    does measure auto-idle providers, so the limit is on Pause and Resume alone."""
+    does measure auto-idle providers, so the limit is on Resume with Data alone."""
     limits = (
         "Evaluates resume time on a single sandbox, sent immediately after the previous pause "
         "returns.",

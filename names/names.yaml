@@ -269,7 +269,7 @@ names:
   - {row: 131, kind: "test", id: "read-4kib-2vcpu-8gib", name: "Read 4 KiB (2 vCPU / 8 GiB)", parent: "files", document: "read-4kib-2vcpu-8gib", page: "read-4kib"}
   - {row: 49, kind: "view", id: "files-read-write", name: "Read and Write", parent: "sandbox-operations", subtitle: "Times repeated requests that read/write a fixed incompressible payload to a sandbox file."}
   - {row: 50, kind: "tab", id: "pause-resume", name: "Pause and Resume", parent: "sandbox-operations"}
-  - {row: 50, kind: "test", id: "pause-resume", name: "Pause and Resume", parent: "pause-resume", document: "pause-resume", selector: {label: "Paused Disk Size (GiB)", mode: chooses}, presentation: {panel: "pause-resume"}}
+  - {row: 50, kind: "test", id: "pause-resume", name: "Resume with Data", parent: "pause-resume", document: "pause-resume", selector: {label: "Paused Disk Size (GiB)", mode: chooses}, presentation: {panel: "pause-resume"}}
   - {row: 51, kind: "variant", id: "empty", name: "Empty", parent: "pause-resume", workload: "empty", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "0"}}
   - {row: 51, kind: "variant", id: "memory-1gib", name: "1 GiB in memory", parent: "pause-resume", workload: "memory-1gib"}
   - {row: 51, kind: "variant", id: "storage-1gib", name: "1 GiB on disk", parent: "pause-resume", workload: "storage-1gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "1"}}
@@ -432,6 +432,7 @@ display_name_history:
   id: pause-resume
   previous_names:
   - Pause & Resume
+  - Pause and Resume
 - kind: test
   id: sequential-tti
   previous_names:

@@ -83,8 +83,8 @@ procedure:
       one command as `user` from a cold cache, then read the bytes again. The script runs in the background
       and its status is read every 0.5 s, so no call's latency is in the result.
     timer:
-      start_event: When the selected command starts (git clone, npm ci or pip install -r). Creating the virtualenv before that is not timed.
-      stop_event: When the command exits. For git clone, the command includes the checkout of the pinned commit and its check.
+      start_event: When the selected install command starts. Creating the virtualenv before that is not timed.
+      stop_event: When the command exits. For the git clone variant, the command includes the checkout of the pinned commit and its check.
   - id: destroy
     name: '{name:stage.destroy}'
     label: '{name:stage.destroy}'

@@ -38,10 +38,10 @@ def test_the_repository_holds_none_of_them() -> None:
 
 
 def test_pause_and_resume_is_the_name_and_the_old_name_is_history() -> None:
-    names = load_tables(ROOT).names
-    assert {r["name"] for r in names if r["id"] in ("pause-resume", "pause_resume")} == {
-        "Pause and Resume"
-    }
+    names = {(r["kind"], r["id"]): r["name"] for r in load_tables(ROOT).names}
+    assert names[("tab", "pause-resume")] == "Pause and Resume"
+    assert names[("capability", "pause_resume")] == "Pause and Resume"
+    assert names[("test", "pause-resume")] == "Resume with Data"
     history = (
         (ROOT / "names/names.yaml").read_text(encoding="utf-8").split("display_name_history:")[1]
     )

@@ -5,7 +5,7 @@
 A describing row (`every_result`) shows for every provider of every chart. An event row
 (`when_present`) shows only where its event happened, with no "None" row. The map from a fact code
 to its kind is the one owner; no chart keeps a list of its own. One key names rows with no fact
-code and no label of their own: `result_step` (the prefix of each step a Pause and Resume chart
+code and no label of their own: `result_step` (the prefix of each step a Resume with Data chart
 draws as a fact). A status reason has its label in the ranking-status owner rather than the
 fact-label list.
 """
