@@ -92,12 +92,12 @@ procedure:
   sandboxes_per_trial: 1
   stages:
   - description: 'The job''s setup steps: checkout, toolchain and dependency install.'
-    id: install
+    id: setup
     name: '{name:stage.install}'
     record_steps:
     - setup
   - description: The job's check steps, such as format, type and lint checks.
-    id: lint
+    id: checks
     name: '{name:stage.lint}'
     record_steps:
     - cmd
