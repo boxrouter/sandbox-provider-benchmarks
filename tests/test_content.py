@@ -725,7 +725,7 @@ def test_the_provider_capabilities_panel_and_hidden_line_words_have_an_owner() -
     criteria = content_criteria()
     panel = criteria["provider_capabilities"]
     assert panel["title"] == "{provider}'s Provider Capabilities"
-    assert panel["count"] == "{on} of {total} supported"
+    assert panel["count"] == "{on} supported"
     assert panel["supported"] == "Supported"
     # A capability the provider lacks is its own string, not the ranking status (same words today).
     assert panel["not_supported"] == "Not Supported"

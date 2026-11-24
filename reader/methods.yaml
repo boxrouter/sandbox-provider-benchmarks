@@ -86,7 +86,7 @@ common:
       opening: |-
         App-building agents and interactive web IDEs start a development server inside a sandbox and hand the user a public preview URL to view the live app and receive Hot Module Replacement (HMR) updates over a WebSocket.
 
-        The {name:tab.previews} benchmark launches a pinned {param:measured.procedure.variants.0.label}. {name:stage.between} is the interval on the client host's clock from process.start returning until the first public URL probe succeeds, while the process.start duration and the server-listening runtime stay in separate figures.
+        The {name:tab.previews} benchmark launches a pinned {param:measured.procedure.variants.0.label}. The {name:stage.preview} Ready Time is the interval on the client host's clock from the process-start request being sent until the first public URL probe succeeds, while the server-listening runtime stays in a separate figure.
 
         Once the preview URL is live, the benchmark measures the Time to First Byte (TTFB) of {param:measured.procedure.variants.0.parameters.requests} sequential HTTP GET requests over a kept-alive connection and tests whether a WebSocket upgrade (vite-hmr) succeeds through the preview proxy.
     image-build:
@@ -1032,19 +1032,19 @@ methods:
         A trial succeeds only when `image.prepare` completes and the provider's prepared image artifact and temporary registry tag are deleted.
   previews:
     step_notes:
-      url_poll: "The client host requests the preview URL back to back from the moment the process-start call returns, while an in-sandbox loop checks localhost every {duration:measured.procedure.variants.0.parameters.local_poll_gap_seconds}. {name:stage.between} runs on the client host's monotonic clock from process.start returning until the first public probe succeeds."
+      url_poll: "The client host requests the preview URL back to back from the moment the process-start call returns, while an in-sandbox loop checks localhost every {duration:measured.procedure.variants.0.parameters.local_poll_gap_seconds}. The time runs on the client host's monotonic clock from the process-start request being sent until the first public probe succeeds."
       websocket: "The harness times a WebSocket upgrade with subprotocol `{param:measured.procedure.variants.0.parameters.websocket_subprotocol}` and verifies its connected message."
     headline_steps: [start_server, server_listening, url_poll]
     clock: [runner]
     notes:
       opening: '{param:reader.common.blocks.previews.opening}'
-      introduction: 'Times the {name:stage.between} span from process.start returning until the first public preview URL probe succeeds.'
-      metric: '{name:test.previews} is the duration on the client host''s monotonic clock from process.start returning until the public preview URL first answers HTTP 200 with body {param:measured.procedure.variants.0.parameters.expected_body} on `{param:measured.procedure.variants.0.parameters.path}`.'
+      introduction: 'Times the span from the process-start request being sent until the first public preview URL probe succeeds.'
+      metric: '{name:test.previews} is the duration on the client host''s monotonic clock from the process-start request being sent until the public preview URL first answers HTTP 200 with body {param:measured.procedure.variants.0.parameters.expected_body} on `{param:measured.procedure.variants.0.parameters.path}`.'
       setup: |-
         Each trial uses a sandbox created from BoxRouter's pinned standard image with port {param:measured.procedure.variants.0.parameters.port} exposed as a public preview URL, running a pre-bundled Vite {version:measured.source.ids.2} archive (`previews-app.tar`, verified by {hash:SHA-256|measured.parameters.workload.app.sha256}).
       trial_steps: '[[steps: create]]Create sandbox with a port {param:measured.procedure.variants.0.parameters.port} preview, [[steps: upload]]download and check the Vite archive, [[steps: open_preview]]and open the preview URL (timed, not charted); [[steps: start_server]]start Vite (start-server), [[steps: url_poll]]poll the preview URL until it answers [[steps: server_listening]]and poll `127.0.0.1:{param:measured.procedure.variants.0.parameters.port}` (server-listening); [[steps: request]]send {param:measured.procedure.variants.0.parameters.requests} sequential `GET /ping.txt` requests on a kept-alive connection (request); [[steps: websocket]]test a vite-hmr WebSocket upgrade (websocket) [[steps: destroy]]and destroy the sandbox.'
       limitations:
-      - Only providers that support the previews capability are tested (others show {param:content.ranking_statuses.in_development.label}); {name:stage.between} starts when process.start returns and includes both the public HTTP probe and provider edge routing.
+      - Only providers that support the previews capability are tested (others show {param:content.ranking_statuses.in_development.label}); the time starts when the process-start request is sent and includes the process-start call, the public HTTP probe and provider edge routing.
       - The in-sandbox loop sleeps {duration:measured.procedure.variants.0.parameters.local_poll_gap_seconds} between attempts, so server listening carries up to that much polling delay. The preview URL poll does not pause between attempts.
       - The request GET calls reuse the connection from url-poll, so request TTFB excludes DNS lookup, TCP connect, and TLS handshake time while including network transit to the provider's preview ingress.
       - 'Vite runs with `allowedHosts: true` and `skipWebSocketTokenCheck: true` so the benchmark script can test HTTP and WebSocket routing directly without a headless browser.'
@@ -1062,7 +1062,7 @@ methods:
         end: Localhost in the sandbox first answers HTTP 200 with body ok
         clock: sandbox
       between:
-        start: The process.start call returns to the client host
+        start: The process-start request is sent to the provider
         end: The first successful URL probe after that start edge (HTTP 200 with body ok)
         clock: runner
   reconnect:

@@ -361,7 +361,7 @@
   "literal_templates": {},
   "provider_capabilities": {
     "title": "{provider}'s Provider Capabilities",
-    "count": "{on} of {total} supported",
+    "count": "{on} supported",
     "supported": "Supported",
     "not_supported": "Not Supported"
   },

@@ -218,12 +218,18 @@ _DURATION_UNITS = {"_ms": 1e-3, "_ns": 1e-9}
 
 def _duration_text(target: str, documents: Mapping[str, Mapping[str, Any]]) -> str:
     """A duration read from a field in seconds, or in the unit its name ends with (``_ms``,
-    ``_ns``); a value under a second from such a field reads in milliseconds ("20 ms")."""
+    ``_ns``); a value under a second from such a field reads in milliseconds ("20 ms"). A wait
+    field (``wait_seconds``) of 60 reads "1 min", as Delayed Resume's variant does; any other
+    60 s, a measured window or a limit, stays "60 s"."""
     value = _number(target, documents)
     scale = next((size for suffix, size in _DURATION_UNITS.items() if target.endswith(suffix)), 1)
     seconds = value * scale
     if scale != 1 and seconds < 1:
         return f"{round(seconds * 1000, 6):g} ms"
+    if seconds == 60 and target.endswith(
+        "wait_seconds"
+    ):  # a wait of a minute reads "1 min", as its variant does
+        return "1 min"
     return seconds_text(round(seconds, 9))
 
 

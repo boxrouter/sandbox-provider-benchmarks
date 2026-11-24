@@ -9,7 +9,7 @@ notes:
     unit; {direction:url_ready}.
   summary: A pinned development server starts and serves requests through its public preview URL.
   how_it_is_measured: The monotonic clock on the client host times the process-start call and the polling of the public
-    preview URL until the first expected response; {name:stage.between} spans from process.start returning to that response.
+    preview URL until the first expected response; {name:stage.preview} Ready Time spans from the process-start request being sent to that response.
   cost_summary: The cost is the sum of the provider-sourced costs of the sandboxes, per successful request.
   cost_how_to_read: Only successful trials contribute to the cost value.
 inherits: sbs.common
@@ -198,7 +198,7 @@ procedure:
     - server-listening
   - id: between
     name: '{name:stage.between}'
-    description: Time on the client host's clock from process.start returning until the first public
+    description: Time on the client host's clock from the process-start request being sent until the first public
       preview probe answers HTTP 200 with body ok.
     record_steps:
     - url-poll

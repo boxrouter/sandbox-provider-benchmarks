@@ -246,6 +246,18 @@ def test_duration_reads_a_field_in_the_unit_its_name_ends_with() -> None:
     assert resolve("{duration:gate.limit_seconds}") == "2 min"
 
 
+def test_a_wait_of_a_minute_reads_1_min_and_any_other_60_s_stays() -> None:
+    """Delayed Resume's variant is "Resumed after 1 min", so its wait reads the same; a measured
+    window or a limit of 60 s keeps its seconds."""
+    documents: dict[str, Mapping[str, Any]] = {"gate": {"wait_seconds": 60, "window_seconds": 60}}
+
+    def resolve(template: str) -> str:
+        return resolve_template(template, names={}, documents=documents)
+
+    assert resolve("{duration:gate.wait_seconds}") == "1 min"
+    assert resolve("{duration:gate.window_seconds}") == "60 s"
+
+
 def test_tests_names_a_list_of_test_ids_and_leaves_out_a_test_that_is_off() -> None:
     """A test that is off (names status off) is named under off.<id>; a list holding it names the
     rest."""

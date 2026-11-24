@@ -105,7 +105,10 @@ def test_reader_states_one_client_side_clock_and_no_direct_or_cloud_modes(
     assert "monotonic clock of the job host that sends it" in clocks
     assert "independence" not in common
     assert "fresh client process" in reconnect
-    assert "interval on the client host's clock from process.start returning" in previews["opening"]
+    assert (
+        "interval on the client host's clock from the process-start request being sent"
+        in previews["opening"]
+    )
     for prose in (clocks, reconnect, previews["opening"]):
         assert "Direct" not in prose
         assert "API server" not in prose

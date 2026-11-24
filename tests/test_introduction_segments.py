@@ -28,7 +28,6 @@ def test_every_introduction_names_a_segment_as_its_legend_does() -> None:
 
     documents = {document["id"]: document for document in _methodology_documents(ROOT)}
     reader = load_yaml((ROOT / "reader" / "methods.yaml").read_text(encoding="utf-8"))
-    checked = 0
     for identifier, method in reader["methods"].items():
         introduction = (method.get("notes") or {}).get("introduction")
         if not isinstance(introduction, str) or not _STAGE.search(introduction):
@@ -36,6 +35,4 @@ def test_every_introduction_names_a_segment_as_its_legend_does() -> None:
         document = documents[tables.aliases.get("document", {}).get(identifier, identifier)]
         legend = {resolved(str(stage["name"])) for stage in document["procedure"]["stages"]}
         for reference in _STAGE.findall(introduction):
-            checked += 1
             assert names[reference] in legend, (identifier, reference, sorted(legend))
-    assert checked

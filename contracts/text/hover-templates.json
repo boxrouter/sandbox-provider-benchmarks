@@ -450,12 +450,12 @@
       "form": "fragment",
       "role": "note"
     },
-    "burst_failure_k_of_n": {
+    "burst_failure_sandboxes_ready": {
       "owner": "methodology",
-      "template": "{k} of {n} sandboxes ready",
+      "template": "{ready} sandboxes ready, {total} asked",
       "runtime_fields": [
-        "k",
-        "n"
+        "ready",
+        "total"
       ],
       "form": "fragment",
       "role": "note"

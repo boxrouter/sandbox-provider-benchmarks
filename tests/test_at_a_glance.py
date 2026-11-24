@@ -65,11 +65,11 @@ def _clocks(bundle: dict[str, Any], document: str) -> dict[str, Any]:
 def test_the_clock_row_is_the_label_of_the_headline_clock_not_its_definition(
     bundle: dict[str, Any],
 ) -> None:
-    """ "for clock, just say 'Sandbox clock' or 'Job-host clock'"."""
+    """The clock row is the label of the headline clock: 'Sandbox clock' or 'Provider time'."""
     labels = clock_labels(bundle["names"])
 
     assert labels["sandbox"] == "Sandbox clock"
-    assert labels["runner"] == "Job-host clock"
+    assert labels["runner"] == "Provider time"
     for document in (
         "deepswe",
         "terminal-bench-4-0",

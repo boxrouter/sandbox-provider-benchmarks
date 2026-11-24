@@ -50,11 +50,21 @@ def test_current_tables_are_consistent() -> None:
 
 
 def test_a_sections_single_page_tabs_come_before_its_tabs_of_several_pages() -> None:
-    """A section lists its own pages before its groups, so a heading sits above its pages only."""
+    """A section lists its own pages before its groups, so a heading sits above its pages only.
+
+    The web page orders a section's tabs by their `row`, so rows and table order must agree.
+    """
     rows = names()
     tests = [row for row in rows if row["kind"] == "test" and row.get("status") != "off"]
     tabs = [row for row in rows if row["kind"] == "tab"]
     for section in {tab["parent"] for tab in tabs}:
+        in_section = [tab["id"] for tab in tabs if tab["parent"] == section]
+        by_row = [
+            tab["id"]
+            for tab in sorted(tabs, key=lambda tab: tab["row"])
+            if tab["parent"] == section
+        ]
+        assert in_section == by_row, f"{section}: the tabs' rows and the table's order differ"
         counts = [
             (
                 tab["id"],
@@ -513,7 +523,7 @@ def test_a_retired_test_has_no_row_and_its_documents_leave_every_reader() -> Non
         ('name: "Time Score"', 'name: "Time score"', ("not Title Case", "time-score")),
         # The hover card's Source line used an internal clock display name (2026-11-02).
         (
-            'name: "Job-host clock"',
+            'name: "Provider time"',
             'name: "AWS ' + "benchmark" + '-runner clock"',
             ("clock runner",),
         ),
@@ -585,7 +595,7 @@ def test_a_clock_name_never_adds_a_provider_label(tmp_path: Path) -> None:
     shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns(".git", ".venv", "__pycache__"))
     assert name_errors(root) == []
     path = root / "names" / "names.yaml"
-    path.write_text(path.read_text().replace('name: "Job-host clock"', 'name: "Runner clock"', 1))
+    path.write_text(path.read_text().replace('name: "Provider time"', 'name: "Runner clock"', 1))
     assert any("clock runner" in error and "runner" in error for error in name_errors(root))
 
 
