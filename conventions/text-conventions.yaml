@@ -2462,7 +2462,7 @@ presentation:
       - presentation.panel
     target: scope
   - id: tail-fallback-label
-    text: When a suite's pool is below the tail floor (fewer successes than the methodology's statistics.tail.min_successes), its pooled p95 is its worst sample, and the label says so. Every place where the chart or table shows that value as p95 reads the owner's fact in place of the p95 name, max (n<20, no p95) when lower is better and min (n<20, no p95) when higher is better, with the floor read from the methodology and never typed. A suite whose pool has at least the floor number of samples shows its p95 without a suffix. When no pool in a statistics menu reaches the floor, the menu greys out the p95 option so that it cannot be picked and shows statistics_selector.p95_unavailable (Fewer than the floor trials) on hover.
+    text: When a suite's pool is below the tail floor (fewer successes than the methodology's statistics.tail.min_successes), its pooled p95 is its worst sample, and the label says so. Every place where the chart or table shows that value as p95 reads the owner's fact in place of the p95 name, Max (n<20, no p95) when lower is better and Min (n<20, no p95) when higher is better, with the floor read from the methodology and never typed. A suite whose pool has at least the floor number of samples shows its p95 without a suffix. When no pool in a statistics menu reaches the floor, the menu greys out the p95 option so that it cannot be picked and shows statistics_selector.p95_unavailable (Fewer than the floor trials) on hover.
     severity: error
     predicate:
       kind: schema
@@ -2577,7 +2577,7 @@ presentation:
       axis scale, and draw no segment, divider or minimum for a value of zero or none. The pricing panel is the
       exception, because its bar length is the price, so it draws each segment at exact scale with no minimum.
     parameters:
-      min_segment_px: 10
+      min_segment_px: 5
     severity: error
     predicate:
       kind: schema
