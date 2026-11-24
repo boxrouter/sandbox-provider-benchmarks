@@ -197,6 +197,22 @@ def test_an_incomplete_footer_starts_with_the_marker_and_says_provider_failures(
         assert any("differs from the owned" in e for e in rendered_content_errors(criteria, scope))
 
 
+def test_the_nearest_size_footer_starts_with_its_own_marker_and_names_both_sizes() -> None:
+    criteria = content_criteria()
+    policy = criteria["ranking_status_footer"]
+    assert criteria["ranking_statuses"]["nearest_size"].get("footer_group") is None
+    assert policy["nearest_size_marker"] != policy["incomplete_marker"]
+    scope = capture()
+    footer = status_footer()
+    scope["slots"].extend([{"slot": "chart.bar-row", "text": "Boxd 52 s"}, footer])
+    footer["status"] = "nearest_size"
+    footer["providers"] = [{"provider": "Boxd", "reason": "4 vCPU / 16 GiB for 4 vCPU / 8 GiB"}]
+    footer["text"] = "‖ Nearest Size: Boxd (4 vCPU / 16 GiB for 4 vCPU / 8 GiB)"
+    assert rendered_content_errors(criteria, scope) == []
+    footer["text"] = "Nearest Size: Boxd (4 vCPU / 16 GiB for 4 vCPU / 8 GiB)"
+    assert any("differs from the owned" in e for e in rendered_content_errors(criteria, scope))
+
+
 def test_the_footer_ends_with_the_owner_hint_exactly_when_its_names_open_a_drill_down() -> None:
     criteria = content_criteria()
     scope = capture()
@@ -448,7 +464,6 @@ def test_the_not_displayed_line_names_each_providers_own_status_in_lower_case() 
         "not_offered",
         "account_limit",
         "in_development",
-        "nearest_size",
         "not_measured",
     }
     rows = [

@@ -322,9 +322,8 @@
     },
     "nearest_size": {
       "label": "Nearest Size",
-      "definition": "The provider has no size that matches this test, so it ran on its nearest larger size; the result is flagged with both sizes and left out of rankings.",
+      "definition": "The provider has no size that matches this test, so it ran on its nearest larger size; the result is flagged with both sizes.",
       "footer": true,
-      "footer_group": "not_displayed",
       "details": false
     },
     "not_measured": {
@@ -424,7 +423,8 @@
       "too_few_runs",
       "not_displayed",
       "filled",
-      "filled_units"
+      "filled_units",
+      "nearest_size"
     ],
     "names_reason_template": "{names}",
     "list_style": "conjunction",
@@ -436,6 +436,9 @@
     "substituted_marker": "‡",
     "worst_trial_marker": "§",
     "network_marker": "*",
+    "nearest_size_marker": "‖",
+    "nearest_size_footer_template": "{marker} {label}: {providers}",
+    "nearest_size_reason_template": "{ran} for {asked}",
     "incomplete_footer_template": "{marker} {label}: {providers}{open_hint}",
     "open_hint": ". Click provider to see details.",
     "group_clause": "own_label_lowercase",

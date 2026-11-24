@@ -116,6 +116,12 @@ def test_the_incomplete_line_has_a_marker_the_owner_sentence_and_no_penalty(
     footer["template"] = "{label}: {providers}{open_hint}"
     footer["open_hint"] = ". Click provider to see details. 1.2x"
     assert any("open_hint" in error for error in substitution_errors(criteria))
+    footer["open_hint"] = ". Click provider to see details."
+    footer["nearest_size_reason_template"] = "{ran}"
+    assert any("Nearest Size reason" in error for error in substitution_errors(criteria))
+    footer["nearest_size_reason_template"] = "{ran} for {asked}"
+    footer["nearest_size_marker"] = "‖‖"
+    assert any("Nearest Size marker" in error for error in substitution_errors(criteria))
 
 
 def test_the_substitution_word_links_to_the_workload_value(criteria: dict[str, Any]) -> None:
