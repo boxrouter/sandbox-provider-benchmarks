@@ -3,7 +3,7 @@
   "$id": "https://boxrouter.ai/schemas/bench/results.schema.json",
   "title": "Benchmark results",
   "description": "results.json: what `bench summarize` derives from one run's run.jsonl, and the only data the benchmarks pages read. Labels, units, better direction, step order and colours come from the pinned methodology release; this file carries ids and numbers. Every property's description ends with `Read by:` and the ids of the readers (see `readers`) that draw it. Read by: build.",
-  "schema_version": "1.15.0",
+  "schema_version": "1.16.0",
   "readers": {
     "build": "The web build: pin and version checks, the join keys every panel selects cells by, the provider pages and sitemap it draws.",
     "downloads": "/benchmarks/results.json, run.jsonl, results.md and llms.txt, and their immutable run addresses.",
@@ -104,7 +104,7 @@
           "code": {"type": ["string", "null"], "description": "Read by: states."},
           "reason": {"type": ["string", "null"], "description": "Read by: states."}
         }},
-        "ran_on_size": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory_mib", "asked_size", "reason"], "description": "A cell that is not an operation, run on the provider's nearest larger size because it has no exact one (1.15.0): its data stands, it ranks as unsupported. Read by: states.", "properties": {
+        "ran_on_size": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory_mib", "asked_size", "reason"], "description": "A cell that is not an operation, run on the provider's nearest larger size because it has no exact one (1.15.0): its data stands and it is pooled, indexed and ranked like any other cell (1.16.0). Read by: states.", "properties": {
           "cpu": {"type": "number", "description": "vCPU it ran on. Read by: states."},
           "memory_mib": {"type": "number", "description": "MiB it ran on. Read by: states."},
           "asked_size": {"type": "object", "additionalProperties": false, "required": ["cpu", "memory_mib"], "description": "The size the workload asks. Read by: states.", "properties": {"cpu": {"type": "number", "description": "vCPU. Read by: states."}, "memory_mib": {"type": "number", "description": "MiB. Read by: states."}}},

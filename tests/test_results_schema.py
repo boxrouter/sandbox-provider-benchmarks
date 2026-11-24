@@ -25,7 +25,7 @@ EXAMPLE_PATH = Path(__file__).parent / "fixtures" / "results-example.json"
 
 # 1.9.0: +1 KiB timing_excluded; 1.11.0: +0.5 KiB unsupported reason; 1.12.0: +0.5 KiB larger_size;
 # 1.14.0: +1 KiB exchange audit reasons, per-step exchanges, budgets digest;
-# 1.15.0: +1 KiB ran_on_size
+# 1.15.0: +1 KiB ran_on_size; 1.16.0: description only
 MAX_BYTES = 28 * 1024
 MAX_DEFINITIONS = 15
 READ_BY = re.compile(r"Read by: ([a-z-]+(?:, [a-z-]+)*)\.$")
