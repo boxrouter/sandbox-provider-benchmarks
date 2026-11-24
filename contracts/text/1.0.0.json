@@ -320,6 +320,13 @@
       "footer_group": "not_displayed",
       "details": false
     },
+    "nearest_size": {
+      "label": "Nearest Size",
+      "definition": "The provider has no size that matches this test, so it ran on its nearest larger size; the result is flagged with both sizes and left out of rankings.",
+      "footer": true,
+      "footer_group": "not_displayed",
+      "details": false
+    },
     "not_measured": {
       "label": "Not Measured",
       "definition": "No result was measured for this provider.",

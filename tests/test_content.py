@@ -448,6 +448,7 @@ def test_the_not_displayed_line_names_each_providers_own_status_in_lower_case() 
         "not_offered",
         "account_limit",
         "in_development",
+        "nearest_size",
         "not_measured",
     }
     rows = [
