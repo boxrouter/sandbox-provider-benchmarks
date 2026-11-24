@@ -33,9 +33,6 @@
         "after": "control",
         "before": "data-back",
         "min_s": 5
-      },
-      "not_for": {
-        "wait-0s": "no pause to call, and the sandbox does not stand by within 0 s"
       }
     }
   ],

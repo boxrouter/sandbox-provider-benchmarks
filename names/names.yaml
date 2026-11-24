@@ -279,8 +279,7 @@ names:
   - {row: 52, kind: "stage", id: "resume", name: "Resume", parent: "pause-resume"}
   - {row: 52, kind: "stage", id: "read", name: "Read", parent: "pause-resume"}
   - {row: 53, kind: "test", id: "delayed-resume", name: "Delayed Resume", parent: "pause-resume", document: "delayed-resume", selector: {label: "Delay Time", mode: chooses, description: "Time spent waiting after pause, or after the initial read where pause is unavailable."}}
-  - {row: 54, kind: "variant", id: "wait-0s", name: "Resumed at once", parent: "delayed-resume", workload: "wait-0s", selector: {label: "Delay Time", mode: chooses, option: "0 s"}}
-  - {row: 54, kind: "variant", id: "wait-60s", name: "Resumed after 60 s", parent: "delayed-resume", workload: "wait-60s", selector: {label: "Delay Time", mode: chooses, option: "60 s"}}
+  - {row: 54, kind: "variant", id: "wait-1min", name: "Resumed after 1 min", parent: "delayed-resume", workload: "wait-1min", selector: {label: "Delay Time", mode: chooses, option: "1 min"}}
   - {row: 54, kind: "variant", id: "wait-15min", name: "Resumed after 15 min", parent: "delayed-resume", workload: "wait-15min", selector: {label: "Delay Time", mode: chooses, option: "15 min"}}
   - {row: 55, kind: "tab", id: "snapshots", name: "Snapshots", parent: "sandbox-operations"}
   - {row: 56, kind: "test", id: "snapshot-and-restore", name: "Snapshot and Restore", parent: "snapshots", document: "snapshot-and-restore", presentation: {stage_labels: "names"}}

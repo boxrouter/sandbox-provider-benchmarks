@@ -48,19 +48,8 @@ procedure:
     cold: First workload in a fresh sandbox.
     warm: The post-wait read follows the trial's stated idle interval.
   variants:
-  - id: wait-0s
-    label: Resumed at once
-    parameters:
-      bytes: 4096
-      seed: 20261004
-      wait_seconds: 0
-    description: Resume at once, with no idle interval after the pause; not applicable without a pause
-      call, as the sandbox cannot stand by in 0 s.
-    notes:
-      summary: '{param:delayed-resume.notes.summary}'
-      what_this_measures: '{param:delayed-resume.notes.what_this_measures}'
-  - id: wait-60s
-    label: Resumed after 60 s
+  - id: wait-1min
+    label: Resumed after 1 min
     parameters:
       bytes: 4096
       seed: 20261004
@@ -197,7 +186,7 @@ failure_policy:
   - A failure shown not to be the provider's; retain the trial with its reason.
 parameters:
   path: parameters/delayed-resume/
-  sha256: 64de08afbcb2e1599d7bc4b68025e6fd1dc6e0799ebfc24deaa427bccf8785b6
+  sha256: 8304b96a06926f91aba65ac2a4dc8e081a060c812a423d487001056476175da5
 capabilities:
   optional:
     pause_resume: {}
@@ -206,8 +195,8 @@ capabilities:
 interpretation:
   what_to_do: Compare resume modes and wait lengths when choosing a provider for work that pauses between
     tool calls.
-  informs: How long an agent sandbox takes to read its data back after it has been left alone for 0 s,
-    60 s or 15 min. A slower result points at the provider's pause and resume or idle-standby path; the
+  informs: How long an agent sandbox takes to read its data back after it has been left alone for 1 min
+    or 15 min. A slower result points at the provider's pause and resume or idle-standby path; the
     timed spans identify where to look.
   limits:
   - Results do not establish performance for larger files, memory state, busy sandboxes or a different
@@ -217,9 +206,7 @@ interpretation:
   - Providers that support pause and resume receive explicit pause and resume calls. A provider without
     them that declares an idle sandbox pauses by itself is left idle; its wake occurs during the first
     read after the wait. A provider with neither is not offered.
-  - A provider that is left idle is not applicable at the 0 s wait, because its sandbox cannot stand by
-    within 0 s and a read at once would compare a running sandbox with a resumed one.
-  - If the evidence of idle standby is missing, or a positive wait did not enter standby, the affected
+  - If the evidence of idle standby is missing, or a wait did not enter standby, the affected
     resume metric is withheld.
 validity_checks:
 - id: same_file_read_twice
@@ -241,8 +228,7 @@ source:
   name: deterministic 4 KiB marker workload
   version: unknown
   ids:
-  - resume-after-wait/wait-0s sha256:f3a1ebbc8848bfcf
-  - resume-after-wait/wait-60s sha256:d13aa379889a0b87
+  - resume-after-wait/wait-1min sha256:d13aa379889a0b87
   - resume-after-wait/wait-15min sha256:e5027dfa8dffe0f3
   licence: Apache-2.0
 execution:

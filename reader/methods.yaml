@@ -875,16 +875,15 @@ methods:
     clock: [runner]
     notes:
       opening: '{param:reader.common.blocks.pause-resume.opening}'
-      introduction: 'Times reading data from a sandbox that was paused or idle for {duration:measured.procedure.variants.0.parameters.wait_seconds}, {duration:measured.procedure.variants.1.parameters.wait_seconds} or {duration:measured.procedure.variants.2.parameters.wait_seconds}.'
+      introduction: 'Times reading data from a sandbox that was paused or idle for {duration:measured.procedure.variants.0.parameters.wait_seconds} or {duration:measured.procedure.variants.1.parameters.wait_seconds}.'
       metric: '{name:test.delayed-resume} is the sum after the wait of two timed stages: {name:stage.resume} (`resume` for explicit-pause providers, or 0 for auto-idle providers that wake on command) and {name:stage.read} (reading back the {param:measured.procedure.variants.0.parameters.bytes}-byte marker file with `dd`).'
       setup: '{param:reader.common.blocks.common.sandbox}.'
       workload: |-
-        The {param:measured.procedure.variants.0.parameters.bytes}-byte marker file is generated from a seeded pseudo-random stream (`seed = {param:measured.procedure.variants.0.parameters.seed}`), and {duration:measured.procedure.variants.2.parameters.wait_seconds} is the default headline view. The three wait durations ({duration:measured.procedure.variants.0.parameters.wait_seconds}, {duration:measured.procedure.variants.1.parameters.wait_seconds}, and {duration:measured.procedure.variants.2.parameters.wait_seconds}) test whether a paused or idle sandbox is evicted from local host memory to colder network storage as idle time grows.
-      trial_steps: '[[steps: create, control, pause, wait]]Create sandbox, write {param:measured.procedure.variants.0.parameters.bytes}-byte marker, read it once (control), call `pause` if supported, and wait {duration:measured.procedure.variants.0.parameters.wait_seconds}, {duration:measured.procedure.variants.1.parameters.wait_seconds}, or {duration:measured.procedure.variants.2.parameters.wait_seconds} (untimed); then [[steps: resume]]call `resume` where supported ({name:stage.resume}); then [[steps: data_back]]read the {param:measured.procedure.variants.0.parameters.bytes}-byte marker file again with `dd` ({name:stage.read}); then [[steps: destroy]]verify standby duration and destroy sandbox (untimed).'
+        The {param:measured.procedure.variants.0.parameters.bytes}-byte marker file is generated from a seeded pseudo-random stream (`seed = {param:measured.procedure.variants.0.parameters.seed}`), and {duration:measured.procedure.variants.1.parameters.wait_seconds} is the default headline view. The two wait durations ({duration:measured.procedure.variants.0.parameters.wait_seconds} and {duration:measured.procedure.variants.1.parameters.wait_seconds}) test whether a paused or idle sandbox is evicted from local host memory to colder network storage as idle time grows.
+      trial_steps: '[[steps: create, control, pause, wait]]Create sandbox, write {param:measured.procedure.variants.0.parameters.bytes}-byte marker, read it once (control), call `pause` if supported, and wait {duration:measured.procedure.variants.0.parameters.wait_seconds} or {duration:measured.procedure.variants.1.parameters.wait_seconds} (untimed); then [[steps: resume]]call `resume` where supported ({name:stage.resume}); then [[steps: data_back]]read the {param:measured.procedure.variants.0.parameters.bytes}-byte marker file again with `dd` ({name:stage.read}); then [[steps: destroy]]verify standby duration and destroy sandbox (untimed).'
       limitations:
-      - Waits longer than {name:page.common}'s idle timeout (the {duration:measured.procedure.variants.2.parameters.wait_seconds} variant) may include a new TCP and TLS handshake in the post-wait call, and auto-idle providers that fail to enter standby during a positive wait have their metric withheld.
+      - Waits longer than {name:page.common}'s idle timeout (the {duration:measured.procedure.variants.1.parameters.wait_seconds} variant) may include a new TCP and TLS handshake in the post-wait call, and auto-idle providers that fail to enter standby during a wait have their metric withheld.
       - Blaxel has no pause to call; its sandbox stands by on its own after about 15 s idle, and the first read after the wait wakes it, so `read` includes the wake.
-      - Auto-idle providers are not applicable at {duration:measured.procedure.variants.0.parameters.wait_seconds}, because their sandbox cannot stand by within it and an immediate read would compare a running sandbox with a resumed one.
       - '{param:reader.common.blocks.pause-resume.limit_architecture}'
       statistics_rules: |-
         {param:reader.common.blocks.common.statistics_citation}
@@ -893,7 +892,7 @@ methods:
       failure_policy: |-
         {param:reader.common.blocks.common.failures_citation}
 
-        A trial succeeds only when all steps complete within timeout, the post-wait marker read matches the pre-wait SHA-256 digest, and the sandbox is destroyed. On positive wait variants ({duration:measured.procedure.variants.1.parameters.wait_seconds} and {duration:measured.procedure.variants.2.parameters.wait_seconds}), an auto-idle provider whose guest `/proc/uptime` kept advancing throughout the wait (never entering standby) has its metric withheld.
+        A trial succeeds only when all steps complete within timeout, the post-wait marker read matches the pre-wait SHA-256 digest, and the sandbox is destroyed. On the wait variants ({duration:measured.procedure.variants.0.parameters.wait_seconds} and {duration:measured.procedure.variants.1.parameters.wait_seconds}), an auto-idle provider whose guest `/proc/uptime` kept advancing throughout the wait (never entering standby) has its metric withheld.
     stages:
       resume:
         start: Resume request is sent after the selected wait
