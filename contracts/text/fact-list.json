@@ -62,11 +62,11 @@
   "fact_tail_floor": "{param:sbs.common.statistics.tail.min_successes}",
   "fact_tail_fallback_lower": "uses max (n<{param:sbs.common.statistics.tail.min_successes})",
   "fact_tail_fallback_higher": "uses min (n<{param:sbs.common.statistics.tail.min_successes})",
-  "fact_fill_time_rule": "For each missing workload, this composite uses the slowest {statistic} time any provider recorded on that workload.",
-  "fact_fill_cost_rule": "For each missing workload, this composite uses the highest {statistic} cost any provider recorded on that workload.",
+  "fact_fill_time_rule": "For this metric, missing workloads are substituted with the highest provider time on this workload.",
+  "fact_fill_cost_rule": "For this metric, missing workloads are substituted with the highest provider cost on this workload.",
   "fact_score_definition": "Each {unit} scores 100 × the best provider's {statistic} ÷ this provider's {statistic}; one without a result adds no points.",
   "fact_score_missing_unit": "A missing {unit} adds no points to the score.",
   "fact_cost_split_rule": "Each stage's cost is the shown cost times that stage's share of the Time bar under the same statistic.",
-  "fact_fill_unit_time_rule": "For each missing {unit}, this workload uses the slowest {statistic} time any provider recorded on that {unit}.",
-  "fact_fill_unit_cost_rule": "For each missing {unit}, this workload uses the highest {statistic} cost any provider recorded on that {unit}."
+  "fact_fill_unit_time_rule": "For this metric, missing {units} are substituted with the highest provider time on this {unit}.",
+  "fact_fill_unit_cost_rule": "For this metric, missing {units} are substituted with the highest provider cost on this {unit}."
 }

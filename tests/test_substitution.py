@@ -35,10 +35,22 @@ def test_every_substitution_fact_is_statistic_aware_and_names_the_value_it_took(
         "No successful trial. Substituted with the highest {statistic} cost "
         "from the providers that completed this {unit}."
     )
-    for code in ("fact_fill_time_rule", "fact_fill_unit_time_rule"):
-        assert "{statistic}" in facts[code] and "slowest" in facts[code], code
-    for code in ("fact_fill_cost_rule", "fact_fill_unit_cost_rule"):
-        assert "{statistic}" in facts[code] and "highest" in facts[code], code
+    assert facts["fact_fill_time_rule"] == (
+        "For this metric, missing workloads are substituted with the highest provider time "
+        "on this workload."
+    )
+    assert facts["fact_fill_cost_rule"] == (
+        "For this metric, missing workloads are substituted with the highest provider cost "
+        "on this workload."
+    )
+    assert facts["fact_fill_unit_time_rule"] == (
+        "For this metric, missing {units} are substituted with the highest provider time "
+        "on this {unit}."
+    )
+    assert facts["fact_fill_unit_cost_rule"] == (
+        "For this metric, missing {units} are substituted with the highest provider cost "
+        "on this {unit}."
+    )
     assert "median" not in " ".join(
         facts[code] for code in facts if "fill" in code or "result" in code
     )
