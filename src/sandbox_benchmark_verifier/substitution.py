@@ -110,4 +110,24 @@ def _incomplete_line_errors(footer: Mapping[str, Any]) -> list[str]:
         errors.append(f"{INCOMPLETE_RULE}: the incomplete marker is one glyph")
     if set(footer.get("incomplete_statuses", [])) != set(_LEVEL_FIELDS):
         errors.append(f"{INCOMPLETE_RULE}: the incomplete line covers filled and filled_units only")
+    return errors + _nearest_size_line_errors(footer)
+
+
+def _nearest_size_line_errors(footer: Mapping[str, Any]) -> list[str]:
+    """The Nearest Size line: its own marker, its fields, and the reason that names both sizes."""
+    errors = []
+    if _fields(str(footer.get("nearest_size_footer_template", ""))) != {
+        "marker",
+        "label",
+        "providers",
+    }:
+        errors.append(
+            f"{INCOMPLETE_RULE}: the Nearest Size line needs its marker, label and providers"
+        )
+    if _fields(str(footer.get("nearest_size_reason_template", ""))) != {"ran", "asked"}:
+        errors.append(
+            f"{INCOMPLETE_RULE}: the Nearest Size reason names the size it ran on and the one asked"
+        )
+    if len(str(footer.get("nearest_size_marker", ""))) != 1:
+        errors.append(f"{INCOMPLETE_RULE}: the Nearest Size marker is one glyph")
     return errors

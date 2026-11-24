@@ -81,7 +81,7 @@ notes:
     sandbox clock, after setup.
 parameters:
   path: parameters/github-actions/
-  sha256: 156d7ef124dd6d5982ecdf257154abc46afe129edbf2051141ec799d676620c7
+  sha256: 1edcd91ba3f76190b94f500af9b8cadc995a29b046c4ee0602bd6aeba9a044d9
 default_view:
   metric: job_time
 procedure:

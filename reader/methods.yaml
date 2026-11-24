@@ -135,7 +135,7 @@ methods:
 
         **Sandbox Size:** Each benchmark asks for a {machine:measured.environment.size} sandbox unless its methodology page states another size, as a ceiling the sandbox may not exceed.
 
-        **{param:content.ranking_statuses.nearest_size.label}:** Where a provider has no size that matches, the benchmark runs on its nearest larger size and the result says so: operation results are flagged with that size, and machine-performance and workload results show both sizes and are left out of rankings.
+        **{param:content.ranking_statuses.nearest_size.label}:** Where a provider has no size that matches, the benchmark runs on its nearest larger size and the result says so: operation results are flagged with that size, and machine-performance and workload results show both sizes.
 
         **Images:** Every image is pinned by digest and prepared in each provider account before the benchmark run starts, as the provider's own template, snapshot or image. Standard benchmarks use the BoxRouter standard image, pinned by its SHA-256 digest ({hash:sha256|measured.environment.image.reference}), and no image is built or pulled inside a timed step. The digest is part of this methodology.
 

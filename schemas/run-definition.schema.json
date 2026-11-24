@@ -42,7 +42,7 @@
       "minimum": 1
     },
     "kind": {
-      "description": "What the workload measures, which sets how `machine` is asked. `operation`: a sandbox operation (create, a command, a file, list, pause and resume, a snapshot, a fork, a reconnect, a preview) whose time a larger machine barely moves; a provider whose smallest size that holds `machine` is larger runs it at that size, recorded on each line. `machine-performance`: work bound by the machine's CPU, memory, disk or network; a provider with no exact size for `machine` runs it at its nearest larger size, marked with both sizes and left out of rankings.",
+      "description": "What the workload measures, which sets how `machine` is asked. `operation`: a sandbox operation (create, a command, a file, list, pause and resume, a snapshot, a fork, a reconnect, a preview) whose time a larger machine barely moves; a provider whose smallest size that holds `machine` is larger runs it at that size, recorded on each line. `machine-performance`: work bound by the machine's CPU, memory, disk or network; a provider with no exact size for `machine` runs it at its nearest larger size, marked with both sizes.",
       "enum": ["operation", "machine-performance"]
     },
     "machine": {

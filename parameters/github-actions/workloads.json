@@ -302,6 +302,7 @@
       "env": {
         "CI": "true",
         "GIT_TERMINAL_PROMPT": "0",
+        "JAVA_TOOL_OPTIONS": "-Djava.net.preferIPv6Addresses=system",
         "MAVEN_ARGS": "--show-version --batch-mode --no-transfer-progress"
       },
       "source": {
@@ -333,6 +334,6 @@
     },
     "id": "gson",
     "label": "Java (gson)",
-    "version": "sha256:4aca4a6114dad11d"
+    "version": "sha256:cac3e6a6ca965ff6"
   }
 ]

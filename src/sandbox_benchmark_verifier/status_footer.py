@@ -97,6 +97,20 @@ def _clauses(
     return clauses, [f"chart.status-footer: {error}" for error in errors]
 
 
+# A status whose line starts with a marker of its own: the policy keys of its marker and template.
+_MARKED_LINES = {"nearest_size": ("nearest_size_marker", "nearest_size_footer_template")}
+
+
+def _line_template(policy: Mapping[str, Any], status: str) -> tuple[str, str]:
+    """The footer template of a status's line and the marker that starts it, if any."""
+    if status in _MARKED_LINES:
+        marker_key, template_key = _MARKED_LINES[status]
+        return str(policy[template_key]), str(policy[marker_key])
+    incomplete = status in policy.get("incomplete_statuses", [])
+    template = policy["incomplete_footer_template" if incomplete else "template"]
+    return str(template), str(policy.get("incomplete_marker", ""))
+
+
 def ranking_footer_errors(criteria: Mapping[str, Any], slots: list[dict[str, Any]]) -> list[str]:
     policy = criteria.get("ranking_status_footer", {})
     errors: list[str] = []
@@ -109,7 +123,6 @@ def ranking_footer_errors(criteria: Mapping[str, Any], slots: list[dict[str, Any
         if not definition or not definition["footer"]:
             errors.append("chart.status-footer: unknown or ranked status")
             continue
-        incomplete = status in policy.get("incomplete_statuses", [])
         label = definition["label"]
         if label in seen:
             errors.append("chart.status-footer: each status needs one combined footer line")
@@ -123,8 +136,9 @@ def ranking_footer_errors(criteria: Mapping[str, Any], slots: list[dict[str, Any
         clauses, clause_errors = _clauses(criteria, str(status), providers)
         errors.extend(clause_errors)
         # The owner's closing sentence is on the line exactly when its names open a drill-down.
-        expected = policy["incomplete_footer_template" if incomplete else "template"].format(
-            marker=policy.get("incomplete_marker", ""),
+        template, marker = _line_template(policy, str(status))
+        expected = template.format(
+            marker=marker,
             label=label,
             open_hint=policy["open_hint"] if slot.get("opens_details") else "",
             providers=policy["separator"].join(
