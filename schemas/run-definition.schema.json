@@ -156,14 +156,6 @@
                 "minimum": 0
               }
             }
-          },
-          "not_for": {
-            "description": "Variant ids this mode does not apply to, each with the reason; such a cell gets one unsupported line (`not_applicable`) and no sandbox.",
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "minLength": 1
-            }
           }
         }
       }

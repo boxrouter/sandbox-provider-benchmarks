@@ -49,6 +49,33 @@ def test_current_tables_are_consistent() -> None:
     assert name_errors(ROOT) == []
 
 
+def test_a_sections_single_page_tabs_come_before_its_tabs_of_several_pages() -> None:
+    """A section lists its own pages before its groups, so a heading sits above its pages only."""
+    rows = names()
+    tests = [row for row in rows if row["kind"] == "test" and row.get("status") != "off"]
+    tabs = [row for row in rows if row["kind"] == "tab"]
+    for section in {tab["parent"] for tab in tabs}:
+        counts = [
+            (
+                tab["id"],
+                len(
+                    {
+                        test.get("page", test["document"])
+                        for test in tests
+                        if test.get("parent") == tab["id"]
+                    }
+                ),
+            )
+            for tab in tabs
+            if tab["parent"] == section
+        ]
+        shown = [(identifier, count) for identifier, count in counts if count > 0]
+        first_group = next((at for at, (_, count) in enumerate(shown) if count > 1), len(shown))
+        assert all(count > 1 for _, count in shown[first_group:]), (
+            f"{section}: a single-page tab follows a group: {shown}"
+        )
+
+
 def test_a_hero_row_names_the_document_of_its_test_row() -> None:
     rows = names()
     tests = {row["id"]: row for row in rows if row["kind"] == "test"}

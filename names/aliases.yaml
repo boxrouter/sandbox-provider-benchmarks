@@ -92,7 +92,6 @@ variant:
     storage_4gib: storage-4gib
   delayed-resume:
     wait_60s: wait-1min
-    wait-60s: wait-1min
     wait_15min: wait-15min
   image-build-2vcpu-4gib:
     data_science: data-science
