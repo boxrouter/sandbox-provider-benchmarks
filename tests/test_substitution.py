@@ -56,6 +56,15 @@ def test_every_substitution_fact_is_statistic_aware_and_names_the_value_it_took(
     )
 
 
+def test_a_tail_fallback_names_the_worst_trial_and_says_there_is_no_p95(
+    criteria: dict[str, Any],
+) -> None:
+    """Andre, 2026-11-24: "'p95 uses max (n<20)' is statistically confusing"."""
+    facts = criteria["fact_list"]
+    assert facts["fact_tail_fallback_lower"] == "max (n<20, no p95)"
+    assert facts["fact_tail_fallback_higher"] == "min (n<20, no p95)"
+
+
 def test_a_substitution_text_that_does_not_name_the_value_is_refused(
     criteria: dict[str, Any],
 ) -> None:

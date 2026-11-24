@@ -31,7 +31,7 @@ composition:
     The geometric mean, over the units (traces or jobs) that some provider completed in that
     workload, of each unit's cost on the unit statistic (the median unless the reader chooses the mean
     or the 95th percentile) over its successful trials, taken only where every counted trial of the
-    provider has a provider-reported or calculated cost (an exact total: no estimate and no range).
+    provider has a provider-reported or calculated cost (an exact total: no estimate and no range). A workload value is rounded to 5 significant figures once, when it is published; a composite combines the workload values before that rounding.
     If a unit has a failed attempt with an explicitly recorded owner other than the provider, omit
     that unit for every provider unless a later successful rerun replaces the failure. Treat an
     unknown owner as provider-owned. For each remaining unit a provider did not complete, use the

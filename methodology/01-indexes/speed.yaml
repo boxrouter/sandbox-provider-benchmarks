@@ -30,7 +30,7 @@ composition:
   per_input_value: >-
     A provider's value for a workload is the geometric mean, over that workload's units (traces or
     jobs), of each unit's time on the unit statistic (the median unless the reader chooses the mean
-    or the 95th percentile) over its successful trials. If a unit has a failed attempt with an
+    or the 95th percentile) over its successful trials. A workload value is rounded to 5 significant figures once, when it is published; a composite combines the workload values before that rounding. If a unit has a failed attempt with an
     explicitly recorded owner other than the provider, omit that unit for every provider unless a
     later successful rerun replaces the failure. Treat an unknown owner as provider-owned. For each
     remaining unit a provider did not complete, use the slowest time on the same statistic any
