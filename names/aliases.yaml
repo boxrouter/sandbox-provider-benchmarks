@@ -101,7 +101,6 @@ variant:
 stage:
   r2e-gym:
     restore: create-from-snapshot
-    tool: tool-calls
     cleanup: destroy
   pause-resume:
     sleep: pause

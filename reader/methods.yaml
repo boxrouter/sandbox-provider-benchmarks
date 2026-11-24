@@ -544,7 +544,7 @@ methods:
         The parameters hold {count:measured.procedure.variants} tasks from `R2E-Gym/R2E-Gym`, each with four recorded rollouts (run1 to run4). The run replays the five tasks that have a prepared archive: numpy-masked-method-lookup, numpy-issubdtype-abstract-types, numpy-apply-axis-empty, numpy-strided-custom-dtype and coveragepy-behavior-flag-rename; the other five are not tested yet.
 
         The rollouts include both passing (`reward = 1`) and failing (`reward = 0`) runs, mirroring a GRPO training batch where candidate rollouts vary in length and outcome.
-      trial_steps: '[[steps: create]]Create sandbox 1, [[steps: reset]]run R2E-Gym''s 17-command reset, [[steps: snapshot]]snapshot and destroy sandbox 1 ({name:stage.setup}); then [[steps: restore]]for each of four rollouts, restore a sandbox from the snapshot ({name:stage.create-from-snapshot}), [[steps: tool_calls]]replay recorded tool calls ({name:stage.tool-calls}), [[untimed]]verify the git patch (untimed), [[steps: reward]]run the test suite ({name:stage.reward}), [[steps: destroy]]and destroy the sandbox ({name:stage.destroy}); then [[untimed]]delete the snapshot (untimed).'
+      trial_steps: '[[steps: create]]Create sandbox 1, [[steps: reset]]run R2E-Gym''s 17-command reset, [[steps: snapshot]]snapshot and destroy sandbox 1 ({name:stage.setup}); then [[steps: restore]]for each of four rollouts, restore a sandbox from the snapshot ({name:stage.create-from-snapshot}), [[steps: tool_calls]]replay recorded tool calls ({name:stage.read}, {name:stage.run}, {name:stage.write} and {name:stage.finish} calls), [[untimed]]verify the git patch (untimed), [[steps: reward]]run the test suite ({name:stage.reward}), [[steps: destroy]]and destroy the sandbox ({name:stage.destroy}); then [[untimed]]delete the snapshot (untimed).'
       cost_how_to_read: '{param:reader.common.blocks.common.cost_reading} {param:content.fact_list.fact_cost_split_rule}'
       limitations:
       - The four rollouts in a group run sequentially rather than in a parallel burst, and tool calls run back to back without policy inference pauses.
@@ -572,7 +572,19 @@ methods:
         start_after: Previous sandbox's destroy call returns and the restore request is sent
         end: Restore call returns
         clock: runner
-      tool-calls:
+      read:
+        start: Exec each tool call
+        end: Call exits
+        clock: sandbox
+      run:
+        start: Exec each tool call
+        end: Call exits
+        clock: sandbox
+      write:
+        start: Exec each tool call
+        end: Call exits
+        clock: sandbox
+      finish:
         start: Exec each tool call
         end: Call exits
         clock: sandbox

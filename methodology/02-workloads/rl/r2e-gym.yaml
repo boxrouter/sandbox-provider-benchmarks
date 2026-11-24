@@ -116,9 +116,24 @@ procedure:
     name: '{name:stage.create-from-snapshot}'
     record_steps:
     - restore
-  - id: tool-calls
-    name: '{name:stage.tool-calls}'
-    description: One recorded rollout's tool calls are replayed in each of sandboxes 2 to 5.
+  - id: read
+    name: '{name:stage.read}'
+    description: The tool calls of one recorded rollout that only look, `file_editor view` and `search`; each rollout is replayed in one of sandboxes 2 to 5.
+    record_steps:
+    - cmd
+  - id: run
+    name: '{name:stage.run}'
+    description: The rollout's `execute_bash` tool calls.
+    record_steps:
+    - cmd
+  - id: write
+    name: '{name:stage.write}'
+    description: The rollout's `file_editor` tool calls that change a file (`create`, `str_replace`, `insert` and `undo_edit`).
+    record_steps:
+    - cmd
+  - id: finish
+    name: '{name:stage.finish}'
+    description: The rollout's `finish` tool call.
     record_steps:
     - cmd
   - id: reward
@@ -198,7 +213,7 @@ procedure:
     - 4
     - 5
   - id: tool_calls
-    name: '{name:stage.tool-calls}'
+    name: Tool Calls
     label: Tool call
     show: stack
     action: 'Replay one rollout''s tool calls back to back in recorded order, each in its own script started in

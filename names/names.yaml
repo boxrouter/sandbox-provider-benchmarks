@@ -230,7 +230,10 @@ names:
   - {row: 24, kind: "variant", id: "numpy-ad48eaa76403", name: "numpy-histogram-edge-rounding", parent: "r2e-gym", workload: "numpy-ad48eaa76403"}
   - {row: 25, kind: "stage", id: "setup", name: "Setup", parent: "r2e-gym"}
   - {row: 26, kind: "stage", id: "create-from-snapshot", name: "Create from Snapshot", parent: "r2e-gym"}
-  - {row: 27, kind: "stage", id: "tool-calls", name: "Tool Calls", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "read", name: "Read", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "run", name: "Run", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "write", name: "Write", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "finish", name: "Finish", parent: "r2e-gym"}
   - {row: 28, kind: "stage", id: "reward", name: "Reward", parent: "r2e-gym"}
   - {row: 29, kind: "stage", id: "destroy", name: "Destroy", parent: "r2e-gym"}
   - {row: 30, kind: "test", id: "ci-jobs", name: "CI Actions", parent: "ci-workloads", document: "github-actions", unit: "job", selector: {label: "Job", mode: chooses}, presentation: {cost: {label: "Cost per Job", divisor: 1000}}}
