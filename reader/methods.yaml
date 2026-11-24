@@ -647,7 +647,7 @@ methods:
         Each trial uses a sandbox started from BoxRouter's pinned standard image (the non-root user account with passwordless `sudo`, like GitHub's ubuntu-latest runner), with open networking and no cached toolchains, packages, builds or Git state.
       workload: |-
         The workload translates 6 `.github/workflows` jobs from public open-source repositories into self-contained `bash` step sequences pinned to a repository commit. GitHub Actions workflow expressions, matrix variables, `actions/checkout`, and `actions/setup-*` steps become explicit shell commands with caches disabled so each trial clones from GitHub and fetches dependencies from live upstream registries.
-      trial_steps: '[[steps: create]]Create sandbox; then [[steps: setup_steps]]execute the {name:stage.install} steps, timed apart; then [[steps: job_steps]]execute the remaining workflow steps across three stages ({name:stage.lint}, {name:stage.test}, {name:stage.build}); then [[steps: destroy]]destroy sandbox.'
+      trial_steps: '[[steps: create]]Create sandbox; then [[steps: setup_steps]]execute the steps, timed apart ({name:stage.install}); then [[steps: job_steps]]execute the remaining workflow steps across three stages ({name:stage.lint}, {name:stage.test}, {name:stage.build}); then [[steps: destroy]]destroy sandbox.'
       cost_how_to_read: '{param:reader.common.blocks.common.cost_reading} {param:content.fact_list.fact_cost_split_rule}'
       limitations:
       - Every trial starts cold without dependency caches or pre-baked SDK images, and live downloads from GitHub, npm, PyPI, crates.io, and Maven Central include upstream registry variance.
@@ -1276,7 +1276,7 @@ methods:
         - `git clone` performs a full clone of `fastapi/fastapi` and checks out the pinned {commit:commit|fastapi/fastapi|69ddc2badf9da1123bba4d360225ae6b085985f6}.
         - `npm ci` installs 687 locked packages from the pinned `package.json` and `package-lock.json` of `axios/axios`.
         - `pip install -r` installs into a new virtualenv from a hash-pinned requirements file exported with `uv export --frozen --no-dev --group tests --extra all --no-emit-project` from `fastapi/fastapi`'s `uv.lock`.
-      trial_steps: '[[steps: create]]Create sandbox and upload pinned lockfiles (untimed). [[steps: setup]]Run a command as the non-root user that clears `~/.npm` and `~/.cache/pip` and prepares `/workspace` (untimed), [[steps: install]]records `/proc/net/dev` received bytes, runs the selected install command ({name:stage.install}), and records received bytes again. [[steps: destroy]]Destroy sandbox (untimed).'
+      trial_steps: '[[steps: create]]Create sandbox and upload pinned lockfiles (untimed). [[steps: setup]]Run a command as the non-root user that clears `~/.npm` and `~/.cache/pip` and prepares `/workspace` (untimed), [[steps: install]]records `/proc/net/dev` received bytes, runs the selected install command, and records received bytes again ({name:stage.install}). [[steps: destroy]]Destroy sandbox (untimed).'
       limitations:
       - End-to-end install time combines network download speed from public registry CDNs with in-sandbox decompression and filesystem writes; shared registry slowdowns outside a provider's network can affect all providers.
       - Comparing the received bytes, recorded on every trial, with the {name:tab.disk} and {name:tab.filesystem} tabs helps tell a download-bound time from a CPU-bound one.
