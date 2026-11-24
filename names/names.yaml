@@ -271,42 +271,42 @@ names:
   - {row: 130, kind: "test", id: "write-4kib-2vcpu-8gib", name: "Write 4 KiB (2 vCPU / 8 GiB)", parent: "files", document: "write-4kib-2vcpu-8gib", page: "read-4kib"}
   - {row: 131, kind: "test", id: "read-4kib-2vcpu-8gib", name: "Read 4 KiB (2 vCPU / 8 GiB)", parent: "files", document: "read-4kib-2vcpu-8gib", page: "read-4kib"}
   - {row: 49, kind: "view", id: "files-read-write", name: "Read and Write", parent: "sandbox-operations", subtitle: "Times repeated requests that read/write a fixed incompressible payload to a sandbox file."}
-  - {row: 63, kind: "tab", id: "previews", name: "Previews", parent: "sandbox-operations"}
-  - {row: 63, kind: "test", id: "previews", name: "Previews", parent: "previews", document: "previews", presentation: {capability: "previews", stage_labels: "names"}}
-  - {row: 64, kind: "tab", id: "reconnect", name: "Reconnect", parent: "sandbox-operations"}
-  - {row: 64, kind: "test", id: "reconnect", name: "Reconnect", parent: "reconnect", document: "reconnect"}
-  - {row: 65, kind: "tab", id: "volumes", name: "Volumes", status: coming_soon, parent: "sandbox-operations", gap: "no methodology document yet (stub without an id; plan 6.3 row 65)"}
-  - {row: 50, kind: "tab", id: "pause-resume", name: "Pause and Resume", parent: "sandbox-operations"}
-  - {row: 50, kind: "test", id: "pause-resume", name: "Resume with Data", parent: "pause-resume", document: "pause-resume", selector: {label: "Paused Disk Size (GiB)", mode: chooses}, presentation: {panel: "pause-resume"}}
-  - {row: 51, kind: "variant", id: "empty", name: "Empty", parent: "pause-resume", workload: "empty", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "0"}}
-  - {row: 51, kind: "variant", id: "memory-1gib", name: "1 GiB in memory", parent: "pause-resume", workload: "memory-1gib"}
-  - {row: 51, kind: "variant", id: "storage-1gib", name: "1 GiB on disk", parent: "pause-resume", workload: "storage-1gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "1"}}
-  - {row: 51, kind: "variant", id: "storage-2gib", name: "2 GiB on disk", parent: "pause-resume", workload: "storage-2gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "2"}}
-  - {row: 51, kind: "variant", id: "storage-4gib", name: "4 GiB on disk", parent: "pause-resume", workload: "storage-4gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "4"}}
-  - {row: 52, kind: "stage", id: "pause", name: "Pause", parent: "pause-resume"}
-  - {row: 52, kind: "stage", id: "resume", name: "Resume", parent: "pause-resume"}
-  - {row: 52, kind: "stage", id: "read", name: "Read", parent: "pause-resume"}
-  - {row: 53, kind: "test", id: "delayed-resume", name: "Delayed Resume", parent: "pause-resume", document: "delayed-resume", selector: {label: "Delay Time", mode: chooses, description: "Time spent waiting after pause, or after the initial read where pause is unavailable."}}
-  - {row: 54, kind: "variant", id: "wait-1min", name: "Resumed after 1 min", parent: "delayed-resume", workload: "wait-1min", selector: {label: "Delay Time", mode: chooses, option: "1 min"}}
-  - {row: 54, kind: "variant", id: "wait-15min", name: "Resumed after 15 min", parent: "delayed-resume", workload: "wait-15min", selector: {label: "Delay Time", mode: chooses, option: "15 min"}}
-  - {row: 55, kind: "tab", id: "snapshots", name: "Snapshots", parent: "sandbox-operations"}
-  - {row: 56, kind: "test", id: "snapshot-and-restore", name: "Snapshot and Restore", parent: "snapshots", document: "snapshot-and-restore", presentation: {stage_labels: "names"}}
-  - {row: 57, kind: "test", id: "fork", name: "Fork", parent: "snapshots", document: "fork", selector: {label: "Fork #", mode: narrows}, presentation: {stage_labels: "names"}}
-  - {row: 58, kind: "stage", id: "snapshot", name: "Snapshot", parent: "snapshots"}
-  - {row: 58, kind: "stage", id: "create-from-snapshot", name: "Create from Snapshot", parent: "snapshots"}
-  - {row: 58, kind: "stage", id: "load-runtimes", name: "Load Runtimes", parent: "snapshots"}
-  - {row: 59, kind: "tab", id: "image-build", name: "Image Build", parent: "sandbox-operations", presentation: {panel: "image-build"}}
-  - {row: 60, kind: "test", id: "image-build-2vcpu-4gib", name: "Image Build (2 vCPU / 4 GiB)", status: "off", parent: "image-build", document: "image-build-2vcpu-4gib", selector: {label: "Image", mode: chooses}}
-  - {row: 62, kind: "variant", id: "standard", name: "Standard", parent: "image-build-2vcpu-4gib", workload: "standard"}
-  - {row: 62, kind: "variant", id: "python", name: "Python", parent: "image-build-2vcpu-4gib", workload: "python"}
-  - {row: 62, kind: "variant", id: "node", name: "Node.js", parent: "image-build-2vcpu-4gib", workload: "node"}
-  - {row: 62, kind: "variant", id: "go", name: "Go", parent: "image-build-2vcpu-4gib", workload: "go"}
-  - {row: 62, kind: "variant", id: "rust", name: "Rust", parent: "image-build-2vcpu-4gib", workload: "rust"}
-  - {row: 62, kind: "variant", id: "java", name: "Java", parent: "image-build-2vcpu-4gib", workload: "java"}
-  - {row: 62, kind: "variant", id: "data-science", name: "Data Science", parent: "image-build-2vcpu-4gib", workload: "data-science"}
-  - {row: 62, kind: "variant", id: "igel", name: "igel (Python)", parent: "image-build-2vcpu-4gib", workload: "igel"}
-  - {row: 62, kind: "variant", id: "yjs", name: "Yjs (Node/TS)", parent: "image-build-2vcpu-4gib", workload: "yjs"}
-  - {row: 62, kind: "variant", id: "dasel", name: "dasel (Go)", parent: "image-build-2vcpu-4gib", workload: "dasel"}
+  - {row: 50, kind: "tab", id: "previews", name: "Previews", parent: "sandbox-operations"}
+  - {row: 50, kind: "test", id: "previews", name: "Previews", parent: "previews", document: "previews", presentation: {capability: "previews", stage_labels: "names"}}
+  - {row: 51, kind: "tab", id: "reconnect", name: "Reconnect", parent: "sandbox-operations"}
+  - {row: 51, kind: "test", id: "reconnect", name: "Reconnect", parent: "reconnect", document: "reconnect"}
+  - {row: 52, kind: "tab", id: "volumes", name: "Volumes", status: coming_soon, parent: "sandbox-operations", gap: "no methodology document yet (stub without an id; plan 6.3 row 65)"}
+  - {row: 53, kind: "tab", id: "pause-resume", name: "Pause and Resume", parent: "sandbox-operations"}
+  - {row: 53, kind: "test", id: "pause-resume", name: "Resume with Data", parent: "pause-resume", document: "pause-resume", selector: {label: "Paused Disk Size (GiB)", mode: chooses}, presentation: {panel: "pause-resume"}}
+  - {row: 54, kind: "variant", id: "empty", name: "Empty", parent: "pause-resume", workload: "empty", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "0"}}
+  - {row: 54, kind: "variant", id: "memory-1gib", name: "1 GiB in memory", parent: "pause-resume", workload: "memory-1gib"}
+  - {row: 54, kind: "variant", id: "storage-1gib", name: "1 GiB on disk", parent: "pause-resume", workload: "storage-1gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "1"}}
+  - {row: 54, kind: "variant", id: "storage-2gib", name: "2 GiB on disk", parent: "pause-resume", workload: "storage-2gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "2"}}
+  - {row: 54, kind: "variant", id: "storage-4gib", name: "4 GiB on disk", parent: "pause-resume", workload: "storage-4gib", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "4"}}
+  - {row: 55, kind: "stage", id: "pause", name: "Pause", parent: "pause-resume"}
+  - {row: 55, kind: "stage", id: "resume", name: "Resume", parent: "pause-resume"}
+  - {row: 55, kind: "stage", id: "read", name: "Read", parent: "pause-resume"}
+  - {row: 56, kind: "test", id: "delayed-resume", name: "Delayed Resume", parent: "pause-resume", document: "delayed-resume", selector: {label: "Delay Time", mode: chooses, description: "Time spent waiting after pause, or after the initial read where pause is unavailable."}}
+  - {row: 57, kind: "variant", id: "wait-1min", name: "Resumed after 1 min", parent: "delayed-resume", workload: "wait-1min", selector: {label: "Delay Time", mode: chooses, option: "1 min"}}
+  - {row: 57, kind: "variant", id: "wait-15min", name: "Resumed after 15 min", parent: "delayed-resume", workload: "wait-15min", selector: {label: "Delay Time", mode: chooses, option: "15 min"}}
+  - {row: 58, kind: "tab", id: "snapshots", name: "Snapshots", parent: "sandbox-operations"}
+  - {row: 59, kind: "test", id: "snapshot-and-restore", name: "Snapshot and Restore", parent: "snapshots", document: "snapshot-and-restore", presentation: {stage_labels: "names"}}
+  - {row: 60, kind: "test", id: "fork", name: "Fork", parent: "snapshots", document: "fork", selector: {label: "Fork #", mode: narrows}, presentation: {stage_labels: "names"}}
+  - {row: 61, kind: "stage", id: "snapshot", name: "Snapshot", parent: "snapshots"}
+  - {row: 61, kind: "stage", id: "create-from-snapshot", name: "Create from Snapshot", parent: "snapshots"}
+  - {row: 61, kind: "stage", id: "load-runtimes", name: "Load Runtimes", parent: "snapshots"}
+  - {row: 62, kind: "tab", id: "image-build", name: "Image Build", parent: "sandbox-operations", presentation: {panel: "image-build"}}
+  - {row: 63, kind: "test", id: "image-build-2vcpu-4gib", name: "Image Build (2 vCPU / 4 GiB)", status: "off", parent: "image-build", document: "image-build-2vcpu-4gib", selector: {label: "Image", mode: chooses}}
+  - {row: 65, kind: "variant", id: "standard", name: "Standard", parent: "image-build-2vcpu-4gib", workload: "standard"}
+  - {row: 65, kind: "variant", id: "python", name: "Python", parent: "image-build-2vcpu-4gib", workload: "python"}
+  - {row: 65, kind: "variant", id: "node", name: "Node.js", parent: "image-build-2vcpu-4gib", workload: "node"}
+  - {row: 65, kind: "variant", id: "go", name: "Go", parent: "image-build-2vcpu-4gib", workload: "go"}
+  - {row: 65, kind: "variant", id: "rust", name: "Rust", parent: "image-build-2vcpu-4gib", workload: "rust"}
+  - {row: 65, kind: "variant", id: "java", name: "Java", parent: "image-build-2vcpu-4gib", workload: "java"}
+  - {row: 65, kind: "variant", id: "data-science", name: "Data Science", parent: "image-build-2vcpu-4gib", workload: "data-science"}
+  - {row: 65, kind: "variant", id: "igel", name: "igel (Python)", parent: "image-build-2vcpu-4gib", workload: "igel"}
+  - {row: 65, kind: "variant", id: "yjs", name: "Yjs (Node/TS)", parent: "image-build-2vcpu-4gib", workload: "yjs"}
+  - {row: 65, kind: "variant", id: "dasel", name: "dasel (Go)", parent: "image-build-2vcpu-4gib", workload: "dasel"}
   - {row: 66, kind: "tab", id: "cpu", name: "CPU", measure: "Speed", parent: "machine-performance", selector: {label: "7-Zip Test", mode: chooses}}
   - {row: 67, kind: "test", id: "7-zip-1-thread", name: "7-Zip, 1 Thread", parent: "cpu", document: "7-zip-1-thread", selector: {label: "Threads", mode: chooses, option: "1"}}
   - {row: 68, kind: "test", id: "7-zip-all-vcpus", name: "7-Zip, All vCPUs", parent: "cpu", document: "7-zip-all-vcpus", page: "7-zip-1-thread", selector: {label: "Threads", mode: chooses, option: "All"}}

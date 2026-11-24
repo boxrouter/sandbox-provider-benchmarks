@@ -50,11 +50,21 @@ def test_current_tables_are_consistent() -> None:
 
 
 def test_a_sections_single_page_tabs_come_before_its_tabs_of_several_pages() -> None:
-    """A section lists its own pages before its groups, so a heading sits above its pages only."""
+    """A section lists its own pages before its groups, so a heading sits above its pages only.
+
+    The web page orders a section's tabs by their `row`, so rows and table order must agree.
+    """
     rows = names()
     tests = [row for row in rows if row["kind"] == "test" and row.get("status") != "off"]
     tabs = [row for row in rows if row["kind"] == "tab"]
     for section in {tab["parent"] for tab in tabs}:
+        in_section = [tab["id"] for tab in tabs if tab["parent"] == section]
+        by_row = [
+            tab["id"]
+            for tab in sorted(tabs, key=lambda tab: tab["row"])
+            if tab["parent"] == section
+        ]
+        assert in_section == by_row, f"{section}: the tabs' rows and the table's order differ"
         counts = [
             (
                 tab["id"],
