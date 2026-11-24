@@ -992,6 +992,7 @@ methodology_style:
     check: stage-labels
     ordinary_words:
     - WebSocket
+    - Run
   - id: methodology-style.code-marks
     text: A code mark is for a command, a path, a flag, an environment variable or an API call, since those are what a reader could type; the field ids (burst_time, create_from_snapshot) stay in the data and under Data Sources, and a label, a number or a unit is plain text.
     check: code-marks

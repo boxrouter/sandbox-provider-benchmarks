@@ -65,12 +65,13 @@ def test_the_approved_examples_read_exactly() -> None:
     assert stage_hovers(_latest("snapshot-and-restore"))["load-runtimes"]["end"] == (
         "Command returns its result"
     )
-    tool_calls = stage_hovers(_latest("r2e-gym"))["tool-calls"]
-    assert (tool_calls["start"], tool_calls["end"], tool_calls["clock"]) == (
-        "Exec each tool call",
-        "Call exits",
-        "sandbox",
-    )
+    for kind in ("read", "run", "write", "finish"):
+        tool_calls = stage_hovers(_latest("r2e-gym"))[kind]
+        assert (tool_calls["start"], tool_calls["end"], tool_calls["clock"]) == (
+            "Exec each tool call",
+            "Call exits",
+            "sandbox",
+        )
     build = stage_hovers(_latest("deepswe"))["build"]
     assert (build["start"], build["end"], build["clock"]) == (
         "Exec each build command",

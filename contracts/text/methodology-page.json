@@ -491,7 +491,7 @@
     "timer": "Timer",
     "timing_boundaries": "Timing Boundaries",
     "too_few_runs": "{param:content.ranking_statuses.too_few_runs.label}",
-    "tool_calls": "{name:stage.tool-calls}",
+    "tool_calls": "Tool Calls",
     "toolchain": "Toolchain",
     "trials": "Trials",
     "trials_in_parallel": "Parallel Trials",

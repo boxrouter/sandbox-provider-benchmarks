@@ -102,7 +102,7 @@ def test_the_incomplete_line_has_a_marker_the_owner_sentence_and_no_penalty(
     incomplete = footer["incomplete_footer_template"].format(
         marker=footer["incomplete_marker"], open_hint=footer["open_hint"], **values
     )
-    assert incomplete == "† Provider Failures: Blaxel (R2E-Gym). Click provider to see details."
+    assert incomplete == "a Provider Failures: Blaxel (R2E-Gym). Click provider to see details."
     # Not displayed ends with the same owner sentence, from the one field.
     assert footer["template"].format(open_hint=footer["open_hint"], **values) == (
         "Provider Failures: Blaxel (R2E-Gym). Click provider to see details."

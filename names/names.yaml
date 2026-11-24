@@ -230,7 +230,10 @@ names:
   - {row: 24, kind: "variant", id: "numpy-ad48eaa76403", name: "numpy-histogram-edge-rounding", parent: "r2e-gym", workload: "numpy-ad48eaa76403"}
   - {row: 25, kind: "stage", id: "setup", name: "Setup", parent: "r2e-gym"}
   - {row: 26, kind: "stage", id: "create-from-snapshot", name: "Create from Snapshot", parent: "r2e-gym"}
-  - {row: 27, kind: "stage", id: "tool-calls", name: "Tool Calls", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "read", name: "Read", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "run", name: "Run", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "write", name: "Write", parent: "r2e-gym"}
+  - {row: 27, kind: "stage", id: "finish", name: "Finish", parent: "r2e-gym"}
   - {row: 28, kind: "stage", id: "reward", name: "Reward", parent: "r2e-gym"}
   - {row: 29, kind: "stage", id: "destroy", name: "Destroy", parent: "r2e-gym"}
   - {row: 30, kind: "test", id: "ci-jobs", name: "CI Actions", parent: "ci-workloads", document: "github-actions", unit: "job", selector: {label: "Job", mode: chooses}, presentation: {cost: {label: "Cost per Job", divisor: 1000}}}
@@ -268,6 +271,11 @@ names:
   - {row: 130, kind: "test", id: "write-4kib-2vcpu-8gib", name: "Write 4 KiB (2 vCPU / 8 GiB)", parent: "files", document: "write-4kib-2vcpu-8gib", page: "read-4kib"}
   - {row: 131, kind: "test", id: "read-4kib-2vcpu-8gib", name: "Read 4 KiB (2 vCPU / 8 GiB)", parent: "files", document: "read-4kib-2vcpu-8gib", page: "read-4kib"}
   - {row: 49, kind: "view", id: "files-read-write", name: "Read and Write", parent: "sandbox-operations", subtitle: "Times repeated requests that read/write a fixed incompressible payload to a sandbox file."}
+  - {row: 63, kind: "tab", id: "previews", name: "Previews", parent: "sandbox-operations"}
+  - {row: 63, kind: "test", id: "previews", name: "Previews", parent: "previews", document: "previews", presentation: {capability: "previews", stage_labels: "names"}}
+  - {row: 64, kind: "tab", id: "reconnect", name: "Reconnect", parent: "sandbox-operations"}
+  - {row: 64, kind: "test", id: "reconnect", name: "Reconnect", parent: "reconnect", document: "reconnect"}
+  - {row: 65, kind: "tab", id: "volumes", name: "Volumes", status: coming_soon, parent: "sandbox-operations", gap: "no methodology document yet (stub without an id; plan 6.3 row 65)"}
   - {row: 50, kind: "tab", id: "pause-resume", name: "Pause and Resume", parent: "sandbox-operations"}
   - {row: 50, kind: "test", id: "pause-resume", name: "Resume with Data", parent: "pause-resume", document: "pause-resume", selector: {label: "Paused Disk Size (GiB)", mode: chooses}, presentation: {panel: "pause-resume"}}
   - {row: 51, kind: "variant", id: "empty", name: "Empty", parent: "pause-resume", workload: "empty", selector: {label: "Paused Disk Size (GiB)", mode: chooses, option: "0"}}
@@ -299,11 +307,6 @@ names:
   - {row: 62, kind: "variant", id: "igel", name: "igel (Python)", parent: "image-build-2vcpu-4gib", workload: "igel"}
   - {row: 62, kind: "variant", id: "yjs", name: "Yjs (Node/TS)", parent: "image-build-2vcpu-4gib", workload: "yjs"}
   - {row: 62, kind: "variant", id: "dasel", name: "dasel (Go)", parent: "image-build-2vcpu-4gib", workload: "dasel"}
-  - {row: 63, kind: "tab", id: "previews", name: "Previews", parent: "sandbox-operations"}
-  - {row: 63, kind: "test", id: "previews", name: "Previews", parent: "previews", document: "previews", presentation: {capability: "previews", stage_labels: "names"}}
-  - {row: 64, kind: "tab", id: "reconnect", name: "Reconnect", parent: "sandbox-operations"}
-  - {row: 64, kind: "test", id: "reconnect", name: "Reconnect", parent: "reconnect", document: "reconnect"}
-  - {row: 65, kind: "tab", id: "volumes", name: "Volumes", status: coming_soon, parent: "sandbox-operations", gap: "no methodology document yet (stub without an id; plan 6.3 row 65)"}
   - {row: 66, kind: "tab", id: "cpu", name: "CPU", measure: "Speed", parent: "machine-performance", selector: {label: "7-Zip Test", mode: chooses}}
   - {row: 67, kind: "test", id: "7-zip-1-thread", name: "7-Zip, 1 Thread", parent: "cpu", document: "7-zip-1-thread", selector: {label: "Threads", mode: chooses, option: "1"}}
   - {row: 68, kind: "test", id: "7-zip-all-vcpus", name: "7-Zip, All vCPUs", parent: "cpu", document: "7-zip-all-vcpus", page: "7-zip-1-thread", selector: {label: "Threads", mode: chooses, option: "All"}}
