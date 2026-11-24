@@ -83,6 +83,7 @@
         "GIT_TERMINAL_PROMPT": "0",
         "INLINE_SNAPSHOT_DEFAULT_FLAGS": "review",
         "PYTEST_OPTIONS": "",
+        "PYTEST_XDIST_AUTO_NUM_WORKERS": "4",
         "STARLETTE_SRC": "",
         "UV_NO_SYNC": "true",
         "UV_PYTHON": "3.13",
@@ -130,7 +131,7 @@
     },
     "id": "fastapi",
     "label": "Python (fastapi)",
-    "version": "sha256:86b4e91b16cfa2ea"
+    "version": "sha256:01593d6ebf881a40"
   },
   {
     "data": {
@@ -302,7 +303,7 @@
       "env": {
         "CI": "true",
         "GIT_TERMINAL_PROMPT": "0",
-        "JAVA_TOOL_OPTIONS": "-Djava.net.preferIPv6Addresses=system",
+        "JDK_JAVA_OPTIONS": "-Djava.net.preferIPv6Addresses=system",
         "MAVEN_ARGS": "--show-version --batch-mode --no-transfer-progress"
       },
       "source": {
@@ -334,6 +335,6 @@
     },
     "id": "gson",
     "label": "Java (gson)",
-    "version": "sha256:cac3e6a6ca965ff6"
+    "version": "sha256:f15a6f7be21ce116"
   }
 ]
