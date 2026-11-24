@@ -197,6 +197,16 @@ def test_an_incomplete_footer_starts_with_the_marker_and_says_provider_failures(
         assert any("differs from the owned" in e for e in rendered_content_errors(criteria, scope))
 
 
+def test_every_footnote_marker_is_one_small_letter_with_one_meaning() -> None:
+    """Andre, 2026-11-24: each footnote kind is a superscript letter, the same on every chart."""
+    policy = content_criteria()["ranking_status_footer"]
+    markers = [value for key, value in policy.items() if key.endswith("_marker")]
+    assert sorted(markers) == ["a", "b", "c", "d", "e"]
+    assert [
+        policy[key] for key in ("incomplete_marker", "substituted_marker", "worst_trial_marker")
+    ] == ["a", "b", "c"]
+
+
 def test_the_nearest_size_footer_starts_with_its_own_marker_and_names_both_sizes() -> None:
     criteria = content_criteria()
     policy = criteria["ranking_status_footer"]
@@ -207,7 +217,7 @@ def test_the_nearest_size_footer_starts_with_its_own_marker_and_names_both_sizes
     scope["slots"].extend([{"slot": "chart.bar-row", "text": "Boxd 52 s"}, footer])
     footer["status"] = "nearest_size"
     footer["providers"] = [{"provider": "Boxd", "reason": "4 vCPU / 16 GiB for 4 vCPU / 8 GiB"}]
-    footer["text"] = "‖ Nearest Size: Boxd (4 vCPU / 16 GiB for 4 vCPU / 8 GiB)"
+    footer["text"] = "e Nearest Size: Boxd (4 vCPU / 16 GiB for 4 vCPU / 8 GiB)"
     assert rendered_content_errors(criteria, scope) == []
     footer["text"] = "Nearest Size: Boxd (4 vCPU / 16 GiB for 4 vCPU / 8 GiB)"
     assert any("differs from the owned" in e for e in rendered_content_errors(criteria, scope))
